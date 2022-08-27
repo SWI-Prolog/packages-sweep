@@ -1,7 +1,7 @@
 #ifndef _SWEEP_H
 #define _SWEEP_H
 
-#include <emacs-module.h>
+#include "emacs-module.h"
 #include <SWI-Prolog.h>
 #include <SWI-Stream.h>
 

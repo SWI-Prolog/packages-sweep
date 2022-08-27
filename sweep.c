@@ -32,18 +32,18 @@ estring_to_cstring(emacs_env *eenv, emacs_value estring, ptrdiff_t *len_p) {
   return buf;
 }
 
-int
-estring_to_atom(emacs_env *eenv, emacs_value estring, term_t t) {
-  ptrdiff_t len = 0;
-  char *buf = NULL;
-  int i = 0;
+/* int */
+/* estring_to_atom(emacs_env *eenv, emacs_value estring, term_t t) { */
+/*   ptrdiff_t len = 0; */
+/*   char *buf = NULL; */
+/*   int i = 0; */
 
-  if ((buf = estring_to_cstring(eenv, estring, &len)) == NULL) return -1;
+/*   if ((buf = estring_to_cstring(eenv, estring, &len)) == NULL) return -1; */
 
-  i = PL_put_atom_nchars(t, len - 1, buf);
-  free(buf);
-  return i;
-}
+/*   i = PL_put_atom_nchars(t, len - 1, buf); */
+/*   free(buf); */
+/*   return i; */
+/* } */
 
 int
 estring_to_pstring(emacs_env *eenv, emacs_value estring, term_t t) {
@@ -58,17 +58,17 @@ estring_to_pstring(emacs_env *eenv, emacs_value estring, term_t t) {
   return i;
 }
 
-static IOSTREAM *
-estring_to_stream(emacs_env *eenv, emacs_value estring) {
-  ptrdiff_t len = 0;
-  size_t slen = 0;
-  char *buf = NULL;
+/* static IOSTREAM * */
+/* estring_to_stream(emacs_env *eenv, emacs_value estring) { */
+/*   ptrdiff_t len = 0; */
+/*   size_t slen = 0; */
+/*   char *buf = NULL; */
 
-  if ((buf = estring_to_cstring(eenv, estring, &len)) == NULL) return NULL;
+/*   if ((buf = estring_to_cstring(eenv, estring, &len)) == NULL) return NULL; */
 
-  slen = len - 1;
-  return Sopenmem(&buf, &slen, "r");
-}
+/*   slen = len - 1; */
+/*   return Sopenmem(&buf, &slen, "r"); */
+/* } */
 
 static emacs_value
 econs(emacs_env *env, emacs_value car, emacs_value cdr) {
@@ -180,7 +180,7 @@ term_to_value_compound(emacs_env *env, term_t t) {
   size_t len = 0;
   emacs_value * vals = NULL;
   size_t n = 0;
-  PL_get_compound_name_arity(t, &name, &arity);
+  (void)PL_get_compound_name_arity(t, &name, &arity);
   chars = PL_atom_nchars(name, &len);
   vals = (emacs_value*)malloc(sizeof(emacs_value)*arity + 1);
   if (vals == NULL) {
@@ -193,7 +193,7 @@ term_to_value_compound(emacs_env *env, term_t t) {
 
   for(n=1; n<=arity; n++) {
 
-    PL_get_arg(n, t, arg);
+    (void)PL_get_arg(n, t, arg);
     vals[n] = term_to_value(env, arg);
   }
 
@@ -351,7 +351,6 @@ emacs_value
 sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
 {
   predicate_t p = NULL;
-  IOSTREAM *  s = NULL;
   char *      m = NULL;
   module_t    n = NULL;
   char *      c = NULL;
