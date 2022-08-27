@@ -145,7 +145,7 @@ loaded or auto-loadable Prolog predicate.
 Currently, =sweep= builds the SWI-Prolog runtime without GMP support
 (using the =cmake= flag =-DUSE_GMP=OFF=). Initializing SWI-Prolog inside
 Emacs with GMP support /enabled/ for SWI-Prolog causes Emacs to crash
-during garbage collection, because SWI-Prolog =mp_free= routine is
+during garbage collection, because the SWI-Prolog =mp_free= routine is
 mistakenly invoked to cleanup Elisp big integers.
 
 Aside from the obvious problem of not being able to utilize SWI-Prolog
