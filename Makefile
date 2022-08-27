@@ -21,7 +21,6 @@ LDFLAGS += -Llib
 LDFLAGS += -lswipl
 
 CFLAGS  += -fPIC
-CFLAGS  += -fdiagnostics-absolute-paths
 CFLAGS  += -Wall
 CFLAGS  += -Wextra
 CFLAGS  += -O2
