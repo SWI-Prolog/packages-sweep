@@ -21,8 +21,42 @@ embedded SWI-Prolog runtime inside of Emacs.
 
 #+toc: headlines 8 insert TOC here, with eight headline levels
 
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: overview
+:END:
+
+=sweep= is an embedding of SWI-Prolog in Emacs.  It uses the C
+interfaces of both SWI-Prolog and Emacs Lisp to create a dynamically
+loaded Emacs module that contains the SWI-Prolog runtime. As such,
+=sweep= has parts written in C, in Prolog and in Emacs Lisp.
+
+The different parts of =sweep= are structured as follows:
+
+#+CINDEX: sweep-module
+- =sweep.c= defines a dynamic Emacs module which is referred to from
+  Elisp as =sweep-module=. This module is linked against the SWI-Prolog
+  runtime library (=libswipl=) and exposes a subset of the SWI-Prolog C
+  interface to Emacs in the form of Elisp functions (see [[Querying
+  Prolog]]). Notably, =sweep-module= is responsible for translating Elisp
+  objects to Prolog terms and vice versa.
+
+#+CINDEX: sweep.el
+- =sweep.el= defines an Elisp library (named simply =sweep=), which builds
+  on top of =sweep-module= to provide user-facing commands and
+  functionality. It is also responsible for loading and compiling the
+  dynamically loaded =sweep-module=.
+
+#+CINDEX: sweep.pl
+- =sweep.pl= defines a Prolog module (named, unsurprisingly, =sweep=)
+  which is by default arranged by =sweep.el= to be loaded when the
+  embedded Prolog runtime is initialized. It contains predicates that
+  =sweep.el= invoke through =sweep-module= to facilitate its different
+  commands (see [[Finding Prolog code]]).
+
 * Installation
 :PROPERTIES:
+:CUSTOM_ID: installation
 :END:
 
 1. Clone the =sweep= repository:
@@ -51,6 +85,9 @@ embedded SWI-Prolog runtime inside of Emacs.
    SWI-Prolog runtime may need to be built as well.
 
 * Querying Prolog
+:PROPERTIES:
+:CUSTOM_ID: querying-prolog
+:END:
 
 =sweep= provides the Elisp function =sweep-open-query= for initiating
 Prolog queries. To examine the results of the query, the function
@@ -79,6 +116,9 @@ different permutations of the list =(1 2 3 4 5)=:
 #+end_src
 
 * Finding Prolog code
+:PROPERTIES:
+:CUSTOM_ID: finding-prolog-code
+:END:
 
 #+FINDEX: sweep-find-module
 =sweep= provides the command {{{kbd(M-x sweep-find-module)}}} for
@@ -92,21 +132,46 @@ Along with {{{kbd(M-x sweep-find-module)}}}, =sweep= provides the
 command {{{kbd(M-x sweep-find-predicate)}}} jumping to the definition a
 loaded or auto-loadable Prolog predicate.
 
+* Known issues
+:PROPERTIES:
+:CUSTOM_ID: known-issues
+:END:
+
+** Collision between Emacs' and SWI-Prolog's use of GMP
+:PROPERTIES:
+:CUSTOM_ID: gmp-collision
+:END:
+
+Currently, =sweep= builds the SWI-Prolog runtime without GMP support
+(using the =cmake= flag =-DUSE_GMP=OFF=). Initializing SWI-Prolog inside
+Emacs with GMP support /enabled/ for SWI-Prolog causes Emacs to crash
+during garbage collection, because SWI-Prolog =mp_free= routine is
+mistakenly invoked to cleanup Elisp big integers.
+
+Aside from the obvious problem of not being able to utilize SWI-Prolog
+support for unbounded integer arithmetic, this issue also prevents us
+from using an existing =libswipl= since it is most likely to have been
+built with GMP enabled.
+
 * Indices
 :PROPERTIES:
+:CUSTOM_ID: indices
 :END:
 
 ** Function index
 :PROPERTIES:
 :INDEX: fn
+:CUSTOM_ID: findex
 :END:
 
 ** Variable index
 :PROPERTIES:
 :INDEX: vr
+:CUSTOM_ID: vindex
 :END:
 
 ** Concept index
 :PROPERTIES:
 :INDEX: cp
+:CUSTOM_ID: cindex
 :END:
