@@ -10,8 +10,6 @@ ifeq ($(UNAME_S),Darwin)
     SOEXT = dylib
 endif
 
-SOEXT    = dylib
-
 TARGET   = $(BASENAME)-module.$(SOEXT)
 OBJECT   = $(BASENAME).o
 SOURCE   = $(BASENAME).c
