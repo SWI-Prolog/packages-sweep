@@ -15,6 +15,10 @@
 
 ;;; Code:
 
+(defgroup sweep nil
+  "SWI-Prolog Embedded in Emacs."
+  :group 'prolog)
+
 (defvar sweep-install-buffer-name "*Install sweep*"
   "Name of the buffer used for compiling sweep-module.")
 
@@ -88,6 +92,7 @@
                       nil))))))
     (completing-read "Predicate: " col)))
 
+;;;###autoload
 (defun sweep-find-predicate (mfn)
   "Jump to the definiton of the Prolog predicate MFN.
 MFN must be a string of the form \"M:F/N\" where M is a Prolog
@@ -125,12 +130,13 @@ module name, F is a functor name and N is its arity."
                   (let* ((val (cdr (assoc-string key col)))
                          (pat (car val))
                          (des (cdr val)))
-                    (concat (make-string (- 32 (length key)) ? )
+                    (concat (make-string (max 0 (- 32 (length key))) ? )
                             (if des
-                                (concat pat (make-string (- 64 (length pat)) ? ) des)
+                                (concat pat (make-string (max 0 (- 80 (length pat))) ? ) des)
                               pat)))))))
     (completing-read "Module: " col)))
 
+;;;###autoload
 (defun sweep-find-module (mod)
   "Jump to the source file of the Prolog module MOD."
   (interactive (list (sweep-read-module-name)))

@@ -102,8 +102,10 @@ term_to_value_string(emacs_env *eenv, term_t t) {
   char * string = NULL;
   emacs_value v = NULL;
   size_t      l = -1;
-  if (PL_get_string_chars(t, &string, &l)) {
+  if (PL_get_nchars(t, &l, &string, CVT_STRING|REP_UTF8)) {
     v = eenv->make_string(eenv, string, l);
+  } else {
+    v = eenv->make_string(eenv, "sweep conversion error", 22);
   }
   return v;
 }
