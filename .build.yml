@@ -26,6 +26,7 @@ packages:
   - libyaml-dev
   - zip
   - git
+  - emacs
 secrets:
   - 750079bb-9735-473b-bebf-db897c9f0c6b
   - 72d5c3dc-f83f-4cc2-96e3-b2b08f6ee8a0
@@ -38,4 +39,5 @@ tasks:
       sudo localectl set-locale LANG=en_US.UTF-8
       localectl set-locale LANG=en_US.UTF-8
       make
-      make info
+      make sweep.info
+      make check

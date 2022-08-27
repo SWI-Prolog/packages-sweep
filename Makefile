@@ -33,7 +33,7 @@ CMAKE_OPTIONS += -DSWIPL_PACKAGES_JAVA=OFF
 CMAKE_OPTIONS += -DSWIPL_PACKAGES_X=OFF
 CMAKE_OPTIONS += -DSWIPL_INSTALL_IN_LIB=ON
 
-.PHONY: clean all swipl
+.PHONY: clean all swipl check
 
 all: $(TARGET)
 
@@ -58,3 +58,6 @@ lib/libswipl.$(SOEXT):
 
 $(BASENAME).info:: README.org
 	emacs -Q --batch --eval '(require (quote ox-texinfo))' --eval "(with-current-buffer (find-file \"README.org\") (org-export-to-file (quote texinfo) \"$@\" nil nil nil nil nil (quote org-texinfo-compile)))"
+
+check: $(TARGET)
+	emacs -batch --eval '(add-to-list (quote load-path) (expand-file-name "."))' -l ert -l sweep -l sweep-tests.el -f ert-run-tests-batch-and-exit

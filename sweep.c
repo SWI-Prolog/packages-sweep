@@ -154,9 +154,16 @@ term_to_value_compound(emacs_env *env, term_t t) {
   const char * chars = NULL;
   size_t len = 0;
   emacs_value * vals = NULL;
+  emacs_value res = NULL;
   size_t n = 0;
-  (void)PL_get_compound_name_arity(t, &name, &arity);
+
+  if (!PL_get_compound_name_arity(t, &name, &arity)) {
+    ethrow(env, "Not a compound");
+    goto cleanup;
+  }
+
   chars = PL_atom_nchars(name, &len);
+
   vals = (emacs_value*)malloc(sizeof(emacs_value)*arity + 1);
   if (vals == NULL) {
     ethrow(env, "malloc failed");
@@ -167,12 +174,19 @@ term_to_value_compound(emacs_env *env, term_t t) {
   vals[0] = env->make_string(env, chars, len);
 
   for(n=1; n<=arity; n++) {
-
-    (void)PL_get_arg(n, t, arg);
+    if (!PL_get_arg(n, t, arg)) {
+      ethrow(env, "get_arg falied");
+      goto cleanup;
+    }
     vals[n] = term_to_value(env, arg);
   }
 
-  return econs(env, env->intern(env, "compound"), env->funcall(env, env->intern(env, "list"), arity + 1, vals));
+  res = econs(env, env->intern(env, "compound"), env->funcall(env, env->intern(env, "list"), arity + 1, vals));
+
+ cleanup:
+  if (vals != NULL) free(vals);
+
+  return res;
 }
 
 emacs_value
