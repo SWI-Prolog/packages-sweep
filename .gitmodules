@@ -1,0 +1,3 @@
+[submodule "swipl"]
+	path = swipl
+	url = https://github.com/SWI-Prolog/swipl-devel.git

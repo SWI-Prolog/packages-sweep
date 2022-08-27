@@ -1,2 +1,6 @@
 /.iprolog_history
 /sweep-module.dylib
+/swipl-win.app/
+/bin/
+/lib/
+/share/
