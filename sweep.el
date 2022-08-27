@@ -31,6 +31,12 @@
   :type 'string
   :group 'sweep)
 
+(defcustom sweep-read-pack-prompt "Pack: "
+  "Prompt used for reading a Prolog pack name from the minibuffer."
+  :package-version '((sweep . "0.1.0"))
+  :type 'string
+  :group 'sweep)
+
 (defvar sweep-install-buffer-name "*Install sweep*"
   "Name of the buffer used for compiling sweep-module.")
 
@@ -154,6 +160,46 @@ module name, F is a functor name and N is its arity."
   "Jump to the source file of the Prolog module MOD."
   (interactive (list (sweep-read-module-name)))
   (find-file (sweep-module-path mod)))
+
+
+(defun sweep-packs-collection ()
+  (sweep-open-query "user" "sweep" "sweep_packs_collection" "")
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (or (eq (car sol) '!)
+              (eq (car sol) t))
+      (cdr sol))))
+
+(defun sweep-read-pack-name ()
+  "Read a Prolog pack name from the minibuffer, with completion."
+  (let* ((col (sweep-packs-collection))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (key)
+                  (message key)
+                  (let* ((val (cdr (assoc-string key col)))
+                         (des (car val))
+                         (ver (cadr val)))
+                    (concat (make-string (max 0 (- 32 (length key))) ? )
+                            (if des
+                                (concat ver (make-string (max 0 (- 16 (length ver))) ? ) des)
+                              ver)))))))
+    (completing-read sweep-read-pack-prompt col)))
+
+(defun sweep-true-p (sol)
+  (or (eq (car sol) '!)
+      (eq (car sol) t)))
+
+;;;###autoload
+(defun sweep-pack-install (pack)
+  "Install or upgrade Prolog package PACK."
+  (interactive (list (sweep-read-pack-name)))
+  (sweep-open-query "user" "sweep" "sweep_pack_install" pack)
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (if (sweep-true-p sol)
+        (message "Package install successful.")
+      (user-error "Pacakge installation failed"))))
 
 ;;;; Testing:
 

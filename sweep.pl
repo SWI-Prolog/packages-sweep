@@ -4,6 +4,8 @@
             sweep_predicate_location/2,
             sweep_predicates_collection/2,
             sweep_modules_collection/2,
+            sweep_packs_collection/2,
+            sweep_pack_install/2,
             sweep_module_path/2
           ]).
 
@@ -17,6 +19,7 @@
 :- use_module(library(pldoc/doc_man)).
 :- use_module(library(pldoc/man_index)).
 :- use_module(library(lynx/html_text)).
+:- use_module(library(prolog_pack)).
 
 :- dynamic sweep_current_color/3,
            sweep_open/2,
@@ -214,3 +217,16 @@ sweep_predicate_description_(M, F, N, [D]) :-
 sweep_predicate_description_(_M, F, N, [D]) :-
     man_object_property(F/N, summary(D0)), !, atom_string(D0, D).
 sweep_predicate_description_(_, _, _, []).
+
+sweep_packs_collection(SearchString, Packs) :-
+    prolog_pack:query_pack_server(search(SearchString), true(Packs0), []),
+    maplist(sweep_pack_info, Packs0, Packs).
+
+sweep_pack_info(pack(Name0, _, Desc0, Version0, URLS0), [Name, Desc, Version, URLS]) :-
+    atom_string(Name0, Name),
+    atom_string(Desc0, Desc),
+    atom_string(Version0, Version),
+    maplist(atom_string, URLS0, URLS).
+
+sweep_pack_install(PackName, []) :-
+    atom_string(Pack, PackName), pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
