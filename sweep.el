@@ -18,13 +18,15 @@
 (defvar sweep-install-buffer-name "*Install sweep*"
   "Name of the buffer used for compiling sweep-module.")
 
+(defun sweep-home-directory ()
+  (file-name-directory (locate-library "sweep.el" t)))
+
 ;;;###autoload
 (defun sweep-module-compile ()
   "Compile sweep-module."
   (interactive)
   (let* ((sweep-directory
-          (shell-quote-argument
-           (file-name-directory (locate-library "sweep.el" t))))
+          (shell-quote-argument (sweep-home-directory)))
          (make-commands
           (concat
            "cd " sweep-directory "; make; cd -"))
@@ -40,8 +42,13 @@
   (if (y-or-n-p "Sweep needs `sweep-module' to work.  Compile it now? ")
       (progn
         (sweep-module-compile)
-        (require 'sweep-module))
-    (error "Sweep will not work until `sweep-module' is compiled!")))
+        (require 'sweep-module)
+        (sweep-initialize (expand-file-name "bin/swipl"
+                                            (sweep-home-directory))
+                          "-q"
+                          (expand-file-name "sweep.pl"
+                                            (sweep-home-directory))))
+  (error "Sweep will not work until `sweep-module' is compiled!")))
 
 (declare-function sweep-initialize "sweep-module")
 (declare-function sweep-initialized-p "sweep-module")
@@ -108,13 +115,11 @@
   (interactive (list (sweep-read-module-name)))
   (find-file (sweep-module-path mod)))
 
-;; (add-to-list 'load-path (expand-file-name  "~/checkouts/sweep/"))
+;;;; Testing:
 
+;; (add-to-list 'load-path (file-name-directory (buffer-file-name)))
 ;; (require 'sweep)
 
-;; (sweep-initialized-p)
-;; (sweep-initialize (executable-find "swipl") "-q" (expand-file-name "sweep.pl" (file-name-directory (locate-library "sweep.el" t))))
-
-
 (provide 'sweep)
+
 ;;; sweep.el ends here
