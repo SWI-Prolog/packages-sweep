@@ -19,6 +19,18 @@
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
 
+(defcustom sweep-read-module-prompt "Module: "
+  "Prompt used for reading a Prolog module name from the minibuffer."
+  :package-version '((sweep . "0.1.0"))
+  :type 'string
+  :group 'sweep)
+
+(defcustom sweep-read-predicate-prompt "Predicate: "
+  "Prompt used for reading a Prolog precicate name from the minibuffer."
+  :package-version '((sweep . "0.1.0"))
+  :type 'string
+  :group 'sweep)
+
 (defvar sweep-install-buffer-name "*Install sweep*"
   "Name of the buffer used for compiling sweep-module.")
 
@@ -55,12 +67,13 @@
                   (expand-file-name "sweep.pl"
                                     (sweep-home-directory)))
 
-(declare-function sweep-initialize "sweep-module")
+(declare-function sweep-initialize    "sweep-module")
 (declare-function sweep-initialized-p "sweep-module")
-(declare-function sweep-open-query "sweep-module")
-(declare-function sweep-cut-query "sweep-module")
-(declare-function sweep-close-query "sweep-module")
-(declare-function sweep-cleanup "sweep-module")
+(declare-function sweep-open-query    "sweep-module")
+(declare-function sweep-cut-query     "sweep-module")
+(declare-function sweep-close-query   "sweep-module")
+(declare-function sweep-next-solution "sweep-module")
+(declare-function sweep-cleanup       "sweep-module")
 
 (defun sweep-predicates-collection ()
   (sweep-open-query "user" "sweep" "sweep_predicates_collection" nil)
@@ -90,7 +103,7 @@
                     (if val
                         (concat (make-string (- 64 (length key)) ? ) (car val))
                       nil))))))
-    (completing-read "Predicate: " col)))
+    (completing-read sweep-read-predicate-prompt col)))
 
 ;;;###autoload
 (defun sweep-find-predicate (mfn)
@@ -134,7 +147,7 @@ module name, F is a functor name and N is its arity."
                             (if des
                                 (concat pat (make-string (max 0 (- 80 (length pat))) ? ) des)
                               pat)))))))
-    (completing-read "Module: " col)))
+    (completing-read sweep-read-module-prompt col)))
 
 ;;;###autoload
 (defun sweep-find-module (mod)
