@@ -16,6 +16,7 @@ SOURCE   = $(BASENAME).c
 
 LDFLAGS += -shared
 LDFLAGS += -Llib
+LDFLAGS += -Wl,-rpath,lib
 LDFLAGS += -lswipl
 
 CFLAGS  += -fPIC
