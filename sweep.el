@@ -80,6 +80,9 @@
     (completing-read "Predicate: " col)))
 
 (defun sweep-find-predicate (mfn)
+  "Jump to the definiton of the Prolog predicate MFN.
+MFN must be a string of the form \"M:F/N\" where M is a Prolog
+module name, F is a functor name and N is its arity."
   (interactive (list (sweep-read-predicate)))
   (let* ((loc (sweep-predicate-location mfn))
          (path (car loc))
@@ -113,6 +116,7 @@
     (completing-read "Module: " col)))
 
 (defun sweep-find-module (mod)
+  "Jump to the source file of the Prolog module MOD."
   (interactive (list (sweep-read-module-name)))
   (find-file (sweep-module-path mod)))
 

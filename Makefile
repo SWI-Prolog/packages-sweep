@@ -33,7 +33,7 @@ $(TARGET): $(SOURCE) swipl
 
 clean:
 	rm -rf bin lib share swipl/build
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(BASENAME).info
 
 swipl:
 	cd swipl; \
@@ -43,3 +43,6 @@ swipl:
 	cmake $(CMAKE_OPTIONS) -G Ninja ..; \
 	ninja; \
 	ninja install
+
+$(BASENAME).info:
+	emacs -Q --batch --eval '(require (quote ox-texinfo))' --eval "(with-current-buffer (find-file \"README.org\") (org-export-to-file (quote texinfo) \"$@\" nil nil nil nil nil (quote org-texinfo-compile)))"

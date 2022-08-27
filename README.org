@@ -1,0 +1,96 @@
+#+title:                 sweep: SWI-Prolog Embedded in Emacs
+#+author:                Eshel Yaron
+#+email:                 me@eshelyaron.com
+#+language:              en
+#+options:               ':t toc:nil author:t email:t num:t
+#+startup:               content indent
+#+export_file_name:      sweep.texi
+#+texinfo_filename:      sweep.info
+#+texinfo_dir_category:  Prolog
+#+texinfo_dir_title:     Sweep: (sweep)
+#+texinfo_dir_desc:      SWI-Prolog Embedded in Emacs
+#+texinfo_header:        @set MAINTAINERSITE @uref{https://eshelyaron.com,maintainer webpage}
+#+texinfo_header:        @set MAINTAINER Eshel Yaron
+#+texinfo_header:        @set MAINTAINEREMAIL @email{me@eshelyaron.com}
+#+texinfo_header:        @set MAINTAINERCONTACT @uref{mailto:me@eshelyaron.com,contact the maintainer}
+
+# The "kbd" macro turns KBD into @kbd{KBD}.  Additionally, it
+# encloses case-sensitive special keys (SPC, RET...) within @key{...}.
+#+macro: kbd (eval (let ((case-fold-search nil) (regexp (regexp-opt '("SPC" "RET" "LFD" "TAB" "BS" "ESC" "DELETE" "SHIFT" "Ctrl" "Meta" "Alt" "Cmd" "Super" "UP" "LEFT" "RIGHT" "DOWN") 'words))) (format "@@texinfo:@kbd{@@%s@@texinfo:}@@" (replace-regexp-in-string regexp "@@texinfo:@key{@@\\&@@texinfo:}@@" $1 t))))
+
+This manual describes the Emacs package =sweep=, which provides an
+embedded SWI-Prolog runtime inside of Emacs.
+
+#+toc: headlines 8 insert TOC here, with eight headline levels
+
+* Installation
+:PROPERTIES:
+:END:
+
+1. Clone the =sweep= repository:
+   #+begin_src sh
+     git clone --recursive https://git.sr.ht/~eshel/sweep
+   #+end_src
+2. Optionally, build the C module =sweep-module=:
+   #+begin_src sh
+     cd sweep
+     make
+   #+end_src
+3. Add =sweep= to Emacs' =load-path=:
+   #+begin_src emacs-lisp
+     (add-to-list 'load-path "/path/to/sweep")
+   #+end_src
+4. Load =sweep= into Emacs:
+   #+begin_src emacs-lisp
+     (require 'sweep)
+   #+end_src
+   If =sweep-module= is not already built, =sweep= will suggest to build
+   it when loaded. Note that this may take a couple of minutes as the
+   SWI-Prolog runtime may need to be built as well.
+
+* Querying Prolog
+
+=sweep= provides the Elisp function =sweep-open-query= for initiating
+Prolog queries. To examine the results of the query, the function
+=sweep-next-solution= is used. When no more solutions are available, or
+when otherwise further solutions are not required, the query must be
+close with either =sweep-cut-query= or =sweep-close-query=.
+
+#+FINDEX: sweep-open-query
+#+FINDEX: sweep-next-solution
+#+FINDEX: sweep-cut-query
+#+FINDEX: sweep-close-query
+
+As an example, we show an invocation of the non-deterministic
+predicate =lists:permutation/2= from Elisp, which yields the number of
+different permutations of the list =(1 2 3 4 5)=:
+
+#+begin_src emacs-lisp
+  (sweep-open-query "user" "lists" "permutation" '(1 2 3 4 5))
+  (let ((num 0)
+        (sol (sweep-next-solution)))
+    (while sol
+      (setq num (1+ num))
+      (setq sol (sweep-next-solution)))
+    (sweep-close-query)
+    num)
+#+end_src
+
+* Indices
+:PROPERTIES:
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:END:
+
+** Concept index
+:PROPERTIES:
+:INDEX: cp
+:END:

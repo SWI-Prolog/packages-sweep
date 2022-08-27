@@ -166,11 +166,12 @@ sweep_module_path(ModuleName, Path) :-
 sweep_module_path_(Module, Path) :-
     module_property(Module, file(Path)), !.
 sweep_module_path_(Module, Path) :-
-    '$autoload':library_index(_, Module, Path), !.
+    '$autoload':library_index(_, Module, Path0), !, string_concat(Path0, ".pl", Path).
+
 
 sweep_modules_collection([], Modules) :-
     findall([M|P], ( module_property(M0, file(P0)), atom_string(M0, M), atom_string(P0, P) ), Modules0, Tail),
-    setof([M|P], M0^P0^N^('$autoload':library_index(N, M0, P0), atom_string(M0, M), atom_string(P0, P) ), Tail),
+    setof([M|P], M0^P0^N^('$autoload':library_index(N, M0, P0), string_concat(P0, ".pl", P), atom_string(M0, M) ), Tail),
     list_to_set(Modules0, Modules).
 
 sweep_predicate_location(MFN, [Path|Line]) :-

@@ -32,19 +32,6 @@ estring_to_cstring(emacs_env *eenv, emacs_value estring, ptrdiff_t *len_p) {
   return buf;
 }
 
-/* int */
-/* estring_to_atom(emacs_env *eenv, emacs_value estring, term_t t) { */
-/*   ptrdiff_t len = 0; */
-/*   char *buf = NULL; */
-/*   int i = 0; */
-
-/*   if ((buf = estring_to_cstring(eenv, estring, &len)) == NULL) return -1; */
-
-/*   i = PL_put_atom_nchars(t, len - 1, buf); */
-/*   free(buf); */
-/*   return i; */
-/* } */
-
 int
 estring_to_pstring(emacs_env *eenv, emacs_value estring, term_t t) {
   ptrdiff_t len = 0;
@@ -57,18 +44,6 @@ estring_to_pstring(emacs_env *eenv, emacs_value estring, term_t t) {
   free(buf);
   return i;
 }
-
-/* static IOSTREAM * */
-/* estring_to_stream(emacs_env *eenv, emacs_value estring) { */
-/*   ptrdiff_t len = 0; */
-/*   size_t slen = 0; */
-/*   char *buf = NULL; */
-
-/*   if ((buf = estring_to_cstring(eenv, estring, &len)) == NULL) return NULL; */
-
-/*   slen = len - 1; */
-/*   return Sopenmem(&buf, &slen, "r"); */
-/* } */
 
 static emacs_value
 econs(emacs_env *env, emacs_value car, emacs_value cdr) {
@@ -392,67 +367,9 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   if (c != NULL) free(c);
   if (m != NULL) free(m);
   if (f != NULL) free(f);
-  //  if (s != NULL) Sclose(s);
 
   return et(env);
 }
-
-/* emacs_value */
-/* sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data) */
-/* { */
-/*   predicate_t p = NULL; */
-/*   IOSTREAM *  s = NULL; */
-/*   char *      m = NULL; */
-/*   module_t    n = NULL; */
-/*   char *      c = NULL; */
-/*   char *      f = NULL; */
-/*   term_t      a = PL_new_term_refs(3); */
-
-/*   (void)data; */
-/*   (void)nargs; */
-
-/*   if (PL_current_query() != 0) { */
-/*     ethrow(env, "Prolog is already executing a query"); */
-/*     goto cleanup; */
-/*   } */
-
-/*   if ((c = estring_to_cstring(env, args[0], NULL)) == NULL) { */
-/*     goto cleanup; */
-/*   } */
-
-/*   n = PL_new_module(PL_new_atom(c)); */
-
-/*   if ((m = estring_to_cstring(env, args[1], NULL)) == NULL) { */
-/*     goto cleanup; */
-/*   } */
-
-/*   if ((f = estring_to_cstring(env, args[2], NULL)) == NULL) { */
-/*     goto cleanup; */
-/*   } */
-
-/*   p = PL_predicate(f, 3, m); */
-
-/*   if (estring_to_atom(env, args[3], a+0) < 0) { */
-/*     goto cleanup; */
-/*   } */
-
-/*   if ((s = estring_to_stream(env, args[4])) == NULL) { */
-/*     goto cleanup; */
-/*   } */
-
-/*   PL_unify_stream(a+1, s); */
-
-/*   PL_open_query(n, PL_Q_NODEBUG | PL_Q_EXT_STATUS | PL_Q_CATCH_EXCEPTION, p, a); */
-/*   o = a+2; */
-
-/*  cleanup: */
-/*   if (c != NULL) free(c); */
-/*   if (m != NULL) free(m); */
-/*   if (f != NULL) free(f); */
-/*   //  if (s != NULL) Sclose(s); */
-
-/*   return et(env); */
-/* } */
 
 static emacs_value
 sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
@@ -516,8 +433,8 @@ emacs_module_init (struct emacs_runtime *runtime)
     env->make_function(env,
                        1, emacs_variadic_function,
                        sweep_initialize,
-                       "Initialize Prolog.\
-ARG1 is passed as argv[0] to `PL_initialise()', which see.\
+                       "Initialize Prolog.\n\
+ARG1 is passed as argv[0] to `PL_initialise()', which see.\n\
 REST is passed as the rest of the command line arguments to Prolog.",
                        NULL);
   emacs_value args_initialize[] = {symbol_initialize, func_initialize};
@@ -538,12 +455,12 @@ REST is passed as the rest of the command line arguments to Prolog.",
     env->make_function(env,
                        4, 4,
                        sweep_open_query,
-                       "Query Prolog.\
-ARG1 is a string denoting the context module for the query.\
-ARG2 and ARG3 are strings designating the module and predicate name of the Prolog predicate to invoke, which must be of arity 3.\
-ARG4 is a string that is converted to an atom and passed as the first argument of the invoked predicate.\
-ARG5 is a string that is converted to a Prolog stream and passed as the second argument of the invoked predicate.\
-The third and final argument of the predicate is left unbound and is assumed to be an output variable, whose further instantiations can be examined via `sweep-next-solution'.",
+                       "Query Prolog.\n\
+ARG1 is a string denoting the context module for the query.\n\
+ARG2 and ARG3 are strings designating the module and predicate name of the Prolog predicate to invoke, which must be of arity 2.\n\
+ARG4 is any object that can be converted to a Prolog term, and will be passed as the first argument of the invoked predicate.\n\
+The second argument of the predicate is left unbound and is assumed to treated by the invoked predicate as an output variable.\n\
+Further instantiations of the output variable can be examined via `sweep-next-solution'.",
                        NULL);
   emacs_value args_open_query[] = {symbol_open_query, func_open_query};
   env->funcall (env, env->intern (env, "defalias"), 2, args_open_query);
@@ -553,7 +470,7 @@ The third and final argument of the predicate is left unbound and is assumed to 
     env->make_function(env,
                        0, 0,
                        sweep_next_solution,
-                       "Return the next solution from Prolog, or nil if there are none.\
+                       "Return the next solution from Prolog, or nil if there are none.\n\
 See also `sweep-open-query'.",
                        NULL);
   emacs_value args_next_solution[] = {symbol_next_solution, func_next_solution};
@@ -564,7 +481,7 @@ See also `sweep-open-query'.",
     env->make_function(env,
                        0, 0,
                        sweep_cut_query,
-                       "Finalize the current Prolog query.\
+                       "Finalize the current Prolog query.\n\
 This function retains the current instantiation of the query variables.",
                        NULL);
   emacs_value args_cut_query[] = {symbol_cut_query, func_cut_query};
@@ -575,7 +492,7 @@ This function retains the current instantiation of the query variables.",
     env->make_function(env,
                        0, 0,
                        sweep_close_query,
-                       "Finalize the current Prolog query.\
+                       "Finalize the current Prolog query.\n\
 This function drops the current instantiation of the query variables.",
                        NULL);
   emacs_value args_close_query[] = {symbol_close_query, func_close_query};
