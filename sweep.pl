@@ -170,9 +170,16 @@ sweep_module_path_(Module, Path) :-
 
 
 sweep_modules_collection([], Modules) :-
-    findall([M|P], ( module_property(M0, file(P0)), atom_string(M0, M), atom_string(P0, P) ), Modules0, Tail),
-    setof([M|P], M0^P0^N^('$autoload':library_index(N, M0, P0), string_concat(P0, ".pl", P), atom_string(M0, M) ), Tail),
-    list_to_set(Modules0, Modules).
+    findall([M|P], ( module_property(M, file(P0)), atom_string(P0, P) ), Modules0, Tail),
+    setof([M|P], P0^N^('$autoload':library_index(N, M, P0), string_concat(P0, ".pl", P) ), Tail),
+    list_to_set(Modules0, Modules1),
+    maplist(sweep_module_description, Modules1, Modules).
+
+sweep_module_description([M0|P], [M|[P|D]]) :-
+   pldoc_process:doc_comment(M0:module(D0), _, _, _),
+   atom_string(M0, M),
+   atom_string(D0, D).
+sweep_module_description([M0|P], [M|[P]]) :- atom_string(M0, M).
 
 sweep_predicate_location(MFN, [Path|Line]) :-
     term_string(M:F/N, MFN),

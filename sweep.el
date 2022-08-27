@@ -95,14 +95,16 @@ module name, F is a functor name and N is its arity."
   (sweep-open-query "user" "sweep" "sweep_modules_collection" nil)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (when (eq '! (car sol))
+    (when (or (eq (car sol) '!)
+              (eq (car sol) t))
       (cdr sol))))
 
 (defun sweep-module-path (mod)
   (sweep-open-query "user" "sweep" "sweep_module_path" mod)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (when (eq '! (car sol))
+    (when (or (eq (car sol) '!)
+              (eq (car sol) t))
       (cdr sol))))
 
 (defun sweep-read-module-name ()
@@ -111,8 +113,13 @@ module name, F is a functor name and N is its arity."
          (completion-extra-properties
           (list :annotation-function
                 (lambda (key)
-                  (concat (make-string (- 32 (length key)) ? )
-                          (cdr (assoc-string key col)))))))
+                  (let* ((val (cdr (assoc-string key col)))
+                         (pat (car val))
+                         (des (cdr val)))
+                    (concat (make-string (- 32 (length key)) ? )
+                            (if des
+                                (concat pat (make-string (- 64 (length pat)) ? ) des)
+                              pat)))))))
     (completing-read "Module: " col)))
 
 (defun sweep-find-module (mod)
