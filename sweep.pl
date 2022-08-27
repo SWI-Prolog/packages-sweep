@@ -15,6 +15,7 @@
 :- use_module(library(pldoc/doc_wiki)).
 :- use_module(library(pldoc/doc_modes)).
 :- use_module(library(pldoc/doc_man)).
+:- use_module(library(pldoc/man_index)).
 :- use_module(library(lynx/html_text)).
 
 :- dynamic sweep_current_color/3,
@@ -210,13 +211,6 @@ sweep_predicate_description(M:F/N, [S|T]) :-
 
 sweep_predicate_description_(M, F, N, [D]) :-
     doc_comment(M:F/N, _, D0, _), !, atom_string(D0, D).
-% sweep_predicate_description_(_M, F, N, [D]) :-
-%     pldoc_man:load_man_object(F/N, _, _, Dom),
-%     with_output_to(string(DomS), html_text(Dom, [])),
-%     sub_string(DomS, EOL, _, _, '\n'),
-%     sub_string(DomS, EOL, _, 0, Rest),
-%     (   sub_string(Rest, EOS, _, _, '. ')
-%     ->  sub_string(Rest, 0, EOS, _, D)
-%     ;   D=Rest
-%     ).
+sweep_predicate_description_(_M, F, N, [D]) :-
+    man_object_property(F/N, summary(D0)), !, atom_string(D0, D).
 sweep_predicate_description_(_, _, _, []).
