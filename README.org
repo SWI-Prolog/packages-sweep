@@ -132,6 +132,14 @@ Along with {{{kbd(M-x sweep-find-module)}}}, =sweep= provides the
 command {{{kbd(M-x sweep-find-predicate)}}} jumping to the definition a
 loaded or auto-loadable Prolog predicate.
 
+* Installing Prolog packages
+
+#+FINDEX: sweep-pack-install
+The command {{{kbd(M-x sweep-pack-install)}}} can be used to install
+or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
+completion candidates are annotated with description and the version
+of each package.
+
 * Known issues
 :PROPERTIES:
 :CUSTOM_ID: known-issues
