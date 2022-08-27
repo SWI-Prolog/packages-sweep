@@ -29,12 +29,13 @@ packages:
 secrets:
   - 750079bb-9735-473b-bebf-db897c9f0c6b
   - 72d5c3dc-f83f-4cc2-96e3-b2b08f6ee8a0
-environment:
-  LANG: en_US.UTF-8
 sources:
   - git@git.sr.ht:~eshel/sweep
 tasks:
   - build: |
       cd sweep
+      export LANG="en_US.UTF-8"
+      sudo localectl set-locale LANG=en_US.UTF-8
+      localectl set-locale LANG=en_US.UTF-8
       make
       make info
