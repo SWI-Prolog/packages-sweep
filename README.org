@@ -76,6 +76,15 @@ different permutations of the list =(1 2 3 4 5)=:
     num)
 #+end_src
 
+* Finding Prolog code
+
+#+FINDEX: sweep-find-module
+=sweep= provides the command {{{kbd(M-x sweep-find-module)}}} for
+selecting and jumping to the source code of a loaded or auto-loadable
+Prolog module.  =sweep= integrates with Emacs' standard completion API
+to annotate candidate modules in the completion UI with their =PLDoc=
+description when available.
+
 * Indices
 :PROPERTIES:
 :END:
