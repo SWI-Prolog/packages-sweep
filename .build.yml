@@ -40,4 +40,4 @@ tasks:
       localectl set-locale LANG=en_US.UTF-8
       make
       make sweep.info
-      make check
+      LD_PRELOAD=lib/libswipl.so make check
