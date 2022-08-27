@@ -1,9 +1,11 @@
-:- module(sweep, [ sweep_colors/2,
-                   sweep_documentation/2,
-                   sweep_predicate_location/2,
-                   sweep_predicates_collection/2,
-                   sweep_modules_collection/2,
-                   sweep_module_path/2]).
+:- module(sweep,
+          [ sweep_colors/2,
+            sweep_documentation/2,
+            sweep_predicate_location/2,
+            sweep_predicates_collection/2,
+            sweep_modules_collection/2,
+            sweep_module_path/2
+          ]).
 
 :- use_module(library(pldoc)).
 :- use_module(library(listing)).
@@ -176,7 +178,7 @@ sweep_modules_collection([], Modules) :-
     maplist(sweep_module_description, Modules1, Modules).
 
 sweep_module_description([M0|P], [M|[P|D]]) :-
-   pldoc_process:doc_comment(M0:module(D0), _, _, _),
+   doc_comment(M0:module(D0), _, _, _),
    atom_string(M0, M),
    atom_string(D0, D).
 sweep_module_description([M0|P], [M|[P]]) :- atom_string(M0, M).
@@ -188,18 +190,33 @@ sweep_predicate_location(MFN, [Path|Line]) :-
     predicate_property(M:H, file(Path0)), atom_string(Path0, Path).
 
 sweep_predicates_collection([], Preds) :-
-    findall(Pred,
-            ( current_predicate(M0:P0/N),
-              pi_head(P0/N, H),
-              \+ (predicate_property(M0:H, imported_from(M)), M \= M0),
-              format(string(Pred), '~w:~w/~w', [M0, P0, N])
+    findall(M:F/N,
+            ( current_predicate(M:F/N),
+              pi_head(F/N, H),
+              \+ (predicate_property(M:H, imported_from(M1)), M \= M1)
             ),
             Preds0,
             Tail),
-    findall(Pred,
-            ( '$autoload':library_index(F, M0, _),
-              pi_head(P0/N, F),
-              format(string(Pred), '~w:~w/~w', [M0, P0, N])
+    findall(M:F/N,
+            ( '$autoload':library_index(H, M, _),
+              pi_head(F/N, H)
             ),
             Tail),
-    list_to_set(Preds0, Preds).
+    list_to_set(Preds0, Preds1),
+    maplist(sweep_predicate_description, Preds1, Preds).
+
+sweep_predicate_description(M:F/N, [S|T]) :-
+    sweep_predicate_description_(M, F, N, T), format(string(S), '~w:~w/~w', [M, F, N]).
+
+sweep_predicate_description_(M, F, N, [D]) :-
+    doc_comment(M:F/N, _, D0, _), !, atom_string(D0, D).
+% sweep_predicate_description_(_M, F, N, [D]) :-
+%     pldoc_man:load_man_object(F/N, _, _, Dom),
+%     with_output_to(string(DomS), html_text(Dom, [])),
+%     sub_string(DomS, EOL, _, _, '\n'),
+%     sub_string(DomS, EOL, _, 0, Rest),
+%     (   sub_string(Rest, EOS, _, _, '. ')
+%     ->  sub_string(Rest, 0, EOS, _, D)
+%     ;   D=Rest
+%     ).
+sweep_predicate_description_(_, _, _, []).

@@ -62,8 +62,10 @@
   (sweep-open-query "user" "sweep" "sweep_predicates_collection" nil)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (when (eq '! (car sol))
-      (cdr sol))))
+    (let ((car (car sol)))
+      (when (or (eq car '!)
+                (eq car t))
+        (cdr sol)))))
 
 (defun sweep-predicate-location (mfn)
   (sweep-open-query "user" "sweep" "sweep_predicate_location" mfn)
@@ -76,7 +78,14 @@
 
 (defun sweep-read-predicate ()
   "Read a Prolog predicate (M:F/N) from the minibuffer, with completion."
-  (let* ((col (sweep-predicates-collection)))
+  (let* ((col (sweep-predicates-collection))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (key)
+                  (let* ((val (cdr (assoc-string key col))))
+                    (if val
+                        (concat (make-string (- 64 (length key)) ? ) (car val))
+                      nil))))))
     (completing-read "Predicate: " col)))
 
 (defun sweep-find-predicate (mfn)
