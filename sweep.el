@@ -42,13 +42,14 @@
   (if (y-or-n-p "Sweep needs `sweep-module' to work.  Compile it now? ")
       (progn
         (sweep-module-compile)
-        (require 'sweep-module)
-        (sweep-initialize (expand-file-name "bin/swipl"
-                                            (sweep-home-directory))
-                          "-q"
-                          (expand-file-name "sweep.pl"
-                                            (sweep-home-directory))))
+        (require 'sweep-module))
   (error "Sweep will not work until `sweep-module' is compiled!")))
+
+(sweep-initialize (expand-file-name "bin/swipl"
+                                    (sweep-home-directory))
+                  "-q"
+                  (expand-file-name "sweep.pl"
+                                    (sweep-home-directory)))
 
 (declare-function sweep-initialize "sweep-module")
 (declare-function sweep-initialized-p "sweep-module")
