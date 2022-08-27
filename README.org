@@ -93,7 +93,7 @@ The different parts of =sweep= are structured as follows:
 Prolog queries. To examine the results of the query, the function
 =sweep-next-solution= is used. When no more solutions are available, or
 when otherwise further solutions are not required, the query must be
-close with either =sweep-cut-query= or =sweep-close-query=.
+closed with either =sweep-cut-query= or =sweep-close-query=.
 
 #+FINDEX: sweep-open-query
 #+FINDEX: sweep-next-solution
