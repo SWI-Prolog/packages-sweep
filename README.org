@@ -14,8 +14,6 @@
 #+texinfo_header:        @set MAINTAINEREMAIL @email{me@eshelyaron.com}
 #+texinfo_header:        @set MAINTAINERCONTACT @uref{mailto:me@eshelyaron.com,contact the maintainer}
 
-#+macro: kbd (eval (let ((case-fold-search nil) (regexp (regexp-opt '("SPC" "RET" "LFD" "TAB" "BS" "ESC" "DELETE" "SHIFT" "Ctrl" "Meta" "Alt" "Cmd" "Super" "UP" "LEFT" "RIGHT" "DOWN") 'words))) (format "@@texinfo:@kbd{@@%s@@texinfo:}@@" (replace-regexp-in-string regexp "@@texinfo:@key{@@\\&@@texinfo:}@@" $1 t))))
-
 This manual describes the Emacs package =sweep=, which provides an
 embedded SWI-Prolog runtime inside of Emacs.
 
@@ -83,6 +81,11 @@ The different parts of =sweep= are structured as follows:
    If =sweep-module= is not already built, =sweep= will suggest to build
    it when loaded. Note that this may take a couple of minutes as the
    SWI-Prolog runtime may need to be built as well.
+
+* TODO Prolog initialization and cleanup
+
+#+VINDEX: sweep-init-on-load
+#+VINDEX: sweep-init-args
 
 * Querying Prolog
 :PROPERTIES:
@@ -194,21 +197,21 @@ permutations of the list =(1 2 3 4 5)=:
 :END:
 
 #+FINDEX: sweep-find-module
-=sweep= provides the command {{{kbd(M-x sweep-find-module)}}} for
+=sweep= provides the command =M-x sweep-find-module= for
 selecting and jumping to the source code of a loaded or auto-loadable
 Prolog module.  =sweep= integrates with Emacs' standard completion API
 to annotate candidate modules in the completion UI with their =PLDoc=
 description when available.
 
 #+FINDEX: sweep-find-predicate
-Along with {{{kbd(M-x sweep-find-module)}}}, =sweep= provides the
-command {{{kbd(M-x sweep-find-predicate)}}} jumping to the definition a
+Along with =M-x sweep-find-module=, =sweep= provides the
+command =M-x sweep-find-predicate= jumping to the definition a
 loaded or auto-loadable Prolog predicate.
 
 * Installing Prolog packages
 
 #+FINDEX: sweep-pack-install
-The command {{{kbd(M-x sweep-pack-install)}}} can be used to install
+The command =M-x sweep-pack-install= can be used to install
 or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
 completion candidates are annotated with description and the version
 of each package.

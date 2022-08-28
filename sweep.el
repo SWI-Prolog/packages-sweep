@@ -1,19 +1,34 @@
-;;; sweep.el --- SWI-Prolog Embedded in Emacs -*- lexical-binding:t -*-
+;;; sweep.el --- Embedded SWI-Prolog -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2022 Eshel Yaron
 
-;; Authors: Eshel Yaron <me(at)eshelyaron(dot)com>
+;; Author: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
-;; Keywords: prolog programming
+;; Keywords: prolog languages extensions
+;; URL: https://git.sr.ht/~protesilaos/denote
+;; Mailing-List: https://lists.sr.ht/~protesilaos/denote
+;; Package-Version: 0.1.0
+;; Package-Requires: ((emacs "27"))
 
 ;; This file is NOT part of GNU Emacs.
 
-;;; Package-Version: 0.1.0
-;;; Package-Requires: ((emacs "28"))
-
 ;;; Commentary:
+;;
+;; sweep is an embedding of SWI-Prolog in Emacs.  It uses the C
+;; interfaces of both SWI-Prolog and Emacs Lisp to create a
+;; dynamically loaded Emacs module that contains the SWI-Prolog
+;; runtime.  As such, =sweep= has parts written in C, in Prolog and in
+;; Emacs Lisp.
+;;
+;; For more information, see the sweep manual at
+;; <https://eshelyaron.com/sweep.html>.  The manual can also be read
+;; locally by evaluating (info "(sweep) Top")
 
 ;;; Code:
+
+(defun sweep-home-directory ()
+  "Return the installation directory of `sweep'."
+  (file-name-directory (locate-library "sweep.el" t)))
 
 (defgroup sweep nil
   "SWI-Prolog Embedded in Emacs."
@@ -40,8 +55,19 @@
 (defvar sweep-install-buffer-name "*Install sweep*"
   "Name of the buffer used for compiling sweep-module.")
 
-(defun sweep-home-directory ()
-  (file-name-directory (locate-library "sweep.el" t)))
+(defcustom sweep-init-on-load t
+  "If non-nil, initialize Prolog when `sweep' is loaded."
+  :package-version '((sweep "0.1.0"))
+  :type 'boolean
+  :group 'sweep)
+
+(defcustom sweep-init-args (list (expand-file-name
+                                  "sweep.pl"
+                                  (sweep-home-directory)))
+  "List of strings used as initialization arguments for Prolog."
+  :package-version '((sweep "0.1.0"))
+  :type '(list string)
+  :group 'sweep)
 
 ;;;###autoload
 (defun sweep-module-compile ()
@@ -60,44 +86,32 @@
         (message "Compilation of `sweep' module succeeded")
       (error "Compilation of `sweep' module failed!"))))
 
-(unless (require 'sweep-module nil t)
-  (if (y-or-n-p "Sweep needs `sweep-module' to work.  Compile it now? ")
-      (progn
-        (sweep-module-compile)
-        (require 'sweep-module))
-  (error "Sweep will not work until `sweep-module' is compiled!")))
+(defun sweep--ensure-module ()
+  (unless (require 'sweep-module nil t)
+    (if (y-or-n-p "Sweep needs `sweep-module' to work.  Compile it now? ")
+        (progn
+          (sweep-module-compile)
+          (require 'sweep-module))
+      (error "Sweep will not work until `sweep-module' is compiled!"))))
 
-(sweep-initialize (expand-file-name "bin/swipl"
-                                    (sweep-home-directory))
-                  "-q"
-                  (expand-file-name "sweep.pl"
-                                    (sweep-home-directory)))
-
-(declare-function sweep-initialize    "sweep-module")
-(declare-function sweep-initialized-p "sweep-module")
-(declare-function sweep-open-query    "sweep-module")
-(declare-function sweep-cut-query     "sweep-module")
-(declare-function sweep-close-query   "sweep-module")
-(declare-function sweep-next-solution "sweep-module")
-(declare-function sweep-cleanup       "sweep-module")
+(defun sweep-init ()
+  (apply #'sweep-initialize
+         (cons (expand-file-name "bin/swipl" (sweep-home-directory))
+               (cons "-q" sweep-init-args))))
 
 (defun sweep-predicates-collection ()
   (sweep-open-query "user" "sweep" "sweep_predicates_collection" nil)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (let ((car (car sol)))
-      (when (or (eq car '!)
-                (eq car t))
-        (cdr sol)))))
+    (when (sweep-true-p sol)
+      (cdr sol))))
 
 (defun sweep-predicate-location (mfn)
   (sweep-open-query "user" "sweep" "sweep_predicate_location" mfn)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (let ((car (car sol)))
-      (when (or (eq car '!)
-                (eq car t))
-        (cdr sol)))))
+    (when (sweep-true-p sol)
+      (cdr sol))))
 
 (defun sweep-read-predicate ()
   "Read a Prolog predicate (M:F/N) from the minibuffer, with completion."
@@ -128,16 +142,14 @@ module name, F is a functor name and N is its arity."
   (sweep-open-query "user" "sweep" "sweep_modules_collection" nil)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (when (or (eq (car sol) '!)
-              (eq (car sol) t))
+    (when (sweep-true-p sol)
       (cdr sol))))
 
 (defun sweep-module-path (mod)
   (sweep-open-query "user" "sweep" "sweep_module_path" mod)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (when (or (eq (car sol) '!)
-              (eq (car sol) t))
+    (when (sweep-true-p sol)
       (cdr sol))))
 
 (defun sweep-read-module-name ()
@@ -161,13 +173,11 @@ module name, F is a functor name and N is its arity."
   (interactive (list (sweep-read-module-name)))
   (find-file (sweep-module-path mod)))
 
-
 (defun sweep-packs-collection ()
   (sweep-open-query "user" "sweep" "sweep_packs_collection" "")
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (when (or (eq (car sol) '!)
-              (eq (car sol) t))
+    (when (sweep-true-p sol)
       (cdr sol))))
 
 (defun sweep-read-pack-name ()
@@ -205,6 +215,9 @@ module name, F is a functor name and N is its arity."
 
 ;; (add-to-list 'load-path (file-name-directory (buffer-file-name)))
 ;; (require 'sweep)
+
+(sweep--ensure-module)
+(when sweep-init-on-load (sweep-init))
 
 (provide 'sweep)
 
