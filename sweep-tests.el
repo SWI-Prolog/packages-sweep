@@ -1,3 +1,11 @@
+(ert-deftest lists:member/2 ()
+  "Tests calling the Prolog predicate permutation/2 from Elisp."
+  (should (equal (sweep-open-query "user" "lists" "member" (list 1 2 3) t) t))
+  (should (equal (sweep-next-solution) (cons t 1)))
+  (should (equal (sweep-next-solution) (cons t 2)))
+  (should (equal (sweep-next-solution) (cons '! 3)))
+  (should (equal (sweep-cut-query) t)))
+
 (ert-deftest lists:permutation/2 ()
   "Tests calling the Prolog predicate permutation/2 from Elisp."
   (should (equal (sweep-open-query "user" "lists" "permutation" (list 1 2 3)) t))

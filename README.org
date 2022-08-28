@@ -95,13 +95,13 @@ The different parts of =sweep= are structured as follows:
 #+FINDEX: sweep-open-query
 =sweep= provides the Elisp function =sweep-open-query= for invoking Prolog
 predicates.  The invoked predicate must be of arity two and will be
-called in mode =p(+In, -Out)=, i.e. the predicate should treat the first
-argument as input and expect a variable for the second argument which
-should be unified with the some output.  This restriction is placed in
-order to facilitate a natural calling convention between Elisp, a
-functional language, and Prolog, a logical one.
+called in mode =p(+In, -Out)= i.e. the predicate should treat the
+first argument as input and expect a variable for the second argument
+which should be unified with the some output.  This restriction is
+placed in order to facilitate a natural calling convention between
+Elisp, a functional language, and Prolog, a logical one.
 
-The =sweep-open-query= function takes four arguments, the first three
+The =sweep-open-query= function takes five arguments, the first three
 are strings which denote:
 - The name of the Prolog context module from which to execute the
   query,
@@ -111,7 +111,10 @@ are strings which denote:
 
 The fourth argument to =sweep-open-query= is converted into a Prolog
 term and used as the first argument of the predicate (see [[Conversion
-of Elisp objects to Prolog terms]]).
+of Elisp objects to Prolog terms]]).  The fifth argument is an
+optional "reverse" flag, when this flag is set to non-nil, the order
+of the arguments is reversed such the predicate is called in mode
+=p(-Out, +In)= rather than =p(+In, -Out)=.
 
 #+FINDEX: sweep-next-solution
 The function =sweep-next-solution= can be used to examine the results of

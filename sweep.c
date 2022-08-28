@@ -359,10 +359,14 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   char *      f = NULL;
   term_t      a = PL_new_term_refs(2);
   emacs_value r = enil(env);
+  emacs_value s = NULL;
 
   (void)data;
-  (void)nargs;
-
+  if (nargs == 4) {
+    s = enil(env);
+  } else {
+    s = args[4];
+  }
 
   if (PL_current_query() != 0) {
     ethrow(env, "Prolog is already executing a query");
@@ -385,12 +389,12 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
 
   p = PL_predicate(f, 2, m);
 
-  if (value_to_term(env, args[3], a+0) < 0) {
+  if (value_to_term(env, args[3], a+(env->is_not_nil(env, s) ? 1 : 0)) < 0) {
     goto cleanup;
   }
   PL_open_query(n, PL_Q_NODEBUG | PL_Q_EXT_STATUS | PL_Q_CATCH_EXCEPTION, p, a);
 
-  o = a+1;
+  o = a+(env->is_not_nil(env, s) ? 0 : 1);
 
   r = et(env);
 
@@ -484,13 +488,14 @@ REST is passed as the rest of the command line arguments to Prolog.",
   emacs_value symbol_open_query = env->intern (env, "sweep-open-query");
   emacs_value func_open_query =
     env->make_function(env,
-                       4, 4,
+                       4, 5,
                        sweep_open_query,
                        "Query Prolog.\n\
 ARG1 is a string denoting the context module for the query.\n\
 ARG2 and ARG3 are strings designating the module and predicate name of the Prolog predicate to invoke, which must be of arity 2.\n\
 ARG4 is any object that can be converted to a Prolog term, and will be passed as the first argument of the invoked predicate.\n\
 The second argument of the predicate is left unbound and is assumed to treated by the invoked predicate as an output variable.\n\
+If ARG5 is non-nil, reverse the order of the predicate arguments such that the first argument is the output variable and the second argument is the input term derived from ARG4.
 Further instantiations of the output variable can be examined via `sweep-next-solution'.",
                        NULL);
   emacs_value args_open_query[] = {symbol_open_query, func_open_query};
