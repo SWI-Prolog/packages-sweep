@@ -89,21 +89,94 @@ The different parts of =sweep= are structured as follows:
 :CUSTOM_ID: querying-prolog
 :END:
 
-=sweep= provides the Elisp function =sweep-open-query= for initiating
-Prolog queries. To examine the results of the query, the function
-=sweep-next-solution= is used. When no more solutions are available, or
-when otherwise further solutions are not required, the query must be
-closed with either =sweep-cut-query= or =sweep-close-query=.
-
 #+FINDEX: sweep-open-query
+=sweep= provides the Elisp function =sweep-open-query= for invoking Prolog
+predicates.  The invoked predicate must be of arity two and will be
+called in mode =p(+In, -Out)=, i.e. the predicate should treat the first
+argument as input and expect a variable for the second argument which
+should be unified with the some output.  This restriction is placed in
+order to facilitate a natural calling convention between Elisp, a
+functional language, and Prolog, a logical one.
+
+The =sweep-open-query= function takes four arguments, the first three
+are strings which denote:
+- The name of the Prolog context module from which to execute the
+  query,
+- The name of the module in which the invoked predicate is defined,
+  and
+- The name of the predicate to call.
+
+The fourth argument to =sweep-open-query= is converted into a Prolog
+term and used as the first argument of the predicate (see [[Conversion
+of Elisp objects to Prolog terms]]).
+
 #+FINDEX: sweep-next-solution
+The function =sweep-next-solution= can be used to examine the results of
+a query.  If the query succeeded, =sweep-next-solution= returns a cons
+cell whose =car= is either the symbol =!= when the success was
+deterministic or =t= otherwise, and the =cdr= is the current value of the
+second (output) Prolog argument converted to an Elisp object (see
+[[Conversion of Prolog terms to Elisp objects]]).  If the query failed,
+=sweep-next-solution= returns =nil=.
+
+
 #+FINDEX: sweep-cut-query
 #+FINDEX: sweep-close-query
+=sweep= only executes one Prolog query at a given time, thus queries
+opened with =sweep-open-query= need to be closed before other queries
+can be opened.  When no more solutions are available for the current
+query (i.e. after =sweep-next-solution= returned =nil=), or when otherwise
+further solutions are not of interest, the query must be closed with
+either =sweep-cut-query= or =sweep-close-query=. Both of these functions
+close the current query, but =sweep-close-query= also destroys any
+Prolog bindings created by the query.
 
-As an example, we show an invocation of the non-deterministic
-predicate =lists:permutation/2= from Elisp, which yields the number of
-different permutations of the list =(1 2 3 4 5)=:
+** Conversion of Elisp objects to Prolog terms
 
+=sweep= converts Elisp objects into Prolog terms to allow the Elisp
+programmers to specify arguments for Prolog predicates invocations (see
+=sweep-open-query=).  Seeing as some Elisp objects, like Elisp compiled
+functions, wouldn't be as useful for a passing to Prolog as others,
+=sweep= only converts Elisp objects of certain types to Prolog, namely
+we convert /trees of strings and numbers/:
+
+- Elisp strings are converted to equivalent Prolog strings.
+- Elisp integers are converted to equivalent Prolog integers.
+- Elisp floats are converted to equivalent Prolog floats.
+- The Elisp =nil= object is converted to the Prolog empty list =[]=.
+- Elisp cons cells are converted to Prolog lists whose head and tail
+  are the Prolog representations of the =car= and the =cdr= of the cons.
+
+** Conversion of Prolog terms to Elisp objects
+
+=sweep= converts Prolog terms into Elisp object to allow efficient
+processing of Prolog query results in Elisp (see =sweep-next-solution=).
+
+- Prolog strings are converted to equivalent Elisp strings.
+- Prolog integers are converted to equivalent Elisp integers.
+- Prolog floats are converted to equivalent Elisp floats.
+- A Prolog atom =foo= is converted to a cons cell =(atom . "foo")=.
+- The Prolog empty list =[]= is converted to the Elisp =nil= object.
+- Prolog lists are converted to Elisp cons cells whose =car= and =cdr= are
+  the representations of the head and the tail of the list.
+- Prolog compounds are converted to list whose first element is the
+  symbol =compound=. The second element is a string denoting the functor
+  name of the compound, and the rest of the elements are the arguments
+  of the compound in their Elisp representation.
+- All other Prolog terms (variables, blobs and dicts) are currently
+  represented in Elisp only by their type:
+  + Prolog variables are converted to the symbol =variable=,
+  + Prolog blobs are converted to the symbol =blob=, and
+  + Prolog dicts are converted to the symbol =dict=.
+
+** Example - counting solutions for a Prolog predicate in Elisp
+
+As an example of using the =sweep= interface for executing Prolog
+queries, we show an invocation of the non-deterministic predicate
+=lists:permutation/2= from Elisp where we count the number of different
+permutations of the list =(1 2 3 4 5)=:
+
+#+name: count-list-permutations
 #+begin_src emacs-lisp
   (sweep-open-query "user" "lists" "permutation" '(1 2 3 4 5))
   (let ((num 0)

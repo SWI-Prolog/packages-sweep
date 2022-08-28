@@ -91,8 +91,17 @@ term_to_value_integer(emacs_env *eenv, term_t t) {
   emacs_value v = NULL;
   int64_t     l = -1;
   if (PL_get_int64(t, &l)) {
-
     v = eenv->make_integer(eenv, l);
+  }
+  return v;
+}
+
+static emacs_value
+term_to_value_float(emacs_env *eenv, term_t t) {
+  emacs_value v = NULL;
+  double      l = -1;
+  if (PL_get_float(t, &l)) {
+    v = eenv->make_float(eenv, l);
   }
   return v;
 }
@@ -140,12 +149,6 @@ emacs_value
 term_to_value_blob(emacs_env *env, term_t t) {
   (void)t;
   return env->intern(env, "blob");
-}
-
-emacs_value
-term_to_value_float(emacs_env *env, term_t t) {
-  (void)t;
-  return env->intern(env, "float");
 }
 
 emacs_value
@@ -213,7 +216,7 @@ term_to_value(emacs_env *env, term_t t) {
   case PL_BLOB:
     return term_to_value_blob(env, t);
   case PL_FLOAT:
-    return term_to_value_blob(env, t);
+    return term_to_value_float(env, t);
   default:
     /* ethrow(env, "Prolog to Elisp conversion failed"); */
     /* return NULL; */
@@ -230,6 +233,12 @@ int
 value_to_term_integer(emacs_env *env, emacs_value v, term_t t) {
   intmax_t l = env->extract_integer(env, v);
   return PL_put_int64(t, l);
+}
+
+int
+value_to_term_float(emacs_env *env, emacs_value v, term_t t) {
+  double l = env->extract_float(env, v);
+  return PL_put_float(t, l);
 }
 
 int
@@ -260,6 +269,8 @@ value_to_term(emacs_env *env, emacs_value v, term_t t) {
       r = value_to_term_integer(env, v, t);
     } else if (env->eq(env, vt, env->intern(env, "cons"))) {
       r = value_to_term_list(env, v, t);
+    } else if (env->eq(env, vt, env->intern(env, "float"))) {
+      r = value_to_term_float(env, v, t);
     } else r = -1;
   } else r = PL_put_nil(t);
 
@@ -347,9 +358,11 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   char *      c = NULL;
   char *      f = NULL;
   term_t      a = PL_new_term_refs(2);
+  emacs_value r = enil(env);
 
   (void)data;
   (void)nargs;
+
 
   if (PL_current_query() != 0) {
     ethrow(env, "Prolog is already executing a query");
@@ -379,12 +392,14 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
 
   o = a+1;
 
+  r = et(env);
+
  cleanup:
   if (c != NULL) free(c);
   if (m != NULL) free(m);
   if (f != NULL) free(f);
 
-  return et(env);
+  return r;
 }
 
 static emacs_value

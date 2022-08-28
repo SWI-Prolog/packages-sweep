@@ -11,8 +11,8 @@
   (should (equal (sweep-cut-query) t)))
 
 (ert-deftest system:=/2 ()
-  "Tests calling the Prolog predicate permutation/2 from Elisp."
-  (should (equal (sweep-open-query "user" "system" "=" (list 1 2 3)) t))
-  (should (equal (sweep-next-solution) (list '! 1 2 3)))
+  "Tests unifying Prolog terms with =/2 from Elisp."
+  (should (equal (sweep-open-query "user" "system" "=" (list 1 nil (list "foo" "bar") 3.14)) t))
+  (should (equal (sweep-next-solution) (list '! 1 nil (list "foo" "bar") 3.14)))
   (should (equal (sweep-next-solution) nil))
   (should (equal (sweep-cut-query) t)))
