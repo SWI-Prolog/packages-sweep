@@ -33,7 +33,7 @@ CMAKE_OPTIONS += -DSWIPL_INSTALL_IN_LIB=ON
 
 .PHONY: clean all swipl check
 
-all: $(TARGET) $(BASENAME).info
+all: $(TARGET)
 
 $(OBJECT): $(SOURCE) lib/libswipl.$(SOEXT)
 	$(CC) $(CFLAGS) -o $@ -c $(SOURCE)

@@ -495,7 +495,7 @@ ARG1 is a string denoting the context module for the query.\n\
 ARG2 and ARG3 are strings designating the module and predicate name of the Prolog predicate to invoke, which must be of arity 2.\n\
 ARG4 is any object that can be converted to a Prolog term, and will be passed as the first argument of the invoked predicate.\n\
 The second argument of the predicate is left unbound and is assumed to treated by the invoked predicate as an output variable.\n\
-If ARG5 is non-nil, reverse the order of the predicate arguments such that the first argument is the output variable and the second argument is the input term derived from ARG4.
+If ARG5 is non-nil, reverse the order of the predicate arguments such that the first argument is the output variable and the second argument is the input term derived from ARG4.\n\
 Further instantiations of the output variable can be examined via `sweep-next-solution'.",
                        NULL);
   emacs_value args_open_query[] = {symbol_open_query, func_open_query};

@@ -26,10 +26,6 @@
 
 ;;; Code:
 
-(defun sweep-home-directory ()
-  "Return the installation directory of `sweep'."
-  (file-name-directory (locate-library "sweep.el" t)))
-
 (defgroup sweep nil
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
@@ -63,7 +59,7 @@
 
 (defcustom sweep-init-args (list (expand-file-name
                                   "sweep.pl"
-                                  (sweep-home-directory)))
+                                  (file-name-directory load-file-name)))
   "List of strings used as initialization arguments for Prolog."
   :package-version '((sweep "0.1.0"))
   :type '(list string)
@@ -74,7 +70,7 @@
   "Compile sweep-module."
   (interactive)
   (let* ((sweep-directory
-          (shell-quote-argument (sweep-home-directory)))
+          (shell-quote-argument (file-name-directory load-file-name)))
          (make-commands
           (concat
            "cd " sweep-directory "; make; cd -"))
@@ -96,7 +92,8 @@
 
 (defun sweep-init ()
   (apply #'sweep-initialize
-         (cons (expand-file-name "bin/swipl" (sweep-home-directory))
+         (cons (expand-file-name "bin/swipl" (file-name-directory
+                                              load-file-name))
                (cons "-q" sweep-init-args))))
 
 (defun sweep-predicates-collection ()
