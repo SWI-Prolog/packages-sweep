@@ -5,6 +5,7 @@
             sweep_predicates_collection/2,
             sweep_modules_collection/2,
             sweep_packs_collection/2,
+            sweep_start_prolog_server/2,
             sweep_pack_install/2,
             sweep_module_path/2
           ]).
@@ -20,6 +21,7 @@
 :- use_module(library(pldoc/man_index)).
 :- use_module(library(lynx/html_text)).
 :- use_module(library(prolog_pack)).
+:- use_module(library(prolog_server)).
 
 :- dynamic sweep_current_color/3,
            sweep_open/2,
@@ -230,3 +232,11 @@ sweep_pack_info(pack(Name0, _, Desc0, Version0, URLS0), [Name, Desc, Version, UR
 
 sweep_pack_install(PackName, []) :-
     atom_string(Pack, PackName), pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
+
+
+% sweep_expand_file_name([SpecString|_Dir], Path) :-
+%     term_string(Spec, String),
+%     absolute_file_name(library(lists), Path, [access(exist), extensions(['pl', '']), solutions(all)]).
+
+sweep_start_prolog_server(Port, []) :-
+    prolog_server(Port, []).

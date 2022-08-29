@@ -194,6 +194,21 @@ permutations of the list =(1 2 3 4 5)=:
     num)
 #+end_src
 
+
+* The Prolog top-level
+
+#+FINDEX: sweep-top-level
+=sweep= provides a classic Prolog top-level interface for interacting
+with the embedded Prolog runtime.  To start the top-level, use =M-x
+sweep-top-level=.  This open a dedicated buffer called
+=*sweep-top-level*= which hosts a live Prolog top-level.  If the
+top-level buffer already exists, =sweep-top-level= will reuse it.  To
+create another one or more top-level buffers, run the command =C-x x u=
+(or =M-x rename-uniquely=) in the buffer called =*sweep-top-level*= and
+then run =M-x sweep-top-level= again.  This will change the name of the
+original top-level buffer to something like =*sweep-top-level*<2>= and
+allow the new top-level to claim the buffer name =*sweep-top-level*=.
+
 * Finding Prolog code
 :PROPERTIES:
 :CUSTOM_ID: finding-prolog-code

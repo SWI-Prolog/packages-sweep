@@ -26,6 +26,8 @@
 
 ;;; Code:
 
+(require 'comint)
+
 (defgroup sweep nil
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
@@ -65,6 +67,9 @@
   :type '(list string)
   :group 'sweep)
 
+
+(defvar sweep-prolog-server-port 12345)
+
 ;;;###autoload
 (defun sweep-module-compile ()
   "Compile sweep-module."
@@ -90,11 +95,23 @@
           (require 'sweep-module))
       (error "Sweep will not work until `sweep-module' is compiled!"))))
 
+(defun sweep-start-prolog-server ()
+  (sweep-open-query "user"
+                    "sweep"
+                    "sweep_start_prolog_server"
+                    sweep-prolog-server-port)
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    sol))
+
 (defun sweep-init ()
+  (setq sweep-prolog-server-port (+ (random 10000)
+                                    sweep-prolog-server-port))
   (apply #'sweep-initialize
          (cons (expand-file-name "bin/swipl" (file-name-directory
                                               load-file-name))
-               (cons "-q" sweep-init-args))))
+               (cons "-q" sweep-init-args)))
+  (sweep-start-prolog-server))
 
 (defun sweep-predicates-collection ()
   (sweep-open-query "user" "sweep" "sweep_predicates_collection" nil)
@@ -208,13 +225,57 @@ module name, F is a functor name and N is its arity."
         (message "Package install successful.")
       (user-error "Pacakge installation failed"))))
 
+;; (defun sweep-file-handler (operation &rest args)
+;;   (cond ((eq operation 'expand-file-name) (apply sweep-expand-file-name args) )
+;;         ;; ((eq operation 'file-name-all-completions))
+;;         ;; ((eq operation 'file-name-completion))
+;;         (t (let ((inhibit-file-name-handlers
+;;                   (cons 'my-file-handler
+;;                         (and (eq inhibit-file-name-operation operation)
+;;                              inhibit-file-name-handlers)))
+;;                  (inhibit-file-name-operation operation))
+;;              (apply operation args)))))
+
+;; (defun sweep-expand-file-name (name &optional dir)
+;;   (sweep-open-query "user" "sweep" "sweep_expand_file_name" (cons name dir))
+;;   (let ((sol (sweep-next-solution)))
+;;     (sweep-close-query)
+;;     (when (sweep-true-p sol)
+;;       (cdr sol))))
+
+;;;###autoload
+(defun sweep-top-level ()
+  "Start an interactive Prolog top-level."
+  (interactive)
+  (let ((buf (get-buffer-create "*sweep-top-level*")))
+    (with-current-buffer buf
+      (unless (eq major-mode 'sweep-top-level-mode)
+       (sweep-top-level-mode)))
+    (make-comint-in-buffer "sweep-top-level"
+                           buf
+                           (cons "localhost"
+                                 sweep-prolog-server-port))
+    (select-window (display-buffer buf))))
+
+
+;;;###autoload
+(define-derived-mode sweep-top-level-mode comint-mode "sweep Top-level"
+  "Major mode for interacting with an inferior Prolog interpreter."
+  :group 'sweep-top-level
+  (setq-local comint-prompt-regexp           (rx (seq line-start "?- "))
+              comint-input-ignoredups        t
+              comint-prompt-read-only        t
+              comint-delimiter-argument-list '(?,)
+              comment-start "%"))
+
+
+(sweep--ensure-module)
+(when sweep-init-on-load (sweep-init))
+
 ;;;; Testing:
 
 ;; (add-to-list 'load-path (file-name-directory (buffer-file-name)))
 ;; (require 'sweep)
-
-(sweep--ensure-module)
-(when sweep-init-on-load (sweep-init))
 
 (provide 'sweep)
 
