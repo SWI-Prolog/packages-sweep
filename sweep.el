@@ -257,6 +257,17 @@ module name, F is a functor name and N is its arity."
                                  sweep-prolog-server-port))
     (select-window (display-buffer buf))))
 
+(defun sweep-top-level--post-self-insert-function ()
+  (when-let ((pend (cdr comint-last-prompt)))
+    (let* ((pstart (car comint-last-prompt))
+           (prompt (buffer-substring-no-properties pstart pend)))
+      (when (and (= (point) (1+ pend))
+                 (not (string-empty-p  prompt))
+                 (not (string= "?- "   (substring prompt
+                                                  (- pend pstart 3)
+                                                  (- pend pstart))))
+                 (not (string= "|    " prompt)))
+        (comint-send-input)))))
 
 ;;;###autoload
 (define-derived-mode sweep-top-level-mode comint-mode "sweep Top-level"
@@ -266,7 +277,8 @@ module name, F is a functor name and N is its arity."
               comint-input-ignoredups        t
               comint-prompt-read-only        t
               comint-delimiter-argument-list '(?,)
-              comment-start "%"))
+              comment-start "%")
+  (add-hook 'post-self-insert-hook #'sweep-top-level--post-self-insert-function nil t))
 
 
 (sweep--ensure-module)
