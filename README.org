@@ -206,6 +206,25 @@ permutations of the list =(1 2 3 4 5)=:
     num)
 #+end_src
 
+** Calling Elisp function inside Prolog queries
+:PROPERTIES:
+:CUSTOM_ID: funcall-from-prolog
+:END:
+
+The =sweep-module= defines the foreign Prolog predicates =sweep_funcall/2=
+and =sweep_funcall/3=, which allow for calling Elisp functions from
+Prolog code.  These predicates may only be called in the context of a
+Prolog query initiated by =sweep-open-query=, i.e. only in the Prolog
+thread controlled by Emacs.  The first argument to these predicates is
+a Prolog string holding the name of the Elisp function to call.  The
+last argument to these predicates is unified with the return value of
+the Elisp function, represented as a Prolog term (see [[Conversion of
+Elisp objects to Prolog terms]]).  The second argument of
+=sweep_funcall/3= is converted to an Elisp object (see [[Conversion of
+Prolog terms to Elisp objects]]) and passed as a sole argument to the
+invoked Elisp function.  The =sweep_funcall/2= variant invokes the Elisp
+function without any arguments.
+
 
 * The Prolog top-level
 :PROPERTIES:
