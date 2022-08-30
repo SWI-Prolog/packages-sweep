@@ -65,7 +65,7 @@ sweep_colors(Path, Contents, Colors) :-
     seek(Contents, 0, bof, _),
     prolog_colourise_stream(Contents,
                             Path,
-                            sweep_server_handle_color),
+                            sweep_handle_color),
     erase(Ref0),
     erase(Ref1),
     findall([B,L,T],
@@ -76,39 +76,39 @@ sweep_colors(Path, Contents, Colors) :-
             sweep_current_comment(B, L, T),
             Comments).
 
-sweep_server_handle_color(comment(C), B0, L) =>
+sweep_handle_color(comment(C), B0, L) =>
     B is B0 + 1,
     assertz(sweep_current_comment(B, L, C)).
-sweep_server_handle_color(syntax_error(D, EB-EE), _B, _L) =>
+sweep_handle_color(syntax_error(D, EB-EE), _B, _L) =>
     EL is EE-EB,
     assertz(sweep_current_color(EB,
                                   EL,
                                   syntax_error(D, EB-EE))).
-sweep_server_handle_color(head_term(meta, Head), B0, L) =>
+sweep_handle_color(head_term(meta, Head), B0, L) =>
     B is B0 + 1,
     assertz(sweep_current_color(B, L, head_term(meta, Head))).
-sweep_server_handle_color(head_term(Kind, Head), B0, L) =>
+sweep_handle_color(head_term(Kind, Head), B0, L) =>
     B is B0+1,
     pi_head(PI, Head),
     assertz(sweep_current_color(B,
                                 L,
                                 head_term(Kind, PI))).
-sweep_server_handle_color(head(Kind, Head), B0, L) =>
+sweep_handle_color(head(Kind, Head), B0, L) =>
     B is B0+1,
     pi_head(PI, Head),
     assertz(sweep_current_color(B, L, head(Kind, PI))).
-sweep_server_handle_color(goal(Kind, Head), B0, L) =>
+sweep_handle_color(goal(Kind, Head), B0, L) =>
     B is B0+1,
     pi_head(PI, Head),
     assertz(sweep_current_color(B, L, goal(Kind, PI))).
-sweep_server_handle_color(goal_term(meta, Goal), B0, L) =>
+sweep_handle_color(goal_term(meta, Goal), B0, L) =>
     B is B0 + 1,
     assertz(sweep_current_color(B, L, goal_term(meta, Goal))).
-sweep_server_handle_color(goal_term(Kind, Goal), B0, L) =>
+sweep_handle_color(goal_term(Kind, Goal), B0, L) =>
     B is B0 + 1,
     pi_head(PI, Goal),
     assertz(sweep_current_color(B, L, goal_term(Kind, PI))).
-sweep_server_handle_color(T, B0, L) =>
+sweep_handle_color(T, B0, L) =>
     B is B0 + 1,
     assertz(sweep_current_color(B, L, T)).
 
@@ -195,6 +195,14 @@ sweep_predicate_location(MFN, [Path|Line]) :-
     predicate_property(M:H, line_count(Line)),
     predicate_property(M:H, file(Path0)), atom_string(Path0, Path).
 
+% sweep_predicates_try_completion(Match, "match") :-
+%     term_string(M:F/N, Match, [syntax_errors(quiet)]),
+%     current_predicate(M:F/N), !.
+% sweep_predicates_try_completion(Prefix, "match") :-
+%     term_string(M:F,   Prefix, [syntax_errors(quiet)]),
+%     findall(M:F/N, current_predicate(M:F/N),
+%     current_predicate(M:F/N), !.
+
 sweep_predicates_collection([], Preds) :-
     findall(M:F/N,
             ( current_predicate(M:F/N),
@@ -234,9 +242,32 @@ sweep_pack_install(PackName, []) :-
     atom_string(Pack, PackName), pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
 
 
-% sweep_expand_file_name([SpecString|_Dir], Path) :-
-%     term_string(Spec, String),
-%     absolute_file_name(library(lists), Path, [access(exist), extensions(['pl', '']), solutions(all)]).
-
 sweep_start_prolog_server(Port, []) :-
     prolog_server(Port, []).
+
+sweep_colourise_query([String|Offset], _) :-
+    prolog_colourise_query(String, module(sweep), sweep_handle_query_color(Offset)).
+
+sweep_handle_query_color(Offset, Col, Beg, Len) :-
+    sweep_color_normalized(Col, Nom),
+    Start is Beg + Offset,
+    sweep_funcall("sweep--colourise", [Start,Len|Nom], _).
+
+sweep_color_normalized(Col, Nom) :-
+    Col =.. [Nom0|Rest],
+    sweep_color_normalized_(Nom0, Rest, Nom).
+
+sweep_color_normalized_(Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
+    sweep_color_goal(Goal0),
+    !,
+    atom_string(Goal0, Goal),
+    term_string(Kind0, Kind),
+    pi_head(F0/N, Head),
+    atom_string(F0, F).
+sweep_color_normalized_(Nom0, _, Nom) :-
+    atom_string(Nom0, Nom).
+
+sweep_color_goal(goal).
+sweep_color_goal(goal_term).
+sweep_color_goal(head).
+sweep_color_goal(head_term).

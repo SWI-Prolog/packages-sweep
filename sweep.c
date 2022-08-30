@@ -6,6 +6,7 @@
 int plugin_is_GPL_compatible;
 
 term_t o = 0;
+emacs_env * current_env = NULL;
 
 char*
 estring_to_cstring(emacs_env *eenv, emacs_value estring, ptrdiff_t *len_p) {
@@ -113,8 +114,6 @@ term_to_value_string(emacs_env *eenv, term_t t) {
   size_t      l = -1;
   if (PL_get_nchars(t, &l, &string, CVT_STRING|REP_UTF8)) {
     v = eenv->make_string(eenv, string, l);
-  } else {
-    v = eenv->make_string(eenv, "sweep conversion error", 22);
   }
   return v;
 }
@@ -335,6 +334,8 @@ sweep_next_solution(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *da
     return NULL;
   }
 
+  current_env = env;
+
   switch (PL_next_solution(d)) {
   case PL_S_EXCEPTION:
     return econs(env, env->intern(env, "exception"), term_to_value(env, PL_exception(d)));
@@ -392,6 +393,9 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   if (value_to_term(env, args[3], a+(env->is_not_nil(env, s) ? 1 : 0)) < 0) {
     goto cleanup;
   }
+
+  current_env = env;
+
   PL_open_query(n, PL_Q_NODEBUG | PL_Q_EXT_STATUS | PL_Q_CATCH_EXCEPTION, p, a);
 
   o = a+(env->is_not_nil(env, s) ? 0 : 1);
@@ -451,11 +455,52 @@ sweep_cleanup(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   return env->intern(env, (PL_cleanup(PL_CLEANUP_SUCCESS) ? "t" : "nil"));
 }
 
+
 static void provide(emacs_env *env, const char *feature) {
   emacs_value Qfeat = env->intern(env, feature);
   emacs_value Qprovide = env->intern(env, "provide");
 
   env->funcall(env, Qprovide, 1, (emacs_value[]){Qfeat});
+}
+
+static foreign_t
+sweep_funcall0(term_t f, term_t v) {
+  char * string = NULL;
+  emacs_value r = NULL;
+  size_t      l = -1;
+  term_t      n = PL_new_term_ref();
+
+  if (PL_get_nchars(f, &l, &string, CVT_STRING|REP_UTF8)) {
+    r = current_env->funcall(current_env, current_env->intern(current_env, string), 0, NULL);
+    if (value_to_term(current_env, r, n) >= 0) {
+      if (PL_unify(n, v)) {
+        return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+
+static foreign_t
+sweep_funcall1(term_t f, term_t a, term_t v) {
+  char * string = NULL;
+  emacs_value e = NULL;
+  emacs_value r = NULL;
+  size_t      l = -1;
+  term_t      n = PL_new_term_ref();
+
+  if (PL_get_nchars(f, &l, &string, CVT_STRING|REP_UTF8)) {
+    e = term_to_value(current_env, a);
+    if (e != NULL) {
+      r = current_env->funcall(current_env, current_env->intern(current_env, string), 1, &e);
+      if (value_to_term(current_env, r, n) >= 0) {
+        if (PL_unify(n, v)) {
+          return TRUE;
+        }
+      }
+    }
+  }
+  return FALSE;
 }
 
 int
@@ -539,6 +584,9 @@ This function drops the current instantiation of the query variables.",
   emacs_value func_cleanup = env->make_function (env, 0, 0, sweep_cleanup, "Cleanup Prolog.", NULL);
   emacs_value args_cleanup[] = {symbol_cleanup, func_cleanup};
   env->funcall (env, env->intern (env, "defalias"), 2, args_cleanup);
+
+  PL_register_foreign("sweep_funcall", 3, sweep_funcall1, 0);
+  PL_register_foreign("sweep_funcall", 2, sweep_funcall0, 0);
 
   provide(env, "sweep-module");
 

@@ -200,7 +200,6 @@ module name, F is a functor name and N is its arity."
          (completion-extra-properties
           (list :annotation-function
                 (lambda (key)
-                  (message key)
                   (let* ((val (cdr (assoc-string key col)))
                          (des (car val))
                          (ver (cadr val)))
@@ -243,6 +242,284 @@ module name, F is a functor name and N is its arity."
 ;;     (when (sweep-true-p sol)
 ;;       (cdr sol))))
 
+(defgroup sweep-faces nil
+  "Faces used to highlight Prolog code."
+  :group 'sweep)
+
+(eval-when-compile
+  (defmacro sweep-defface (name def doc)
+    "Define sweep face FACE with doc DOC."
+    (declare
+     (indent defun)
+     (doc-string 3))
+    (let ((face (intern (concat "sweep-" (symbol-name name) "-face"))))
+      `(progn
+         (defface ,face
+           '((default :inherit ,def))
+           ,(concat "Face used to highlight " (downcase doc))
+           :group 'sweep-faces)
+         (defvar ,face ',face
+           ,(concat "Name of the face used to highlight " (downcase doc)))))))
+
+(sweep-defface functor font-lock-function-name-face
+  "Functors.")
+
+(sweep-defface arity font-lock-function-name-face
+  "Arities.")
+
+(sweep-defface predicate-indicator font-lock-function-name-face
+  "Predicate indicators.")
+
+(sweep-defface built-in font-lock-keyword-face
+  "Built in predicate calls.")
+
+(sweep-defface neck font-lock-preprocessor-face
+  "Necks.")
+
+(sweep-defface goal font-lock-function-name-face
+  "Unspecified predicate goals.")
+
+(sweep-defface string font-lock-string-face
+  "Strings.")
+
+(sweep-defface comment font-lock-comment-face
+  "Comments.")
+
+(sweep-defface head-local font-lock-builtin-face
+  "Local predicate definitions.")
+
+(sweep-defface head-meta font-lock-preprocessor-face
+  "Meta predicate definitions.")
+
+(sweep-defface head-multifile font-lock-type-face
+  "Multifile predicate definitions.")
+
+(sweep-defface head-extern font-lock-type-face
+  "External predicate definitions.")
+
+(sweep-defface head-unreferenced font-lock-warning-face
+  "Unreferenced predicate definitions.")
+
+(sweep-defface head-exported font-lock-builtin-face
+  "Exported predicate definitions.")
+
+(sweep-defface head-hook font-lock-type-face
+  "Hook definitions.")
+
+(sweep-defface head-iso font-lock-keyword-face
+  "Hook definitions.")
+
+(sweep-defface head-undefined font-lock-warning-face
+  "Undefind head terms.")
+
+(sweep-defface head-public font-lock-builtin-face
+  "Public definitions.")
+
+(sweep-defface meta-spec font-lock-preprocessor-face
+  "Meta argument specifiers.")
+
+(sweep-defface recursion font-lock-builtin-face
+  "Recursive calls.")
+
+(sweep-defface local font-lock-function-name-face
+  "Local predicate calls.")
+
+(sweep-defface autoload font-lock-function-name-face
+  "Autoloaded predicate calls.")
+
+(sweep-defface imported font-lock-function-name-face
+  "Imported predicate calls.")
+
+(sweep-defface extern font-lock-function-name-face
+  "External predicate calls.")
+
+(sweep-defface foreign font-lock-keyword-face
+  "Foreign predicate calls.")
+
+(sweep-defface meta font-lock-type-face
+  "Meta predicate calls.")
+
+(sweep-defface undefined font-lock-warning-face
+  "Undefined predicate calls.")
+
+(sweep-defface thread-local font-lock-constant-face
+  "Thread local predicate calls.")
+
+(sweep-defface global font-lock-keyword-face
+  "Global predicate calls.")
+
+(sweep-defface multifile font-lock-function-name-face
+  "Multifile predicate calls.")
+
+(sweep-defface dynamic font-lock-constant-face
+  "Dynamic predicate calls.")
+
+(sweep-defface undefined-import font-lock-warning-face
+  "Undefined imports.")
+
+(sweep-defface html-attribute font-lock-function-name-face
+  "HTML attributes.")
+
+(sweep-defface html-call font-lock-keyword-face
+  "Multifile predicate calls.")
+
+(sweep-defface option-name font-lock-constant-face
+  "Option names.")
+
+(sweep-defface no-option-name font-lock-warning-face
+  "Non-existent option names.")
+
+(sweep-defface flag-name font-lock-constant-face
+  "Flag names.")
+
+(sweep-defface no-flag-name font-lock-warning-face
+  "Non-existent flag names.")
+
+(sweep-defface qq-type font-lock-type-face
+  "Quasi-quotation types.")
+
+(sweep-defface qq-sep font-lock-type-face
+  "Quasi-quotation separators.")
+
+(sweep-defface qq-open font-lock-type-face
+  "Quasi-quotation open sequences.")
+
+(sweep-defface qq-close font-lock-type-face
+  "Quasi-quotation close sequences.")
+
+(sweep-defface op-type font-lock-type-face
+  "Operator types.")
+
+(sweep-defface dict-tag font-lock-constant-face
+  "Dict tags.")
+
+(sweep-defface dict-key font-lock-keyword-face
+  "Dict keys.")
+
+(sweep-defface dict-sep font-lock-keyword-face
+  "Dict separators.")
+
+(sweep-defface type-error font-lock-warning-face
+  "Type errors.")
+
+(sweep-defface instantiation-error font-lock-warning-face
+  "Instantiation errors.")
+
+(sweep-defface file button
+  "File specifiers.")
+
+(sweep-defface no-file font-lock-warning-face
+  "Non-existent file specifiers.")
+
+(sweep-defface file-no-depend font-lock-warning-face
+  "Unused file specifiers.")
+
+(sweep-defface unused-import font-lock-warning-face
+  "Unused imports.")
+
+(sweep-defface identifier font-lock-type-face
+  "Identifiers.")
+
+(sweep-defface hook font-lock-preprocessor-face
+  "Hooks.")
+
+(sweep-defface module font-lock-type-face
+  "Module names.")
+
+(sweep-defface singleton font-lock-warning-face
+  "Singletons.")
+
+(sweep-defface fullstop font-lock-negation-char-face
+  "Fullstops.")
+
+(sweep-defface nil font-lock-keyword-face
+  "The empty list.")
+
+(sweep-defface variable font-lock-variable-name-face
+  "Variables.")
+
+(sweep-defface ext-quant font-lock-keyword-face
+  "Existential quantifiers.")
+
+(sweep-defface control font-lock-keyword-face
+  "Control constructs.")
+
+(sweep-defface atom font-lock-constant-face
+  "Atoms.")
+
+(sweep-defface int font-lock-constant-face
+  "Integers.")
+
+(sweep-defface float font-lock-constant-face
+  "Floats.")
+
+(sweep-defface codes font-lock-constant-face
+  "Codes.")
+
+(sweep-defface error font-lock-warning-face
+  "Unspecified errors.")
+
+(sweep-defface syntax-error error
+  "Syntax errors.")
+
+(sweep-defface structured-comment font-lock-doc-face
+  "Structured comments.")
+
+(defun sweep--colourise (args)
+  "ARGS is a list of the form (BEG LEN . SEM)."
+  (let* ((beg (car  args))
+         (end (+ beg (cadr args)))
+         (arg (cddr args)))
+    (with-silent-modifications
+      (pcase arg
+        (`("goal" . ,g)
+         (put-text-property beg end 'font-lock-face
+                            (pcase g
+                              (`("recursion" . ,_) sweep-recursion-face)
+                              (`("meta" . ,_) sweep-meta-face)
+                              (`("built_in" . ,_) sweep-built-in-face)
+                              (`("undefined" . ,_) sweep-undefined-face)
+                              (_ sweep-goal-face))))
+        ("unused_import"       (put-text-property beg end 'font-lock-face sweep-unused-import-face))
+        ("undefined_import"    (put-text-property beg end 'font-lock-face sweep-undefined-import-face))
+        ("dict_tag"            (put-text-property beg end 'font-lock-face sweep-dict-tag-face))
+        ("dict_key"            (put-text-property beg end 'font-lock-face sweep-dict-key-face))
+        ("dict_sep"            (put-text-property beg end 'font-lock-face sweep-dict-sep-face))
+        ("atom"                (put-text-property beg end 'font-lock-face sweep-atom-face))
+        ("float"               (put-text-property beg end 'font-lock-face sweep-float-face))
+        ("int"                 (put-text-property beg end 'font-lock-face sweep-int-face))
+        ("singleton"           (put-text-property beg end 'font-lock-face sweep-singleton-face))
+        ("option_name"         (put-text-property beg end 'font-lock-face sweep-option-name-face))
+        ("no_option_name"      (put-text-property beg end 'font-lock-face sweep-no-option-name-face))
+        ("control"             (put-text-property beg end 'font-lock-face sweep-control-face))
+        ("var"                 (put-text-property beg end 'font-lock-face sweep-variable-face))
+        ("body"                (put-text-property beg end 'font-lock-face 'default))
+        ("fullstop"            (put-text-property beg end 'font-lock-face sweep-fullstop-face))
+        ("functor"             (put-text-property beg end 'font-lock-face sweep-functor-face))
+        ("arity"               (put-text-property beg end 'font-lock-face sweep-arity-face))
+        ("predicate_indicator" (put-text-property beg end 'font-lock-face sweep-predicate-indicator-face))
+        ("string"              (put-text-property beg end 'font-lock-face sweep-string-face))
+        ("module"              (put-text-property beg end 'font-lock-face sweep-module-face))
+        ;; (other (message "Unknown color term %S" other))
+        ))))
+
+(defun sweep-colourise-query (buffer)
+  (interactive)
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (let* ((beg (cdr comint-last-prompt))
+             (end (point-max))
+             (query (buffer-substring-no-properties beg end)))
+        (with-silent-modifications
+          (font-lock-unfontify-region beg end))
+        (sweep-open-query "user"
+                          "sweep"
+                          "sweep_colourise_query"
+                          (cons query (marker-position beg)))
+        (let ((sol (sweep-next-solution)))
+          (sweep-close-query)
+          sol)))))
+
 ;;;###autoload
 (defun sweep-top-level ()
   "Start an interactive Prolog top-level."
@@ -269,6 +546,8 @@ module name, F is a functor name and N is its arity."
                  (not (string= "|    " prompt)))
         (comint-send-input)))))
 
+(defvar-local sweep-top-level-timer nil "Buffer-local timer.")
+
 ;;;###autoload
 (define-derived-mode sweep-top-level-mode comint-mode "sweep Top-level"
   "Major mode for interacting with an inferior Prolog interpreter."
@@ -278,8 +557,12 @@ module name, F is a functor name and N is its arity."
               comint-prompt-read-only        t
               comint-delimiter-argument-list '(?,)
               comment-start "%")
-  (add-hook 'post-self-insert-hook #'sweep-top-level--post-self-insert-function nil t))
-
+  (add-hook 'post-self-insert-hook #'sweep-top-level--post-self-insert-function nil t)
+  (setq sweep-top-level-timer (run-with-idle-timer 0.2 t #'sweep-colourise-query (current-buffer)))
+  (add-hook 'kill-buffer-hook
+            (lambda ()
+              (when (timerp sweep-top-level-timer)
+                (cancel-timer sweep-top-level-timer)))))
 
 (sweep--ensure-module)
 (when sweep-init-on-load (sweep-init))
