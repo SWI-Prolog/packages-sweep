@@ -59,7 +59,7 @@ The different parts of =sweep= are structured as follows:
 
 1. Clone the =sweep= repository:
    #+begin_src sh
-     git clone --recursive https://git.sr.ht/~eshel/sweep
+     git clone https://git.sr.ht/~eshel/sweep
    #+end_src
 
 2. Optionally, build the C module =sweep-module=:
