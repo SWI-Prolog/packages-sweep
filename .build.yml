@@ -49,4 +49,4 @@ tasks:
       export LD_LIBRARY_PATH=/usr/local/lib
       make
       make sweep.info
-      make check
+      LD_PRELOAD=/usr/local/lib/libswipl.so make check
