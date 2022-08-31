@@ -43,7 +43,7 @@ tasks:
       localectl set-locale LANG=en_US.UTF-8
       cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DSWIPL_INSTALL_IN_LIB=ON -DSWIPL_PACKAGES_ODBC=OFF -DSWIPL_PACKAGES_JAVA=OFF -DSWIPL_PACKAGES_X=OFF -DINSTALL_DOCUMENTATION=OFF -G Ninja ..
       ninja
-      ninja install
+      sudo ninja install
   - build: |
       cd sweep
       export LD_LIBRARY_PATH=/usr/local/lib
