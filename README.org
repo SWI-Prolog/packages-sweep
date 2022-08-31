@@ -82,13 +82,39 @@ The different parts of =sweep= are structured as follows:
    it when loaded. Note that this may take a couple of minutes as the
    SWI-Prolog runtime may need to be built as well.
 
-* TODO Prolog initialization and cleanup
+* Prolog initialization and cleanup
 :PROPERTIES:
 :CUSTOM_ID: prolog-init
 :END:
 
-#+VINDEX: sweep-init-on-load
+#+FINDEX: sweep-initialize
+The embedded SWI-Prolog runtime must be initialized before it can
+start executing queries.  In =sweep=, Prolog initialization is done via
+the C-implemented =sweep-initialize= Elisp function defined in
+=sweep-module=.  =sweep-initialize= takes one or more arguments, which
+must all be strings, and initializes the embedded Prolog as if it were
+invoked externally in a command line with the given strings as command
+line arguments, where the first argument to =sweep-initialize=
+corresponds to =argv[0]=.
+
 #+VINDEX: sweep-init-args
+By default, =sweep.el= will initialize Prolog automatically when it is
+loaded into Emacs.  The arguments used to initialize Prolog in that
+case are determined by the value of the user-option =sweep-init-args=
+which the user is free to extend with e.g.:
+
+#+begin_src emacs-lisp
+  (add-to-list 'sweep-init-args "--stack-limit=512m")
+#+end_src
+
+#+VINDEX: sweep-init-on-load
+To inhibit =sweep= from initializing Prolog on load, set the user-option
+=sweep-init-on-load= to nil.
+
+#+FINDEX: sweep-cleanup
+The embedded Prolog runtime can be reset using the =sweep-cleanup=
+function.  This function cleans up the Prolog state and resources,
+afterwards =sweep-initialize= can be called to start Prolog anew.
 
 * Querying Prolog
 :PROPERTIES:
@@ -126,7 +152,7 @@ cell whose =car= is either the symbol =!= when the success was
 deterministic or =t= otherwise, and the =cdr= is the current value of the
 second (output) Prolog argument converted to an Elisp object (see
 [[Conversion of Prolog terms to Elisp objects]]).  If the query failed,
-=sweep-next-solution= returns =nil=.
+=sweep-next-solution= returns nil.
 
 
 #+FINDEX: sweep-cut-query
@@ -134,7 +160,7 @@ second (output) Prolog argument converted to an Elisp object (see
 =sweep= only executes one Prolog query at a given time, thus queries
 opened with =sweep-open-query= need to be closed before other queries
 can be opened.  When no more solutions are available for the current
-query (i.e. after =sweep-next-solution= returned =nil=), or when otherwise
+query (i.e. after =sweep-next-solution= returned nil), or when otherwise
 further solutions are not of interest, the query must be closed with
 either =sweep-cut-query= or =sweep-close-query=. Both of these functions
 close the current query, but =sweep-close-query= also destroys any
@@ -155,7 +181,7 @@ we convert /trees of strings and numbers/:
 - Elisp strings are converted to equivalent Prolog strings.
 - Elisp integers are converted to equivalent Prolog integers.
 - Elisp floats are converted to equivalent Prolog floats.
-- The Elisp =nil= object is converted to the Prolog empty list =[]=.
+- The Elisp nil object is converted to the Prolog empty list =[]=.
 - Elisp cons cells are converted to Prolog lists whose head and tail
   are the Prolog representations of the =car= and the =cdr= of the cons.
 
@@ -171,7 +197,7 @@ processing of Prolog query results in Elisp (see =sweep-next-solution=).
 - Prolog integers are converted to equivalent Elisp integers.
 - Prolog floats are converted to equivalent Elisp floats.
 - A Prolog atom =foo= is converted to a cons cell =(atom . "foo")=.
-- The Prolog empty list =[]= is converted to the Elisp =nil= object.
+- The Prolog empty list =[]= is converted to the Elisp nil object.
 - Prolog lists are converted to Elisp cons cells whose =car= and =cdr= are
   the representations of the head and the tail of the list.
 - Prolog compounds are converted to list whose first element is the
@@ -231,17 +257,18 @@ function without any arguments.
 :CUSTOM_ID: prolog-top-level
 :END:
 
+#+CINDEX: top-level
 #+FINDEX: sweep-top-level
 =sweep= provides a classic Prolog top-level interface for interacting
 with the embedded Prolog runtime.  To start the top-level, use =M-x
-sweep-top-level=.  This open a dedicated buffer called
-=*sweep-top-level*= which hosts a live Prolog top-level.  If the
-top-level buffer already exists, =sweep-top-level= will reuse it.  To
-create another one or more top-level buffers, run the command =C-x x u=
-(or =M-x rename-uniquely=) in the buffer called =*sweep-top-level*= and
-then run =M-x sweep-top-level= again.  This will change the name of the
-original top-level buffer to something like =*sweep-top-level*<2>= and
-allow the new top-level to claim the buffer name =*sweep-top-level*=.
+sweep-top-level=.  This command opens a buffer called =*sweep-top-level*=
+which hosts the live Prolog top-level.  If the top-level buffer
+already exists, =sweep-top-level= will reuse it by default.  To create
+another one or more top-level buffers, run the command =C-x x u= (or =M-x
+rename-uniquely=) in the buffer called =*sweep-top-level*= and then run
+=M-x sweep-top-level= again.  This will change the name of the original
+top-level buffer to something like =*sweep-top-level*<2>= and allow the
+new top-level to claim the buffer name =*sweep-top-level*=.
 
 * Finding Prolog code
 :PROPERTIES:

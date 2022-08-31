@@ -5,8 +5,7 @@
 ;; Author: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
-;; URL: https://git.sr.ht/~protesilaos/denote
-;; Mailing-List: https://lists.sr.ht/~protesilaos/denote
+;; URL: https://git.sr.ht/~eshel/sweep
 ;; Package-Version: 0.1.0
 ;; Package-Requires: ((emacs "27"))
 
@@ -86,6 +85,14 @@
                  (call-process "sh" nil buffer t "-c" make-commands)))
         (message "Compilation of `sweep' module succeeded")
       (error "Compilation of `sweep' module failed!"))))
+
+(declare-function sweep-initialize    "sweep-module")
+(declare-function sweep-initialized-p "sweep-module")
+(declare-function sweep-open-query    "sweep-module")
+(declare-function sweep-next-solution "sweep-module")
+(declare-function sweep-cut-query     "sweep-module")
+(declare-function sweep-close-query   "sweep-module")
+(declare-function sweep-cleanup       "sweep-module")
 
 (defun sweep--ensure-module ()
   (unless (require 'sweep-module nil t)
