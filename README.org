@@ -79,8 +79,7 @@ The different parts of =sweep= are structured as follows:
    #+end_src
 
    If =sweep-module= is not already built, =sweep= will suggest to build
-   it when loaded. Note that this may take a couple of minutes as the
-   SWI-Prolog runtime may need to be built as well.
+   it when loaded.
 
 * Prolog initialization and cleanup
 :PROPERTIES:
@@ -298,26 +297,6 @@ or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
 completion candidates are annotated with description and the version
 of each package.
 
-* Known issues
-:PROPERTIES:
-:CUSTOM_ID: known-issues
-:END:
-
-** Collision between Emacs' and SWI-Prolog's use of GMP
-:PROPERTIES:
-:CUSTOM_ID: gmp-collision
-:END:
-
-Currently, =sweep= builds the SWI-Prolog runtime without GMP support
-(using the =cmake= flag =-DUSE_GMP=OFF=). Initializing SWI-Prolog inside
-Emacs with GMP support /enabled/ for SWI-Prolog causes Emacs to crash
-during garbage collection, because the SWI-Prolog =mp_free= routine is
-mistakenly invoked to cleanup Elisp big integers.
-
-Aside from the obvious problem of not being able to utilize SWI-Prolog
-support for unbounded integer arithmetic, this issue also prevents us
-from using an existing =libswipl= since it is most likely to have been
-built with GMP enabled.
 
 * Indices
 :PROPERTIES:
