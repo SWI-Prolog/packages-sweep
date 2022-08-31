@@ -46,6 +46,7 @@ tasks:
       ninja install
   - build: |
       cd sweep
+      export LD_LIBRARY_PATH=/usr/local/lib
       make
       make sweep.info
       make check
