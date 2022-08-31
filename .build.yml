@@ -33,11 +33,19 @@ secrets:
 sources:
   - git@git.sr.ht:~eshel/sweep
 tasks:
-  - build: |
-      cd sweep
+  - getswipl: |
+      git clone --recursive https://github.com/SWI-Prolog/swipl-devel.git
+      cd swipl-devel
+      mkdir build
+      cd build
       export LANG="en_US.UTF-8"
       sudo localectl set-locale LANG=en_US.UTF-8
       localectl set-locale LANG=en_US.UTF-8
+      cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DSWIPL_INSTALL_IN_LIB=ON -DSWIPL_PACKAGES_ODBC=OFF -DSWIPL_PACKAGES_JAVA=OFF -DSWIPL_PACKAGES_X=OFF -DINSTALL_DOCUMENTATION=OFF -G Ninja ..
+      ninja
+      ninja install
+  - build: |
+      cd sweep
       make
       make sweep.info
-      LD_PRELOAD=lib/libswipl.so make check
+      make check

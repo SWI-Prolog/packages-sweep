@@ -116,8 +116,8 @@
                                     sweep-prolog-server-port))
   (apply #'sweep-initialize
          (cons (expand-file-name "bin/swipl" (file-name-directory
-                                              load-file-name))
-               (cons "-q" sweep-init-args)))
+                                              (buffer-file-name)))
+               (cons "-q" (cons "--no-signals" sweep-init-args))))
   (sweep-start-prolog-server))
 
 (defun sweep-predicates-collection ()
