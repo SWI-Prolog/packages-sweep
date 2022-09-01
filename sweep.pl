@@ -195,15 +195,47 @@ sweep_predicate_location(MFN, [Path|Line]) :-
     predicate_property(M:H, line_count(Line)),
     predicate_property(M:H, file(Path0)), atom_string(Path0, Path).
 
-% sweep_predicates_try_completion(Match, "match") :-
-%     term_string(M:F/N, Match, [syntax_errors(quiet)]),
-%     current_predicate(M:F/N), !.
-% sweep_predicates_try_completion(Prefix, "match") :-
-%     term_string(M:F,   Prefix, [syntax_errors(quiet)]),
-%     findall(M:F/N, current_predicate(M:F/N),
-%     current_predicate(M:F/N), !.
+sweep_local_predicate_completion(Sub, Preds) :-
+    findall(F/N,
+            current_predicate(F/N),
+            Preds0),
+    list_to_set(Preds0, Preds1),
+    convlist(sweep_predicate_completion_annotated(Sub), Preds1, Preds).
 
-sweep_predicates_collection([], Preds) :-
+sweep_predicate_completion_annotated(Sub, F/N, [S|A]) :-
+    format(string(S), '~W/~w', [F, [quoted(true), character_escapes(true)], N]),
+    sub_string(S, _, _, _, Sub),
+    pi_head(F/N, Head),
+    findall(P, predicate_property(Head, P), Ps0),
+    sweep_predicate_completion_op_annotation(F, Ps0, Ps),
+    phrase(sweep_head_annotation(Ps), A).
+
+sweep_predicate_completion_op_annotation(F, Ps, [op(Pri,Fix)|Ps]) :-
+    current_op(Pri, Fix, F),
+    !.
+sweep_predicate_completion_op_annotation(F, Ps, Ps).
+
+sweep_head_annotation([H|T]) -->
+    sweep_head_annotation_(H),
+    sweep_head_annotation(T).
+sweep_head_annotation([]) --> [].
+
+sweep_head_annotation_(built_in)          --> !, ["built-in"].
+sweep_head_annotation_(det)               --> !, ["!"].
+sweep_head_annotation_(dynamic)           --> !, ["dynamic"].
+sweep_head_annotation_(foreign)           --> !, ["C"].
+sweep_head_annotation_(iso)               --> !, ["iso"].
+sweep_head_annotation_(multifile)         --> !, ["multifile"].
+sweep_head_annotation_(meta_predicate(_)) --> !, [":"].
+sweep_head_annotation_(non_terminal)      --> !, ["//"].
+sweep_head_annotation_(ssu)               --> !, ["=>"].
+sweep_head_annotation_(tabled)            --> !, ["table"].
+sweep_head_annotation_(tabled(_))         --> !, ["table"].
+sweep_head_annotation_(thread_local)      --> !, ["thread-local"].
+sweep_head_annotation_(op(_,_))           --> !, ["op"].
+sweep_head_annotation_(_)                 --> [].
+
+sweep_predicates_collection(Sub, Preds) :-
     findall(M:F/N,
             ( current_predicate(M:F/N),
               pi_head(F/N, H),
@@ -217,7 +249,15 @@ sweep_predicates_collection([], Preds) :-
             ),
             Tail),
     list_to_set(Preds0, Preds1),
-    maplist(sweep_predicate_description, Preds1, Preds).
+    maplist(sweep_predicate_description, Preds1, Preds2),
+    (   Sub == []
+    ->  Preds = Preds2
+    ;   include(sweep_predicate_matches(Sub), Preds2, Preds)
+    ).
+
+sweep_predicate_matches(Sub, [String|_]) :-
+    sub_string(String, _, _, _, Sub).
+
 
 sweep_predicate_description(M:F/N, [S|T]) :-
     sweep_predicate_description_(M, F, N, T), format(string(S), '~w:~w/~w', [M, F, N]).

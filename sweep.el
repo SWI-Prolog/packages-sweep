@@ -120,8 +120,18 @@
                (cons "-q" (cons "--no-signals" sweep-init-args))))
   (sweep-start-prolog-server))
 
-(defun sweep-predicates-collection ()
-  (sweep-open-query "user" "sweep" "sweep_predicates_collection" nil)
+
+(defvar sweep-predicate-completion-collection nil)
+
+(defun sweep-local-predicates-collection (&optional prefix)
+  (sweep-open-query "user" "sweep" "sweep_local_predicate_completion" prefix)
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (setq sweep-predicate-completion-collection (cdr sol)))))
+
+(defun sweep-predicates-collection (&optional prefix)
+  (sweep-open-query "user" "sweep" "sweep_predicates_collection" prefix)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
     (when (sweep-true-p sol)
@@ -145,6 +155,62 @@
                         (concat (make-string (- 64 (length key)) ? ) (car val))
                       nil))))))
     (completing-read sweep-read-predicate-prompt col)))
+
+(defun sweep-predicate-prefix-boundaries (&optional point)
+  (let ((case-fold-search nil))
+    (save-mark-and-excursion
+      (save-match-data
+        (when point (goto-char point))
+        (unless (bobp) (backward-char))
+        (while (looking-at "[[:alnum:]_]" t)
+          (backward-char))
+        (when (looking-at ":[[:lower:]]")
+          (unless (bobp) (backward-char))
+          (while (looking-at "[[:alnum:]_]" t)
+            (backward-char)))
+        (forward-char)
+        (when (looking-at "[[:lower:]]" t)
+          (let ((start (point)))
+            (while (looking-at "[[:alnum:]:_]" t)
+              (forward-char))
+            (cons start (point))))))))
+
+(defun sweep-completion-at-point-function ()
+  (when-let ((bounds (sweep-predicate-prefix-boundaries)))
+    (let ((start (car bounds))
+          (end   (cdr bounds)))
+      (list start end
+            (completion-table-with-cache #'sweep-local-predicates-collection)
+            :exclusive 'no
+            :annotation-function
+            (lambda (key)
+              (when-let ((ann (cdr (assoc-string key sweep-predicate-completion-collection))))
+                (concat " " (mapconcat #'identity ann ","))))
+            :exit-function
+            (lambda (key sts)
+              (when (eq sts 'finished)
+                (let ((opoint (point)))
+                  (save-match-data
+                    (with-silent-modifications
+                      (skip-chars-backward "1234567890")
+                      (when (= ?/ (preceding-char))
+                        (backward-char)
+                        (let ((arity (string-to-number (buffer-substring-no-properties (1+ (point)) opoint))))
+                          (delete-region (point) opoint)
+                          (when (and
+                                 (< 0 arity)
+                                 (not
+                                  (string=
+                                   "op"
+                                   (cadr
+                                    (assoc-string
+                                     key
+                                     sweep-predicate-completion-collection)))))
+                            (insert "(")
+                            (dotimes (_ (1- arity))
+                              (insert "_, "))
+                            (insert "_)")
+                            (goto-char (1- opoint))))))))))))))
 
 ;;;###autoload
 (defun sweep-find-predicate (mfn)
@@ -566,6 +632,7 @@ module name, F is a functor name and N is its arity."
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweep-top-level--post-self-insert-function nil t)
   (setq sweep-top-level-timer (run-with-idle-timer 0.2 t #'sweep-colourise-query (current-buffer)))
+  (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t)
   (add-hook 'kill-buffer-hook
             (lambda ()
               (when (timerp sweep-top-level-timer)
