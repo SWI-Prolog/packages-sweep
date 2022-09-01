@@ -426,7 +426,6 @@ sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
       return NULL;
     }
   }
-  PL_action(PL_GMP_SET_ALLOC_FUNCTIONS, FALSE);
   r = PL_initialise(nargs, argv);
   for (i = 0; i < nargs; i++) {
     free(argv[i]);
