@@ -261,13 +261,34 @@ function without any arguments.
 =sweep= provides a classic Prolog top-level interface for interacting
 with the embedded Prolog runtime.  To start the top-level, use =M-x
 sweep-top-level=.  This command opens a buffer called =*sweep-top-level*=
-which hosts the live Prolog top-level.  If the top-level buffer
-already exists, =sweep-top-level= will reuse it by default.  To create
-another one or more top-level buffers, run the command =C-x x u= (or =M-x
-rename-uniquely=) in the buffer called =*sweep-top-level*= and then run
-=M-x sweep-top-level= again.  This will change the name of the original
-top-level buffer to something like =*sweep-top-level*<2>= and allow the
-new top-level to claim the buffer name =*sweep-top-level*=.
+which hosts the live Prolog top-level.
+
+#+FINDEX: sweep-top-level-mode
+#+VINDEX: sweep-top-level-mode
+The top-level buffer uses a major mode named
+=sweep-top-level-mode=. This mode derives from =comint-mode=, which is the
+common mode used in Emacs REPL interfaces.  As a result, the top-level
+buffer inherits the features present in other =comint-mode= derivatives,
+most of which are described in [[info:emacs#Shell Mode][the Emacs manual]].
+
+** Multiple top-levels
+
+Any number of top-levels can be created and used concurrently, each in
+its own buffer.  If a top-level buffer already exists, =sweep-top-level=
+will simply open it by default.  To create another one or more
+top-level buffers, run the command =C-x x u= (or =M-x rename-uniquely=) in
+the buffer called =*sweep-top-level*= and then run =M-x sweep-top-level=
+again.  This will change the name of the original top-level buffer to
+something like =*sweep-top-level*<2>= and allow the new top-level to
+claim the buffer name =*sweep-top-level*=.
+
+** Completion in the top-level
+
+The =sweep-top-level-mode=, enabled in the =sweep= top-level buffer,
+integrates with the standard Emacs symbol completion mechanism to
+provide completion for predicate names.  To complete a partial
+predicate name in the top-level prompt, use =C-M-i= (or =M-<TAB>=).  For
+more information see [[info:emacs#Symbol Completion][Symbol Completion in the Emacs manual]].
 
 * Finding Prolog code
 :PROPERTIES:
