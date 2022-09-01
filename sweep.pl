@@ -213,7 +213,7 @@ sweep_predicate_completion_annotated(Sub, F/N, [S|A]) :-
 sweep_predicate_completion_op_annotation(F, Ps, [op(Pri,Fix)|Ps]) :-
     current_op(Pri, Fix, F),
     !.
-sweep_predicate_completion_op_annotation(F, Ps, Ps).
+sweep_predicate_completion_op_annotation(_, Ps, Ps).
 
 sweep_head_annotation([H|T]) -->
     sweep_head_annotation_(H),
