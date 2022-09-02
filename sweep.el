@@ -12,7 +12,7 @@
 ;; This file is NOT part of GNU Emacs.
 
 ;;; Commentary:
-;;
+
 ;; sweep is an embedding of SWI-Prolog in Emacs.  It uses the C
 ;; interfaces of both SWI-Prolog and Emacs Lisp to create a
 ;; dynamically loaded Emacs module that contains the SWI-Prolog
