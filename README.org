@@ -325,6 +325,17 @@ Along with =M-x sweep-find-module=, =sweep= provides the
 command =M-x sweep-find-predicate= jumping to the definition a
 loaded or auto-loadable Prolog predicate.
 
+** Prolog file specification expansion
+
+=sweep= defines a handler for file name the Emacs function
+=expand-file-file= that recognizes Prolog file specifications, such as
+=library(lists)=, and expands them to the corresponding absolute paths.
+This means that one can use Prolog file specifications with Emacs'
+standard =find-file= (=C-x C-f=) to locate Prolog resources directly.
+
+For example, typing =C-x C-f library(pldoc/doc_man)= will open the
+source of the =pldoc_man= module from the Prolog library.
+
 * Installing Prolog packages
 :PROPERTIES:
 :CUSTOM_ID: prolog-packages
@@ -354,6 +365,8 @@ to a prefix key, e.g. =C-c p=, use:
 As an example, with the above binding the =sweep= top-level can be
 access from anywhere with =C-c p t=.
 
+#+html: <!--
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: indices
@@ -376,3 +389,5 @@ access from anywhere with =C-c p t=.
 :INDEX: cp
 :CUSTOM_ID: cindex
 :END:
+
+#+html: -->

@@ -672,6 +672,53 @@ Interactively, a prefix arg means to prompt for BUFFER."
     map)
   "Keymap for `sweep' global commands.")
 
+;;;###autoload
+(defun sweep-file-name-handler (operation &rest args)
+  (cond ((eq operation 'expand-file-name)
+         (let ((fn (car  args))
+               (dn (cadr args)))
+           (sweep-open-query "user"
+                             "sweep"
+                             "sweep_expand_file_name"
+                             (cons fn dn))
+           (let ((sol (sweep-next-solution)))
+             (sweep-close-query)
+             (if (sweep-true-p sol)
+                 (cdr sol)
+               (let ((inhibit-file-name-handlers
+                      (cons 'sweep-file-name-handler
+                            (and (eq inhibit-file-name-operation operation)
+                                 inhibit-file-name-handlers)))
+                     (inhibit-file-name-operation operation))
+                 (apply operation args))))))
+        (t (let ((inhibit-file-name-handlers
+                  (cons 'sweep-file-name-handler
+                        (and (eq inhibit-file-name-operation operation)
+                             inhibit-file-name-handlers)))
+                 (inhibit-file-name-operation operation))
+             (apply operation args)))))
+
+(add-to-list 'file-name-handler-alist
+             (cons (rx (seq bol (one-or-more lower) "("))
+                   #'sweep-file-name-handler))
+
+(defun sweep-beginning-of-top-term ()
+  (unless (bobp)
+    (when-let ((safe-start (nth 8 (syntax-ppss))))
+      (goto-char safe-start))
+    (re-search-backward (rx (seq bol graph)) nil t)
+    (let ((safe-start (nth 8 (syntax-ppss))))
+      (while (and safe-start (not (bobp)))
+        (goto-char safe-start)
+        (re-search-backward (rx (seq bol graph)) nil t)
+        (setq safe-start (nth 8 (syntax-ppss)))))))
+
+(defun sweep-end-of-top-term ()
+  (unless (eobp)
+    (while (nth 8 (syntax-ppss))
+      (forward-char))
+    (or (re-search-forward (rx (seq "." (or white "\n"))) nil t)
+        (goto-char (point-max)))))
 ;;;; Testing:
 
 ;; (add-to-list 'load-path (file-name-directory (buffer-file-name)))

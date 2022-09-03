@@ -33,6 +33,7 @@
 :- module(sweep,
           [ sweep_colors/2,
             sweep_documentation/2,
+            sweep_expand_file_name/2,
             sweep_predicate_location/2,
             sweep_predicates_collection/2,
             sweep_modules_collection/2,
@@ -346,3 +347,24 @@ sweep_color_goal(goal).
 sweep_color_goal(goal_term).
 sweep_color_goal(head).
 sweep_color_goal(head_term).
+
+
+sweep_expand_file_name([String|Dir], Exp) :-
+    term_string(Spec, String, [syntax_errors(quiet)]),
+    sweep_expand_file_name_(Dir, Spec, Atom),
+    (   exists_file(Atom)
+    ->  true
+    ;   exists_directory(Atom)
+    ),
+    atom_string(Atom, Exp).
+
+sweep_expand_file_name_([], Spec, Atom) :-
+    absolute_file_name(Spec, Atom, [file_errors(fail),
+                                    solutions(all),
+                                    extensions(['', '.pl'])]).
+sweep_expand_file_name_(Dir, Spec, Exp) :-
+    !,
+    absolute_file_name(Spec, Exp, [file_errors(fail),
+                                   relative_to(Dir),
+                                   solutions(all),
+                                   extensions(['', '.pl'])]).
