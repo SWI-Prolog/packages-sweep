@@ -66,8 +66,7 @@
   :type '(list string)
   :group 'sweep)
 
-
-(defvar sweep-prolog-server-port 12345)
+(defvar sweep-prolog-server-port nil)
 
 ;;;###autoload
 (defun sweep-module-compile ()
@@ -104,16 +103,15 @@
 
 (defun sweep-start-prolog-server ()
   (sweep-open-query "user"
-                    "sweep"
-                    "sweep_start_prolog_server"
-                    sweep-prolog-server-port)
+                    "prolog_server"
+                    "prolog_server"
+                    nil t)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    sol))
+    (when (sweep-true-p sol)
+      (setq sweep-prolog-server-port (cdr sol)))))
 
 (defun sweep-init ()
-  (setq sweep-prolog-server-port (+ (random 10000)
-                                    sweep-prolog-server-port))
   (apply #'sweep-initialize
          (cons (expand-file-name "bin/swipl" (file-name-directory
                                               load-file-name))
@@ -123,8 +121,12 @@
 
 (defvar sweep-predicate-completion-collection nil)
 
+(defvar-local sweep-buffer-module nil)
+
 (defun sweep-local-predicates-collection (&optional prefix)
-  (sweep-open-query "user" "sweep" "sweep_local_predicate_completion" prefix)
+  (sweep-open-query "user" "sweep" "sweep_local_predicate_completion"
+                    (cons sweep-buffer-module
+                          prefix))
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
     (when (sweep-true-p sol)
@@ -549,8 +551,8 @@ module name, F is a functor name and N is its arity."
          (put-text-property beg end 'font-lock-face
                             (pcase g
                               (`("recursion" . ,_) sweep-recursion-face)
-                              (`("meta" . ,_) sweep-meta-face)
-                              (`("built_in" . ,_) sweep-built-in-face)
+                              (`("meta"      . ,_) sweep-meta-face)
+                              (`("built_in"  . ,_) sweep-built-in-face)
                               (`("undefined" . ,_) sweep-undefined-face)
                               (_ sweep-goal-face))))
         ("unused_import"       (put-text-property beg end 'font-lock-face sweep-unused-import-face))
@@ -633,6 +635,7 @@ module name, F is a functor name and N is its arity."
   (add-hook 'post-self-insert-hook #'sweep-top-level--post-self-insert-function nil t)
   (setq sweep-top-level-timer (run-with-idle-timer 0.2 t #'sweep-colourise-query (current-buffer)))
   (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t)
+  (setq sweep-buffer-module "user")
   (add-hook 'kill-buffer-hook
             (lambda ()
               (when (timerp sweep-top-level-timer)

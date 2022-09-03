@@ -37,7 +37,6 @@
             sweep_predicates_collection/2,
             sweep_modules_collection/2,
             sweep_packs_collection/2,
-            sweep_start_prolog_server/2,
             sweep_pack_install/2,
             sweep_module_path/2
           ]).
@@ -227,18 +226,19 @@ sweep_predicate_location(MFN, [Path|Line]) :-
     predicate_property(M:H, line_count(Line)),
     predicate_property(M:H, file(Path0)), atom_string(Path0, Path).
 
-sweep_local_predicate_completion(Sub, Preds) :-
+sweep_local_predicate_completion([Mod|Sub], Preds) :-
+    atom_string(M, Mod),
     findall(F/N,
-            current_predicate(F/N),
+            @(current_predicate(F/N), M),
             Preds0),
-    list_to_set(Preds0, Preds1),
-    convlist(sweep_predicate_completion_annotated(Sub), Preds1, Preds).
+    convlist(sweep_predicate_completion_annotated(Sub, M), Preds0, Preds).
 
-sweep_predicate_completion_annotated(Sub, F/N, [S|A]) :-
+sweep_predicate_completion_annotated(Sub, M, F/N, [S|A]) :-
     format(string(S), '~W/~w', [F, [quoted(true), character_escapes(true)], N]),
     sub_string(S, _, _, _, Sub),
+    \+ sub_string(S, _, _, _, "$"),
     pi_head(F/N, Head),
-    findall(P, predicate_property(Head, P), Ps0),
+    findall(P, @(predicate_property(Head, P), M), Ps0),
     sweep_predicate_completion_op_annotation(F, Ps0, Ps),
     phrase(sweep_head_annotation(Ps), A).
 
@@ -282,14 +282,17 @@ sweep_predicates_collection(Sub, Preds) :-
             Tail),
     list_to_set(Preds0, Preds1),
     maplist(sweep_predicate_description, Preds1, Preds2),
+    include(sweep_predicate_non_hidden, Preds2, Preds3),
     (   Sub == []
-    ->  Preds = Preds2
-    ;   include(sweep_predicate_matches(Sub), Preds2, Preds)
+    ->  Preds = Preds3
+    ;   include(sweep_predicate_matches(Sub), Preds3, Preds)
     ).
 
 sweep_predicate_matches(Sub, [String|_]) :-
     sub_string(String, _, _, _, Sub).
 
+sweep_predicate_non_hidden([String|_]) :-
+    \+ sub_string(String, 0, _, _, "$").
 
 sweep_predicate_description(M:F/N, [S|T]) :-
     sweep_predicate_description_(M, F, N, T), format(string(S), '~w:~w/~w', [M, F, N]).
@@ -313,9 +316,6 @@ sweep_pack_info(pack(Name0, _, Desc0, Version0, URLS0), [Name, Desc, Version, UR
 sweep_pack_install(PackName, []) :-
     atom_string(Pack, PackName), pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
 
-
-sweep_start_prolog_server(Port, []) :-
-    prolog_server(Port, []).
 
 sweep_colourise_query([String|Offset], _) :-
     prolog_colourise_query(String, module(sweep), sweep_handle_query_color(Offset)).
