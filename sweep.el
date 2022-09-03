@@ -553,6 +553,13 @@ module name, F is a functor name and N is its arity."
          (arg (cddr args)))
     (with-silent-modifications
       (pcase arg
+        (`("head" . ,h)
+         (put-text-property beg end 'font-lock-face
+                            (pcase h
+                              (`("unreferenced" . ,_) sweep-head-unreferenced-face)
+                              (`("exported" . ,_) sweep-head-exported-face)
+                              (`(,(rx (seq "local(")) . ,_) sweep-head-local-face)
+                              (other (message "unknown head color term %S" other) sweep-head-local-face))))
         (`("goal" . ,g)
          (put-text-property beg end 'font-lock-face
                             (pcase g
@@ -560,7 +567,11 @@ module name, F is a functor name and N is its arity."
                               (`("meta"      . ,_) sweep-meta-face)
                               (`("built_in"  . ,_) sweep-built-in-face)
                               (`("undefined" . ,_) sweep-undefined-face)
-                              (_ sweep-goal-face))))
+                              (`(,(rx (seq "autoload(")) . ,_) sweep-autoload-face)
+                              (`(,(rx (seq "imported(")) . ,_) sweep-imported-face)
+                              (`(,(rx (seq "local(")) . ,_) sweep-local-face)
+                              (other (message "unknown goal color term %S" other) sweep-goal-face))))
+        ("syntax_error"        (put-text-property beg end 'font-lock-face sweep-syntax-error-face))
         ("unused_import"       (put-text-property beg end 'font-lock-face sweep-unused-import-face))
         ("undefined_import"    (put-text-property beg end 'font-lock-face sweep-undefined-import-face))
         ("dict_tag"            (put-text-property beg end 'font-lock-face sweep-dict-tag-face))
@@ -581,8 +592,50 @@ module name, F is a functor name and N is its arity."
         ("predicate_indicator" (put-text-property beg end 'font-lock-face sweep-predicate-indicator-face))
         ("string"              (put-text-property beg end 'font-lock-face sweep-string-face))
         ("module"              (put-text-property beg end 'font-lock-face sweep-module-face))
-        ;; (other (message "Unknown color term %S" other))
+        ("neck"                (put-text-property beg end 'font-lock-face sweep-neck-face))
+        ("comment"             (put-text-property beg end 'font-lock-face sweep-comment-face))
+        ("hook"                (put-text-property beg end 'font-lock-face sweep-hook-face))
+        ("qq_type"             (put-text-property beg end 'font-lock-face sweep-qq-type-face))
+        ("qq_sep"              (put-text-property beg end 'font-lock-face sweep-qq-sep-face))
+        ("qq_open"             (put-text-property beg end 'font-lock-face sweep-qq-open-face))
+        ("qq_close"            (put-text-property beg end 'font-lock-face sweep-qq-close-face))
+        ("identifier"          (put-text-property beg end 'font-lock-face sweep-identifier-face))
+        ("file"                (put-text-property beg end 'font-lock-face sweep-file-face))
+        ("file_no_depend"      (put-text-property beg end 'font-lock-face sweep-file-no-depend-face))
+        (`("goal_term" . ,_)   nil)
+        (`("head_term" . ,_)   nil)
+        ("clause"              nil)
+        ("directive"           nil)
+        ("parentheses"         nil)
+        ("term"                nil)
+        ("expanded"            nil)
+        ("list"                nil)
+        ("grammar_rule"        nil)
+        ("dict"                nil)
+        ("brace_term"          nil)
+        ("rule_condition"      nil)
+        ("exported_operator"   nil)
+        ("empty_list"          nil)
+        ("dcg"                 nil)
+        ("qq"                  nil)
+        (other (message "Unknown color term %S" other))
         ))))
+
+(defun sweep-colourise-buffer (&optional buffer)
+  (interactive)
+  (with-current-buffer (or buffer (current-buffer))
+    (let* ((beg (point-min))
+           (end (point-max))
+           (contents (buffer-substring-no-properties beg end)))
+      (with-silent-modifications
+        (font-lock-unfontify-region beg end))
+      (sweep-open-query "user"
+                        "sweep"
+                        "sweep_colourise_buffer"
+                        (cons contents (buffer-file-name)))
+      (let ((sol (sweep-next-solution)))
+        (sweep-close-query)
+        sol))))
 
 (defun sweep-colourise-query (buffer)
   (when (buffer-live-p buffer)
@@ -702,16 +755,32 @@ Interactively, a prefix arg means to prompt for BUFFER."
              (cons (rx (seq bol (one-or-more lower) "("))
                    #'sweep-file-name-handler))
 
-(defun sweep-beginning-of-top-term ()
-  (unless (bobp)
-    (when-let ((safe-start (nth 8 (syntax-ppss))))
-      (goto-char safe-start))
-    (re-search-backward (rx (seq bol graph)) nil t)
-    (let ((safe-start (nth 8 (syntax-ppss))))
-      (while (and safe-start (not (bobp)))
-        (goto-char safe-start)
-        (re-search-backward (rx (seq bol graph)) nil t)
-        (setq safe-start (nth 8 (syntax-ppss)))))))
+(defun sweep-beginning-of-top-term (&optional arg)
+  (let ((times (or arg 1)))
+    (if (< 0 times)
+        (let ((p (point)))
+          (while (and (< 0 times) (not (bobp)))
+            (setq times (1- times))
+            (when-let ((safe-start (nth 8 (syntax-ppss))))
+              (goto-char safe-start))
+            (re-search-backward (rx (seq bol graph)) nil t)
+            (let ((safe-start (nth 8 (syntax-ppss))))
+              (while (and safe-start (not (bobp)))
+                (goto-char safe-start)
+                (re-search-backward (rx (seq bol graph)) nil t)
+                (setq safe-start (nth 8 (syntax-ppss))))))
+          (not (= p (point))))
+      (sweep-beginning-of-next-top-term (- times)))))
+
+(defun sweep-beginning-of-next-top-term (times)
+  (let ((p (point)))
+    (while (and (< 0 times) (not (eobp)))
+      (setq times (1- times))
+      (unless (eobp)
+        (re-search-forward (rx (seq bol graph)) nil t))
+      (while (and (nth 8 (syntax-ppss)) (not (eobp)))
+        (re-search-forward (rx (seq bol graph)) nil t)))
+    (not (= p (point)))))
 
 (defun sweep-end-of-top-term ()
   (unless (eobp)
@@ -719,6 +788,43 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (forward-char))
     (or (re-search-forward (rx (seq "." (or white "\n"))) nil t)
         (goto-char (point-max)))))
+
+(defvar sweep-mode-syntax-table
+  (let ((table (make-syntax-table)))
+    (modify-syntax-entry ?_ "_" table)
+    (modify-syntax-entry ?+ "." table)
+    (modify-syntax-entry ?- "." table)
+    (modify-syntax-entry ?= "." table)
+    (modify-syntax-entry ?< "." table)
+    (modify-syntax-entry ?> "." table)
+    (modify-syntax-entry ?| "." table)
+    (modify-syntax-entry ?\' "\"" table)
+    (modify-syntax-entry ?` "\"" table)
+    (modify-syntax-entry ?% "<" table)
+    (modify-syntax-entry ?\n ">" table)
+    (modify-syntax-entry ?* ". 23b" table)
+    (modify-syntax-entry ?/ ". 14" table)
+    table))
+
+(defvar-keymap sweep-mode-map
+  :doc "Keymap for `sweep-mode'."
+  "C-c C-c" #'sweep-colourise-buffer)
+
+;;;###autoload
+(define-derived-mode sweep-mode prog-mode "sweep"
+  "Major mode for reading and editing Prolog code."
+  :group 'sweep
+  (setq-local comment-start "%")
+  (setq-local comment-start-skip "\\(?:/\\*+ *\\|%+ *\\)")
+  (setq-local parens-require-spaces nil)
+  (setq-local beginning-of-defun-function #'sweep-beginning-of-top-term)
+  (setq-local font-lock-defaults
+              '((("\\<\\([_A-Z][a-zA-Z0-9_]*\\)" 1 sweep-variable-face))
+                nil
+                nil
+                nil
+                nil)))
+
 ;;;; Testing:
 
 ;; (add-to-list 'load-path (file-name-directory (buffer-file-name)))

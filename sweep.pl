@@ -31,7 +31,7 @@
 */
 
 :- module(sweep,
-          [ sweep_colors/2,
+          [ sweep_colourise_buffer/2,
             sweep_documentation/2,
             sweep_expand_file_name/2,
             sweep_predicate_location/2,
@@ -76,37 +76,29 @@ prolog:xref_open_source(Source, Stream) :-
 prolog:xref_close_source(Source, Stream) :-
     sweep_open(Source, Stream).
 
-sweep_colors([Path, String], Colors) :-
+sweep_colourise_buffer([String|Path], Colors) :-
     setup_call_cleanup(( new_memory_file(H),
                          insert_memory_file(H, 0, String),
-                         open_memory_file(H, read, Contents)
+                         open_memory_file(H, read, Contents, [encoding(utf8)])
                        ),
-                       sweep_colors(Path, Contents, Colors),
+                       sweep_colourise_buffer_(Path, Contents, Colors),
                        ( close(Contents),
                          free_memory_file(H)
                        )).
-sweep_colors(Path, Contents, Colors) :-
+sweep_colourise_buffer_(Path0, Contents, []) :-
+    atom_string(Path, Path0),
     set_stream(Contents, encoding(utf8)),
     set_stream(Contents, file_name(Path)),
     get_time(Time),
     asserta(sweep_open(Path, Contents), Ref0),
     asserta(sweep_source_time(Path, Time), Ref1),
     xref_source(Path, []),
-    retractall(sweep_current_color(_, _, _)),
-    retractall(sweep_current_comment(_, _, _)),
     seek(Contents, 0, bof, _),
     prolog_colourise_stream(Contents,
                             Path,
-                            sweep_handle_color),
+                            sweep_handle_query_color(1)),
     erase(Ref0),
-    erase(Ref1),
-    findall([B,L,T],
-            sweep_current_color(B, L, T),
-            Colors,
-            Comments),
-    findall([B,L,T],
-            sweep_current_comment(B, L, T),
-            Comments).
+    erase(Ref1).
 
 sweep_handle_color(comment(C), B0, L) =>
     B is B0 + 1,

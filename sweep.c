@@ -72,8 +72,7 @@ estring_to_pstring(emacs_env *eenv, emacs_value estring, term_t t) {
   int i = 0;
 
   if ((buf = estring_to_cstring(eenv, estring, &len)) == NULL) return -1;
-
-  i = PL_put_string_nchars(t, len - 1, buf);
+  i = PL_put_chars(t, PL_STRING|REP_UTF8, len - 1, buf);
   free(buf);
   return i;
 }
