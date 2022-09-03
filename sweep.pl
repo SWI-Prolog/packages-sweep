@@ -292,10 +292,13 @@ sweep_predicate_matches(Sub, [String|_]) :-
     sub_string(String, _, _, _, Sub).
 
 sweep_predicate_non_hidden([String|_]) :-
-    \+ sub_string(String, 0, _, _, "$").
+    \+ sub_string(String, _, _, _, ":'$").
 
 sweep_predicate_description(M:F/N, [S|T]) :-
-    sweep_predicate_description_(M, F, N, T), format(string(S), '~w:~w/~w', [M, F, N]).
+    sweep_predicate_description_(M, F, N, T),
+    format(string(S),
+           '~w:~W/~w',
+           [M, F, [quoted(true), character_escapes(true)], N]).
 
 sweep_predicate_description_(M, F, N, [D]) :-
     doc_comment(M:F/N, _, D0, _), !, atom_string(D0, D).
