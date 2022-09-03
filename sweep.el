@@ -69,7 +69,7 @@
 (defvar sweep-prolog-server-port nil)
 
 ;;;###autoload
-(defun sweep-module-compile ()
+(defun sweep--compile-module ()
   "Compile sweep-module."
   (interactive)
   (let* ((sweep-directory
@@ -97,7 +97,7 @@
   (unless (require 'sweep-module nil t)
     (if (y-or-n-p "Sweep needs `sweep-module' to work.  Compile it now? ")
         (progn
-          (sweep-module-compile)
+          (sweep--compile-module)
           (require 'sweep-module))
       (error "Sweep will not work until `sweep-module' is compiled!"))))
 
@@ -579,7 +579,6 @@ module name, F is a functor name and N is its arity."
         ))))
 
 (defun sweep-colourise-query (buffer)
-  (interactive)
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
       (let* ((beg (cdr comint-last-prompt))
@@ -643,6 +642,16 @@ module name, F is a functor name and N is its arity."
 
 (sweep--ensure-module)
 (when sweep-init-on-load (sweep-init))
+
+;;;###autoload
+(defvar sweep-prefix-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "m" #'sweep-find-module)
+    (define-key map "p" #'sweep-find-predicate)
+    (define-key map "t" #'sweep-top-level)
+    (define-key map "P" #'sweep-pack-install)
+    map)
+  "Keymap for `sweep' global commands.")
 
 ;;;; Testing:
 
