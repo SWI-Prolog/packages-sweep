@@ -49,6 +49,12 @@
   :type 'string
   :group 'sweep)
 
+(defcustom sweep-top-level-display-action nil
+  "Display action used for displaying the `sweep-top-level' buffer."
+  :package-version '((sweep . "0.1.0"))
+  :type 'function
+  :group 'sweep)
+
 (defvar sweep-install-buffer-name "*Install sweep*"
   "Name of the buffer used for compiling sweep-module.")
 
@@ -595,18 +601,31 @@ module name, F is a functor name and N is its arity."
           sol)))))
 
 ;;;###autoload
-(defun sweep-top-level ()
-  "Start an interactive Prolog top-level."
-  (interactive)
-  (let ((buf (get-buffer-create "*sweep-top-level*")))
-    (with-current-buffer buf
-      (unless (eq major-mode 'sweep-top-level-mode)
+(defun sweep-top-level (&optional buffer)
+  "Run a Prolog top-level in BUFFER.
+If BUFFER is nil, a buffer called \"*sweep-top-level*\" is used
+by default.
+
+Interactively, a prefix arg means to prompt for BUFFER."
+  (interactive
+   (let* ((buffer
+           (and current-prefix-arg
+                (read-buffer "Top-level buffer: "
+                             (if (and (eq major-mode 'sweep-top-level-mode)
+                                      (null (get-buffer-process
+                                             (current-buffer))))
+                                 (buffer-name)
+                               (generate-new-buffer-name "*sweep-top-level*"))))))
+     (list buffer)))
+  (let ((buf (get-buffer-create (or buffer "*sweep-top-level*"))))
+   (with-current-buffer buf
+     (unless (eq major-mode 'sweep-top-level-mode)
        (sweep-top-level-mode)))
-    (make-comint-in-buffer "sweep-top-level"
-                           buf
-                           (cons "localhost"
-                                 sweep-prolog-server-port))
-    (select-window (display-buffer buf))))
+   (make-comint-in-buffer "sweep-top-level"
+                          buf
+                          (cons "localhost"
+                                sweep-prolog-server-port))
+   (pop-to-buffer buf sweep-top-level-display-action)))
 
 (defun sweep-top-level--post-self-insert-function ()
   (when-let ((pend (cdr comint-last-prompt)))

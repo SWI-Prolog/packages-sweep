@@ -24,10 +24,21 @@ embedded SWI-Prolog runtime inside of Emacs.
 :CUSTOM_ID: overview
 :END:
 
-=sweep= is an embedding of SWI-Prolog in Emacs.  It uses the C
-interfaces of both SWI-Prolog and Emacs Lisp to create a dynamically
-loaded Emacs module that contains the SWI-Prolog runtime. As such,
-=sweep= has parts written in C, in Prolog and in Emacs Lisp.
+=sweep= is an embedding of SWI-Prolog in Emacs.  It provides an
+interface for executing Prolog queries and consuming their results
+from Emacs Lisp (see [[Querying Prolog]]).  =sweep= further builds on top of
+this interface and on top of the standard Emacs facilities to provide
+advanced features for developing SWI-Prolog programs in Emacs.
+
+** High-level architecture
+:PROPERTIES:
+:CUSTOM_ID: high-level-architecture
+:END:
+
+both SWI-Prolog and Emacs Lisp to create a dynamically loaded Emacs
+module that contains the SWI-Prolog runtime.  As such, =sweep= has parts
+written in C, in Prolog and in Emacs Lisp.
+
 
 The different parts of =sweep= are structured as follows:
 
@@ -250,7 +261,6 @@ Prolog terms to Elisp objects]]) and passed as a sole argument to the
 invoked Elisp function.  The =sweep_funcall/2= variant invokes the Elisp
 function without any arguments.
 
-
 * The Prolog top-level
 :PROPERTIES:
 :CUSTOM_ID: prolog-top-level
@@ -272,17 +282,25 @@ buffer inherits the features present in other =comint-mode= derivatives,
 most of which are described in [[info:emacs#Shell Mode][the Emacs manual]].
 
 ** Multiple top-levels
+:PROPERTIES:
+:CUSTOM_ID: multiple-top-levels
+:END:
 
 Any number of top-levels can be created and used concurrently, each in
 its own buffer.  If a top-level buffer already exists, =sweep-top-level=
 will simply open it by default.  To create another one or more
-top-level buffers, run the command =C-x x u= (or =M-x rename-uniquely=) in
-the buffer called =*sweep-top-level*= and then run =M-x sweep-top-level=
+top-level buffers, run =sweep-top-level= with a prefix argument
+(i.e. =C-u M-x sweep-top-level-mode=) to choose a different buffer name.
+Alternatively, run the command =C-x x u= (or =M-x rename-uniquely=) in the
+buffer called =*sweep-top-level*= and then run =M-x sweep-top-level=
 again.  This will change the name of the original top-level buffer to
 something like =*sweep-top-level*<2>= and allow the new top-level to
 claim the buffer name =*sweep-top-level*=.
 
 ** Completion in the top-level
+:PROPERTIES:
+:CUSTOM_ID: completion-in-top-level
+:END:
 
 The =sweep-top-level-mode=, enabled in the =sweep= top-level buffer,
 integrates with the standard Emacs symbol completion mechanism to
@@ -318,6 +336,23 @@ or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
 completion candidates are annotated with description and the version
 of each package.
 
+* Quick access to =sweep= commands
+:PROPERTIES:
+:CUSTOM_ID: quick-command-access
+:END:
+
+#+VINDEX: sweep-prefix-map
+=sweep= defines a keymap called =sweep-prefix-map= which provides
+keybinding for several useful =sweep= commands.  By default,
+=sweep-prefix-map= itself is not bound to any key.  To bind it globally
+to a prefix key, e.g. =C-c p=, use:
+
+#+begin_src emacs-lisp
+  (keymap-global-set "C-c p" sweep-prefix-map)
+#+end_src
+
+As an example, with the above binding the =sweep= top-level can be
+access from anywhere with =C-c p t=.
 
 * Indices
 :PROPERTIES:
