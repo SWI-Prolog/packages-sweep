@@ -210,8 +210,16 @@ sweep_local_predicate_completion([Mod|Sub], Preds) :-
     atom_string(M, Mod),
     findall(F/N,
             @(current_predicate(F/N), M),
-            Preds0),
-    convlist(sweep_predicate_completion_annotated(Sub, M), Preds0, Preds).
+            Preds0,
+            Tail),
+    findall(XF/XN,
+            (   xref_defined(SourceId, H, _),
+                H \= _:_,
+                pi_head(XF/XN, H)
+            ),
+            Tail),
+    list_to_set(Preds0, Preds1),
+    convlist(sweep_predicate_completion_annotated(Sub, M), Preds1, Preds).
 
 sweep_predicate_completion_annotated(Sub, M, F/N, [S|A]) :-
     format(string(S), '~W/~w', [F, [quoted(true), character_escapes(true)], N]),

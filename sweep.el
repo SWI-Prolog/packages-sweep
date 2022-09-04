@@ -199,7 +199,7 @@
               (when (eq sts 'finished)
                 (let ((opoint (point)))
                   (save-match-data
-                    (with-silent-modifications
+                    (combine-after-change-calls
                       (skip-chars-backward "1234567890")
                       (when (= ?/ (preceding-char))
                         (backward-char)
