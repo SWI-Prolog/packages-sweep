@@ -100,42 +100,6 @@ sweep_colourise_buffer_(Path0, Contents, []) :-
     erase(Ref0),
     erase(Ref1).
 
-sweep_handle_color(comment(C), B0, L) =>
-    B is B0 + 1,
-    assertz(sweep_current_comment(B, L, C)).
-sweep_handle_color(syntax_error(D, EB-EE), _B, _L) =>
-    EL is EE-EB,
-    assertz(sweep_current_color(EB,
-                                  EL,
-                                  syntax_error(D, EB-EE))).
-sweep_handle_color(head_term(meta, Head), B0, L) =>
-    B is B0 + 1,
-    assertz(sweep_current_color(B, L, head_term(meta, Head))).
-sweep_handle_color(head_term(Kind, Head), B0, L) =>
-    B is B0+1,
-    pi_head(PI, Head),
-    assertz(sweep_current_color(B,
-                                L,
-                                head_term(Kind, PI))).
-sweep_handle_color(head(Kind, Head), B0, L) =>
-    B is B0+1,
-    pi_head(PI, Head),
-    assertz(sweep_current_color(B, L, head(Kind, PI))).
-sweep_handle_color(goal(Kind, Head), B0, L) =>
-    B is B0+1,
-    pi_head(PI, Head),
-    assertz(sweep_current_color(B, L, goal(Kind, PI))).
-sweep_handle_color(goal_term(meta, Goal), B0, L) =>
-    B is B0 + 1,
-    assertz(sweep_current_color(B, L, goal_term(meta, Goal))).
-sweep_handle_color(goal_term(Kind, Goal), B0, L) =>
-    B is B0 + 1,
-    pi_head(PI, Goal),
-    assertz(sweep_current_color(B, L, goal_term(Kind, PI))).
-sweep_handle_color(T, B0, L) =>
-    B is B0 + 1,
-    assertz(sweep_current_color(B, L, T)).
-
 sweep_documentation([Path, Functor, Arity], Docs) :-
     atom_string(P, Path),
     atom_string(F, Functor),
@@ -317,29 +281,33 @@ sweep_colourise_query([String|Offset], _) :-
     prolog_colourise_query(String, module(sweep), sweep_handle_query_color(Offset)).
 
 sweep_handle_query_color(Offset, Col, Beg, Len) :-
-    sweep_color_normalized(Col, Nom),
+    sweep_color_normalized(Offset, Col, Nom),
     Start is Beg + Offset,
     sweep_funcall("sweep--colourise", [Start,Len|Nom], _).
 
-sweep_color_normalized(Col, Nom) :-
+sweep_color_normalized(Offset, Col, Nom) :-
     Col =.. [Nom0|Rest],
-    sweep_color_normalized_(Nom0, Rest, Nom).
+    sweep_color_normalized_(Offset, Nom0, Rest, Nom).
 
-sweep_color_normalized_(Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
+sweep_color_normalized_(Offset, Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
     sweep_color_goal(Goal0),
     !,
     atom_string(Goal0, Goal),
     term_string(Kind0, Kind),
     pi_head(F0/N, Head),
     atom_string(F0, F).
-sweep_color_normalized_(Nom0, _, Nom) :-
+sweep_color_normalized_(Offset, syntax_error, [Message0,Start0-End0|_], ["syntax_error", Message, Start, End]) :-
+    !,
+    Start is Start0 + Offset,
+    End   is End0   + Offset,
+    atom_string(Message0, Message).
+sweep_color_normalized_(_, Nom0, _, Nom) :-
     atom_string(Nom0, Nom).
 
 sweep_color_goal(goal).
 sweep_color_goal(goal_term).
 sweep_color_goal(head).
 sweep_color_goal(head_term).
-
 
 sweep_expand_file_name([String|Dir], Exp) :-
     term_string(Spec, String, [syntax_errors(quiet)]),

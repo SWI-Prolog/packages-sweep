@@ -571,7 +571,8 @@ module name, F is a functor name and N is its arity."
                               (`(,(rx (seq "imported(")) . ,_) sweep-imported-face)
                               (`(,(rx (seq "local(")) . ,_) sweep-local-face)
                               (other (message "unknown goal color term %S" other) sweep-goal-face))))
-        ("syntax_error"        (put-text-property beg end 'font-lock-face sweep-syntax-error-face))
+        (`("syntax_error" ,message ,eb ,ee)
+         (put-text-property beg end 'font-lock-face sweep-syntax-error-face))
         ("unused_import"       (put-text-property beg end 'font-lock-face sweep-unused-import-face))
         ("undefined_import"    (put-text-property beg end 'font-lock-face sweep-undefined-import-face))
         ("dict_tag"            (put-text-property beg end 'font-lock-face sweep-dict-tag-face))
@@ -585,7 +586,6 @@ module name, F is a functor name and N is its arity."
         ("no_option_name"      (put-text-property beg end 'font-lock-face sweep-no-option-name-face))
         ("control"             (put-text-property beg end 'font-lock-face sweep-control-face))
         ("var"                 (put-text-property beg end 'font-lock-face sweep-variable-face))
-        ("body"                (put-text-property beg end 'font-lock-face 'default))
         ("fullstop"            (put-text-property beg end 'font-lock-face sweep-fullstop-face))
         ("functor"             (put-text-property beg end 'font-lock-face sweep-functor-face))
         ("arity"               (put-text-property beg end 'font-lock-face sweep-arity-face))
@@ -602,10 +602,12 @@ module name, F is a functor name and N is its arity."
         ("identifier"          (put-text-property beg end 'font-lock-face sweep-identifier-face))
         ("file"                (put-text-property beg end 'font-lock-face sweep-file-face))
         ("file_no_depend"      (put-text-property beg end 'font-lock-face sweep-file-no-depend-face))
+        ("op_type"             (put-text-property beg end 'font-lock-face sweep-op-type-face))
         (`("goal_term" . ,_)   nil)
         (`("head_term" . ,_)   nil)
         ("clause"              nil)
         ("directive"           nil)
+        ("body"                nil)
         ("parentheses"         nil)
         ("term"                nil)
         ("expanded"            nil)
@@ -617,6 +619,7 @@ module name, F is a functor name and N is its arity."
         ("exported_operator"   nil)
         ("empty_list"          nil)
         ("dcg"                 nil)
+        ("qq_content"          nil)
         ("qq"                  nil)
         (other (message "Unknown color term %S" other))
         ))))
@@ -777,17 +780,24 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (while (and (< 0 times) (not (eobp)))
       (setq times (1- times))
       (unless (eobp)
+        (forward-char)
         (re-search-forward (rx (seq bol graph)) nil t))
       (while (and (nth 8 (syntax-ppss)) (not (eobp)))
+        (forward-char)
         (re-search-forward (rx (seq bol graph)) nil t)))
     (not (= p (point)))))
 
 (defun sweep-end-of-top-term ()
   (unless (eobp)
-    (while (nth 8 (syntax-ppss))
-      (forward-char))
+    (while (and (nth 8 (syntax-ppss)) (not (eobp)))
+        (forward-char))
     (or (re-search-forward (rx (seq "." (or white "\n"))) nil t)
-        (goto-char (point-max)))))
+        (goto-char (point-max)))
+    (while (and (nth 8 (syntax-ppss)) (not (eobp)))
+      (while (and (nth 8 (syntax-ppss)) (not (eobp)))
+        (forward-char))
+      (or (re-search-forward (rx (seq "." (or white "\n"))) nil t)
+          (goto-char (point-max))))))
 
 (defvar sweep-mode-syntax-table
   (let ((table (make-syntax-table)))
@@ -810,6 +820,16 @@ Interactively, a prefix arg means to prompt for BUFFER."
   :doc "Keymap for `sweep-mode'."
   "C-c C-c" #'sweep-colourise-buffer)
 
+(defun sweep-syntax-propertize (start end)
+  (goto-char start)
+  (let ((case-fold-search nil))
+    (funcall
+     (syntax-propertize-rules
+      ((rx bow (group-n 1 (seq "0'" anychar)))
+       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+            (string-to-syntax "w")))))
+     start end)))
+
 ;;;###autoload
 (define-derived-mode sweep-mode prog-mode "sweep"
   "Major mode for reading and editing Prolog code."
@@ -818,8 +838,10 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (setq-local comment-start-skip "\\(?:/\\*+ *\\|%+ *\\)")
   (setq-local parens-require-spaces nil)
   (setq-local beginning-of-defun-function #'sweep-beginning-of-top-term)
+  (setq-local end-of-defun-function #'sweep-end-of-top-term)
+  (setq-local syntax-propertize-function #'sweep-syntax-propertize)
   (setq-local font-lock-defaults
-              '((("\\<\\([_A-Z][a-zA-Z0-9_]*\\)" 1 sweep-variable-face))
+              '(nil
                 nil
                 nil
                 nil
