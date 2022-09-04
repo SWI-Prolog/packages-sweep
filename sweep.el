@@ -262,6 +262,14 @@ module name, F is a functor name and N is its arity."
                               pat)))))))
     (completing-read sweep-read-module-prompt col)))
 
+
+(defun sweep--set-buffer-module ()
+  (sweep-open-query "user" "sweep" "sweep_path_module" (buffer-file-name))
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (setq sweep-buffer-module (cdr sol)))))
+
 ;;;###autoload
 (defun sweep-find-module (mod)
   "Jump to the source file of the Prolog module MOD."
@@ -970,7 +978,8 @@ Interactively, a prefix arg means to prompt for BUFFER."
                 nil
                 nil
                 (font-lock-fontify-region-function . sweep-colourise-some-terms)))
-  (sweep-colourise-buffer))
+  (sweep-colourise-buffer)
+  (sweep--set-buffer-module))
 
 ;;;; Testing:
 

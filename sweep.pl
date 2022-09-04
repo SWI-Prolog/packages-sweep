@@ -35,6 +35,7 @@
             sweep_colourise_some_terms/2,
             sweep_documentation/2,
             sweep_expand_file_name/2,
+            sweep_path_module/2,
             sweep_predicate_location/2,
             sweep_predicates_collection/2,
             sweep_modules_collection/2,
@@ -350,3 +351,9 @@ sweep_expand_file_name_(Dir, Spec, Exp) :-
                                    relative_to(Dir),
                                    solutions(all),
                                    extensions(['', '.pl'])]).
+
+sweep_path_module([], "user")    :- !.
+sweep_path_module(Path0, Module) :-
+    atom_string(Path, Path0),
+    xref_module(Path, Module0),
+    atom_string(Module0, Module).
