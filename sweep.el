@@ -127,7 +127,7 @@
 
 (defvar sweep-predicate-completion-collection nil)
 
-(defvar-local sweep-buffer-module nil)
+(defvar-local sweep-buffer-module "user")
 
 (defun sweep-local-predicates-collection (&optional prefix)
   (sweep-open-query "user" "sweep" "sweep_local_predicate_completion"
@@ -979,7 +979,8 @@ Interactively, a prefix arg means to prompt for BUFFER."
                 nil
                 (font-lock-fontify-region-function . sweep-colourise-some-terms)))
   (sweep-colourise-buffer)
-  (sweep--set-buffer-module))
+  (sweep--set-buffer-module)
+  (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t))
 
 ;;;; Testing:
 
