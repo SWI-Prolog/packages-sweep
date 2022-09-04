@@ -32,6 +32,7 @@
 
 :- module(sweep,
           [ sweep_colourise_buffer/2,
+            sweep_colourise_some_terms/2,
             sweep_documentation/2,
             sweep_expand_file_name/2,
             sweep_predicate_location/2,
@@ -85,6 +86,7 @@ sweep_colourise_buffer([String|Path], Colors) :-
                        ( close(Contents),
                          free_memory_file(H)
                        )).
+
 sweep_colourise_buffer_(Path0, Contents, []) :-
     atom_string(Path, Path0),
     set_stream(Contents, encoding(utf8)),
@@ -99,6 +101,25 @@ sweep_colourise_buffer_(Path0, Contents, []) :-
                             sweep_handle_query_color(1)),
     erase(Ref0),
     erase(Ref1).
+
+sweep_colourise_some_terms([String,Path,Offset], Colors) :-
+    setup_call_cleanup(( new_memory_file(H),
+                         insert_memory_file(H, 0, String),
+                         open_memory_file(H, read, Contents, [encoding(utf8)])
+                       ),
+                       sweep_colourise_some_terms_(Path, Offset, Contents, Colors),
+                       ( close(Contents),
+                         free_memory_file(H)
+                       )).
+
+sweep_colourise_some_terms_(Path0, Offset, Contents, []) :-
+    atom_string(Path, Path0),
+    set_stream(Contents, encoding(utf8)),
+    set_stream(Contents, file_name(Path)),
+    seek(Contents, 0, bof, _),
+    prolog_colourise_stream(Contents,
+                            Path,
+                            sweep_handle_query_color(Offset)).
 
 sweep_documentation([Path, Functor, Arity], Docs) :-
     atom_string(P, Path),

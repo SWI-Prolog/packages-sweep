@@ -548,8 +548,8 @@ module name, F is a functor name and N is its arity."
 
 (defun sweep--colourise (args)
   "ARGS is a list of the form (BEG LEN . SEM)."
-  (let* ((beg (car  args))
-         (end (+ beg (cadr args)))
+  (let* ((beg (max (point-min) (car  args)))
+         (end (min (point-max) (+ beg (cadr args))))
          (arg (cddr args)))
     (with-silent-modifications
       (pcase arg
@@ -558,6 +558,7 @@ module name, F is a functor name and N is its arity."
                             (pcase h
                               (`("unreferenced" . ,_) sweep-head-unreferenced-face)
                               (`("exported" . ,_) sweep-head-exported-face)
+                              (`("hook" . ,_) sweep-head-hook-face)
                               (`(,(rx (seq "local(")) . ,_) sweep-head-local-face)
                               (other (message "unknown head color term %S" other) sweep-head-local-face))))
         (`("goal" . ,g)
@@ -567,17 +568,22 @@ module name, F is a functor name and N is its arity."
                               (`("meta"      . ,_) sweep-meta-face)
                               (`("built_in"  . ,_) sweep-built-in-face)
                               (`("undefined" . ,_) sweep-undefined-face)
+                              (`(,(rx (seq "dynamic ")) . ,_) sweep-dynamic-face)
+                              (`(,(rx (seq "extern(")) . ,_) sweep-extern-face)
                               (`(,(rx (seq "autoload(")) . ,_) sweep-autoload-face)
                               (`(,(rx (seq "imported(")) . ,_) sweep-imported-face)
                               (`(,(rx (seq "local(")) . ,_) sweep-local-face)
                               (other (message "unknown goal color term %S" other) sweep-goal-face))))
-        (`("syntax_error" ,message ,eb ,ee)
+        (`("syntax_error" ,_message ,_eb ,_ee)
          (put-text-property beg end 'font-lock-face sweep-syntax-error-face))
         ("unused_import"       (put-text-property beg end 'font-lock-face sweep-unused-import-face))
         ("undefined_import"    (put-text-property beg end 'font-lock-face sweep-undefined-import-face))
         ("dict_tag"            (put-text-property beg end 'font-lock-face sweep-dict-tag-face))
         ("dict_key"            (put-text-property beg end 'font-lock-face sweep-dict-key-face))
         ("dict_sep"            (put-text-property beg end 'font-lock-face sweep-dict-sep-face))
+        ("flag_name"           (put-text-property beg end 'font-lock-face sweep-flag-name-face))
+        ("no_flag_name"        (put-text-property beg end 'font-lock-face sweep-flag-name-face))
+        ("ext_quant"           (put-text-property beg end 'font-lock-face sweep-ext-quant-face))
         ("atom"                (put-text-property beg end 'font-lock-face sweep-atom-face))
         ("float"               (put-text-property beg end 'font-lock-face sweep-float-face))
         ("int"                 (put-text-property beg end 'font-lock-face sweep-int-face))
@@ -639,6 +645,29 @@ module name, F is a functor name and N is its arity."
       (let ((sol (sweep-next-solution)))
         (sweep-close-query)
         sol))))
+
+(defun sweep-colourise-some-terms (beg0 end0 &optional _verbose)
+  (let* ((beg (save-mark-and-excursion
+                (goto-char beg0)
+                (sweep-beginning-of-top-term)
+                (point)))
+         (end (save-mark-and-excursion
+                (goto-char end0)
+                (sweep-end-of-top-term)
+                (point)))
+         (contents (buffer-substring-no-properties beg end)))
+    (with-silent-modifications
+      (font-lock-unfontify-region beg end))
+    (sweep-open-query "user"
+                      "sweep"
+                      "sweep_colourise_some_terms"
+                      (list contents
+                            (buffer-file-name)
+                            beg))
+    (let ((sol (sweep-next-solution)))
+      (sweep-close-query)
+      (when (sweep-true-p sol)
+        `(jit-lock-bounds ,beg . ,end)))))
 
 (defun sweep-colourise-query (buffer)
   (when (buffer-live-p buffer)
@@ -939,7 +968,9 @@ Interactively, a prefix arg means to prompt for BUFFER."
                 nil
                 nil
                 nil
-                nil)))
+                nil
+                (font-lock-fontify-region-function . sweep-colourise-some-terms)))
+  (sweep-colourise-buffer))
 
 ;;;; Testing:
 
