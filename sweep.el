@@ -820,6 +820,99 @@ Interactively, a prefix arg means to prompt for BUFFER."
   :doc "Keymap for `sweep-mode'."
   "C-c C-c" #'sweep-colourise-buffer)
 
+(defun sweep-indent-line ()
+  (interactive)
+  (when-let ((ppss (syntax-ppss))
+             (pos (- (point-max) (point)))
+             (indent (sweep-indent-line-indentation ppss)))
+    (back-to-indentation)
+    (if (= indent (current-column))
+        'noindent
+      (beginning-of-line)
+      (combine-after-change-calls
+        (delete-horizontal-space)
+        (insert (make-string indent ? )))
+      (if (> (- (point-max) pos) (point))
+          (goto-char (- (point-max) pos))))))
+
+(defun sweep-indent-line-indentation (ppss)
+  (save-match-data
+    (save-excursion
+      (beginning-of-line)
+      (re-search-backward (rx bol (zero-or-more (not "\n")) graph (zero-or-more (not "\n"))) nil t)
+      (cond
+       ((sweep-indent-line-ends-with-comment-or-string-p) 0)
+       ((sweep-indent-line-ends-with-fullstop-p)          0)
+       ((sweep-indent-line-ends-with-if))
+       ((sweep-indent-line-ends-with-then ppss))
+       ((sweep-indent-line-ends-with-else ppss))
+       ((sweep-indent-line-ends-with-arg ppss))
+       ((sweep-indent-line-ends-with-neck-p)              4)
+       (t (sweep-indent-line-fallback))))))
+
+(defun sweep-indent-line-fallback ()
+  (save-excursion
+    (back-to-indentation)
+    (current-column)))
+
+(defun sweep-indent-line-ends-with-if ()
+  (save-excursion
+    (end-of-line)
+    (when-let ((start-of-ite (nth 1 (syntax-ppss))))
+      (when (<= (pos-bol) start-of-ite)
+        (goto-char start-of-ite)
+        (let ((col (current-column)))
+          (when (looking-at-p (rx "(   "))
+            col))))))
+
+(defun sweep-indent-line-ends-with-then (ppss)
+  (save-excursion
+    (when-let ((orig (nth 1 ppss))
+               (start-of-ite (nth 1 (syntax-ppss))))
+      (when (= start-of-ite orig)
+        (back-to-indentation)
+        (let ((col (current-column)))
+          (when (looking-at-p (rx "->  "))
+            col))))))
+
+(defun sweep-indent-line-ends-with-else (ppss)
+  (save-excursion
+    (when-let ((orig (nth 1 ppss))
+               (start-of-ite (nth 1 (syntax-ppss))))
+      (when (= start-of-ite orig)
+        (back-to-indentation)
+        (let ((col (current-column)))
+          (when (looking-at-p (rx ";   "))
+            col))))))
+
+(defun sweep-indent-line-ends-with-arg (ppss)
+  (save-excursion
+    (end-of-line)
+    (when-let ((orig (nth 1 ppss))
+               (start-of-ite (nth 1 (syntax-ppss))))
+      (when (= start-of-ite orig)
+        (goto-char start-of-ite)
+        (forward-char 1)
+        (skip-syntax-forward " ")
+        (current-column)))))
+
+(defun sweep-indent-line-ends-with-neck-p ()
+  (save-excursion
+    (looking-at-p (rx (zero-or-more (not "\n"))
+                      (or ":-" "=>" "-->")
+                      (zero-or-more blank)
+                      eol))))
+
+(defun sweep-indent-line-ends-with-comment-or-string-p ()
+  (save-excursion
+    (end-of-line)
+    (nth 8 (syntax-ppss))))
+
+(defun sweep-indent-line-ends-with-fullstop-p ()
+  (save-excursion
+    (end-of-line)
+    (= ?. (preceding-char))))
+
 (defun sweep-syntax-propertize (start end)
   (goto-char start)
   (let ((case-fold-search nil))
@@ -840,6 +933,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (setq-local beginning-of-defun-function #'sweep-beginning-of-top-term)
   (setq-local end-of-defun-function #'sweep-end-of-top-term)
   (setq-local syntax-propertize-function #'sweep-syntax-propertize)
+  (setq-local indent-line-function #'sweep-indent-line)
   (setq-local font-lock-defaults
               '(nil
                 nil

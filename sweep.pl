@@ -159,6 +159,7 @@ sweep_module_path(ModuleName, Path) :-
     sweep_module_path_(Module, Path0),
     atom_string(Path0, Path).
 
+
 sweep_module_path_(Module, Path) :-
     module_property(Module, file(Path)), !.
 sweep_module_path_(Module, Path) :-
@@ -289,7 +290,7 @@ sweep_color_normalized(Offset, Col, Nom) :-
     Col =.. [Nom0|Rest],
     sweep_color_normalized_(Offset, Nom0, Rest, Nom).
 
-sweep_color_normalized_(Offset, Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
+sweep_color_normalized_(_, Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
     sweep_color_goal(Goal0),
     !,
     atom_string(Goal0, Goal),
