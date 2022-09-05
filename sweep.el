@@ -877,20 +877,18 @@ Interactively, a prefix arg means to prompt for BUFFER."
 
 (defun sweep-indent-line ()
   (interactive)
-  (when-let ((ppss (syntax-ppss))
-             (pos (- (point-max) (point)))
-             (indent (sweep-indent-line-indentation ppss)))
+  (when-let ((pos (- (point-max) (point)))
+             (indent (sweep-indent-line-indentation (point))))
     (back-to-indentation)
-    (if (= indent (current-column))
-        'noindent
-      (beginning-of-line)
-      (combine-after-change-calls
-        (delete-horizontal-space)
-        (insert (make-string indent ? )))
-      (if (> (- (point-max) pos) (point))
-          (goto-char (- (point-max) pos))))))
+    (beginning-of-line)
+    (combine-after-change-calls
+      (delete-horizontal-space)
+      (insert (make-string indent ? )))
+    (when (> (- (point-max) pos) (point))
+      (goto-char (- (point-max) pos)))
+    t))
 
-(defun sweep-indent-line-indentation (ppss)
+(defun sweep-indent-line-indentation (point)
   (save-match-data
     (save-excursion
       (beginning-of-line)
@@ -899,14 +897,16 @@ Interactively, a prefix arg means to prompt for BUFFER."
        ((sweep-indent-line-ends-with-comment-or-string-p) 0)
        ((sweep-indent-line-ends-with-fullstop-p)          0)
        ((sweep-indent-line-ends-with-if))
-       ((sweep-indent-line-ends-with-then ppss))
-       ((sweep-indent-line-ends-with-else ppss))
-       ((sweep-indent-line-ends-with-arg ppss))
+       ((sweep-indent-line-ends-with-then point))
+       ((sweep-indent-line-ends-with-else point))
+       ((sweep-indent-line-ends-with-arg point))
        ((sweep-indent-line-ends-with-neck-p)              4)
        (t (sweep-indent-line-fallback))))))
 
 (defun sweep-indent-line-fallback ()
   (save-excursion
+    (when-let ((open (nth 1 (syntax-ppss))))
+      (goto-char open))
     (back-to-indentation)
     (current-column)))
 
@@ -920,9 +920,12 @@ Interactively, a prefix arg means to prompt for BUFFER."
           (when (looking-at-p (rx "(   "))
             col))))))
 
-(defun sweep-indent-line-ends-with-then (ppss)
+(defun sweep-indent-line-ends-with-then (point)
   (save-excursion
-    (when-let ((orig (nth 1 ppss))
+    (when-let ((orig (save-mark-and-excursion
+                       (goto-char point)
+                       (back-to-indentation)
+                       (nth 1 (syntax-ppss))))
                (start-of-ite (nth 1 (syntax-ppss))))
       (when (= start-of-ite orig)
         (back-to-indentation)
@@ -930,9 +933,12 @@ Interactively, a prefix arg means to prompt for BUFFER."
           (when (looking-at-p (rx "->  "))
             col))))))
 
-(defun sweep-indent-line-ends-with-else (ppss)
+(defun sweep-indent-line-ends-with-else (point)
   (save-excursion
-    (when-let ((orig (nth 1 ppss))
+    (when-let ((orig (save-mark-and-excursion
+                       (goto-char point)
+                       (back-to-indentation)
+                       (nth 1 (syntax-ppss))))
                (start-of-ite (nth 1 (syntax-ppss))))
       (when (= start-of-ite orig)
         (back-to-indentation)
@@ -940,10 +946,13 @@ Interactively, a prefix arg means to prompt for BUFFER."
           (when (looking-at-p (rx ";   "))
             col))))))
 
-(defun sweep-indent-line-ends-with-arg (ppss)
+(defun sweep-indent-line-ends-with-arg (point)
   (save-excursion
     (end-of-line)
-    (when-let ((orig (nth 1 ppss))
+    (when-let ((orig (save-mark-and-excursion
+                       (goto-char point)
+                       (back-to-indentation)
+                       (nth 1 (syntax-ppss))))
                (start-of-ite (nth 1 (syntax-ppss))))
       (when (= start-of-ite orig)
         (goto-char start-of-ite)
