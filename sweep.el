@@ -569,8 +569,11 @@ module name, F is a functor name and N is its arity."
          (put-text-property beg end 'font-lock-face
                             (pcase h
                               (`("unreferenced" . ,_) sweep-head-unreferenced-face)
+                              (`("meta" . ,_) sweep-head-meta-face)
                               (`("exported" . ,_) sweep-head-exported-face)
                               (`("hook" . ,_) sweep-head-hook-face)
+                              (`(,(rx (seq "extern(")) . ,_) sweep-head-extern-face)
+                              (`(,(rx (seq "public ")) . ,_) sweep-head-public-face)
                               (`(,(rx (seq "local(")) . ,_) sweep-head-local-face)
                               (other (message "unknown head color term %S" other) sweep-head-local-face))))
         (`("goal" . ,g)
@@ -581,6 +584,8 @@ module name, F is a functor name and N is its arity."
                               (`("built_in"  . ,_) sweep-built-in-face)
                               (`("undefined" . ,_) sweep-undefined-face)
                               (`(,(rx (seq "dynamic ")) . ,_) sweep-dynamic-face)
+                              (`(,(rx (seq "multifile ")) . ,_) sweep-multifile-face)
+                              (`(,(rx (seq "thread_local ")) . ,_) sweep-thread-local-face)
                               (`(,(rx (seq "extern(")) . ,_) sweep-extern-face)
                               (`(,(rx (seq "autoload(")) . ,_) sweep-autoload-face)
                               (`(,(rx (seq "imported(")) . ,_) sweep-imported-face)
@@ -593,6 +598,7 @@ module name, F is a functor name and N is its arity."
         ("dict_tag"            (put-text-property beg end 'font-lock-face sweep-dict-tag-face))
         ("dict_key"            (put-text-property beg end 'font-lock-face sweep-dict-key-face))
         ("dict_sep"            (put-text-property beg end 'font-lock-face sweep-dict-sep-face))
+        ("meta"                (put-text-property beg end 'font-lock-face sweep-meta-spec-face))
         ("flag_name"           (put-text-property beg end 'font-lock-face sweep-flag-name-face))
         ("no_flag_name"        (put-text-property beg end 'font-lock-face sweep-flag-name-face))
         ("ext_quant"           (put-text-property beg end 'font-lock-face sweep-ext-quant-face))
