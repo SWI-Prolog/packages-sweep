@@ -38,8 +38,11 @@
             sweep_expand_file_name/2,
             sweep_path_module/2,
             sweep_colourise_query/2,
+            sweep_predicate_references/2,
             sweep_predicate_location/2,
+            sweep_predicate_apropos/2,
             sweep_predicates_collection/2,
+            sweep_local_predicate_completion/2,
             sweep_modules_collection/2,
             sweep_packs_collection/2,
             sweep_pack_install/2,
@@ -57,6 +60,7 @@
 :- use_module(library(pldoc/man_index)).
 :- use_module(library(lynx/html_text)).
 :- use_module(library(prolog_pack)).
+:- use_module(library(help)).
 :- use_module(library(prolog_server)).
 
 :- dynamic sweep_current_color/3,
@@ -336,11 +340,71 @@ sweep_module_description([M0|P], [M|[P|D]]) :-
    atom_string(D0, D).
 sweep_module_description([M0|P], [M|[P]]) :- atom_string(M0, M).
 
-sweep_predicate_location(MFN, [Path|Line]) :-
+sweep_predicate_references(MFN, Refs) :-
     term_string(M:F/N, MFN),
     pi_head(F/N, H),
+    findall([Path|Line],
+            (xref_called(Path0, H, _, _, Line),
+             atom_string(Path0, Path)),
+            Refs,
+            Tail),
+    findall([Path|Line],
+            (xref_called(Path0, M:H, _, _, Line),
+             atom_string(Path0, Path)),
+            Tail).
+
+
+sweep_predicate_location(MFN, [Path|Line]) :-
+    !,
+    term_string(M:F/N, MFN),
+    pi_head(F/N, H),
+    sweep_predicate_location_(M, H, Path, Line).
+sweep_predicate_location(FN, [Path|Line]) :-
+    !,
+    term_string(F/N, FN),
+    pi_head(F/N, H),
+    sweep_predicate_location_(H, Path, Line).
+
+sweep_predicate_apropos(Query0, Matches) :-
+    atom_string(Query, Query0),
+    findall([S,Path|Line],
+            (prolog_help:apropos(Query, M:F/N, _, _),
+             format(string(S), '~w:~W/~w', [M, F, [quoted(true), character_escapes(true)], N]),
+             pi_head(F/N, Head),
+             sweep_predicate_location_(M, Head, Path, Line)),
+            Matches, Tail),
+    findall([S,Path],
+            (prolog_help:apropos(Query, F/N, _, _),
+             format(string(S), '~W/~w', [F, [quoted(true), character_escapes(true)], N]),
+             pi_head(F/N, Head),
+             sweep_predicate_location_(Head, Path, Line)),
+            Tail).
+
+sweep_predicate_location_(H, Path, Line) :-
+    predicate_property(H, file(Path0)),
+    predicate_property(H, line_count(Line)),
+    !,
+    atom_string(Path0, Path).
+sweep_predicate_location_(H, Path, Line) :-
+    xref_defined(Path0, H, How),
+    atom_string(Path0, Path),
+    (   xref_definition_line(How, Line)
+    ->  true
+    ;   Line = []
+    ).
+
+sweep_predicate_location_(M, H, Path, Line) :-
+    predicate_property(M:H, file(Path0)),
     predicate_property(M:H, line_count(Line)),
-    predicate_property(M:H, file(Path0)), atom_string(Path0, Path).
+    !,
+    atom_string(Path0, Path).
+sweep_predicate_location_(M, H, Path, Line) :-
+    xref_defined(Path0, M:H, How),
+    atom_string(Path0, Path),
+    (   xref_definition_line(How, Line)
+    ->  true
+    ;   Line = []
+    ).
 
 sweep_local_predicate_completion([Mod|Sub], Preds) :-
     atom_string(M, Mod),
@@ -399,9 +463,23 @@ sweep_predicates_collection(Sub, Preds) :-
               \+ (predicate_property(M:H, imported_from(M1)), M \= M1)
             ),
             Preds0,
-            Tail),
+            Tail0),
     findall(M:F/N,
             ( '$autoload':library_index(H, M, _),
+              pi_head(F/N, H)
+            ),
+            Tail0,
+            Tail1),
+    findall(M:F/N,
+            ( xref_defined(SourceId, H, local(_)),
+              xref_module(SourceId, M),
+              pi_head(F/N, H)
+            ),
+            Tail1,
+            Tail),
+    findall(M:F/N,
+            ( xref_defined(_, H, imported(SourceId)),
+              xref_module(SourceId, M),
               pi_head(F/N, H)
             ),
             Tail),

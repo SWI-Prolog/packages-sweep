@@ -26,6 +26,7 @@
 ;;; Code:
 
 (require 'comint)
+(require 'xref)
 
 (defgroup sweep nil
   "SWI-Prolog Embedded in Emacs."
@@ -144,8 +145,22 @@
     (when (sweep-true-p sol)
       (cdr sol))))
 
+(defun sweep-predicate-references (mfn)
+  (sweep-open-query "user" "sweep" "sweep_predicate_references" mfn)
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (cdr sol))))
+
 (defun sweep-predicate-location (mfn)
   (sweep-open-query "user" "sweep" "sweep_predicate_location" mfn)
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (cdr sol))))
+
+(defun sweep-predicate-apropos (pattern)
+  (sweep-open-query "user" "sweep" "sweep_predicate_apropos" pattern)
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
     (when (sweep-true-p sol)
@@ -227,7 +242,7 @@ module name, F is a functor name and N is its arity."
   (interactive (list (sweep-read-predicate)))
   (let* ((loc (sweep-predicate-location mfn))
          (path (car loc))
-         (line (cdr loc)))
+         (line (or (cdr loc) 1)))
     (find-file path)
     (goto-char (point-min))
     (forward-line (1- line))))
@@ -1015,23 +1030,39 @@ Interactively, a prefix arg means to prompt for BUFFER."
   "Hook for `xref-backend-functions'."
   'sweep)
 
-
 (cl-defmethod xref-backend-identifier-at-point ((_backend (eql 'sweep)))
   (sweep-identifier-at-point))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql 'sweep)))
-  (sweep-identifier-completion-table))
+  (completion-table-with-cache #'sweep-predicates-collection))
 
 (cl-defmethod xref-backend-identifier-completion-ignore-case ((_backend (eql 'sweep)))
   "Case is always significant for Prolog identifiers, so return nil."
   nil)
 
-(cl-defmethod xref-backend-definitions ((_backend (eql 'sweep)) symbol))
+(cl-defmethod xref-backend-definitions ((_backend (eql 'sweep)) mfn)
+  (when-let ((loc (sweep-predicate-location mfn))
+             (path (car loc))
+             (line (or (cdr loc) 1)))
+    (list (xref-make (concat path ":" (number-to-string line)) (xref-make-file-location path line 0)))))
 
-(cl-defmethod xref-backend-references ((_backend (eql 'sweep)) symbol))
+(cl-defmethod xref-backend-references ((_backend (eql 'sweep)) mfn)
+  (let ((refs (sweep-predicate-references mfn)))
+    (seq-map (lambda (loc)
+               (let ((path (car loc))
+                     (line (or (cdr loc) 1)))
+                 (xref-make (concat path ":" (number-to-string line)) (xref-make-file-location path line 0))))
+             refs)))
 
-(cl-defmethod xref-backend-apropos ((_backend (eql 'sweep)) pattern))
-
+(cl-defmethod xref-backend-apropos ((_backend (eql 'sweep)) pattern)
+  (let ((matches (sweep-predicate-apropos pattern)))
+    (seq-map (lambda (match)
+               (let ((mfn (car match))
+                     (path (cadr match))
+                     (line (or (cddr match) 1)))
+                 (xref-make mfn
+                            (xref-make-file-location path line 0))))
+             matches)))
 
 ;;;###autoload
 (define-derived-mode sweep-mode prog-mode "sweep"
