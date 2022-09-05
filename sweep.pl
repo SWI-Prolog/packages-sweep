@@ -34,6 +34,7 @@
           [ sweep_colourise_buffer/2,
             sweep_colourise_some_terms/2,
             sweep_documentation/2,
+            sweep_identifier_at_point/2,
             sweep_expand_file_name/2,
             sweep_path_module/2,
             sweep_predicate_location/2,
@@ -102,6 +103,60 @@ sweep_colourise_buffer_(Path0, Contents, []) :-
                             sweep_handle_query_color(1)),
     erase(Ref0),
     erase(Ref1).
+
+
+sweep_identifier_at_point([Contents0, Path, Point], Identifier) :-
+    setup_call_cleanup(( new_memory_file(H),
+                         insert_memory_file(H, 0, Contents0),
+                         open_memory_file(H, read, Contents, [encoding(utf8)])
+                       ),
+                       sweep_identifier_at_point_(Path, Point, Contents, Identifier),
+                       ( close(Contents),
+                         free_memory_file(H)
+                       )).
+
+:- dynamic sweep_current_identifier_at_point/1.
+
+
+sweep_identifier_at_point_(Path0, Point, Contents, Identifier) :-
+    atom_string(Path, Path0),
+    (   xref_module(Path, M)
+    ->  true
+    ;   M = user
+    ),
+    set_stream(Contents, encoding(utf8)),
+    set_stream(Contents, file_name(Path)),
+    seek(Contents, 0, bof, _),
+    retractall(sweep_current_identifier_at_point(_)),
+    prolog_colourise_term(Contents, Path,
+                          sweep_handle_identifier_at_point(Path, M, Point),
+                          []),
+    sweep_current_identifier_at_point(Identifier0),
+    term_string(Identifier0, Identifier).
+
+
+sweep_handle_identifier_at_point(Path, M, Point, Col, Beg, Len) :-
+    Beg =< Point,
+    Point =< Beg + Len,
+    !,
+    sweep_handle_identifier_at_point_(Path, M, Col).
+sweep_handle_identifier_at_point(_, _, _, _, _, _).
+
+sweep_handle_identifier_at_point_(Path, M0, goal_term(_Kind, Goal)) :-
+    !,
+    pi_head(PI0, Goal),
+    (   PI0 = M:PI
+    ->  true
+    ;   xref_defined(Path, Goal, imported(Other)), xref_module(Other, M)
+    ->  PI = PI0
+    ;   predicate_property(M0:Goal, imported_from(M))
+    ->  PI = PI0
+    ;   '$autoload':library_index(Goal, M, _)
+    ->  PI = PI0
+    ;   M = M0, PI = PI0
+    ),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_(_, _, _).
 
 sweep_colourise_some_terms([String,Path,Offset], Colors) :-
     setup_call_cleanup(( new_memory_file(H),

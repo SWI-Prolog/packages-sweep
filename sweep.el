@@ -987,6 +987,52 @@ Interactively, a prefix arg means to prompt for BUFFER."
             (string-to-syntax "w")))))
      start end)))
 
+
+(defun sweep-identifier-at-point (&optional point)
+  (let* ((p (or point (point)))
+         (beg (save-mark-and-excursion
+                (goto-char p)
+                (sweep-beginning-of-top-term)
+                (point)))
+         (end (save-mark-and-excursion
+                (goto-char p)
+                (sweep-end-of-top-term)
+                (point)))
+         (contents (buffer-substring-no-properties beg end)))
+    (sweep-open-query "user"
+                      "sweep"
+                      "sweep_identifier_at_point"
+                      (list contents
+                            (buffer-file-name)
+                            (- p beg)))
+    (let ((sol (sweep-next-solution)))
+      (sweep-close-query)
+      (when (sweep-true-p sol)
+        (cdr sol)))))
+
+;;;###autoload
+(defun sweep--xref-backend ()
+  "Hook for `xref-backend-functions'."
+  'sweep)
+
+
+(cl-defmethod xref-backend-identifier-at-point ((_backend (eql 'sweep)))
+  (sweep-identifier-at-point))
+
+(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql 'sweep)))
+  (sweep-identifier-completion-table))
+
+(cl-defmethod xref-backend-identifier-completion-ignore-case ((_backend (eql 'sweep)))
+  "Case is always significant for Prolog identifiers, so return nil."
+  nil)
+
+(cl-defmethod xref-backend-definitions ((_backend (eql 'sweep)) symbol))
+
+(cl-defmethod xref-backend-references ((_backend (eql 'sweep)) symbol))
+
+(cl-defmethod xref-backend-apropos ((_backend (eql 'sweep)) pattern))
+
+
 ;;;###autoload
 (define-derived-mode sweep-mode prog-mode "sweep"
   "Major mode for reading and editing Prolog code."
@@ -1007,6 +1053,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
                 (font-lock-fontify-region-function . sweep-colourise-some-terms)))
   (sweep-colourise-buffer)
   (sweep--set-buffer-module)
+  (add-hook 'xref-backend-functions #'sweep--xref-backend nil t)
   (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t))
 
 ;;;; Testing:
