@@ -261,6 +261,24 @@ Prolog terms to Elisp objects]]) and passed as a sole argument to the
 invoked Elisp function.  The =sweep_funcall/2= variant invokes the Elisp
 function without any arguments.
 
+* Editing Prolog code
+:PROPERTIES:
+:CUSTOM_ID: editing-prolog-code
+:END:
+
+#+CINDEX: sweep-mode
+#+FINDEX: sweep-mode
+#+VINDEX: sweep-mode
+=sweep= includes a dedicated major mode for reading and editing Prolog
+code, called =sweep-mode=.  To activate this mode in a buffer, type =M-x
+sweep-mode=.  To instruct Emacs to always open Prolog files in
+=sweep-mode=, modify the Emacs variable =auto-mode-alist= like so:
+
+#+begin_src emacs-lisp
+  (add-to-list 'auto-mode-alist '("\\.pl\\'"   . sweep-mode))
+  (add-to-list 'auto-mode-alist '("\\.plt\\'"  . sweep-mode))
+#+end_src
+
 * The Prolog top-level
 :PROPERTIES:
 :CUSTOM_ID: prolog-top-level

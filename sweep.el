@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.1.0
+;; Package-Version: 0.1.1
 ;; Package-Requires: ((emacs "27"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -561,6 +561,11 @@ module name, F is a functor name and N is its arity."
          (arg (cddr args)))
     (with-silent-modifications
       (pcase arg
+        (`("comment" . ,k)
+         (put-text-property beg end 'font-lock-face
+                            (pcase k
+                              ("structured" sweep-structured-comment-face)
+                              (_ sweep-comment-face))))
         (`("head" . ,h)
          (put-text-property beg end 'font-lock-face
                             (pcase h
@@ -607,7 +612,6 @@ module name, F is a functor name and N is its arity."
         ("string"              (put-text-property beg end 'font-lock-face sweep-string-face))
         ("module"              (put-text-property beg end 'font-lock-face sweep-module-face))
         ("neck"                (put-text-property beg end 'font-lock-face sweep-neck-face))
-        ("comment"             (put-text-property beg end 'font-lock-face sweep-comment-face))
         ("hook"                (put-text-property beg end 'font-lock-face sweep-hook-face))
         ("qq_type"             (put-text-property beg end 'font-lock-face sweep-qq-type-face))
         ("qq_sep"              (put-text-property beg end 'font-lock-face sweep-qq-sep-face))
@@ -855,7 +859,9 @@ Interactively, a prefix arg means to prompt for BUFFER."
 
 (defvar-keymap sweep-mode-map
   :doc "Keymap for `sweep-mode'."
-  "C-c C-c" #'sweep-colourise-buffer)
+;;"C-c C-l" #'sweep-load-buffer
+  "C-c C-c" #'sweep-colourise-buffer
+  "C-c C-t" #'sweep-top-level)
 
 (defun sweep-indent-line ()
   (interactive)

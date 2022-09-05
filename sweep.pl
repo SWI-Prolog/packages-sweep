@@ -332,6 +332,9 @@ sweep_color_normalized_(Offset, syntax_error, [Message0,Start0-End0|_], ["syntax
     Start is Start0 + Offset,
     End   is End0   + Offset,
     atom_string(Message0, Message).
+sweep_color_normalized_(Offset, comment, [Kind0|_], ["comment"|Kind]) :-
+    !,
+    atom_string(Kind0, Kind).
 sweep_color_normalized_(_, Nom0, _, Nom) :-
     atom_string(Nom0, Nom).
 
