@@ -37,6 +37,7 @@
             sweep_identifier_at_point/2,
             sweep_expand_file_name/2,
             sweep_path_module/2,
+            sweep_colourise_query/2,
             sweep_predicate_location/2,
             sweep_predicates_collection/2,
             sweep_modules_collection/2,
@@ -142,8 +143,83 @@ sweep_handle_identifier_at_point(Path, M, Point, Col, Beg, Len) :-
     sweep_handle_identifier_at_point_(Path, M, Col).
 sweep_handle_identifier_at_point(_, _, _, _, _, _).
 
-sweep_handle_identifier_at_point_(Path, M0, goal_term(_Kind, Goal)) :-
+sweep_handle_identifier_at_point_(Path, M0, goal_term(Kind, Goal)) :-
     !,
+    sweep_handle_identifier_at_point_goal(Path, M0, Kind, Goal).
+sweep_handle_identifier_at_point_(Path, M0, goal(Kind, Goal)) :-
+    !,
+    sweep_handle_identifier_at_point_goal(Path, M0, Kind, Goal).
+sweep_handle_identifier_at_point_(_Path, M0, head_term(_Kind, Goal)) :-
+    !,
+    sweep_handle_identifier_at_point_head(M0, Goal).
+sweep_handle_identifier_at_point_(_, _, _).
+
+
+sweep_handle_identifier_at_point_head(_, M:Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_head(M, Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+
+sweep_handle_identifier_at_point_goal(_Path, M, local(_), Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M, recursion, M:Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_goal(_Path, M, recursion, Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, built_in, Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, imported(Path), Goal) :-
+    !,
+    pi_head(PI, Goal),
+    xref_module(Path, M),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, Extern, Goal) :-
+    sweep_is_extern(Extern, M),
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, autoload(Path), Goal) :-
+    !,
+    pi_head(PI, Goal),
+    (   '$autoload':library_index(Goal, M, Path)
+    ->  true
+    ;   file_name_extension(Base, _, Path), '$autoload':library_index(Goal, M, Base)
+    ),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, Global, Goal) :-
+    sweep_is_global(Global),
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(user:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, undefined, M:Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(M:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, undefined, Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(undefined:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, meta, _:Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(meta:PI)).
+sweep_handle_identifier_at_point_goal(_Path, _M0, meta, Goal) :-
+    !,
+    pi_head(PI, Goal),
+    asserta(sweep_current_identifier_at_point(meta:PI)).
+sweep_handle_identifier_at_point_goal(Path, M0, _Kind, Goal) :-
     pi_head(PI0, Goal),
     (   PI0 = M:PI
     ->  true
@@ -156,7 +232,12 @@ sweep_handle_identifier_at_point_(Path, M0, goal_term(_Kind, Goal)) :-
     ;   M = M0, PI = PI0
     ),
     asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_(_, _, _).
+
+sweep_is_global(global).
+sweep_is_global(global(_,_)).
+
+sweep_is_extern(extern(M),   M).
+sweep_is_extern(extern(M,_), M).
 
 sweep_colourise_some_terms([String,Path,Offset], Colors) :-
     setup_call_cleanup(( new_memory_file(H),
