@@ -74,7 +74,6 @@
 
 (defvar sweep-prolog-server-port nil)
 
-;;;###autoload
 (defun sweep--compile-module ()
   "Compile sweep-module."
   (interactive)
@@ -639,8 +638,7 @@ module name, F is a functor name and N is its arity."
         ("dcg"                 nil)
         ("qq_content"          nil)
         ("qq"                  nil)
-        (other (message "Unknown color term %S" other))
-        ))))
+        (other (message "Unknown color term %S" other))))))
 
 (defun sweep-colourise-buffer (&optional buffer)
   (interactive)
@@ -857,11 +855,19 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (modify-syntax-entry ?/ ". 14" table)
     table))
 
-(defvar-keymap sweep-mode-map
-  :doc "Keymap for `sweep-mode'."
-;;"C-c C-l" #'sweep-load-buffer
-  "C-c C-c" #'sweep-colourise-buffer
-  "C-c C-t" #'sweep-top-level)
+(defvar sweep-mode-map
+  (let ((map (make-sparse-keymap)))
+;;  (define-key map (kbd "C-c C-l") #'sweep-load-buffer)
+    (define-key map (kbd "C-c C-c") #'sweep-colourise-buffer)
+    (define-key map (kbd "C-c C-t") #'sweep-top-level)
+    map)
+  "Keymap for `sweep-mode'.")
+
+;; (defvar-keymap sweep-mode-map
+;;   :doc "Keymap for `sweep-mode'."
+;; ;;"C-c C-l" #'sweep-load-buffer
+;;   "C-c C-c" #'sweep-colourise-buffer
+;;   "C-c C-t" #'sweep-top-level)
 
 (defun sweep-indent-line ()
   (interactive)
