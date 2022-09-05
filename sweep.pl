@@ -213,7 +213,8 @@ sweep_local_predicate_completion([Mod|Sub], Preds) :-
             Preds0,
             Tail),
     findall(XF/XN,
-            (   xref_defined(SourceId, H, _),
+            (   xref_module(SourceId, M),
+                xref_defined(SourceId, H, _),
                 H \= _:_,
                 pi_head(XF/XN, H)
             ),
@@ -332,7 +333,7 @@ sweep_color_normalized_(Offset, syntax_error, [Message0,Start0-End0|_], ["syntax
     Start is Start0 + Offset,
     End   is End0   + Offset,
     atom_string(Message0, Message).
-sweep_color_normalized_(Offset, comment, [Kind0|_], ["comment"|Kind]) :-
+sweep_color_normalized_(_, comment, [Kind0|_], ["comment"|Kind]) :-
     !,
     atom_string(Kind0, Kind).
 sweep_color_normalized_(_, Nom0, _, Nom) :-
