@@ -409,17 +409,6 @@ For example, typing =C-x C-f library(pldoc/doc_man)= will open the
 source of the =pldoc_man= module from the Prolog library, and likewise
 =C-x C-f pack(.)= will open the Prolog packages directory.
 
-* Installing Prolog packages
-:PROPERTIES:
-:CUSTOM_ID: prolog-packages
-:END:
-
-#+FINDEX: sweep-pack-install
-The command =M-x sweep-pack-install= can be used to install
-or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
-completion candidates are annotated with description and the version
-of each package.
-
 * Quick access to =sweep= commands
 :PROPERTIES:
 :CUSTOM_ID: quick-command-access
@@ -436,7 +425,41 @@ to a prefix key, e.g. =C-c p=, use:
 #+end_src
 
 As an example, with the above binding the =sweep= top-level can be
-access from anywhere with =C-c p t=.
+accessed from anywhere with =C-c p t=, which invokes the command
+=sweep-top-level=.
+
+* Examining Prolog messages
+
+#+CINDEX: messages
+#+VINDEX: sweep-messages-buffer-name
+Messages emitted by the embedded Prolog are redirected by =sweep= to a
+dedicated Emacs buffer.  By default, the =sweep= messages buffer is
+named =*sweep Messages*=.  To instruct =sweep= to use another buffer name
+instead, type =M-x customize-option RET sweep-messages-buffer-name RET=
+and set the option to a suitable value.
+
+The =sweep= messages buffer uses the minor mode =compilation-minor-mode=,
+which allows for jumping to source locations indicated in errors and
+warning directly from the corresponding message in the =sweep= messages
+buffer.  For more information about the features enabled by
+=compilation-minor-mode=, see [[info:emacs#Compilation Mode][Compilation Mode in the Emacs manual]].
+
+#+FINDEX: sweep-view-messages
+=sweep= includes the command =sweep-view-messages= for quickly switching
+to the =sweep= messages buffer.  This command is bound by default in
+=sweep-prefix-map= to the =e= key (see [[Quick access to =sweep= commands]]).
+
+* Installing Prolog packages
+:PROPERTIES:
+:CUSTOM_ID: prolog-packages
+:END:
+
+#+FINDEX: sweep-pack-install
+The command =M-x sweep-pack-install= can be used to install
+or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
+completion candidates are annotated with description and the version
+of each package.
+
 
 #+html: <!--
 

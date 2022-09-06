@@ -32,6 +32,12 @@
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
 
+(defcustom sweep-messages-buffer-name "*sweep Messages*"
+  "The name of the buffer to use for logging Prolog messages."
+  :package-version '((sweep . "0.1.1"))
+  :type 'string
+  :group 'sweep)
+
 (defcustom sweep-read-module-prompt "Module: "
   "Prompt used for reading a Prolog module name from the minibuffer."
   :package-version '((sweep . "0.1.0"))
@@ -107,13 +113,19 @@
           (require 'sweep-module))
       (error "Sweep will not work until `sweep-module' is compiled!"))))
 
-
-(defvar sweep-messages-buffer nil)
+(defun sweep-view-messages ()
+  "View the log of recent Prolog messages."
+  (interactive)
+  (with-current-buffer (get-buffer-create sweep-messages-buffer-name)
+    (goto-char (point-max))
+    (let ((win (display-buffer (current-buffer))))
+      (set-window-point win (point))
+      win)))
 
 (defun sweep-setup-message-hook ()
-  (with-current-buffer
-      (setq sweep-messages-buffer (get-buffer-create "*sweep-messages*"))
-    (compilation-minor-mode))
+  (with-current-buffer (get-buffer-create sweep-messages-buffer-name)
+    (setq-local window-point-insertion-type t)
+    (compilation-minor-mode 1))
   (sweep-open-query "user"
                     "sweep"
                     "sweep_setup_message_hook"
@@ -123,7 +135,7 @@
     sol))
 
 (defun sweep-message (message)
-  (with-current-buffer sweep-messages-buffer
+  (with-current-buffer (get-buffer-create sweep-messages-buffer-name)
     (save-excursion
       (goto-char (point-max))
       (insert message)
@@ -807,6 +819,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map "p" #'sweep-find-predicate)
     (define-key map "t" #'sweep-top-level)
     (define-key map "P" #'sweep-pack-install)
+    (define-key map "e" #'sweep-view-messages)
     map)
   "Keymap for `sweep' global commands.")
 
