@@ -786,6 +786,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
                  (not (string= "?- "   (substring prompt
                                                   (- pend pstart 3)
                                                   (- pend pstart))))
+                 (not (string= "|: "   prompt))
                  (not (string= "|    " prompt)))
         (comint-send-input)))))
 
