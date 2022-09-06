@@ -32,6 +32,14 @@
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
 
+(defcustom sweep-swipl-path nil
+  "Path to the swipl binary.
+When non-nil, this is used by the embedded SWI-Prolog runtime to
+locate its \"home\" directory."
+  :package-version '((sweep . "0.1.1"))
+  :type 'string
+  :group 'sweep)
+
 (defcustom sweep-messages-buffer-name "*sweep Messages*"
   "The name of the buffer to use for logging Prolog messages."
   :package-version '((sweep . "0.1.1"))
@@ -153,8 +161,9 @@
 
 (defun sweep-init ()
   (apply #'sweep-initialize
-         (cons (expand-file-name "bin/swipl" (file-name-directory
-                                              load-file-name))
+         (cons (or sweep-swipl-path
+                   (expand-file-name "bin/swipl" (file-name-directory
+                                                  load-file-name)))
                (cons "-q" (cons "--no-signals" sweep-init-args))))
   (sweep-setup-message-hook)
   (sweep-start-prolog-server))
