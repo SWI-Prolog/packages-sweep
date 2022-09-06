@@ -33,9 +33,10 @@
   :group 'prolog)
 
 (defcustom sweep-swipl-path nil
-  "Path to the swipl binary.
+  "Path to the swipl executable.
 When non-nil, this is used by the embedded SWI-Prolog runtime to
-locate its \"home\" directory."
+locate its \"home\" directory.  Otherwise, the `executable-find'
+is used to find a the swipl executable."
   :package-version '((sweep . "0.1.1"))
   :type 'string
   :group 'sweep)
@@ -161,9 +162,7 @@ locate its \"home\" directory."
 
 (defun sweep-init ()
   (apply #'sweep-initialize
-         (cons (or sweep-swipl-path
-                   (expand-file-name "bin/swipl" (file-name-directory
-                                                  load-file-name)))
+         (cons (or sweep-swipl-path (executable-find "swipl"))
                (cons "-q" (cons "--no-signals" sweep-init-args))))
   (sweep-setup-message-hook)
   (sweep-start-prolog-server))
