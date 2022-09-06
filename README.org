@@ -279,6 +279,58 @@ sweep-mode=.  To instruct Emacs to always open Prolog files in
   (add-to-list 'auto-mode-alist '("\\.plt\\'"  . sweep-mode))
 #+end_src
 
+** Semantic highlighting
+:PROPERTIES:
+:CUSTOM_ID: semantic-highlighting
+:END:
+
+#+CINDEX: fontification
+=sweep-mode= integrates with the standard Emacs =font-lock= system which
+is used for highlighting text in buffers (see [[info:emacs#Font Lock][Font Lock in the Emacs
+manual]]).  =sweep-mode= highlights different tokens in Prolog code
+according to their semantics, determined through static analysis which
+is performed on demand.  When a buffer is first opened in =sweep-mode=,
+its entire contents are analyzed to collect and cache cross reference
+data, and the buffer is highlighted accordingly.  In contrast, when
+editing and moving around the buffer, a faster, local analysis is
+invoked to updated the semantic highlighting.
+
+#+FINDEX: sweep-colourise-buffer
+At any point in a =sweep-mode= buffer, the command =C-c C-c= (or =M-x
+sweep-colourise-buffer=) can be used to update the cross reference
+cache and highlight the buffer accordingly.  This may be useful
+e.g. after defining a new predicate.
+
+#+CINDEX: sweep-faces
+=sweep= defines more than 60 different faces (named sets of properties
+that determine the appearance of a specific text in Emacs buffers, see
+also [[info:emacs#Faces][Faces in the Emacs manual]]) to signify the specific semantics of
+each token in a Prolog code buffer.  For example, calls to built in
+Prolog predicates are highlighted with the =sweep-built-in-face=, while
+recursive calls to predicates in their own definitions are assigned
+the =sweep-recursion-face=.  The different appearance properties
+associated which each face, like color, font, etc., can be customized
+according to best suite the user's preferences.  By default, =sweep=
+defines its faces to inherit from standard Emacs faces such as
+=font-lock-variable-face= commonly used for variables in different
+programming languages, which =sweep= uses a basis for
+=sweep-variable-face=.  To view and customize all of the faces defined
+and used in =sweep=, type =M-x customize-group RET sweep-faces RET=.
+
+** Definitions and references
+:PROPERTIES:
+:CUSTOM_ID: sweep-xref
+:END:
+
+#+CINDEX: xref
+=sweep-mode= integrates with the Emacs =xref= API to facilitate quick
+access to predicate definitions and references in Prolog code buffers.
+This enables the many commands that the =xref= interface provides, like
+=M-.= for jumping to the definition of the predicate at point.  Refer to
+[[info:emacs#Find Identifiers][Find Identifiers in the Emacs manual]] for an overview of the available
+commands.
+
+
 * The Prolog top-level
 :PROPERTIES:
 :CUSTOM_ID: prolog-top-level
