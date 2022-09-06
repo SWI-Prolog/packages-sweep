@@ -6,7 +6,7 @@
 #+startup:               content indent
 #+export_file_name:      sweep.texi
 #+texinfo_filename:      sweep.info
-#+texinfo_dir_category:  Prolog
+#+texinfo_dir_category:  Emacs
 #+texinfo_dir_title:     Sweep: (sweep)
 #+texinfo_dir_desc:      SWI-Prolog Embedded in Emacs
 #+texinfo_header:        @set MAINTAINERSITE @uref{https://eshelyaron.com,maintainer webpage}
@@ -329,7 +329,6 @@ This enables the many commands that the =xref= interface provides, like
 =M-.= for jumping to the definition of the predicate at point.  Refer to
 [[info:emacs#Find Identifiers][Find Identifiers in the Emacs manual]] for an overview of the available
 commands.
-
 
 * The Prolog top-level
 :PROPERTIES:

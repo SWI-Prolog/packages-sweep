@@ -33,6 +33,7 @@
 :- module(sweep,
           [ sweep_colourise_buffer/2,
             sweep_colourise_some_terms/2,
+            sweep_setup_message_hook/2,
             sweep_documentation/2,
             sweep_identifier_at_point/2,
             sweep_expand_file_name/2,
@@ -583,3 +584,21 @@ sweep_path_module(Path0, Module) :-
     atom_string(Path, Path0),
     xref_module(Path, Module0),
     atom_string(Module0, Module).
+
+
+sweep_setup_message_hook(_, _) :-
+    retractall(user:thread_message_hook(_, _, _)),
+    asserta((
+             user:thread_message_hook(Term, Kind, Lines) :-
+             sweep_message_hook(Term, Kind, Lines)
+             )).
+
+sweep_message_hook(Term, Kind, _Lines) :-
+    should_handle_message_kind(Kind),
+    !,
+    message_to_string(Term, String),
+    sweep_funcall("sweep-message", String, _).
+
+should_handle_message_kind(error).
+should_handle_message_kind(warning).
+should_handle_message_kind(debug(_)).

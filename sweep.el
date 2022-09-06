@@ -107,6 +107,28 @@
           (require 'sweep-module))
       (error "Sweep will not work until `sweep-module' is compiled!"))))
 
+
+(defvar sweep-messages-buffer nil)
+
+(defun sweep-setup-message-hook ()
+  (with-current-buffer
+      (setq sweep-messages-buffer (get-buffer-create "*sweep-messages*"))
+    (compilation-minor-mode))
+  (sweep-open-query "user"
+                    "sweep"
+                    "sweep_setup_message_hook"
+                    nil)
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    sol))
+
+(defun sweep-message (message)
+  (with-current-buffer sweep-messages-buffer
+    (save-excursion
+      (goto-char (point-max))
+      (insert message)
+      (newline))))
+
 (defun sweep-start-prolog-server ()
   (sweep-open-query "user"
                     "prolog_server"
@@ -122,8 +144,8 @@
          (cons (expand-file-name "bin/swipl" (file-name-directory
                                               load-file-name))
                (cons "-q" (cons "--no-signals" sweep-init-args))))
+  (sweep-setup-message-hook)
   (sweep-start-prolog-server))
-
 
 (defvar sweep-predicate-completion-collection nil)
 
