@@ -34,6 +34,8 @@
           [ sweep_colourise_buffer/2,
             sweep_colourise_some_terms/2,
             sweep_setup_message_hook/2,
+            sweep_current_prolog_flags/2,
+            sweep_set_prolog_flag/2,
             sweep_documentation/2,
             sweep_identifier_at_point/2,
             sweep_expand_file_name/2,
@@ -84,6 +86,20 @@ prolog:xref_open_source(Source, Stream) :-
 
 prolog:xref_close_source(Source, Stream) :-
     sweep_open(Source, Stream).
+
+
+sweep_current_prolog_flags(Sub, Flags) :-
+    findall([Flag|Value],
+            (current_prolog_flag(Flag0, Value0),
+             atom_string(Flag0, Flag),
+             once(sub_string(Flag, _, _, _, Sub)),
+             term_string(Value0, Value)),
+            Flags).
+
+sweep_set_prolog_flag([Flag0|Value0], []) :-
+    atom_string(Flag, Flag0),
+    term_string(Value, Value0),
+    set_prolog_flag(Flag, Value).
 
 sweep_colourise_buffer([String|Path], Colors) :-
     setup_call_cleanup(( new_memory_file(H),

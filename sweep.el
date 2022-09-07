@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.1.1
+;; Package-Version: 0.1.2
 ;; Package-Requires: ((emacs "27"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -44,6 +44,12 @@ is used to find a the swipl executable."
 (defcustom sweep-messages-buffer-name "*sweep Messages*"
   "The name of the buffer to use for logging Prolog messages."
   :package-version '((sweep . "0.1.1"))
+  :type 'string
+  :group 'sweep)
+
+(defcustom sweep-read-flag-prompt "Flag: "
+  "Prompt used for reading a Prolog flag name from the minibuffer."
+  :package-version '((sweep . "0.1.2"))
   :type 'string
   :group 'sweep)
 
@@ -171,6 +177,39 @@ is used to find a the swipl executable."
     (let ((win (display-buffer (current-buffer))))
       (set-window-point win (point))
       win)))
+
+(defun sweep-current-prolog-flags (&optional prefix)
+  (sweep-open-query "user" "sweep" "sweep_current_prolog_flags" (or prefix ""))
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (cdr sol))))
+
+(defun sweep-read-prolog-flag ()
+  "Read a Prolog flag from the minibuffer, with completion."
+  (let* ((col (sweep-current-prolog-flags))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (key)
+                  (let* ((val (cdr (assoc-string key col))))
+                    (if val
+                        (concat (make-string
+                                 (max (- 32 (length key)) 1) ? )
+                                val)
+                      nil))))))
+    (completing-read sweep-read-flag-prompt col)))
+
+(defun sweep-set-prolog-flag (flag value)
+  (interactive (let ((f (sweep-read-prolog-flag)))
+                 (list f (read-string (concat "Set " f " to: ")))))
+  (sweep-open-query "user"
+                    "sweep"
+                    "sweep_set_prolog_flag"
+                    (cons flag value))
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (cdr sol))))
 
 (defun sweep-setup-message-hook ()
   (with-current-buffer (get-buffer-create sweep-messages-buffer-name)
