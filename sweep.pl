@@ -593,12 +593,13 @@ sweep_setup_message_hook(_, _) :-
              sweep_message_hook(Term, Kind, Lines)
              )).
 
-sweep_message_hook(Term, Kind, _Lines) :-
-    should_handle_message_kind(Kind),
+sweep_message_hook(Term, Kind0, _Lines) :-
+    should_handle_message_kind(Kind0, Kind),
     !,
     message_to_string(Term, String),
-    sweep_funcall("sweep-message", String, _).
+    sweep_funcall("sweep-message", [Kind|String], _).
 
-should_handle_message_kind(error).
-should_handle_message_kind(warning).
-should_handle_message_kind(debug(_)).
+should_handle_message_kind(error, "error").
+should_handle_message_kind(warning, "warning").
+should_handle_message_kind(informational, "informational").
+should_handle_message_kind(debug(Topic0), ["debug"|Topic]) :- atom_string(Topic0, Topic).

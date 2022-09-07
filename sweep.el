@@ -122,6 +122,47 @@ is used to find a the swipl executable."
           (require 'sweep-module))
       (error "Sweep will not work until `sweep-module' is compiled!"))))
 
+
+(defface sweep-debug-prefix-face
+  '((default :inherit shadow))
+  "Face used to highlight the \"DEBUG\" message prefix."
+  :group 'sweep-faces)
+
+(defvar sweep-debug-prefix-face 'sweep-debug-prefix-face
+  "Name of the face used to highlight the \"DEBUG\" message prefix.")
+
+(defface sweep-debug-topic-face
+  '((default :inherit shadow))
+  "Face used to highlight the topic in debug messages."
+  :group 'sweep-faces)
+
+(defvar sweep-debug-topic-face 'sweep-debug-topic-face
+  "Name of the face used to highlight the topic in debug messages.")
+
+(defface sweep-info-prefix-face
+  '((default :inherit default))
+  "Face used to highlight the \"INFO\" message prefix."
+  :group 'sweep-faces)
+
+(defvar sweep-info-prefix-face 'sweep-info-prefix-face
+  "Name of the face used to highlight the \"INFO\" message prefix.")
+
+(defface sweep-warning-prefix-face
+  '((default :inherit font-lock-warning-face))
+  "Face used to highlight the \"WARNING\" message prefix."
+  :group 'sweep-faces)
+
+(defvar sweep-warning-prefix-face 'sweep-warning-prefix-face
+  "Name of the face used to highlight the \"WARNING\" message prefix.")
+
+(defface sweep-error-prefix-face
+  '((default :inherit error))
+  "Face used to highlight the \"ERROR\" message prefix."
+  :group 'sweep-faces)
+
+(defvar sweep-error-prefix-face 'sweep-error-prefix-face
+  "Name of the face used to highlight the \"ERROR\" message prefix.")
+
 (defun sweep-view-messages ()
   "View the log of recent Prolog messages."
   (interactive)
@@ -147,7 +188,27 @@ is used to find a the swipl executable."
   (with-current-buffer (get-buffer-create sweep-messages-buffer-name)
     (save-excursion
       (goto-char (point-max))
-      (insert message)
+      (let ((kind (car message))
+            (content (cdr message)))
+        (pcase kind
+          (`("debug" . ,topic)
+           (insert (propertize "DEBUG" 'face sweep-debug-prefix-face))
+           (insert "[")
+           (insert (propertize topic 'face sweep-debug-topic-face))
+           (insert "]: ")
+           (insert content))
+          ("informational"
+           (insert (propertize "INFO" 'face sweep-info-prefix-face))
+           (insert ": ")
+           (insert content))
+          ("warning"
+           (insert (propertize "WARNING" 'face sweep-warning-prefix-face))
+           (insert ": ")
+           (insert content))
+          ("error"
+           (insert (propertize "ERROR" 'face sweep-error-prefix-face))
+           (insert ": ")
+           (insert content))))
       (newline))))
 
 (defun sweep-start-prolog-server ()
