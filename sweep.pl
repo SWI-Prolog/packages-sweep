@@ -139,7 +139,6 @@ sweep_identifier_at_point([Contents0, Path, Point], Identifier) :-
 
 :- dynamic sweep_current_identifier_at_point/1.
 
-
 sweep_identifier_at_point_(Path0, Point, Contents, Identifier) :-
     atom_string(Path, Path0),
     (   xref_module(Path, M)
@@ -360,13 +359,17 @@ sweep_module_description([M0|P], [M|[P]]) :- atom_string(M0, M).
 sweep_predicate_references(MFN, Refs) :-
     term_string(M:F/N, MFN),
     pi_head(F/N, H),
-    findall([Path|Line],
-            (xref_called(Path0, H, _, _, Line),
+    findall([B,Path|Line],
+            (xref_called(Path0, H, B0, _, Line),
+             pi_head(B1, B0),
+             term_string(B1, B),
              atom_string(Path0, Path)),
             Refs,
             Tail),
-    findall([Path|Line],
-            (xref_called(Path0, M:H, _, _, Line),
+    findall([B,Path|Line],
+            (xref_called(Path0, M:H, B0, _, Line),
+             pi_head(B1, B0),
+             term_string(B1, B),
              atom_string(Path0, Path)),
             Tail).
 

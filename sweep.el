@@ -1201,9 +1201,10 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (cl-defmethod xref-backend-references ((_backend (eql 'sweep)) mfn)
   (let ((refs (sweep-predicate-references mfn)))
     (seq-map (lambda (loc)
-               (let ((path (car loc))
-                     (line (or (cdr loc) 1)))
-                 (xref-make (concat path ":" (number-to-string line)) (xref-make-file-location path line 0))))
+               (let ((by (car loc))
+                     (path (cadr loc))
+                     (line (or (cddr loc) 1)))
+                 (xref-make by (xref-make-file-location path line 0))))
              refs)))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql 'sweep)) pattern)
