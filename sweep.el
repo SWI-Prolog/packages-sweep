@@ -1150,12 +1150,16 @@ Interactively, a prefix arg means to prompt for BUFFER."
             (string-to-syntax "w")))))
      start end)))
 
+(defun sweep-at-beginning-of-top-term-p ()
+  (and (looking-at-p (rx (seq bol graph)))
+       (not (nth 8 (syntax-ppss)))))
 
 (defun sweep-identifier-at-point (&optional point)
   (let* ((p (or point (point)))
          (beg (save-mark-and-excursion
                 (goto-char p)
-                (sweep-beginning-of-top-term)
+                (unless (sweep-at-beginning-of-top-term-p)
+                  (sweep-beginning-of-top-term))
                 (point)))
          (end (save-mark-and-excursion
                 (goto-char p)
