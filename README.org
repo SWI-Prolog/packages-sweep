@@ -429,6 +429,9 @@ accessed from anywhere with =C-c p t=, which invokes the command
 =sweep-top-level=.
 
 * Examining Prolog messages
+:PROPERTIES:
+:CUSTOM_ID: prolog-messages
+:END:
 
 #+CINDEX: messages
 #+VINDEX: sweep-messages-buffer-name
@@ -448,6 +451,42 @@ buffer.  For more information about the features enabled by
 =sweep= includes the command =sweep-view-messages= for quickly switching
 to the =sweep= messages buffer.  This command is bound by default in
 =sweep-prefix-map= to the =e= key (see [[Quick access to =sweep= commands]]).
+
+* Setting Prolog flags
+:PROPERTIES:
+:CUSTOM_ID: prolog-flags
+:END:
+
+#+CINDEX: prolog flags
+#+FINDEX: sweep-set-prolog-flag
+The command =M-x sweep-set-prolog-flag= can be used to interactively
+configure the embedded Prolog execution environment by changing the
+values of Prolog flags.  This command first prompts the user for a
+Prolog flag to set, with completion candidates annotated with their
+current values as Prolog flags, and then prompts for a string that
+will be read as a Prolog term and set as the value of the chosen flag.
+For more information on Prolog flags in SWI-Prolog see [[https://www.swi-prolog.org/pldoc/man?section=flags][Environment
+Control in the SWI-Prolog manual]].
+
+As an example, the Prolog flag =double_quotes= controls the
+interpretation of double quotes in Prolog code.  By default,
+=double_quotes= is set to =string=, so e.g. ="foo"= is read as a SWI-Prolog
+string as we can easily validate in the =sweep= top-level:
+
+#+begin_src prolog
+?- A = "foo".
+A = "foo".
+#+end_src
+
+We can change the interpretation of double quotes to denote lists of
+character codes, by setting the value the =double_quotes= flag to =codes=
+with =M-x sweep-set-prolog-flag RET double_quotes RET codes RET=.
+Evaluating =A = "foo"= again exhibits the different interpretation:
+
+#+begin_src prolog
+?- A = "foo".
+A = [102, 111, 111].
+#+end_src
 
 * Installing Prolog packages
 :PROPERTIES:

@@ -200,6 +200,8 @@ is used to find a the swipl executable."
     (completing-read sweep-read-flag-prompt col)))
 
 (defun sweep-set-prolog-flag (flag value)
+  "Set the Prolog flag FLAG to VALUE.
+FLAG and VALUE are specified as strings and read as Prolog terms."
   (interactive (let ((f (sweep-read-prolog-flag)))
                  (list f (read-string (concat "Set " f " to: ")))))
   (sweep-open-query "user"
@@ -208,8 +210,9 @@ is used to find a the swipl executable."
                     (cons flag value))
   (let ((sol (sweep-next-solution)))
     (sweep-close-query)
-    (when (sweep-true-p sol)
-      (cdr sol))))
+    (if (sweep-true-p sol)
+        (message "Prolog flag %s set to %s" flag value)
+      (user-error "Setting %s to %s failed" flag value))))
 
 (defun sweep-setup-message-hook ()
   (with-current-buffer (get-buffer-create sweep-messages-buffer-name)
@@ -928,6 +931,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map "p" #'sweep-find-predicate)
     (define-key map "t" #'sweep-top-level)
     (define-key map "P" #'sweep-pack-install)
+    (define-key map "F" #'sweep-set-prolog-flag)
     (define-key map "e" #'sweep-view-messages)
     map)
   "Keymap for `sweep' global commands.")
