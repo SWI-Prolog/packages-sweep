@@ -274,9 +274,11 @@ sweep_colourise_some_terms_(Path0, Offset, Contents, []) :-
     set_stream(Contents, encoding(utf8)),
     set_stream(Contents, file_name(Path)),
     seek(Contents, 0, bof, _),
+    findall(Op, xref_op(Path, Op), Ops),
     prolog_colourise_stream(Contents,
                             Path,
-                            sweep_handle_query_color(Offset)).
+                            sweep_handle_query_color(Offset),
+                            [operators(Ops)]).
 
 sweep_documentation([Path, Functor, Arity], Docs) :-
     atom_string(P, Path),
