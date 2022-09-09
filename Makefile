@@ -20,7 +20,13 @@ SOURCE   = $(BASENAME).c
 
 LDFLAGS += -shared
 LDFLAGS += -L$(SWIPLLIBDIR)
+ifeq ($(UNAME_S),Linux)
+    LDFLAGS += -Wl,-Bstatic
+endif
 LDFLAGS += -lswipl
+ifeq ($(UNAME_S),Linux)
+    LDFLAGS += -Wl,-Bdynamic
+endif
 
 CFLAGS  += -fPIC
 CFLAGS  += -Wall
