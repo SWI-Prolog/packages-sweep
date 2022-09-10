@@ -831,7 +831,7 @@ module name, F is a functor name and N is its arity."
   (let* ((beg (save-mark-and-excursion
                 (goto-char beg0)
                 (sweep-beginning-of-top-term)
-                (point)))
+                (max (1- (point)) (point-min))))
          (end (save-mark-and-excursion
                 (goto-char end0)
                 (sweep-end-of-top-term)
