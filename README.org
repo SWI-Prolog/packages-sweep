@@ -164,7 +164,6 @@ second (output) Prolog argument converted to an Elisp object (see
 [[Conversion of Prolog terms to Elisp objects]]).  If the query failed,
 =sweep-next-solution= returns nil.
 
-
 #+FINDEX: sweep-cut-query
 #+FINDEX: sweep-close-query
 =sweep= only executes one Prolog query at a given time, thus queries
