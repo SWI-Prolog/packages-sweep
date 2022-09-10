@@ -909,7 +909,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (define-derived-mode sweep-top-level-mode comint-mode "sweep Top-level"
   "Major mode for interacting with an inferior Prolog interpreter."
   :group 'sweep-top-level
-  (setq-local comint-prompt-regexp           (rx (seq line-start "?- "))
+  (setq-local comint-prompt-regexp           (rx line-start "?- ")
               comint-input-ignoredups        t
               comint-prompt-read-only        t
               comint-delimiter-argument-list '(?,)
@@ -965,7 +965,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
              (apply operation args)))))
 
 (add-to-list 'file-name-handler-alist
-             (cons (rx (seq bol (one-or-more lower) "("))
+             (cons (rx bol (one-or-more lower) "(")
                    #'sweep-file-name-handler))
 
 (defun sweep-beginning-of-top-term (&optional arg)
@@ -976,12 +976,14 @@ Interactively, a prefix arg means to prompt for BUFFER."
             (setq times (1- times))
             (when-let ((safe-start (nth 8 (syntax-ppss))))
               (goto-char safe-start))
-            (re-search-backward (rx (seq bol graph)) nil t)
-            (let ((safe-start (nth 8 (syntax-ppss))))
+            (re-search-backward (rx bol graph) nil t)
+            (let ((safe-start (or (nth 8 (syntax-ppss))
+                                  (nth 8 (syntax-ppss (1+ (point)))))))
               (while (and safe-start (not (bobp)))
                 (goto-char safe-start)
-                (re-search-backward (rx (seq bol graph)) nil t)
-                (setq safe-start (nth 8 (syntax-ppss))))))
+                (re-search-backward (rx bol graph) nil t)
+                (setq safe-start (or (nth 8 (syntax-ppss))
+                                     (nth 8 (syntax-ppss (1+ (point)))))))))
           (not (= p (point))))
       (sweep-beginning-of-next-top-term (- times)))))
 
@@ -991,22 +993,22 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (setq times (1- times))
       (unless (eobp)
         (forward-char)
-        (re-search-forward (rx (seq bol graph)) nil t))
+        (re-search-forward (rx bol graph) nil t))
       (while (and (nth 8 (syntax-ppss)) (not (eobp)))
         (forward-char)
-        (re-search-forward (rx (seq bol graph)) nil t)))
+        (re-search-forward (rx bol graph) nil t)))
     (not (= p (point)))))
 
 (defun sweep-end-of-top-term ()
   (unless (eobp)
     (while (and (nth 8 (syntax-ppss)) (not (eobp)))
         (forward-char))
-    (or (re-search-forward (rx (seq "." (or white "\n"))) nil t)
+    (or (re-search-forward (rx "." (or white "\n")) nil t)
         (goto-char (point-max)))
     (while (and (nth 8 (syntax-ppss)) (not (eobp)))
       (while (and (nth 8 (syntax-ppss)) (not (eobp)))
         (forward-char))
-      (or (re-search-forward (rx (seq "." (or white "\n"))) nil t)
+      (or (re-search-forward (rx "." (or white "\n")) nil t)
           (goto-char (point-max))))))
 
 (defvar sweep-mode-syntax-table
@@ -1147,13 +1149,13 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (let ((case-fold-search nil))
     (funcall
      (syntax-propertize-rules
-      ((rx bow (group-n 1 (seq "0'" anychar)))
+      ((rx bow (group-n 1 "0'" anychar))
        (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
             (string-to-syntax "w")))))
      start end)))
 
 (defun sweep-at-beginning-of-top-term-p ()
-  (and (looking-at-p (rx (seq bol graph)))
+  (and (looking-at-p (rx bol graph))
        (not (nth 8 (syntax-ppss)))))
 
 (defun sweep-identifier-at-point (&optional point)
