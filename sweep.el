@@ -1071,6 +1071,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map (kbd "C-c C-l") #'sweep-load-buffer)
     (define-key map (kbd "C-c C-c") #'sweep-colourise-buffer)
     (define-key map (kbd "C-c C-t") #'sweep-top-level)
+    (define-key map (kbd "C-c C-o") #'sweep-find-file-at-point)
     map)
   "Keymap for `sweep-mode'.")
 
