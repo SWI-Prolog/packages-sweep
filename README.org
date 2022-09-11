@@ -2,7 +2,7 @@
 #+author:                Eshel Yaron
 #+email:                 me@eshelyaron.com
 #+language:              en
-#+options:               ':t toc:nil author:t email:t num:nil
+#+options:               ':t toc:nil author:t email:t num:nil ^:{}
 #+startup:               content indent
 #+export_file_name:      sweep.texi
 #+texinfo_filename:      sweep.info
