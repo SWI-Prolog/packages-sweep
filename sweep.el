@@ -212,7 +212,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
     (sweep-close-query)
     (if (sweep-true-p sol)
         (message "Prolog flag %s set to %s" flag value)
-      (user-error "Setting %s to %s failed" flag value))))
+      (user-error "Setting %s to %s failed!" flag value))))
 
 (defun sweep-setup-message-hook ()
   (with-current-buffer (get-buffer-create sweep-messages-buffer-name)
@@ -471,7 +471,7 @@ module name, F is a functor name and N is its arity."
     (sweep-close-query)
     (if (sweep-true-p sol)
         (message "Package install successful.")
-      (user-error "Pacakge installation failed"))))
+      (user-error "Pacakge installation failed!"))))
 
 ;; (defun sweep-file-handler (operation &rest args)
 ;;   (cond ((eq operation 'expand-file-name) (apply sweep-expand-file-name args) )
@@ -896,7 +896,9 @@ buffer to load."
                         (cons contents (buffer-file-name)))
       (let ((sol (sweep-next-solution)))
         (sweep-close-query)
-        sol))))
+        (if (sweep-true-p sol)
+            (message "Loaded %s." (buffer-name))
+          (user-error "Loading %s failed!" (buffer-name)))))))
 
 ;;;###autoload
 (defun sweep-top-level (&optional buffer)
@@ -967,6 +969,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map "m" #'sweep-find-module)
     (define-key map "p" #'sweep-find-predicate)
     (define-key map "t" #'sweep-top-level)
+    (define-key map "l" #'sweep-load-buffer)
     (define-key map "P" #'sweep-pack-install)
     (define-key map "F" #'sweep-set-prolog-flag)
     (define-key map "e" #'sweep-view-messages)
@@ -1065,17 +1068,11 @@ Interactively, a prefix arg means to prompt for BUFFER."
 
 (defvar sweep-mode-map
   (let ((map (make-sparse-keymap)))
-;;  (define-key map (kbd "C-c C-l") #'sweep-load-buffer)
+    (define-key map (kbd "C-c C-l") #'sweep-load-buffer)
     (define-key map (kbd "C-c C-c") #'sweep-colourise-buffer)
     (define-key map (kbd "C-c C-t") #'sweep-top-level)
     map)
   "Keymap for `sweep-mode'.")
-
-;; (defvar-keymap sweep-mode-map
-;;   :doc "Keymap for `sweep-mode'."
-;; ;;"C-c C-l" #'sweep-load-buffer
-;;   "C-c C-c" #'sweep-colourise-buffer
-;;   "C-c C-t" #'sweep-top-level)
 
 (defun sweep-indent-line ()
   (interactive)
