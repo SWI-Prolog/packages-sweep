@@ -385,12 +385,13 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 MFN must be a string of the form \"M:F/N\" where M is a Prolog
 module name, F is a functor name and N is its arity."
   (interactive (list (sweep-read-predicate)))
-  (let* ((loc (sweep-predicate-location mfn))
-         (path (car loc))
-         (line (or (cdr loc) 1)))
-    (find-file path)
-    (goto-char (point-min))
-    (forward-line (1- line))))
+  (if-let ((loc (sweep-predicate-location mfn)))
+      (let ((path (car loc))
+            (line (or (cdr loc) 1)))
+        (find-file path)
+        (goto-char (point-min))
+        (forward-line (1- line)))
+    (user-error "Unable to locate predicate %s" mfn)))
 
 (defun sweep-modules-collection ()
   (sweep-open-query "user" "sweep" "sweep_modules_collection" nil)
