@@ -329,6 +329,24 @@ This enables the many commands that the =xref= interface provides, like
 [[info:emacs#Find Identifiers][Find Identifiers in the Emacs manual]] for an overview of the available
 commands.
 
+** Loading buffers
+:PROPERTIES:
+:CUSTOM_ID: loading-buffers
+:END:
+
+#+CINDEX: loading
+#+FINDEX: sweep-load-buffer
+The command =M-x sweep-load-buffer= can be used to load the contents of
+a =sweep-mode= buffer into the embedded SWI-Prolog runtime.  After a
+buffer is loaded, the predicates it defines can be queried from Elisp
+(see [[Querying Prolog]]) and from the =sweep= top-level (see [[The Prolog
+top-level]]).  In =sweep-mode= buffers, =sweep-load-buffer= is bound by
+default to =C-c C-l=.  By default this command loads the current buffer
+if its major mode is =sweep-mode=, and prompts for an appropriate buffer
+otherwise.  To choose a different buffer to load while visiting a
+=sweep-mode= buffer, invoke =sweep-load-buffer= with a prefix argument
+(=C-u C-c C-l=).
+
 * The Prolog top-level
 :PROPERTIES:
 :CUSTOM_ID: prolog-top-level
