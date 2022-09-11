@@ -497,14 +497,20 @@ sweep_predicates_collection(Sub, Preds) :-
             Tail1),
     findall(M:F/N,
             ( xref_defined(SourceId, H, local(_)),
-              xref_module(SourceId, M),
+              (   xref_module(SourceId, M)
+              ->  true
+              ;   M = user
+              ),
               pi_head(F/N, H)
             ),
             Tail1,
             Tail),
     findall(M:F/N,
             ( xref_defined(_, H, imported(SourceId)),
-              xref_module(SourceId, M),
+              (   xref_module(SourceId, M)
+              ->  true
+              ;   M = user
+              ),
               pi_head(F/N, H)
             ),
             Tail),
