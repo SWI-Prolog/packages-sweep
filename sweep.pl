@@ -645,7 +645,7 @@ sweep_load_buffer([String|Path0], Result) :-
 
 sweep_load_buffer_(Stream, Path, []) :-
     set_stream(Stream, file_name(Path)),
-    load_files(Path, [stream(Stream)]).
+    @(load_files(Path, [stream(Stream)]), user).
 
 with_buffer_stream(Stream, String, Goal) :-
     setup_call_cleanup(( new_memory_file(H),
