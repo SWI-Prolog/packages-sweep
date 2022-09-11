@@ -1213,6 +1213,15 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (when (sweep-true-p sol)
         (cdr sol)))))
 
+(defun sweep-find-file-at-point (point)
+  "Find file specificed by the Prolog file spec at POINT.
+
+Interactively, POINT is set to the current point."
+  (interactive "d" sweep-mode sweep-top-level-mode)
+  (if-let ((file (sweep-file-at-point point)))
+      (find-file file)
+    (user-error "No file specification found at point!")))
+
 (defun sweep-identifier-at-point (&optional point)
   (let* ((p (or point (point)))
          (beg (save-mark-and-excursion
@@ -1297,6 +1306,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (sweep-colourise-buffer)
   (sweep--set-buffer-module)
   (add-hook 'xref-backend-functions #'sweep--xref-backend nil t)
+  (add-hook 'file-name-at-point-functions #'sweep-file-at-point nil t)
   (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t))
 
 ;;;; Testing:

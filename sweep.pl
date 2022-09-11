@@ -161,7 +161,6 @@ sweep_handle_file_at_point(Point, file(File), Beg, Len) :-
 sweep_handle_file_at_point(_, _, _, _).
 
 
-
 sweep_identifier_at_point([Contents0, Path, Point], Identifier) :-
     setup_call_cleanup(( new_memory_file(H),
                          insert_memory_file(H, 0, Contents0),
