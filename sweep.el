@@ -1114,7 +1114,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (save-excursion
     (end-of-line)
     (when-let ((start-of-ite (nth 1 (syntax-ppss))))
-      (when (<= (pos-bol) start-of-ite)
+      (when (<= (line-beginning-position) start-of-ite)
         (goto-char start-of-ite)
         (let ((col (current-column)))
           (when (looking-at-p (rx "(   "))
