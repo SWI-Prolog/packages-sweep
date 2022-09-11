@@ -1190,13 +1190,36 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (and (looking-at-p (rx bol graph))
        (not (nth 8 (syntax-ppss)))))
 
+(defun sweep-file-at-point (&optional point)
+  (let* ((p (or point (point)))
+         (beg (save-mark-and-excursion
+                (goto-char p)
+                (unless (sweep-at-beginning-of-top-term-p)
+                  (sweep-beginning-of-top-term))
+                (max (1- (point)) (point-min))))
+         (end (save-mark-and-excursion
+                (goto-char p)
+                (sweep-end-of-top-term)
+                (point)))
+         (contents (buffer-substring-no-properties beg end)))
+    (sweep-open-query "user"
+                      "sweep"
+                      "sweep_file_at_point"
+                      (list contents
+                            (buffer-file-name)
+                            (- p beg)))
+    (let ((sol (sweep-next-solution)))
+      (sweep-close-query)
+      (when (sweep-true-p sol)
+        (cdr sol)))))
+
 (defun sweep-identifier-at-point (&optional point)
   (let* ((p (or point (point)))
          (beg (save-mark-and-excursion
                 (goto-char p)
                 (unless (sweep-at-beginning-of-top-term-p)
                   (sweep-beginning-of-top-term))
-                (point)))
+                (max (1- (point)) (point-min))))
          (end (save-mark-and-excursion
                 (goto-char p)
                 (sweep-end-of-top-term)

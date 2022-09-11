@@ -37,6 +37,7 @@
             sweep_current_prolog_flags/2,
             sweep_set_prolog_flag/2,
             sweep_documentation/2,
+            sweep_file_at_point/2,
             sweep_identifier_at_point/2,
             sweep_expand_file_name/2,
             sweep_path_module/2,
@@ -128,6 +129,37 @@ sweep_colourise_buffer_(Path0, Contents, []) :-
                             sweep_handle_query_color(1)),
     erase(Ref0),
     erase(Ref1).
+
+
+sweep_file_at_point([Contents,Path0,Point], Result) :-
+    atom_string(Path, Path0),
+    with_buffer_stream(Stream,
+                       Contents,
+                       sweep_file_at_point_(Stream, Path, Point, Result)).
+
+:- dynamic sweep_current_file_at_point/1.
+
+sweep_file_at_point_(Stream, Path, Point, File) :-
+    set_stream(Stream, file_name(Path)),
+    retractall(sweep_current_file_at_point(_)),
+    prolog_colourise_term(Stream, Path,
+                          sweep_handle_file_at_point(Point),
+                          []),
+    sweep_current_file_at_point(File0),
+    atom_string(File0, File).
+
+sweep_handle_file_at_point(Point, file_no_depend(File), Beg, Len) :-
+    Beg =< Point,
+    Point =< Beg + Len,
+    !,
+    asserta(sweep_current_file_at_point(File)).
+sweep_handle_file_at_point(Point, file(File), Beg, Len) :-
+    Beg =< Point,
+    Point =< Beg + Len,
+    !,
+    asserta(sweep_current_file_at_point(File)).
+sweep_handle_file_at_point(_, _, _, _).
+
 
 
 sweep_identifier_at_point([Contents0, Path, Point], Identifier) :-
