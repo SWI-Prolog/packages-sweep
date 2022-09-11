@@ -867,6 +867,20 @@ module name, F is a functor name and N is its arity."
           (sweep-close-query)
           sol)))))
 
+(defun sweep-load-buffer (&optional buffer)
+  (interactive)
+  (with-current-buffer (or buffer (current-buffer))
+    (let* ((beg (point-min))
+           (end (point-max))
+           (contents (buffer-substring-no-properties beg end)))
+      (sweep-open-query "user"
+                        "sweep"
+                        "sweep_load_buffer"
+                        (cons contents (buffer-file-name)))
+      (let ((sol (sweep-next-solution)))
+        (sweep-close-query)
+        sol))))
+
 ;;;###autoload
 (defun sweep-top-level (&optional buffer)
   "Run a Prolog top-level in BUFFER.

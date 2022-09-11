@@ -40,6 +40,7 @@
             sweep_identifier_at_point/2,
             sweep_expand_file_name/2,
             sweep_path_module/2,
+            sweep_load_buffer/2,
             sweep_colourise_query/2,
             sweep_predicate_references/2,
             sweep_predicate_location/2,
@@ -65,6 +66,8 @@
 :- use_module(library(prolog_pack)).
 :- use_module(library(help)).
 :- use_module(library(prolog_server)).
+
+:- meta_predicate with_buffer_stream(-, +, 0).
 
 :- dynamic sweep_current_color/3,
            sweep_open/2,
@@ -633,3 +636,24 @@ should_handle_message_kind(error, "error").
 should_handle_message_kind(warning, "warning").
 should_handle_message_kind(informational, "informational").
 should_handle_message_kind(debug(Topic0), ["debug"|Topic]) :- atom_string(Topic0, Topic).
+
+sweep_load_buffer([String|Path0], Result) :-
+    atom_string(Path, Path0),
+    with_buffer_stream(Stream,
+                       String,
+                       sweep_load_buffer_(Stream, Path, Result)).
+
+sweep_load_buffer_(Stream, Path, []) :-
+    set_stream(Stream, file_name(Path)),
+    load_files(Path, [stream(Stream)]).
+
+with_buffer_stream(Stream, String, Goal) :-
+    setup_call_cleanup(( new_memory_file(H),
+                         insert_memory_file(H, 0, String),
+                         open_memory_file(H, read, Stream, [encoding(utf8)]),
+                         set_stream(Stream, encoding(utf8))
+                       ),
+                       Goal,
+                       ( close(Stream),
+                         free_memory_file(H)
+                       )).
