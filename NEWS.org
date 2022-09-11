@@ -1,0 +1,25 @@
+#+title:                 sweep NEWS -- history of user-visible changes.
+#+author:                Eshel Yaron
+#+email:                 me@eshelyaron.com
+#+language:              en
+#+options:               ':t toc:nil num:nil
+#+startup:               content indent
+#+MACRO: version (eval (mapconcat #'number-to-string (save-current-buffer (with-current-buffer (find-file (expand-file-name "sweep.el" (file-name-directory $1))) (package-desc-version (package-buffer-info)))) "."))
+
+This file is about changes in =sweep= up to version
+{{{version({{{input-file}}})}}}.
+
+* New commands available in sweep {{{version({{{input-file}}})}}}
+
+** New command =sweep-load-buffer=.
+
+Loads a =sweep-mode= buffer.  If called from a =sweep-mode= buffer, loads
+the current buffer by default.
+
+* New keybindings in =sweep-mode= buffers
+
+=C-c C-l= is now bound to =sweep-load-buffer=.
+
+* New keybindings in =sweep-prefix-map=
+
+The key =l= is now bound under =sweep-prefix-map= to =sweep-load-buffer=.
