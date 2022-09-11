@@ -46,5 +46,5 @@ $(BASENAME).info:: README.org
 		--eval "(with-current-buffer (find-file \"README.org\") (org-export-to-file (quote texinfo) \"$@\" nil nil nil nil nil (quote org-texinfo-compile)))"
 
 check: $(TARGET)
-	emacs -batch --eval '(add-to-list (quote load-path) (expand-file-name "."))' \
+	emacs --batch --eval '(add-to-list (quote load-path) (expand-file-name "."))' \
 		-l ert -l sweep -l sweep-tests.el -f ert-run-tests-batch-and-exit
