@@ -7,7 +7,7 @@
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
 ;; Package-Version: 0.1.2
-;; Package-Requires: ((emacs "27"))
+;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
 
