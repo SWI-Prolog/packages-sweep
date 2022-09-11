@@ -16,10 +16,17 @@ This file is about changes in =sweep= up to version
 Loads a =sweep-mode= buffer.  If called from a =sweep-mode= buffer, loads
 the current buffer by default.
 
+** New command =sweep-find-file-at-point=.
+
+Follows file specifications in =sweep-mode= buffers.
+
 * New keybindings in =sweep-mode= buffers
 
-=C-c C-l= is now bound to =sweep-load-buffer=.
+** =C-c C-l= is now bound to =sweep-load-buffer=.
+
+** =C-c C-o= is now bound to =sweep-find-file-at-point=.
+
 
 * New keybindings in =sweep-prefix-map=
 
-The key =l= is now bound under =sweep-prefix-map= to =sweep-load-buffer=.
+** The =l= key is now bound to =sweep-load-buffer=.

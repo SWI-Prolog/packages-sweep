@@ -1218,7 +1218,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
   "Find file specificed by the Prolog file spec at POINT.
 
 Interactively, POINT is set to the current point."
-  (interactive "d" sweep-mode sweep-top-level-mode)
+  (interactive "d" sweep-mode)
   (if-let ((file (sweep-file-at-point point)))
       (find-file file)
     (user-error "No file specification found at point!")))

@@ -329,6 +329,27 @@ This enables the many commands that the =xref= interface provides, like
 [[info:emacs#Find Identifiers][Find Identifiers in the Emacs manual]] for an overview of the available
 commands.
 
+** Following file specifications
+:PROPERTIES:
+:CUSTOM_ID: following-file-specs
+:END:
+
+#+FINDEX: sweep-find-file-at-point
+File specifications that occur in =sweep-mode= buffers can be followed
+with =C-c C-o= (or =M-x sweep-find-file-at-point=) whenever point is over
+a valid file specification.  For example, consider a Prolog file buffer with the common
+directive =use_module/1=:
+
+#+begin_src prolog
+:- use_module(library(lists)).
+#+end_src
+
+With point in any position inside =library(lists)=, typing =C-c C-o= will
+open the =lists.pl= file in the Prolog library.
+
+For more information about file specifications in SWI-Prolog, see
+[[https://www.swi-prolog.org/pldoc/doc_for?object=absolute_file_name/3][absolute_file_name/3]] in the SWI-Prolog manual.
+
 ** Loading buffers
 :PROPERTIES:
 :CUSTOM_ID: loading-buffers
@@ -346,6 +367,9 @@ if its major mode is =sweep-mode=, and prompts for an appropriate buffer
 otherwise.  To choose a different buffer to load while visiting a
 =sweep-mode= buffer, invoke =sweep-load-buffer= with a prefix argument
 (=C-u C-c C-l=).
+
+More relevant information about loading code in SWI-Prolog can be
+found in [[https://www.swi-prolog.org/pldoc/man?section=consulting][Loading Prolog source files]] in the SWI-Prolog manual.
 
 * The Prolog top-level
 :PROPERTIES:
