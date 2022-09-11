@@ -377,13 +377,16 @@ sweep_predicate_references(MFN, Refs) :-
 
 
 sweep_predicate_location(MFN, [Path|Line]) :-
-    !,
     term_string(M:F/N, MFN),
-    pi_head(F/N, H),
-    sweep_predicate_location_(M, H, Path, Line).
-sweep_predicate_location(FN, [Path|Line]) :-
     !,
+    pi_head(F/N, H),
+    (   sweep_predicate_location_(M, H, Path, Line)
+    ->  true
+    ;   sweep_predicate_location_(H, Path, Line)
+    ).
+sweep_predicate_location(FN, [Path|Line]) :-
     term_string(F/N, FN),
+    !,
     pi_head(F/N, H),
     sweep_predicate_location_(H, Path, Line).
 
