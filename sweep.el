@@ -867,9 +867,25 @@ module name, F is a functor name and N is its arity."
           (sweep-close-query)
           sol)))))
 
-(defun sweep-load-buffer (&optional buffer)
-  (interactive)
-  (with-current-buffer (or buffer (current-buffer))
+(defun sweep-load-buffer (buffer)
+  "Load the Prolog buffer BUFFER into the embedded SWI-Prolog runtime.
+
+Interactively, if the major mode of the current buffer is
+`sweep-mode' and the command is called without a prefix argument,
+load the current buffer.  Otherwise, prompt for a `sweep-mode'
+buffer to load."
+  (interactive (if (and (not current-prefix-arg)
+                        (eq major-mode 'sweep-mode))
+                   (list (current-buffer))
+                 (read-buffer "Load buffer: "
+                              (when (eq major-mode 'sweep-mode)
+                                (buffer-name))
+                              t
+                              (lambda (b)
+                                (let ((n (or (and (consp b) (car b)) b)))
+                                  (with-current-buffer n
+                                    (eq major-mode 'sweep-mode)))))))
+  (with-current-buffer buffer
     (let* ((beg (point-min))
            (end (point-max))
            (contents (buffer-substring-no-properties beg end)))
