@@ -342,6 +342,15 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
               (forward-char))
             (cons start (point))))))))
 
+(defun sweep-prefix-operators (&optional file)
+  (sweep-open-query "user"
+                    "sweep" "sweep_prefix_ops"
+                    (or file (buffer-file-name)))
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (cdr sol))))
+
 (defun sweep-completion-at-point-function ()
   (when-let ((bounds (sweep-predicate-prefix-boundaries)))
     (let ((start (car bounds))
@@ -1101,6 +1110,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
        ((sweep-indent-line-ends-with-else point))
        ((sweep-indent-line-ends-with-arg point))
        ((sweep-indent-line-ends-with-neck-p)              4)
+       ;; ((sweep-indent-line-ends-with-prefix-operator))
        (t (sweep-indent-line-fallback))))))
 
 (defun sweep-indent-line-fallback ()

@@ -51,6 +51,7 @@
             sweep_modules_collection/2,
             sweep_packs_collection/2,
             sweep_pack_install/2,
+            sweep_prefix_ops/2,
             sweep_module_path/2
           ]).
 
@@ -667,6 +668,15 @@ should_handle_message_kind(error, "error").
 should_handle_message_kind(warning, "warning").
 should_handle_message_kind(informational, "informational").
 should_handle_message_kind(debug(Topic0), ["debug"|Topic]) :- atom_string(Topic0, Topic).
+
+sweep_prefix_ops(Path0, Ops) :-
+    atom_string(Path, Path0),
+    findall(Op, current_op(_, fx, Op),        Ops0, Tail0),
+    findall(Op, current_op(_, fy, Op),        Tail0, Tail1),
+    findall(Op, xref_op(Path, op(_, fx, Op)), Tail1, Tail),
+    findall(Op, xref_op(Path, op(_, fy, Op)), Tail),
+    maplist(atom_string, Ops0, Ops1),
+    list_to_set(Ops1, Ops).
 
 sweep_load_buffer([String|Path0], Result) :-
     atom_string(Path, Path0),
