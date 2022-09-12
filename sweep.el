@@ -32,6 +32,18 @@
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
 
+(defcustom sweep-colourise-buffer-max-size 100000
+  "Maximum buffer size to recolourise on idle."
+  :package-version '((sweep . "0.2.0"))
+  :type 'integer
+  :group 'sweep)
+
+(defcustom sweep-colourise-buffer-min-interval 2
+  "Minimum idle time to wait before recolourising the buffer."
+  :package-version '((sweep . "0.2.0"))
+  :type 'float
+  :group 'sweep)
+
 (defcustom sweep-swipl-path nil
   "Path to the swipl executable.
 When non-nil, this is used by the embedded SWI-Prolog runtime to
@@ -961,9 +973,9 @@ Interactively, a prefix arg means to prompt for BUFFER."
               comint-delimiter-argument-list '(?,)
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweep-top-level--post-self-insert-function nil t)
-  (setq sweep-top-level-timer (run-with-idle-timer 0.2 t #'sweep-colourise-query (current-buffer)))
-  (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t)
   (setq sweep-buffer-module "user")
+  (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t)
+  (setq sweep-top-level-timer (run-with-idle-timer 0.2 t #'sweep-colourise-query (current-buffer)))
   (add-hook 'kill-buffer-hook
             (lambda ()
               (when (timerp sweep-top-level-timer)
@@ -1305,6 +1317,9 @@ Interactively, POINT is set to the current point."
                             (xref-make-file-location path line 0))))
              matches)))
 
+(defvar-local sweep--timer nil)
+(defvar-local sweep--colourise-buffer-duration 0.2)
+
 ;;;###autoload
 (define-derived-mode sweep-mode prog-mode "sweep"
   "Major mode for reading and editing Prolog code."
@@ -1323,11 +1338,25 @@ Interactively, POINT is set to the current point."
                 nil
                 nil
                 (font-lock-fontify-region-function . sweep-colourise-some-terms)))
-  (sweep-colourise-buffer)
+  (let ((time (current-time)))
+    (sweep-colourise-buffer)
+    (setq sweep--colourise-buffer-duration (float-time (time-since time))))
   (sweep--set-buffer-module)
   (add-hook 'xref-backend-functions #'sweep--xref-backend nil t)
   (add-hook 'file-name-at-point-functions #'sweep-file-at-point nil t)
-  (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t))
+  (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t)
+  (setq sweep--timer (run-with-idle-timer (max sweep-colourise-buffer-min-interval
+                                               (* 10 sweep--colourise-buffer-duration))
+                                          t
+                                          (let ((buffer (current-buffer)))
+                                            (lambda ()
+                                              (unless (< sweep-colourise-buffer-max-size
+                                                         (buffer-size buffer))
+                                                (sweep-colourise-buffer buffer))))))
+  (add-hook 'kill-buffer-hook
+            (lambda ()
+              (when (timerp sweep--timer)
+                (cancel-timer sweep--timer)))))
 
 ;;;; Testing:
 
