@@ -1110,7 +1110,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
        ((sweep-indent-line-ends-with-else point))
        ((sweep-indent-line-ends-with-arg point))
        ((sweep-indent-line-ends-with-neck-p)              4)
-       ;; ((sweep-indent-line-ends-with-prefix-operator))
+       ((sweep-indent-line-ends-with-prefix-operator))
        (t (sweep-indent-line-fallback))))))
 
 (defun sweep-indent-line-fallback ()
@@ -1119,6 +1119,15 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (goto-char open))
     (back-to-indentation)
     (current-column)))
+
+(defun sweep-indent-line-ends-with-prefix-operator ()
+  (save-excursion
+    (end-of-line)
+    (skip-syntax-backward " ")
+    (when-let ((symbol (symbol-at-point)))
+      (when (member (symbol-name symbol) (sweep-prefix-operators))
+        (skip-syntax-backward "w_")
+        (+ (current-column) 4)))))
 
 (defun sweep-indent-line-ends-with-if ()
   (save-excursion
