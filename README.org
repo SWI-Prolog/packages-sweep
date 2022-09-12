@@ -292,13 +292,26 @@ is performed on demand.  When a buffer is first opened in =sweep-mode=,
 its entire contents are analyzed to collect and cache cross reference
 data, and the buffer is highlighted accordingly.  In contrast, when
 editing and moving around the buffer, a faster, local analysis is
-invoked to updated the semantic highlighting.
+invoked to updated the semantic highlighting in response to changes in
+the buffer.
 
 #+FINDEX: sweep-colourise-buffer
 At any point in a =sweep-mode= buffer, the command =C-c C-c= (or =M-x
 sweep-colourise-buffer=) can be used to update the cross reference
 cache and highlight the buffer accordingly.  This may be useful
 e.g. after defining a new predicate.
+
+#+VINDEX: sweep-colourise-buffer-on-idle
+#+VINDEX: sweep-colourise-buffer-max-size
+#+VINDEX: sweep-colourise-buffer-min-interval
+If the user option =sweep-colourise-buffer-on-idle= is set to non-nil
+(as it is by default), =sweep-mode= also updates semantic highlighting
+in the buffer whenever Emacs is idle for a reasonable amount of time,
+unless the buffer is larger than the value of the
+=sweep-colourise-buffer-max-size= user option ( 100,000 by default).
+The minimum idle time to wait before automatically updating semantic
+highlighting can be set via the user option
+=sweep-colourise-buffer-min-interval=.
 
 #+CINDEX: sweep-faces
 =sweep= defines more than 60 different faces (named sets of properties

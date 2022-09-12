@@ -32,6 +32,12 @@
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
 
+(defcustom sweep-colourise-buffer-on-idle t
+  "If non-nil, update highlighting of `sweep-mode' buffers on idle."
+  :package-version '((sweep . "0.2.0"))
+  :type 'boolean
+  :group 'sweep)
+
 (defcustom sweep-colourise-buffer-max-size 100000
   "Maximum buffer size to recolourise on idle."
   :package-version '((sweep . "0.2.0"))
@@ -1345,18 +1351,19 @@ Interactively, POINT is set to the current point."
   (add-hook 'xref-backend-functions #'sweep--xref-backend nil t)
   (add-hook 'file-name-at-point-functions #'sweep-file-at-point nil t)
   (add-hook 'completion-at-point-functions #'sweep-completion-at-point-function nil t)
-  (setq sweep--timer (run-with-idle-timer (max sweep-colourise-buffer-min-interval
-                                               (* 10 sweep--colourise-buffer-duration))
-                                          t
-                                          (let ((buffer (current-buffer)))
-                                            (lambda ()
-                                              (unless (< sweep-colourise-buffer-max-size
-                                                         (buffer-size buffer))
-                                                (sweep-colourise-buffer buffer))))))
-  (add-hook 'kill-buffer-hook
-            (lambda ()
-              (when (timerp sweep--timer)
-                (cancel-timer sweep--timer)))))
+  (when sweep-colourise-buffer-on-idle
+    (setq sweep--timer (run-with-idle-timer (max sweep-colourise-buffer-min-interval
+                                                 (* 10 sweep--colourise-buffer-duration))
+                                            t
+                                            (let ((buffer (current-buffer)))
+                                              (lambda ()
+                                                (unless (< sweep-colourise-buffer-max-size
+                                                           (buffer-size buffer))
+                                                  (sweep-colourise-buffer buffer))))))
+    (add-hook 'kill-buffer-hook
+              (lambda ()
+                (when (timerp sweep--timer)
+                  (cancel-timer sweep--timer))))))
 
 ;;;; Testing:
 

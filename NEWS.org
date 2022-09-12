@@ -2,14 +2,14 @@
 #+author:                Eshel Yaron
 #+email:                 me@eshelyaron.com
 #+language:              en
-#+options:               ':t toc:nil num:nil
+#+options:               ':t toc:nil num:nil ^:{}
 #+startup:               content indent
 #+MACRO: version (eval (mapconcat #'number-to-string (save-current-buffer (with-current-buffer (find-file (expand-file-name "sweep.el" (file-name-directory $1))) (package-desc-version (package-buffer-info)))) "."))
 
 This file is about changes in =sweep= up to version
 {{{version({{{input-file}}})}}}.
 
-* New commands available in sweep {{{version({{{input-file}}})}}}
+* New commands available in =sweep= {{{version({{{input-file}}})}}}
 
 ** New command =sweep-load-buffer=.
 
@@ -20,11 +20,30 @@ the current buffer by default.
 
 Follows file specifications in =sweep-mode= buffers.
 
+
 * New keybindings in =sweep-mode= buffers
 
 ** =C-c C-l= is now bound to =sweep-load-buffer=.
 
 ** =C-c C-o= is now bound to =sweep-find-file-at-point=.
+
+* New user options available in =sweep= {{{version({{{input-file}}})}}}
+
+** New user option =sweep-colourise-buffer-on-idle=
+
+This option is a boolean flag that determines whether to enable
+automatic updating of semantic highlighting in =sweep-mode= buffers.
+
+** New user option =sweep-colourise-buffer-min-interval=
+
+This option determines the minimum number of idle seconds that =sweep=
+will wait before updating semantic highlighting in a =sweep-mode=
+buffer.
+
+** New user option =sweep-colourise-buffer-max-size=
+
+This option determines the maximum size of a =sweep-mode= buffer for
+which =sweep= will periodically update semantic highlighting on idle.
 
 
 * New keybindings in =sweep-prefix-map=
