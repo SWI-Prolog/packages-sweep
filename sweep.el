@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.2.0
+;; Package-Version: 0.2.1
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -93,6 +93,15 @@ is used to find a the swipl executable."
   "Display action used for displaying the `sweep-top-level' buffer."
   :package-version '((sweep . "0.1.0"))
   :type 'function
+  :group 'sweep)
+
+(defcustom sweep-top-level-min-history-length 3
+  "Minimum input length to record in the `sweep-top-level' history.
+
+Inputs shorther than the value of this variable will not be
+inserted to the input history in `sweep-top-level-mode' buffers."
+  :package-version '((sweep . "0.2.1"))
+  :type 'string
   :group 'sweep)
 
 (defvar sweep-install-buffer-name "*Install sweep*"
@@ -881,9 +890,9 @@ module name, F is a functor name and N is its arity."
 (defun sweep-colourise-query (buffer)
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
-      (let* ((beg (cdr comint-last-prompt))
-             (end (point-max))
-             (query (buffer-substring-no-properties beg end)))
+      (when-let ((beg (cdr comint-last-prompt))
+                 (end (point-max))
+                 (query (buffer-substring-no-properties beg end)))
         (with-silent-modifications
           (font-lock-unfontify-region beg end))
         (sweep-open-query "user"
@@ -976,6 +985,9 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (setq-local comint-prompt-regexp           (rx line-start "?- ")
               comint-input-ignoredups        t
               comint-prompt-read-only        t
+              comint-input-filter            (lambda (s)
+                                               (< sweep-top-level-min-history-length
+                                                  (length s)))
               comint-delimiter-argument-list '(?,)
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweep-top-level--post-self-insert-function nil t)

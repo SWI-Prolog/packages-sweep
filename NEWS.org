@@ -27,6 +27,7 @@ Follows file specifications in =sweep-mode= buffers.
 
 ** =C-c C-o= is now bound to =sweep-find-file-at-point=.
 
+
 * New user options available in =sweep= {{{version({{{input-file}}})}}}
 
 ** New user option =sweep-colourise-buffer-on-idle=
@@ -45,6 +46,13 @@ buffer.
 This option determines the maximum size of a =sweep-mode= buffer for
 which =sweep= will periodically update semantic highlighting on idle.
 
+** New user option =sweep-top-level-min-history-length=
+
+This option, set by default to 3, determines a minimum length for
+inputs inserted into =sweep= top-level history ring.  The default value,
+3, avoids one character top-level responses from clobbering the
+history ring.  This kind of inputs includes, for example, the =;=
+character typed to invoke backtracking.
 
 * New keybindings in =sweep-prefix-map=
 
