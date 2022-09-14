@@ -420,6 +420,25 @@ again.  This will change the name of the original top-level buffer to
 something like =*sweep-top-level*<2>= and allow the new top-level to
 claim the buffer name =*sweep-top-level*=.
 
+** Top-level history
+:PROPERTIES:
+:CUSTOM_ID: top-level-history
+:END:
+
+=sweep-top-level-mode= buffers provide a history of previously user
+inputs, similarly to other =comint-mode= derivatives such as =shell-mode=.
+To insert the last input from the history at the prompt, use =M-p=
+(=comint-previous-input=).  For a full description of history related
+commands, see [[info:emacs#Shell History][Shell History in the Emacs manual]].
+
+#+VINDEX: sweep-top-level-min-history-length
+The =sweep= top-level history only records inputs whose length is at
+least =sweep-top-level-min-history-length=.  This user option is set to
+3 by default, and should generally be set to at least 2 to keep the
+history from being clobbered with single-character inputs, which are
+common in the top-level interaction, e.g. =;= as used to invoke
+backtracking.
+
 ** Completion in the top-level
 :PROPERTIES:
 :CUSTOM_ID: completion-in-top-level
