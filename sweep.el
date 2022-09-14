@@ -1299,7 +1299,6 @@ Interactively, POINT is set to the current point."
       (when (sweep-true-p sol)
         (cdr sol)))))
 
-;;;###autoload
 (defun sweep--xref-backend ()
   "Hook for `xref-backend-functions'."
   'sweep)
