@@ -1219,12 +1219,14 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (defun sweep-indent-line-ends-with-comment-or-string-p ()
   (save-excursion
     (end-of-line)
-    (nth 8 (syntax-ppss))))
+    (when-let ((beg (nth 8 (syntax-ppss))))
+      (<= beg (line-beginning-position)))))
 
 (defun sweep-indent-line-ends-with-fullstop-p ()
   (save-excursion
     (end-of-line)
-    (= ?. (preceding-char))))
+    (unless (nth 8 (syntax-ppss))
+      (= ?. (preceding-char)))))
 
 (defun sweep-syntax-propertize (start end)
   (goto-char start)
