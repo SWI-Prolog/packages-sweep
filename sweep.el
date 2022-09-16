@@ -1060,6 +1060,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
                                   (nth 8 (syntax-ppss (1+ (point)))))))
               (while (and safe-start (not (bobp)))
                 (goto-char safe-start)
+                (backward-char)
                 (re-search-backward (rx bol graph) nil t)
                 (setq safe-start (or (nth 8 (syntax-ppss))
                                      (nth 8 (syntax-ppss (1+ (point)))))))))
