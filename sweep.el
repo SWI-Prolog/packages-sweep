@@ -419,7 +419,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 
 ;;;###autoload
 (defun sweep-find-predicate (mfn)
-  "Jump to the definiton of the Prolog predicate MFN.
+  "Jump to the definition of the Prolog predicate MFN.
 MFN must be a string of the form \"M:F/N\" where M is a Prolog
 module name, F is a functor name and N is its arity."
   (interactive (list (sweep-read-predicate)))
@@ -572,6 +572,26 @@ module name, F is a functor name and N is its arity."
 (sweep-defface comment font-lock-comment-face
   "Comments.")
 
+(defface sweep-head-built-in-face
+  '((default . (:foreground "black" :background "orange" :weight bold)))
+  "Face used to highlight built-in predicate definitons."
+  :group 'sweep-faces)
+
+(defface sweep-method-face
+  '((default . (:weight bold)))
+  "Face used to highlight PCE methods."
+  :group 'sweep-faces)
+
+(defface sweep-class-face
+  '((default . (:underline t)))
+  "Face used to highlight PCE classes."
+  :group 'sweep-faces)
+
+(defface sweep-no-file-face
+  '((default . (:foreground "red")))
+  "Face used to highlight non-existsing file specifications."
+  :group 'sweep-faces)
+
 (sweep-defface head-local font-lock-builtin-face
   "Local predicate definitions.")
 
@@ -695,9 +715,6 @@ module name, F is a functor name and N is its arity."
 (sweep-defface file button
   "File specifiers.")
 
-(sweep-defface no-file font-lock-warning-face
-  "Non-existent file specifiers.")
-
 (sweep-defface file-no-depend font-lock-warning-face
   "Unused file specifiers.")
 
@@ -771,6 +788,7 @@ module name, F is a functor name and N is its arity."
                               (`("meta" . ,_) sweep-head-meta-face)
                               (`("exported" . ,_) sweep-head-exported-face)
                               (`("hook" . ,_) sweep-head-hook-face)
+                              (`("built_in" . ,_) 'sweep-head-built-in-face)
                               (`(,(rx "extern(") . ,_) sweep-head-extern-face)
                               (`(,(rx "public ") . ,_) sweep-head-public-face)
                               (`(,(rx "local(")  . ,_) sweep-head-local-face)
@@ -828,7 +846,10 @@ module name, F is a functor name and N is its arity."
         ("identifier"          (put-text-property beg end 'font-lock-face sweep-identifier-face))
         ("file"                (put-text-property beg end 'font-lock-face sweep-file-face))
         ("file_no_depend"      (put-text-property beg end 'font-lock-face sweep-file-no-depend-face))
+        ("nofile"              (put-text-property beg end 'font-lock-face 'sweep-no-file-face))
         ("op_type"             (put-text-property beg end 'font-lock-face sweep-op-type-face))
+        ("method"              (put-text-property beg end 'font-lock-face 'sweep-method-face))
+        ("class"               (put-text-property beg end 'font-lock-face 'sweep-class-face))
         (`("goal_term" . ,_)   nil)
         (`("head_term" . ,_)   nil)
         ("clause"              nil)
@@ -836,6 +857,7 @@ module name, F is a functor name and N is its arity."
         ("body"                nil)
         ("html"                nil)
         ("parentheses"         nil)
+        ("pce"                 nil)
         ("term"                nil)
         ("expanded"            nil)
         ("list"                nil)
