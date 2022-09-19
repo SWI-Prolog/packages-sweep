@@ -841,6 +841,7 @@ module name, F is a functor name and N is its arity."
         ("list"                nil)
         ("grammar_rule"        nil)
         ("dict"                nil)
+        ("dict_content"        nil)
         ("brace_term"          nil)
         ("rule_condition"      nil)
         ("exported_operator"   nil)
