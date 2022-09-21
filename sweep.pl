@@ -52,6 +52,7 @@
             sweep_packs_collection/2,
             sweep_pack_install/2,
             sweep_prefix_ops/2,
+            sweep_op_info/2,
             sweep_module_path/2
           ]).
 
@@ -677,6 +678,18 @@ sweep_prefix_ops(Path0, Ops) :-
     findall(Op, xref_op(Path, op(_, fy, Op)), Tail),
     maplist(atom_string, Ops0, Ops1),
     list_to_set(Ops1, Ops).
+
+sweep_op_info([Op0|Path0], Info) :-
+    atom_string(Path, Path0),
+    atom_string(Op, Op0),
+    sweep_op_info_(Op, Path, Info).
+
+sweep_op_info_(Op, Path, [Type|Pred]) :-
+    xref_op(Path, op(Pred, Type0, Op)),
+    atom_string(Type0, Type).
+sweep_op_info_(Op, _Path, [Type|Pred]) :-
+    current_op(Pred, Type0, Op),
+    atom_string(Type0, Type).
 
 sweep_load_buffer([String|Path0], Result) :-
     atom_string(Path, Path0),
