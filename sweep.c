@@ -30,7 +30,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "emacs-module.h"
+#include <emacs-module.h>
 #include <SWI-Prolog.h>
 #include <SWI-Stream.h>
 #include <stdlib.h>
