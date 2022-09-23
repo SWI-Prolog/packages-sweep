@@ -123,9 +123,10 @@ inserted to the input history in `sweep-top-level-mode' buffers."
 
 (defcustom sweep-init-args (list "-q"
                                  "--no-signals"
-                                 "-g [library(sweep)]")
+                                 "-g"
+                                 "[library(sweep)]")
   "List of strings used as initialization arguments for Prolog."
-  :package-version '((sweep "0.1.0"))
+  :package-version '((sweep "0.3.1"))
   :type '(list string)
   :group 'sweep)
 
