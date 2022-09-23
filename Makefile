@@ -1,5 +1,3 @@
-CURRENT_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-
 BASENAME = sweep
 
 UNAME_S := $(shell uname -s)
@@ -30,7 +28,7 @@ CFLAGS  += -Wextra
 CFLAGS  += -O2
 CFLAGS  += -I$(SWIPLBASE)/include
 
-.PHONY: clean all check
+.PHONY: clean all check info
 
 all: $(TARGET)
 
@@ -43,6 +41,7 @@ $(TARGET): $(OBJECT)
 clean:
 	rm -f $(TARGET) $(OBJECT) $(BASENAME).info $(BASENAME).texi $(BASENAME).html
 
+info: $(BASENAME).info
 $(BASENAME).info:: README.org
 	$(EMACS) -Q --batch --eval "(require 'ox-texinfo)" \
 		--eval "(with-current-buffer (find-file \"README.org\") (org-export-to-file (quote texinfo) \"$@\" nil nil nil nil nil (quote org-texinfo-compile)))"
