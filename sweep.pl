@@ -596,7 +596,7 @@ sweep_colourise_query([String|Offset], _) :-
 sweep_handle_query_color(Offset, Col, Beg, Len) :-
     sweep_color_normalized(Offset, Col, Nom),
     Start is Beg + Offset,
-    sweep_funcall("sweep--colourise", [Start,Len|Nom], _).
+    user:sweep_funcall("sweep--colourise", [Start,Len|Nom], _).
 
 sweep_color_normalized(Offset, Col, Nom) :-
     Col =.. [Nom0|Rest],
@@ -663,7 +663,7 @@ sweep_message_hook(Term, Kind0, _Lines) :-
     should_handle_message_kind(Kind0, Kind),
     !,
     message_to_string(Term, String),
-    sweep_funcall("sweep-message", [Kind|String], _).
+    user:sweep_funcall("sweep-message", [Kind|String], _).
 
 should_handle_message_kind(error, "error").
 should_handle_message_kind(warning, "warning").
