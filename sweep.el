@@ -525,345 +525,612 @@ module name, F is a functor name and N is its arity."
   "Faces used to highlight Prolog code."
   :group 'sweep)
 
+(defcustom sweep-faces-style nil
+  "Style of faces to use for highlighting Prolog code."
+  :type '(choice (const :tag "Default" nil)
+                 (const :tag "Light"   light)
+                 (const :tag "Dark"    dark))
+  :package-version '((sweep . "0.3.2"))
+  :group 'sweep-faces)
+
 (eval-when-compile
-  (defmacro sweep-defface (name def doc)
+  (defmacro sweep-defface (name def light dark doc)
     "Define sweep face FACE with doc DOC."
     (declare
      (indent defun)
-     (doc-string 3))
-    (let ((face (intern (concat "sweep-" (symbol-name name) "-face"))))
+     (doc-string 4))
+    (let ((func (intern (concat "sweep-" (symbol-name name) "-face")))
+          (facd (intern (concat "sweep-" (symbol-name name) "-dark-face")))
+          (facl (intern (concat "sweep-" (symbol-name name) "-light-face")))
+          (face (intern (concat "sweep-" (symbol-name name) "-default-face"))))
       `(progn
+         (defface ,facl
+           '((default              . ,light))
+           ,(concat "Light face used to highlight " (downcase doc))
+           :group 'sweep-faces)
+         (defface ,facd
+           '((default              . ,dark))
+           ,(concat "Dark face used to highlight " (downcase doc))
+           :group 'sweep-faces)
          (defface ,face
-           '((default :inherit ,def))
+           '((default              . ,def))
            ,(concat "Face used to highlight " (downcase doc))
            :group 'sweep-faces)
-         (defvar ,face ',face
-           ,(concat "Name of the face used to highlight " (downcase doc)))))))
+         (defun ,func ()
+           (pcase sweep-faces-style
+             ('light ',facl)
+             ('dark  ',facd)
+             (_      ',face)))))))
 
-(sweep-defface functor font-lock-function-name-face
+(sweep-defface
+  functor
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "darkcyan")
   "Functors.")
 
-(sweep-defface arity font-lock-function-name-face
+(sweep-defface
+  arity
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "darkcyan")
   "Arities.")
 
-(sweep-defface predicate-indicator font-lock-function-name-face
+(sweep-defface
+  predicate-indicator
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "darkcyan")
   "Predicate indicators.")
 
-(sweep-defface built-in font-lock-keyword-face
+(sweep-defface
+  built-in
+  (:inherit font-lock-keyword-face)
+  (:foreground "blue")
+  (:foreground "cyan")
   "Built in predicate calls.")
 
-(sweep-defface neck font-lock-preprocessor-face
+(sweep-defface
+  neck
+  (:inherit font-lock-preprocessor-face)
+  (:weight bold)
+  (:weight bold)
   "Necks.")
 
-(sweep-defface goal font-lock-function-name-face
+(sweep-defface goal
+  (:inherit font-lock-function-name-face)
+  (:inherit font-lock-function-name-face)
+  (:inherit font-lock-function-name-face)
   "Unspecified predicate goals.")
 
-(sweep-defface string font-lock-string-face
+(sweep-defface
+  string
+  (:inherit font-lock-string-face)
+  (:foreground "navyblue")
+  (:foreground "palegreen")
   "Strings.")
 
-(sweep-defface comment font-lock-comment-face
+(sweep-defface
+  comment
+  (:inherit font-lock-comment-face)
+  (:foreground "darkgreen")
+  (:foreground "green")
   "Comments.")
 
-(defface sweep-head-built-in-face
-  '((default . (:foreground "black" :background "orange" :weight bold)))
-  "Face used to highlight built-in predicate definitons."
-  :group 'sweep-faces)
+(sweep-defface
+  head-built-in
+  (:background "orange" :weight bold)
+  (:background "orange" :weight bold)
+  (:background "orange" :weight bold)
+  "Built-in predicate definitons.")
 
-(defface sweep-method-face
-  '((default . (:weight bold)))
-  "Face used to highlight PCE methods."
-  :group 'sweep-faces)
+(sweep-defface
+ method
+  (:weight bold)
+  (:weight bold)
+  (:weight bold)
+  "PCE classes.")
 
-(defface sweep-class-face
-  '((default . (:underline t)))
-  "Face used to highlight PCE classes."
-  :group 'sweep-faces)
+(sweep-defface
+  class
+  (:underline t)
+  (:underline t)
+  (:underline t)
+  "PCE classes.")
 
-(defface sweep-no-file-face
-  '((default . (:foreground "red")))
-  "Face used to highlight non-existsing file specifications."
-  :group 'sweep-faces)
+(sweep-defface
+  no-file
+  (:foreground "red")
+  (:foreground "red")
+  (:foreground "red")
+  "Non-existsing file specifications.")
 
-(sweep-defface head-local font-lock-builtin-face
+(sweep-defface
+  head-local
+  (:inherit font-lock-builtin-face)
+  (:weight bold)
+  (:weight bold)
   "Local predicate definitions.")
 
-(sweep-defface head-meta font-lock-preprocessor-face
+(sweep-defface
+  head-meta
+  (:inherit font-lock-preprocessor-face)
+  (:inherit default)
+  (:inherit default)
   "Meta predicate definitions.")
 
-(sweep-defface head-multifile font-lock-type-face
+(sweep-defface
+  head-multifile
+  (:inherit font-lock-type-face)
+  (:foreground "navyblue" :weight bold)
+  (:foreground "palegreen" :weight bold)
   "Multifile predicate definitions.")
 
-(sweep-defface head-extern font-lock-type-face
+(sweep-defface
+  head-extern
+  (:inherit font-lock-type-face)
+  (:foreground "blue" :weight bold)
+  (:foreground "cyan" :weight bold)
   "External predicate definitions.")
 
-(sweep-defface head-unreferenced font-lock-warning-face
+(sweep-defface
+  head-unreferenced
+  (:inherit font-lock-warning-face)
+  (:foreground "red" :weight bold)
+  (:foreground "red" :weight bold)
   "Unreferenced predicate definitions.")
 
-(sweep-defface head-exported font-lock-builtin-face
+(sweep-defface
+  head-exported
+  (:inherit font-lock-builtin-face)
+  (:foreground "blue" :weight bold)
+  (:foreground "cyan" :weight bold)
   "Exported predicate definitions.")
 
-(sweep-defface head-hook font-lock-type-face
+(sweep-defface
+  head-hook
+  (:inherit font-lock-type-face)
+  (:foreground "blue" :underline t)
+  (:foreground "cyan" :underline t)
   "Hook definitions.")
 
-(sweep-defface head-iso font-lock-keyword-face
+(sweep-defface
+  head-iso
+  (:inherit font-lock-keyword-face)
+  (:background "orange" :weight bold)
+  (:background "orange" :weight bold)
   "Hook definitions.")
 
-(sweep-defface head-undefined font-lock-warning-face
+(sweep-defface
+  head-undefined
+  (:inherit font-lock-warning-face)
+  (:weight bold)
+  (:weight bold)
   "Undefind head terms.")
 
-(sweep-defface head-public font-lock-builtin-face
+(sweep-defface
+  head-public
+  (:inherit font-lock-builtin-face)
+  (:foreground "#016300" :weight bold)
+  (:foreground "#016300" :weight bold)
   "Public definitions.")
 
-(sweep-defface meta-spec font-lock-preprocessor-face
+(sweep-defface
+  meta-spec
+  (:inherit font-lock-preprocessor-face)
+  (:inherit font-lock-preprocessor-face)
+  (:inherit font-lock-preprocessor-face)
   "Meta argument specifiers.")
 
-(sweep-defface recursion font-lock-builtin-face
+(sweep-defface
+  recursion
+  (:inherit font-lock-builtin-face)
+  (:underline t)
+  (:underline t)
   "Recursive calls.")
 
-(sweep-defface local font-lock-function-name-face
+(sweep-defface
+  local
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "darkcyan")
   "Local predicate calls.")
 
-(sweep-defface autoload font-lock-function-name-face
+(sweep-defface
+  autoload
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "darkcyan")
   "Autoloaded predicate calls.")
 
-(sweep-defface imported font-lock-function-name-face
+(sweep-defface
+  imported
+  (:inherit font-lock-function-name-face)
+  (:foreground "blue")
+  (:foreground "cyan")
   "Imported predicate calls.")
 
-(sweep-defface extern font-lock-function-name-face
+(sweep-defface
+  extern
+  (:inherit font-lock-function-name-face)
+  (:foreground "blue" :underline t)
+  (:foreground "cyan" :underline t)
   "External predicate calls.")
 
-(sweep-defface foreign font-lock-keyword-face
+(sweep-defface
+  foreign
+  (:inherit font-lock-keyword-face)
+  (:foreground "darkturquoise")
+  (:foreground "darkturquoise")
   "Foreign predicate calls.")
 
-(sweep-defface meta font-lock-type-face
+(sweep-defface
+  meta
+  (:inherit font-lock-type-face)
+  (:foreground "red4")
+  (:foreground "red4")
   "Meta predicate calls.")
 
-(sweep-defface undefined font-lock-warning-face
+(sweep-defface
+  undefined
+  (:inherit font-lock-warning-face)
+  (:foreground "red")
+  (:foreground "orange")
   "Undefined predicate calls.")
 
-(sweep-defface thread-local font-lock-constant-face
+(sweep-defface
+  thread-local
+  (:inherit font-lock-constant-face)
+  (:foreground "magenta" :underline t)
+  (:foreground "magenta" :underline t)
   "Thread local predicate calls.")
 
-(sweep-defface global font-lock-keyword-face
+(sweep-defface
+  global
+  (:inherit font-lock-keyword-face)
+  (:foreground "magenta")
+  (:foreground "darkcyan")
   "Global predicate calls.")
 
-(sweep-defface multifile font-lock-function-name-face
+(sweep-defface
+  multifile
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "palegreen")
   "Multifile predicate calls.")
 
-(sweep-defface dynamic font-lock-constant-face
+(sweep-defface
+  dynamic
+  (:inherit font-lock-constant-face)
+  (:foreground "magenta")
+  (:foreground "magenta")
   "Dynamic predicate calls.")
 
-(sweep-defface undefined-import font-lock-warning-face
+(sweep-defface
+  undefined-import
+  (:inherit font-lock-warning-face)
+  (:foreground "red")
+  (:foreground "red")
   "Undefined imports.")
 
-(sweep-defface html-attribute font-lock-function-name-face
+(sweep-defface
+  html-attribute
+  (:inherit font-lock-function-name-face)
+  (:foreground "magenta4")
+  (:foreground "magenta4")
   "HTML attributes.")
 
-(sweep-defface html-call font-lock-keyword-face
+(sweep-defface
+  html-call
+  (:inherit font-lock-keyword-face)
+  (:foreground "magenta4" :weight bold)
+  (:foreground "magenta4" :weight bold)
   "Multifile predicate calls.")
 
-(sweep-defface option-name font-lock-constant-face
+(sweep-defface
+  option-name
+  (:inherit font-lock-constant-face)
+  (:foreground "#3434ba")
+  (:foreground "#3434ba")
   "Option names.")
 
-(sweep-defface no-option-name font-lock-warning-face
+(sweep-defface
+  no-option-name
+  (:inherit font-lock-warning-face)
+  (:foreground "red")
+  (:foreground "orange")
   "Non-existent option names.")
 
-(sweep-defface flag-name font-lock-constant-face
+(sweep-defface
+  flag-name
+  (:inherit font-lock-constant-face)
+  (:foreground "blue")
+  (:foreground "cyan")
   "Flag names.")
 
-(sweep-defface no-flag-name font-lock-warning-face
+(sweep-defface
+  no-flag-name
+  (:inherit font-lock-warning-face)
+  (:foreground "red")
+  (:foreground "red")
   "Non-existent flag names.")
 
-(sweep-defface qq-type font-lock-type-face
+(sweep-defface
+  qq-type
+  (:inherit font-lock-type-face)
+  (:weight bold)
+  (:weight bold)
   "Quasi-quotation types.")
 
-(sweep-defface qq-sep font-lock-type-face
+(sweep-defface
+  qq-sep
+  (:inherit font-lock-type-face)
+  (:weight bold)
+  (:weight bold)
   "Quasi-quotation separators.")
 
-(sweep-defface qq-open font-lock-type-face
+(sweep-defface
+  qq-open
+  (:inherit font-lock-type-face)
+  (:weight bold)
+  (:weight bold)
   "Quasi-quotation open sequences.")
 
-(sweep-defface qq-close font-lock-type-face
+(sweep-defface
+  qq-close
+  (:inherit font-lock-type-face)
+  (:weight bold)
+  (:weight bold)
   "Quasi-quotation close sequences.")
 
-(sweep-defface op-type font-lock-type-face
+(sweep-defface
+  op-type
+  (:inherit font-lock-type-face)
+  (:foreground "blue")
+  (:foreground "cyan")
   "Operator types.")
 
-(sweep-defface dict-tag font-lock-constant-face
+(sweep-defface
+  dict-tag
+  (:inherit font-lock-constant-face)
+  (:weight bold)
+  (:weight bold)
   "Dict tags.")
 
-(sweep-defface dict-key font-lock-keyword-face
+(sweep-defface
+  dict-key
+  (:inherit font-lock-keyword-face)
+  (:weight bold)
+  (:weight bold)
   "Dict keys.")
 
-(sweep-defface dict-sep font-lock-keyword-face
+(sweep-defface
+  dict-sep
+  (:inherit font-lock-keyword-face)
+  (:weight bold)
+  (:weight bold)
   "Dict separators.")
 
-(sweep-defface type-error font-lock-warning-face
+(sweep-defface
+  type-error
+  (:inherit font-lock-warning-face)
+  (:foreground "orange")
+  (:foreground "orange")
   "Type errors.")
 
-(sweep-defface instantiation-error font-lock-warning-face
+(sweep-defface
+  instantiation-error
+  (:inherit font-lock-warning-face)
+  (:foreground "orange")
+  (:foreground "orange")
   "Instantiation errors.")
 
-(sweep-defface file button
+(sweep-defface
+  file
+  (:inherit button)
+  (:foreground "blue" :underline t)
+  (:foreground "cyan" :underline t)
   "File specifiers.")
 
-(sweep-defface file-no-depend font-lock-warning-face
+(sweep-defface
+  file-no-depend
+  (:inherit font-lock-warning-face)
+  (:foreground "blue" :underline t :background "pink")
+  (:foreground "cyan" :underline t :background "pink")
   "Unused file specifiers.")
 
-(sweep-defface unused-import font-lock-warning-face
+(sweep-defface
+  unused-import
+  (:inherit font-lock-warning-face)
+  (:foreground "blue" :background "pink")
+  (:foreground "cyan" :background "pink")
   "Unused imports.")
 
-(sweep-defface identifier font-lock-type-face
+(sweep-defface
+  identifier
+  (:inherit font-lock-type-face)
+  (:weight bold)
+  (:weight bold)
   "Identifiers.")
 
-(sweep-defface hook font-lock-preprocessor-face
+(sweep-defface
+  hook
+  (:inherit font-lock-preprocessor-face)
+  (:foreground "blue" :underline t)
+  (:foreground "cyan" :underline t)
   "Hooks.")
 
-(sweep-defface module font-lock-type-face
+(sweep-defface
+  module
+  (:inherit font-lock-type-face)
+  (:foreground "darkslateblue")
+  (:foreground "lightslateblue")
   "Module names.")
 
-(sweep-defface singleton font-lock-warning-face
+(sweep-defface
+  singleton
+  (:inherit font-lock-warning-face)
+  (:foreground "red4" :weight bold)
+  (:foreground "orangered1" :weight bold)
   "Singletons.")
 
-(sweep-defface fullstop font-lock-negation-char-face
+(sweep-defface
+  fullstop
+  (:inherit font-lock-negation-char-face)
+  (:inherit font-lock-negation-char-face)
+  (:inherit font-lock-negation-char-face)
   "Fullstops.")
 
-(sweep-defface nil font-lock-keyword-face
+(sweep-defface
+  nil
+  (:inherit font-lock-keyword-face)
+  (:inherit font-lock-keyword-face)
+  (:inherit font-lock-keyword-face)
   "The empty list.")
 
-(sweep-defface variable font-lock-variable-name-face
+(sweep-defface
+  variable
+  (:inherit font-lock-variable-name-face)
+  (:foreground "red4")
+  (:foreground "orangered1")
   "Variables.")
 
-(sweep-defface ext-quant font-lock-keyword-face
+(sweep-defface
+  ext-quant
+  (:inherit font-lock-keyword-face)
+  (:inherit font-lock-keyword-face)
+  (:inherit font-lock-keyword-face)
   "Existential quantifiers.")
 
-(sweep-defface control font-lock-keyword-face
+(sweep-defface
+  control
+  (:inherit font-lock-keyword-face)
+  (:inherit font-lock-keyword-face)
+  (:inherit font-lock-keyword-face)
   "Control constructs.")
 
-(sweep-defface atom font-lock-constant-face
+(sweep-defface
+  atom
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
   "Atoms.")
 
-(sweep-defface int font-lock-constant-face
+(sweep-defface
+  int
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
   "Integers.")
 
-(sweep-defface float font-lock-constant-face
+(sweep-defface
+  float
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
   "Floats.")
 
-(sweep-defface codes font-lock-constant-face
+(sweep-defface
+  codes
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
+  (:inherit font-lock-constant-face)
   "Codes.")
 
-(sweep-defface error font-lock-warning-face
+(sweep-defface
+  error
+  (:inherit font-lock-warning-face)
+  (:foreground "orange")
+  (:foreground "orange")
   "Unspecified errors.")
 
-(sweep-defface syntax-error error
+(sweep-defface
+  syntax-error
+  (:inherit error)
+  (:foreground "orange")
+  (:foreground "orange")
   "Syntax errors.")
 
-(sweep-defface structured-comment font-lock-doc-face
+(sweep-defface
+  structured-comment
+  (:inherit font-lock-doc-face)
+  (:inherit font-lock-doc-face :foreground "darkgreen")
+  (:inherit font-lock-doc-face :foreground "green")
   "Structured comments.")
+
+(defun sweep--colour-term-to-face (arg)
+  (pcase arg
+    (`("comment" . "structured")   (sweep-structured-comment-face))
+    (`("comment" . ,_)             (sweep-comment-face))
+    (`("head" "unreferenced" . ,_) (sweep-head-unreferenced-face))
+    (`("head" "meta" . ,_) (sweep-head-meta-face))
+    (`("head" "exported" . ,_) (sweep-head-exported-face))
+    (`("head" "hook" . ,_) (sweep-head-hook-face))
+    (`("head" "built_in" . ,_) (sweep-head-built-in-face))
+    (`("head" ,(rx "extern(") . ,_) (sweep-head-extern-face))
+    (`("head" ,(rx "public(") . ,_) (sweep-head-public-face))
+    (`("head" ,(rx "local(") . ,_) (sweep-head-local-face))
+    (`("goal" "recursion" . ,_) (sweep-recursion-face))
+    (`("goal" "meta"      . ,_) (sweep-meta-face))
+    (`("goal" "built_in"  . ,_) (sweep-built-in-face))
+    (`("goal" "undefined" . ,_) (sweep-undefined-face))
+    (`("goal" "global" . ,_) (sweep-global-face))
+    (`("goal",(rx "dynamic ") . ,_) (sweep-dynamic-face))
+    (`("goal",(rx "multifile ") . ,_) (sweep-multifile-face))
+    (`("goal",(rx "thread_local ") . ,_) (sweep-thread-local-face))
+    (`("goal",(rx "extern(") . ,_) (sweep-extern-face))
+    (`("goal",(rx "autoload(") . ,_) (sweep-autoload-face))
+    (`("goal",(rx "imported(") . ,_) (sweep-imported-face))
+    (`("goal",(rx "global(") . ,_) (sweep-global-face))
+    (`("goal",(rx "local(") . ,_) (sweep-local-face))
+    (`("syntax_error" ,_message ,_eb ,_ee) (sweep-syntax-error-face))
+    ("unused_import"       (sweep-unused-import-face))
+    ("undefined_import"    (sweep-undefined-import-face))
+    ("html_attribute"      (sweep-html-attribute-face))
+    ("html_call"           (sweep-html-call-face))
+    ("dict_tag"            (sweep-dict-tag-face))
+    ("dict_key"            (sweep-dict-key-face))
+    ("dict_sep"            (sweep-dict-sep-face))
+    ("meta"                (sweep-meta-spec-face))
+    ("flag_name"           (sweep-flag-name-face))
+    ("no_flag_name"        (sweep-flag-name-face))
+    ("ext_quant"           (sweep-ext-quant-face))
+    ("atom"                (sweep-atom-face))
+    ("float"               (sweep-float-face))
+    ("int"                 (sweep-int-face))
+    ("singleton"           (sweep-singleton-face))
+    ("option_name"         (sweep-option-name-face))
+    ("no_option_name"      (sweep-no-option-name-face))
+    ("control"             (sweep-control-face))
+    ("var"                 (sweep-variable-face))
+    ("fullstop"            (sweep-fullstop-face))
+    ("functor"             (sweep-functor-face))
+    ("arity"               (sweep-arity-face))
+    ("predicate_indicator" (sweep-predicate-indicator-face))
+    ("string"              (sweep-string-face))
+    ("module"              (sweep-module-face))
+    ("neck"                (sweep-neck-face))
+    ("hook"                (sweep-hook-face))
+    ("qq_type"             (sweep-qq-type-face))
+    ("qq_sep"              (sweep-qq-sep-face))
+    ("qq_open"             (sweep-qq-open-face))
+    ("qq_close"            (sweep-qq-close-face))
+    ("identifier"          (sweep-identifier-face))
+    ("file"                (sweep-file-face))
+    ("file_no_depend"      (sweep-file-no-depend-face))
+    ("nofile"              (sweep-no-file-face))
+    ("op_type"             (sweep-op-type-face))
+    ("method"              (sweep-method-face))
+    ("class"               (sweep-class-face))))
 
 (defun sweep--colourise (args)
   "ARGS is a list of the form (BEG LEN . SEM)."
-  (let* ((beg (max (point-min) (car  args)))
-         (end (min (point-max) (+ beg (cadr args))))
-         (arg (cddr args)))
+  (when-let ((beg (max (point-min) (car  args)))
+             (end (min (point-max) (+ beg (cadr args))))
+             (arg (cddr args))
+             (flf (sweep--colour-term-to-face arg)))
     (with-silent-modifications
-      (pcase arg
-        (`("comment" . ,k)
-         (put-text-property beg end 'font-lock-face
-                            (pcase k
-                              ("structured" sweep-structured-comment-face)
-                              (_ sweep-comment-face))))
-        (`("head" . ,h)
-         (put-text-property beg end 'font-lock-face
-                            (pcase h
-                              (`("unreferenced" . ,_) sweep-head-unreferenced-face)
-                              (`("meta" . ,_) sweep-head-meta-face)
-                              (`("exported" . ,_) sweep-head-exported-face)
-                              (`("hook" . ,_) sweep-head-hook-face)
-                              (`("built_in" . ,_) 'sweep-head-built-in-face)
-                              (`(,(rx "extern(") . ,_) sweep-head-extern-face)
-                              (`(,(rx "public ") . ,_) sweep-head-public-face)
-                              (`(,(rx "local(")  . ,_) sweep-head-local-face)
-                              (other (message "unknown head color term %S" other) sweep-head-local-face))))
-        (`("goal" . ,g)
-         (put-text-property beg end 'font-lock-face
-                            (pcase g
-                              (`("recursion" . ,_) sweep-recursion-face)
-                              (`("meta"      . ,_) sweep-meta-face)
-                              (`("built_in"  . ,_) sweep-built-in-face)
-                              (`("undefined" . ,_) sweep-undefined-face)
-                              (`("global" . ,_) sweep-global-face)
-                              (`(,(rx "dynamic ") . ,_) sweep-dynamic-face)
-                              (`(,(rx "multifile ") . ,_) sweep-multifile-face)
-                              (`(,(rx "thread_local ") . ,_) sweep-thread-local-face)
-                              (`(,(rx "extern(") . ,_) sweep-extern-face)
-                              (`(,(rx "autoload(") . ,_) sweep-autoload-face)
-                              (`(,(rx "imported(") . ,_) sweep-imported-face)
-                              (`(,(rx "global(") . ,_) sweep-global-face)
-                              (`(,(rx "local(") . ,_) sweep-local-face)
-                              (other (message "unknown goal color term %S" other) sweep-goal-face))))
-        (`("syntax_error" ,_message ,_eb ,_ee)
-         (put-text-property beg end 'font-lock-face sweep-syntax-error-face))
-        ("unused_import"       (put-text-property beg end 'font-lock-face sweep-unused-import-face))
-        ("undefined_import"    (put-text-property beg end 'font-lock-face sweep-undefined-import-face))
-        ("html_attribute"      (put-text-property beg end 'font-lock-face sweep-html-attribute-face))
-        ("html_call"           (put-text-property beg end 'font-lock-face sweep-html-call-face))
-        ("dict_tag"            (put-text-property beg end 'font-lock-face sweep-dict-tag-face))
-        ("dict_key"            (put-text-property beg end 'font-lock-face sweep-dict-key-face))
-        ("dict_sep"            (put-text-property beg end 'font-lock-face sweep-dict-sep-face))
-        ("meta"                (put-text-property beg end 'font-lock-face sweep-meta-spec-face))
-        ("flag_name"           (put-text-property beg end 'font-lock-face sweep-flag-name-face))
-        ("no_flag_name"        (put-text-property beg end 'font-lock-face sweep-flag-name-face))
-        ("ext_quant"           (put-text-property beg end 'font-lock-face sweep-ext-quant-face))
-        ("atom"                (put-text-property beg end 'font-lock-face sweep-atom-face))
-        ("float"               (put-text-property beg end 'font-lock-face sweep-float-face))
-        ("int"                 (put-text-property beg end 'font-lock-face sweep-int-face))
-        ("singleton"           (put-text-property beg end 'font-lock-face sweep-singleton-face))
-        ("option_name"         (put-text-property beg end 'font-lock-face sweep-option-name-face))
-        ("no_option_name"      (put-text-property beg end 'font-lock-face sweep-no-option-name-face))
-        ("control"             (put-text-property beg end 'font-lock-face sweep-control-face))
-        ("var"                 (put-text-property beg end 'font-lock-face sweep-variable-face))
-        ("fullstop"            (put-text-property beg end 'font-lock-face sweep-fullstop-face))
-        ("functor"             (put-text-property beg end 'font-lock-face sweep-functor-face))
-        ("arity"               (put-text-property beg end 'font-lock-face sweep-arity-face))
-        ("predicate_indicator" (put-text-property beg end 'font-lock-face sweep-predicate-indicator-face))
-        ("string"              (put-text-property beg end 'font-lock-face sweep-string-face))
-        ("module"              (put-text-property beg end 'font-lock-face sweep-module-face))
-        ("neck"                (put-text-property beg end 'font-lock-face sweep-neck-face))
-        ("hook"                (put-text-property beg end 'font-lock-face sweep-hook-face))
-        ("qq_type"             (put-text-property beg end 'font-lock-face sweep-qq-type-face))
-        ("qq_sep"              (put-text-property beg end 'font-lock-face sweep-qq-sep-face))
-        ("qq_open"             (put-text-property beg end 'font-lock-face sweep-qq-open-face))
-        ("qq_close"            (put-text-property beg end 'font-lock-face sweep-qq-close-face))
-        ("identifier"          (put-text-property beg end 'font-lock-face sweep-identifier-face))
-        ("file"                (put-text-property beg end 'font-lock-face sweep-file-face))
-        ("file_no_depend"      (put-text-property beg end 'font-lock-face sweep-file-no-depend-face))
-        ("nofile"              (put-text-property beg end 'font-lock-face 'sweep-no-file-face))
-        ("op_type"             (put-text-property beg end 'font-lock-face sweep-op-type-face))
-        ("method"              (put-text-property beg end 'font-lock-face 'sweep-method-face))
-        ("class"               (put-text-property beg end 'font-lock-face 'sweep-class-face))
-        (`("goal_term" . ,_)   nil)
-        (`("head_term" . ,_)   nil)
-        ("clause"              nil)
-        ("directive"           nil)
-        ("body"                nil)
-        ("html"                nil)
-        ("parentheses"         nil)
-        ("pce"                 nil)
-        ("term"                nil)
-        ("expanded"            nil)
-        ("list"                nil)
-        ("grammar_rule"        nil)
-        ("dict"                nil)
-        ("dict_content"        nil)
-        ("brace_term"          nil)
-        ("rule_condition"      nil)
-        ("exported_operator"   nil)
-        ("empty_list"          nil)
-        ("dcg"                 nil)
-        ("qq_content"          nil)
-        ("qq"                  nil)
-        (other (message "Unknown color term %S" other))))))
+      (put-text-property beg end 'font-lock-face flf))))
 
 (defun sweep-colourise-buffer (&optional buffer)
   (interactive)
