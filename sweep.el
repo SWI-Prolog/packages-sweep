@@ -121,9 +121,9 @@ inserted to the input history in `sweep-top-level-mode' buffers."
   :type 'boolean
   :group 'sweep)
 
-(defcustom sweep-init-args (list (expand-file-name
-                                  "sweep.pl"
-                                  (file-name-directory load-file-name)))
+(defcustom sweep-init-args (list "-q"
+                                 "--no-signals"
+                                 "-g [library(sweep)]")
   "List of strings used as initialization arguments for Prolog."
   :package-version '((sweep "0.1.0"))
   :type '(list string)
@@ -156,12 +156,16 @@ inserted to the input history in `sweep-top-level-mode' buffers."
 (declare-function sweep-cleanup       "sweep-module")
 
 (defun sweep--ensure-module ()
-  (unless (require 'sweep-module nil t)
-    (if (y-or-n-p "Sweep needs `sweep-module' to work.  Compile it now? ")
-        (progn
-          (sweep--compile-module)
-          (require 'sweep-module))
-      (error "Sweep will not work until `sweep-module' is compiled!"))))
+  (let ((swipl-lib-dir (car
+                        (split-string-and-unquote
+                         (shell-command-to-string
+                          (concat
+                           (or sweep-swipl-path (executable-find "swipl"))
+                           " --dump-runtime-variables |"
+                           " grep PLLIBDIR |"
+                           " cut -f 2 -d = |"
+                           " cut -f 1 -d ';'"))))))
+    (load (expand-file-name "sweep-module" swipl-lib-dir))))
 
 
 (defface sweep-debug-prefix-face
@@ -301,7 +305,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 (defun sweep-init ()
   (apply #'sweep-initialize
          (cons (or sweep-swipl-path (executable-find "swipl"))
-               (cons "-q" (cons "--no-signals" sweep-init-args))))
+               sweep-init-args))
   (sweep-setup-message-hook)
   (sweep-start-prolog-server))
 
