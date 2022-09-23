@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.3.1
+;; Package-Version: 0.3.2
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -1356,7 +1356,8 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (back-to-indentation)
     (let ((indent (if (nth 8 (syntax-ppss))
                       'noindent
-                    (if-let ((open (and (= (char-syntax (char-after)) ?\))
+                    (if-let ((open (and (not (eobp))
+                                        (= (char-syntax (char-after)) ?\))
                                         (nth 1 (syntax-ppss)))))
                         (save-excursion
                           (goto-char open)
