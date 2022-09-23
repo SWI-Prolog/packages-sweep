@@ -112,9 +112,6 @@ inserted to the input history in `sweep-top-level-mode' buffers."
   :type 'string
   :group 'sweep)
 
-(defvar sweep-install-buffer-name "*Install sweep*"
-  "Name of the buffer used for compiling sweep-module.")
-
 (defcustom sweep-init-on-load t
   "If non-nil, initialize Prolog when `sweep' is loaded."
   :package-version '((sweep "0.1.0"))
@@ -131,22 +128,6 @@ inserted to the input history in `sweep-top-level-mode' buffers."
 
 (defvar sweep-prolog-server-port nil)
 
-(defun sweep--compile-module ()
-  "Compile sweep-module."
-  (interactive)
-  (let* ((sweep-directory
-          (shell-quote-argument (file-name-directory load-file-name)))
-         (make-commands
-          (concat
-           "cd " sweep-directory "; make; cd -"))
-         (buffer (get-buffer-create sweep-install-buffer-name)))
-    (pop-to-buffer buffer)
-    (compilation-mode)
-    (if (zerop (let ((inhibit-read-only t))
-                 (call-process "sh" nil buffer t "-c" make-commands)))
-        (message "Compilation of `sweep' module succeeded")
-      (error "Compilation of `sweep' module failed!"))))
-
 (declare-function sweep-initialize    "sweep-module")
 (declare-function sweep-initialized-p "sweep-module")
 (declare-function sweep-open-query    "sweep-module")
@@ -156,12 +137,16 @@ inserted to the input history in `sweep-top-level-mode' buffers."
 (declare-function sweep-cleanup       "sweep-module")
 
 (defun sweep--ensure-module ()
-  (unless (require 'sweep-module nil t)
-    (if (y-or-n-p "Sweep needs `sweep-module' to work.  Compile it now? ")
-        (progn
-          (sweep--compile-module)
-          (require 'sweep-module))
-      (error "Sweep will not work until `sweep-module' is compiled!"))))
+  (add-to-list 'load-path
+               (car
+                (split-string-and-unquote
+                 (shell-command-to-string (concat
+                                           (or sweep-swipl-path (executable-find "swipl"))
+                                           " --dump-runtime-variables |"
+                                           " grep PLLIBDIR |"
+                                           " cut -f 2 -d = |"
+                                           " cut -f 1 -d ';'")))))
+  (require 'sweep-module))
 
 
 (defface sweep-debug-prefix-face
