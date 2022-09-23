@@ -30,6 +30,11 @@ Follows file specifications in =sweep-mode= buffers.
 
 * New user options available in =sweep= {{{version({{{input-file}}})}}}
 
+** New user option =sweep-indent-offset=
+
+This option, set by default to 4, is an integer denoting the number of
+columns used as the indent increment in =sweep-mode= buffers.
+
 ** New user option =sweep-colourise-buffer-on-idle=
 
 This option is a boolean flag that determines whether to enable

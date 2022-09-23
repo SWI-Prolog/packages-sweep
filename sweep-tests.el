@@ -40,6 +40,86 @@
   "Tests indentation rules."
   (sweep-test-indentation
    "
+some_functor(
+arg1,
+arg2,
+)."
+   "
+some_functor(
+    arg1,
+    arg2,
+)."
+   )
+  (sweep-test-indentation
+   "
+asserta( some_functor(arg1, arg2) :-
+body_term
+).
+"
+   "
+asserta( some_functor(arg1, arg2) :-
+             body_term
+       ).
+"
+   )
+  (sweep-test-indentation
+   "
+:- module(spam, [ foo,
+bar,
+baz
+]
+).
+"
+   "
+:- module(spam, [ foo,
+                  bar,
+                  baz
+                ]
+         ).
+"
+   )
+  (sweep-test-indentation
+   "
+:- module(spam, [
+foo,
+bar,
+baz
+]
+).
+"
+   "
+:- module(spam, [
+                    foo,
+                    bar,
+                    baz
+                ]
+         ).
+"
+   )
+  (sweep-test-indentation
+   "
+[
+    ].
+"
+   "
+[
+].
+"
+   )
+  (sweep-test-indentation
+   "
+:-
+use_module(foo),
+use_module(bar).
+"
+   "
+:-
+    use_module(foo),
+    use_module(bar).
+"
+   )
+  (sweep-test-indentation
+   "
 colourise_declaration(Module:PI, _, TB,
                       term_position(_,_,QF,QT,[PM,PG])) :-
     atom(Module), nonvar(PI), PI = Name/Arity,

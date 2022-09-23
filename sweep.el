@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.3.0
+;; Package-Version: 0.3.1
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -33,6 +33,12 @@
 (defgroup sweep nil
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
+
+(defcustom sweep-indent-offset 4
+  "Number of columns to indent lines with in `sweep-mode' buffers."
+  :package-version '((sweep . "0.3.1"))
+  :type 'integer
+  :group 'sweep)
 
 (defcustom sweep-colourise-buffer-on-idle t
   "If non-nil, update highlighting of `sweep-mode' buffers on idle."
@@ -1299,12 +1305,12 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (defun sweep-indent-line-after-functor (fbeg _fend)
   (save-excursion
     (goto-char fbeg)
-    (+ (current-column) 4)))
+    (+ (current-column) sweep-indent-offset)))
 
 (defun sweep-indent-line-after-open (fbeg _fend)
   (save-excursion
     (goto-char fbeg)
-    (+ (current-column) 4)))
+    (+ (current-column) sweep-indent-offset)))
 
 (defun sweep-indent-line-after-prefix (fbeg _fend _pre)
   (save-excursion
@@ -1322,7 +1328,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (save-excursion
     (goto-char fbeg)
     (sweep-backward-term 1200)
-    (+ (current-column) 4)))
+    (+ (current-column) sweep-indent-offset)))
 
 (defun sweep-indent-line-after-infix (fbeg _fend pre)
   (save-excursion
@@ -1340,36 +1346,49 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (current-column)))
 
 (defun sweep-indent-line ()
+  "Indent the current line in a `sweep-mode' buffer."
   (interactive)
   (let ((pos (- (point-max) (point))))
     (back-to-indentation)
     (let ((indent (if (nth 8 (syntax-ppss))
                       'noindent
-                    (pcase (sweep-last-token-boundaries)
-                      ('nil 'noindent)
-                      (`(functor ,lbeg ,lend)
-                       (sweep-indent-line-after-functor lbeg lend))
-                      (`(open ,lbeg ,lend)
-                       (sweep-indent-line-after-open lbeg lend))
-                      (`(symbol ,lbeg ,lend)
-                       (let ((sym (buffer-substring-no-properties lbeg lend)))
-                         (cond
-                          ((pcase (sweep-op-prefix-precedence sym)
-                             ('nil (sweep-indent-line-after-term))
-                             (pre  (sweep-indent-line-after-prefix lbeg lend pre)))))))
-                      (`(operator ,lbeg ,lend)
-                       (let ((op (buffer-substring-no-properties lbeg lend)))
-                         (cond
-                          ((string= op ".") 'noindent)
-                          ((pcase (sweep-op-infix-precedence op)
-                             ('nil nil)
-                             (1200 (sweep-indent-line-after-neck lbeg lend))
-                             (pre  (sweep-indent-line-after-infix lbeg lend pre))))
-                          ((pcase (sweep-op-prefix-precedence op)
-                             ('nil nil)
-                             (pre  (sweep-indent-line-after-prefix lbeg lend pre)))))))
-                      (`(,_ltyp ,_lbeg ,_lend)
-                       (sweep-indent-line-after-term))))))
+                    (if-let ((open (and (= (char-syntax (char-after)) ?\))
+                                        (nth 1 (syntax-ppss)))))
+                        (save-excursion
+                          (goto-char open)
+                          (when (or (= (char-syntax (char-before)) ?w)
+                                    (= (char-syntax (char-before)) ?_))
+                            (when (save-excursion
+                                    (forward-char)
+                                    (skip-syntax-forward " " (line-end-position))
+                                    (eolp))
+                              (skip-syntax-backward "w_")))
+                          (current-column))
+                      (pcase (sweep-last-token-boundaries)
+                        ('nil 'noindent)
+                        (`(functor ,lbeg ,lend)
+                         (sweep-indent-line-after-functor lbeg lend))
+                        (`(open ,lbeg ,lend)
+                         (sweep-indent-line-after-open lbeg lend))
+                        (`(symbol ,lbeg ,lend)
+                         (let ((sym (buffer-substring-no-properties lbeg lend)))
+                           (cond
+                            ((pcase (sweep-op-prefix-precedence sym)
+                               ('nil (sweep-indent-line-after-term))
+                               (pre  (sweep-indent-line-after-prefix lbeg lend pre)))))))
+                        (`(operator ,lbeg ,lend)
+                         (let ((op (buffer-substring-no-properties lbeg lend)))
+                           (cond
+                            ((string= op ".") 'noindent)
+                            ((pcase (sweep-op-infix-precedence op)
+                               ('nil nil)
+                               (1200 (sweep-indent-line-after-neck lbeg lend))
+                               (pre  (sweep-indent-line-after-infix lbeg lend pre))))
+                            ((pcase (sweep-op-prefix-precedence op)
+                               ('nil nil)
+                               (pre  (sweep-indent-line-after-prefix lbeg lend pre)))))))
+                        (`(,_ltyp ,_lbeg ,_lend)
+                         (sweep-indent-line-after-term)))))))
       (when (numberp indent)
         (unless (= indent (current-column))
           (combine-after-change-calls
