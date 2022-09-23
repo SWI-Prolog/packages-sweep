@@ -30,15 +30,29 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "sweep.h"
+#include "emacs-module.h"
+#include <SWI-Prolog.h>
+#include <SWI-Stream.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 int plugin_is_GPL_compatible;
 
-term_t o = 0;
+term_t      output_term = 0;
 emacs_env * current_env = NULL;
+
+static int         value_to_term(emacs_env*, emacs_value, term_t);
+static emacs_value term_to_value(emacs_env*, term_t);
+
+void
+ethrow(emacs_env *env, const char * message) {
+  ptrdiff_t  len = strlen(message);
+
+  emacs_value str = env->make_string(env, message, len);
+  emacs_value arg = env->funcall (env, env->intern (env, "list"), 1, &str);
+  env->non_local_exit_signal(env, env->intern(env, "error"), arg);
+}
 
 char*
 estring_to_cstring(emacs_env *eenv, emacs_value estring, ptrdiff_t *len_p) {
@@ -93,14 +107,6 @@ ecdr(emacs_env *env, emacs_value cons) {
   return env->funcall (env, env->intern (env, "cdr"), 1, &cons);
 }
 
-void
-ethrow(emacs_env *env, const char * message) {
-  ptrdiff_t  len = strlen(message);
-
-  emacs_value str = env->make_string(env, message, len);
-  emacs_value arg = env->funcall (env, env->intern (env, "list"), 1, &str);
-  env->non_local_exit_signal(env, env->intern(env, "error"), arg);
-}
 
 emacs_value
 enil(emacs_env *env) { return env->intern(env, "nil"); }
@@ -373,9 +379,9 @@ sweep_next_solution(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *da
   case PL_S_FALSE:
     return enil(env);
   case PL_S_TRUE:
-    return econs(env, et(env), term_to_value(env, o));
+    return econs(env, et(env), term_to_value(env, output_term));
   case PL_S_LAST:
-    return econs(env, env->intern(env, "!"), term_to_value(env, o));
+    return econs(env, env->intern(env, "!"), term_to_value(env, output_term));
   default:
     return NULL;
   }
@@ -429,7 +435,7 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
 
   PL_open_query(n, PL_Q_NODEBUG | PL_Q_EXT_STATUS | PL_Q_CATCH_EXCEPTION, p, a);
 
-  o = a+(env->is_not_nil(env, s) ? 0 : 1);
+  output_term = a+(env->is_not_nil(env, s) ? 0 : 1);
 
   r = et(env);
 
