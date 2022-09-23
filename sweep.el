@@ -118,9 +118,9 @@ inserted to the input history in `sweep-top-level-mode' buffers."
   :type 'boolean
   :group 'sweep)
 
-(defcustom sweep-init-args (list (expand-file-name
-                                  "sweep.pl"
-                                  (file-name-directory load-file-name)))
+(defcustom sweep-init-args (list "-q"
+                                 "--no-signals"
+                                 "-g [library(sweep)]")
   "List of strings used as initialization arguments for Prolog."
   :package-version '((sweep "0.1.0"))
   :type '(list string)
@@ -286,7 +286,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 (defun sweep-init ()
   (apply #'sweep-initialize
          (cons (or sweep-swipl-path (executable-find "swipl"))
-               (cons "-q" (cons "--no-signals" sweep-init-args))))
+               sweep-init-args))
   (sweep-setup-message-hook)
   (sweep-start-prolog-server))
 
