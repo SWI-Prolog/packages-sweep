@@ -3,7 +3,7 @@ project(swipl-sweep)
 
 include("../cmake/PrologPackage.cmake")
 
-find_program(EMACS Emacs)
+find_program(EMACS emacs Emacs)
 
 find_path(
   EMACS_INCLUDE_DIR
