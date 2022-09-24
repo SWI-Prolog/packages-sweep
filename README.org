@@ -424,11 +424,11 @@ that determine the appearance of a specific text in Emacs buffers, see
 also [[info:emacs#Faces][Faces in the Emacs manual]]) to signify the specific semantics of
 each token in a Prolog code buffer.  =sweep= comes with three /styles/:
 
-- The =default= style includes faces that mostly inherit from
-standard Emacs faces commonly used in programming modes.
+- The =default= style includes faces that mostly inherit from standard
+  Emacs faces commonly used in programming modes.
 - The =light= style mimics the colors used in the SWI-Prolog built-in
   editor.
-- The =light= style mimics the colors used in the SWI-Prolog built-in
+- The =dark= style mimics the colors used in the SWI-Prolog built-in
   editor in dark mode.
 
 #+VINDEX: sweep-faces-style
