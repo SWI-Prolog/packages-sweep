@@ -587,7 +587,7 @@ For example, typing =C-x C-f library(pldoc/doc_man)= will open the
 source of the =pldoc_man= module from the Prolog library, and likewise
 =C-x C-f pack(.)= will open the Prolog packages directory.
 
-* Quick access to =sweep= commands
+* Quick access to sweep commands
 :PROPERTIES:
 :CUSTOM_ID: quick-command-access
 :END:
@@ -628,7 +628,7 @@ buffer.  For more information about the features enabled by
 #+FINDEX: sweep-view-messages
 =sweep= includes the command =sweep-view-messages= for quickly switching
 to the =sweep= messages buffer.  This command is bound by default in
-=sweep-prefix-map= to the =e= key (see [[Quick access to =sweep= commands]]).
+=sweep-prefix-map= to the =e= key (see [[Quick access to sweep commands]]).
 
 * Setting Prolog flags
 :PROPERTIES:
