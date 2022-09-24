@@ -422,17 +422,23 @@ highlighting can be set via the user option
 =sweep= defines more than 60 different faces (named sets of properties
 that determine the appearance of a specific text in Emacs buffers, see
 also [[info:emacs#Faces][Faces in the Emacs manual]]) to signify the specific semantics of
-each token in a Prolog code buffer.  For example, calls to built in
-Prolog predicates are highlighted with the =sweep-built-in-face=, while
-recursive calls to predicates in their own definitions are assigned
-the =sweep-recursion-face=.  The different appearance properties
-associated which each face, like color, font, etc., can be customized
-according to best suite the user's preferences.  By default, =sweep=
-defines its faces to inherit from standard Emacs faces such as
-=font-lock-variable-face= commonly used for variables in different
-programming languages, which =sweep= uses a basis for
-=sweep-variable-face=.  To view and customize all of the faces defined
-and used in =sweep=, type =M-x customize-group RET sweep-faces RET=.
+each token in a Prolog code buffer.  =sweep= comes with three /styles/:
+
+- The =default= style includes faces that mostly inherit from
+standard Emacs faces commonly used in programming modes.
+- The =light= style mimics the colors used in the SWI-Prolog built-in
+  editor.
+- The =light= style mimics the colors used in the SWI-Prolog built-in
+  editor in dark mode.
+
+#+VINDEX: sweep-faces-style
+To choose a style, customize the user option =sweep-faces-style= with
+=M-x customize-option RET sweep-faces-style RET=.  The new style will
+apply to all new =sweep-mode= buffers.  To apply the new style to an
+existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
+
+To view and customize all of the faces defined and used in =sweep=, type
+=M-x customize-group RET sweep-faces RET=.
 
 ** Definitions and references
 :PROPERTIES:

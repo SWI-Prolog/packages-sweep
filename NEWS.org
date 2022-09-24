@@ -30,6 +30,12 @@ Follows file specifications in =sweep-mode= buffers.
 
 * New user options available in =sweep= {{{version({{{input-file}}})}}}
 
+** New user option =sweep-faces-style=
+
+This option controls the which style of faces will be used for
+highlighting in =sweep-mode= buffers.  Possible options are =light=, =dark=
+and =default=.
+
 ** New user option =sweep-indent-offset=
 
 This option, set by default to 4, is an integer denoting the number of
