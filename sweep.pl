@@ -53,6 +53,7 @@
             sweep_pack_install/2,
             sweep_prefix_ops/2,
             sweep_op_info/2,
+            sweep_imenu_index/2,
             sweep_module_path/2
           ]).
 
@@ -727,3 +728,13 @@ with_buffer_stream(Stream, String, Goal) :-
                        ( close(Stream),
                          free_memory_file(H)
                        )).
+
+sweep_imenu_index(Path, Index) :-
+    atom_string(Atom, Path),
+    findall([String|L],
+            ( xref_defined(Atom, D, H),
+              xref_definition_line(H, L),
+              pi_head(PI, D),
+              term_string(PI, String)
+            ),
+            Index).

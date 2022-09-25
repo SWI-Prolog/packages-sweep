@@ -2000,6 +2000,22 @@ Interactively, POINT is set to the current point."
                             (xref-make-file-location path line 0))))
              matches)))
 
+(defun sweep-create-index-function ()
+  (sweep-open-query "user"
+                    "sweep"
+                    "sweep_imenu_index"
+                    (buffer-file-name))
+  (let ((sol (sweep-next-solution)))
+    (sweep-close-query)
+    (when (sweep-true-p sol)
+      (seq-map (lambda (entry)
+                 (let ((car (car entry))
+                       (line (cdr entry)))
+                   (goto-char (point-min))
+                   (forward-line (1- line))
+                   (cons car (line-beginning-position))))
+               (cdr sol)))))
+
 (defvar-local sweep--timer nil)
 (defvar-local sweep--colourise-buffer-duration 0.2)
 
@@ -2010,6 +2026,7 @@ Interactively, POINT is set to the current point."
   (setq-local comment-start "%")
   (setq-local comment-start-skip "\\(?:/\\*+ *\\|%+ *\\)")
   (setq-local parens-require-spaces nil)
+  (setq-local imenu-create-index-function #'sweep-create-index-function)
   (setq-local beginning-of-defun-function #'sweep-beginning-of-top-term)
   (setq-local end-of-defun-function #'sweep-end-of-top-term)
   (setq-local forward-sexp-function #'sweep-forward-sexp-function)
