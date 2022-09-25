@@ -10,7 +10,6 @@ This file is about changes in =sweep= up to version
 {{{version({{{input-file}}})}}}.
 
 * New commands available in =sweep= {{{version({{{input-file}}})}}}
-
 ** New command =sweep-load-buffer=.
 
 Loads a =sweep-mode= buffer.  If called from a =sweep-mode= buffer, loads
@@ -64,6 +63,7 @@ inputs inserted into =sweep= top-level history ring.  The default value,
 3, avoids one character top-level responses from clobbering the
 history ring.  This kind of inputs includes, for example, the =;=
 character typed to invoke backtracking.
+
 
 * New keybindings in =sweep-prefix-map=
 

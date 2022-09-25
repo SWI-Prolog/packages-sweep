@@ -440,6 +440,45 @@ existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
 To view and customize all of the faces defined and used in =sweep=, type
 =M-x customize-group RET sweep-faces RET=.
 
+** Term-based editing and motion commands
+:PROPERTIES:
+:CUSTOM_ID: term-based-commands
+:END:
+
+#+CINDEX: sexps
+Emacs includes many useful features for operating on syntactic units
+in source code buffer, such as marking, transposing and moving over
+expressions.  By default, these features are geared towards working
+with Lisp expressions, or "sexps".  =sweep-mode= extends the Emacs'
+notion of syntactic expressions to accommodate for Prolog terms, which
+allows the standard sexp-based command to operate on them seamlessly.
+
+#+FINDEX: raise-sexp
+[[info:emacs#Expressions][Expressions in the Emacs manual]] covers the most important commands
+that operate sexps, and by extension on Prolog terms.  Another useful
+command for Prolog programmers is =M-x kill-backward-up-list=, bound by
+default to =C-M-^= in =sweep-mode= buffers.  This command replaces the
+parent term containing the term at point with the term itself.  To
+illustrate the utility of this command, consider the following clause:
+
+#+begin_src prolog
+  head :-
+      goal1,
+      setup_call_cleanup(setup,
+                         goal2,
+                         cleanup).
+#+end_src
+
+Now with point anywhere inside =goal2=, calling =kill-backward-up-list=
+removes the =setup_call_cleanup/3= term leaving =goal2= to be called
+directly:
+
+#+begin_src prolog
+  head :-
+      goal1,
+      goal2.
+#+end_src
+
 ** Definitions and references
 :PROPERTIES:
 :CUSTOM_ID: sweep-xref

@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.3.2
+;; Package-Version: 0.3.3
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -1396,6 +1396,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map (kbd "C-c C-c") #'sweep-colourise-buffer)
     (define-key map (kbd "C-c C-t") #'sweep-top-level)
     (define-key map (kbd "C-c C-o") #'sweep-find-file-at-point)
+    (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     map)
   "Keymap for `sweep-mode'.")
 
@@ -1428,6 +1429,37 @@ Interactively, a prefix arg means to prompt for BUFFER."
            (list 'close beg (point)))
           ((= syn ?>) nil)
           (t (list 'else beg (point)))))))))
+
+(defun sweep-next-token-boundaries (&optional pos)
+  (let ((point (or pos (point))))
+    (save-excursion
+      (goto-char point)
+      (while (forward-comment 1))
+      (unless (eobp)
+        (let ((beg (point))
+              (syn (char-syntax (char-after))))
+          (cond
+           ((or (= syn ?w) (= syn ?_))
+            (skip-syntax-forward "w_")
+            (if (= (char-syntax (char-after)) ?\()
+                (progn
+                  (forward-char)
+                  (list 'functor beg (point)))
+              (list 'symbol beg (point))))
+           ((= syn ?\")
+            (forward-char)
+            (while (and (not (eobp)) (nth 3 (syntax-ppss)))
+              (forward-char))
+            (list 'string beg (point)))
+           ((= syn ?.)
+            (skip-syntax-forward ".")
+            (list 'operator beg (point)))
+           ((= syn ?\()
+            (list 'open beg (point)))
+           ((= syn ?\))
+            (list 'close beg (point)))
+           ((= syn ?>) nil)
+           (t (list 'else beg (point)))))))))
 
 (defun sweep-last-token-boundaries (&optional pos)
   (let ((point (or pos (point)))
@@ -1464,48 +1496,210 @@ Interactively, a prefix arg means to prompt for BUFFER."
             (list 'close (1- end) end))
            (t (list 'else (1- end) end))))))))
 
-(defun sweep-backward-term (pre)
-  (pcase (sweep-last-token-boundaries)
-    ('nil nil)
-    (`(open,_ ,_) nil)
-    (`(functor,_ ,_) nil)
+(defun sweep--forward-term (pre)
+  (pcase (sweep-next-token-boundaries)
+    ('nil
+     (signal 'scan-error
+             (list "Cannot scan beyond end of buffer."
+                   (point-max)
+                   (point-max))))
+    (`(close ,lbeg ,lend)
+     (signal 'scan-error
+             (list "Cannot scan beyond closing parenthesis or bracket."
+                   lbeg
+                   lend)))
+    (`(open ,obeg ,_)
+     (goto-char obeg)
+     (goto-char (scan-lists (point) 1 0))
+     (sweep--forward-term pre))
+    (`(functor ,_ ,oend)
+     (goto-char (1- oend))
+     (goto-char (scan-lists (point) 1 0))
+     (sweep--forward-term pre))
     (`(operator ,obeg ,oend)
-     (unless (and (string= "." (buffer-substring-no-properties obeg oend))
-                  (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
-      (if-let ((opre (sweep-op-infix-precedence
-                      (buffer-substring-no-properties obeg oend))))
-          (when (<= opre pre)
-            (goto-char obeg)
-            (sweep-backward-term pre))
-        (if-let ((ppre (sweep-op-prefix-precedence
-                        (buffer-substring-no-properties obeg oend))))
-            (when (<= ppre pre)
-              (goto-char obeg)
-              (sweep-backward-term pre))
-          (goto-char obeg)
-          (sweep-backward-term pre)))))
+     (if (and (string= "." (buffer-substring-no-properties obeg oend))
+              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+         (signal 'scan-error
+                 (list "Cannot scan beyond fullstop."
+                       obeg
+                       (1+ obeg)))
+       (if-let ((opre (sweep-op-infix-precedence
+                       (buffer-substring-no-properties obeg oend))))
+           (if (> opre pre)
+               (signal 'scan-error
+                       (list (format "Cannot scan beyond infix operator of higher precedence %s." opre)
+                             obeg
+                             oend))
+             (goto-char oend)
+             (sweep--forward-term pre))
+         (if-let ((ppre (sweep-op-suffix-precedence
+                         (buffer-substring-no-properties obeg oend))))
+             (if (> opre pre)
+                 (signal 'scan-error
+                         (list (format "Cannot scan beyond suffix operator of higher precedence %s." opre)
+                               obeg
+                               oend))
+               (goto-char oend)
+               (sweep--forward-term pre))
+           (goto-char oend)
+           (sweep--forward-term pre)))))
     (`(symbol ,obeg ,oend)
      (if-let ((opre (sweep-op-infix-precedence
                      (buffer-substring-no-properties obeg oend))))
-         (when (<= opre pre)
-           (goto-char obeg)
-           (sweep-backward-term pre))
+         (if (> opre pre)
+             (signal 'scan-error
+                     (list (format "Cannot scan backwards infix operator of higher precedence %s." opre)
+                           obeg
+                           oend))
+           (goto-char oend)
+           (sweep--forward-term pre))
        (if-let ((ppre (sweep-op-prefix-precedence
                        (buffer-substring-no-properties obeg oend))))
-           (when (<= ppre pre)
+           (if (> opre pre)
+               (signal 'scan-error
+                       (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
+                             obeg
+                             oend))
+             (goto-char oend)
+             (sweep--forward-term pre))
+         (goto-char oend)
+         (sweep--forward-term pre))))
+    (`(,_ ,_ ,oend)
+     (goto-char oend)
+     (sweep--forward-term pre))))
+
+(defun sweep-forward-term (pre)
+  (condition-case _
+      (sweep--forward-term pre)
+    (scan-error nil)))
+
+(defun sweep--backward-term (pre)
+  (pcase (sweep-last-token-boundaries)
+    ('nil
+     (signal 'scan-error
+             (list "Cannot scan backwards beyond beginning of buffer."
+                   (point-min)
+                   (point-min))))
+    (`(open ,obeg ,oend)
+     (signal 'scan-error
+             (list "Cannot scan backwards beyond opening parenthesis or bracket."
+                   obeg
+                   oend)))
+    (`(functor ,obeg ,oend)
+     (signal 'scan-error
+             (list "Cannot scan backwards beyond functor."
+                   obeg
+                   oend)))
+    (`(operator ,obeg ,oend)
+     (if (and (string= "." (buffer-substring-no-properties obeg oend))
+              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+         (signal 'scan-error
+                 (list "Cannot scan backwards beyond fullstop."
+                       obeg
+                       (1+ obeg)))
+       (if-let ((opre (sweep-op-infix-precedence
+                       (buffer-substring-no-properties obeg oend))))
+           (if (> opre pre)
+               (signal 'scan-error
+                       (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
+                             obeg
+                             oend))
              (goto-char obeg)
-             (sweep-backward-term pre))
+             (sweep--backward-term pre))
+         (if-let ((ppre (sweep-op-prefix-precedence
+                         (buffer-substring-no-properties obeg oend))))
+             (if (> opre pre)
+                 (signal 'scan-error
+                         (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
+                               obeg
+                               oend))
+               (goto-char obeg)
+               (sweep--backward-term pre))
+           (goto-char obeg)
+           (sweep--backward-term pre)))))
+    (`(symbol ,obeg ,oend)
+     (if-let ((opre (sweep-op-infix-precedence
+                     (buffer-substring-no-properties obeg oend))))
+         (if (> opre pre)
+             (signal 'scan-error
+                     (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
+                           obeg
+                           oend))
+           (goto-char obeg)
+           (sweep--backward-term pre))
+       (if-let ((ppre (sweep-op-prefix-precedence
+                       (buffer-substring-no-properties obeg oend))))
+           (if (> opre pre)
+               (signal 'scan-error
+                       (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
+                             obeg
+                             oend))
+             (goto-char obeg)
+             (sweep--backward-term pre))
          (goto-char obeg)
-         (sweep-backward-term pre))))
+         (sweep--backward-term pre))))
     (`(close ,lbeg ,_lend)
      (goto-char (nth 1 (syntax-ppss lbeg)))
      (when (or (= (char-syntax (char-before)) ?w)
                (= (char-syntax (char-before)) ?_))
        (skip-syntax-backward "w_"))
-     (sweep-backward-term pre))
+     (sweep--backward-term pre))
     (`(,_ ,lbeg ,_)
      (goto-char lbeg)
-     (sweep-backward-term pre))))
+     (sweep--backward-term pre))))
+
+(defun sweep-backward-term (pre)
+  (condition-case _
+      (sweep--backward-term pre)
+    (scan-error nil)))
+
+(defvar-local sweep--forward-sexp-first-call t)
+
+(defun sweep--backward-sexp ()
+  (let ((point (point))
+        (prec (pcase (sweep-last-token-boundaries)
+                (`(operator ,obeg ,oend)
+                 (unless (and nil
+                              (string= "." (buffer-substring-no-properties obeg oend))
+                              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+                   (if-let ((pprec
+                             (sweep-op-infix-precedence
+                              (buffer-substring-no-properties obeg oend))))
+                       (progn (goto-char obeg) (1- pprec))
+                     0)))
+                (_ 0))))
+    (condition-case error
+        (sweep--backward-term prec)
+      (scan-error (when (= point (point))
+                    (signal 'scan-error (cdr error)))))))
+
+(defun sweep--forward-sexp ()
+  (let ((point (point))
+        (prec (pcase (sweep-next-token-boundaries)
+                (`(operator ,obeg ,oend)
+                 (unless (and nil
+                              (string= "." (buffer-substring-no-properties obeg oend))
+                              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+                   (if-let ((pprec
+                             (sweep-op-infix-precedence
+                              (buffer-substring-no-properties obeg oend))))
+                       (progn (goto-char oend) (1- pprec))
+                     0)))
+                (_ 0))))
+    (condition-case error
+        (sweep--forward-term prec)
+      (scan-error (when (= point (point))
+                    (signal 'scan-error (cdr error)))))))
+
+(defun sweep-forward-sexp-function (arg)
+  (let* ((times (abs arg))
+         (func  (or (and (not (= arg 0))
+                         (< 0 (/ times arg))
+                         #'sweep--forward-sexp)
+                    #'sweep--backward-sexp)))
+    (while (< 0 times)
+      (funcall func)
+      (setq times (1- times)))))
 
 (defun sweep-op-suffix-precedence (token)
   (sweep-open-query "user" "sweep" "sweep_op_info" (cons token (buffer-file-name)))
@@ -1775,6 +1969,7 @@ Interactively, POINT is set to the current point."
   (setq-local parens-require-spaces nil)
   (setq-local beginning-of-defun-function #'sweep-beginning-of-top-term)
   (setq-local end-of-defun-function #'sweep-end-of-top-term)
+  (setq-local forward-sexp-function #'sweep-forward-sexp-function)
   (setq-local syntax-propertize-function #'sweep-syntax-propertize)
   (setq-local indent-line-function #'sweep-indent-line)
   (setq-local font-lock-defaults
