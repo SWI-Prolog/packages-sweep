@@ -451,15 +451,16 @@ in source code buffer, such as marking, transposing and moving over
 expressions.  By default, these features are geared towards working
 with Lisp expressions, or "sexps".  =sweep-mode= extends the Emacs'
 notion of syntactic expressions to accommodate for Prolog terms, which
-allows the standard sexp-based command to operate on them seamlessly.
+allows the standard sexp-based commands to operate on them seamlessly.
 
 #+FINDEX: raise-sexp
 [[info:emacs#Expressions][Expressions in the Emacs manual]] covers the most important commands
-that operate sexps, and by extension on Prolog terms.  Another useful
-command for Prolog programmers is =M-x kill-backward-up-list=, bound by
-default to =C-M-^= in =sweep-mode= buffers.  This command replaces the
-parent term containing the term at point with the term itself.  To
-illustrate the utility of this command, consider the following clause:
+that operate on sexps, and by extension on Prolog terms.  Another
+useful command for Prolog programmers is =M-x kill-backward-up-list=,
+bound by default to =C-M-^= in =sweep-mode= buffers.  This command
+replaces the parent term containing the term at point with the term
+itself.  To illustrate the utility of this command, consider the
+following clause:
 
 #+begin_src prolog
   head :-
