@@ -492,6 +492,13 @@ This enables the many commands that the =xref= interface provides, like
 [[info:emacs#Find Identifiers][Find Identifiers in the Emacs manual]] for an overview of the available
 commands.
 
+#+CINDEX: imenu
+=sweep-mode= also integrates with Emacs' =imenu=, which provides a simple
+facility for looking up and jumping to definitions in the current
+buffer.  To jump to a definition in the current buffer, type =M-x imenu=
+(bound by default to =M-g i= in Emacs version 29).  For information
+about customizing =imenu=, see [[info:emacs#Imenu][Imenu in the Emacs manual]].
+
 ** Following file specifications
 :PROPERTIES:
 :CUSTOM_ID: following-file-specs
