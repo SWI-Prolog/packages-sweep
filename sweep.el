@@ -912,20 +912,6 @@ module name, F is a functor name and N is its arity."
   "Dict separators.")
 
 (sweep-defface
-  type-error
-  (:inherit font-lock-warning-face)
-  (:foreground "orange")
-  (:foreground "orange")
-  "Type errors.")
-
-(sweep-defface
-  instantiation-error
-  (:inherit font-lock-warning-face)
-  (:foreground "orange")
-  (:foreground "orange")
-  "Instantiation errors.")
-
-(sweep-defface
   file
   (:inherit button)
   (:foreground "blue" :underline t)
@@ -1040,16 +1026,65 @@ module name, F is a functor name and N is its arity."
 (sweep-defface
   error
   (:inherit font-lock-warning-face)
-  (:foreground "orange")
-  (:foreground "orange")
+  (:background "orange")
+  (:background "orange")
   "Unspecified errors.")
+
+(sweep-defface
+  type-error
+  (:inherit font-lock-warning-face)
+  (:background "orange")
+  (:background "orange")
+  "Type errors.")
+
+(sweep-defface
+  instantiation-error
+  (:inherit font-lock-warning-face)
+  (:background "orange")
+  (:background "orange")
+  "Instantiation errors.")
 
 (sweep-defface
   syntax-error
   (:inherit error)
-  (:foreground "orange")
-  (:foreground "orange")
+  (:background "orange")
+  (:background "orange")
   "Syntax errors.")
+
+(sweep-defface
+  around-syntax-error
+  (:inherit default)
+  (:inherit default)
+  (:inherit default)
+  "Text around a syntax error.")
+
+(sweep-defface
+  clause
+  (:inherit default)
+  (:inherit default)
+  (:inherit default)
+  "Predicate clauses.")
+
+(sweep-defface
+  grammar-rule
+  (:inherit default)
+  (:inherit default)
+  (:inherit default)
+  "DCG grammar rules.")
+
+(sweep-defface
+  term
+  (:inherit default)
+  (:inherit default)
+  (:inherit default)
+  "Top terms.")
+
+(sweep-defface
+  directive
+  (:inherit default)
+  (:inherit default)
+  (:inherit default)
+  "Directives.")
 
 (sweep-defface
   structured-comment
@@ -1083,7 +1118,11 @@ module name, F is a functor name and N is its arity."
     (`("goal",(rx "imported(") . ,_) (sweep-imported-face))
     (`("goal",(rx "global(") . ,_) (sweep-global-face))
     (`("goal",(rx "local(") . ,_) (sweep-local-face))
-    (`("syntax_error" ,_message ,_eb ,_ee) (sweep-syntax-error-face))
+    (`("syntax_error" ,_message ,eb ,ee)
+     (with-silent-modifications
+       (put-text-property eb ee 'font-lock-face
+                          (sweep-around-syntax-error-face)))
+     (sweep-syntax-error-face))
     ("unused_import"       (sweep-unused-import-face))
     ("undefined_import"    (sweep-undefined-import-face))
     ("html_attribute"      (sweep-html-attribute-face))
@@ -1120,6 +1159,10 @@ module name, F is a functor name and N is its arity."
     ("file_no_depend"      (sweep-file-no-depend-face))
     ("nofile"              (sweep-no-file-face))
     ("op_type"             (sweep-op-type-face))
+    ("directive"           (sweep-directive-face))
+    ("clause"              (sweep-clause-face))
+    ("term"                (sweep-term-face))
+    ("grammar_rule"        (sweep-grammar-rule-face))
     ("method"              (sweep-method-face))
     ("class"               (sweep-class-face))))
 

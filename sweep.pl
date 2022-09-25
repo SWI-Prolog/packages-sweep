@@ -126,9 +126,14 @@ sweep_colourise_buffer_(Path0, Contents, []) :-
     asserta(sweep_source_time(Path, Time), Ref1),
     xref_source(Path, []),
     seek(Contents, 0, bof, _),
+    retractall(sweep_current_comment(_, _, _)),
     prolog_colourise_stream(Contents,
                             Path,
-                            sweep_handle_query_color(1)),
+                            sweep_handle_color(1)),
+    forall(sweep_current_comment(Kind, Start, Len),
+           ( atom_string(Kind, String),
+             user:sweep_funcall("sweep--colourise", [Start,Len,"comment"|String], _)
+           )),
     erase(Ref0),
     erase(Ref1).
 
@@ -311,10 +316,15 @@ sweep_colourise_some_terms_(Path0, Offset, Contents, []) :-
     set_stream(Contents, file_name(Path)),
     seek(Contents, 0, bof, _),
     findall(Op, xref_op(Path, Op), Ops),
+    retractall(sweep_current_comment(_, _, _)),
     prolog_colourise_stream(Contents,
                             Path,
-                            sweep_handle_query_color(Offset),
-                            [operators(Ops)]).
+                            sweep_handle_color(Offset),
+                            [operators(Ops)]),
+    forall(sweep_current_comment(Kind, Start, Len),
+           ( atom_string(Kind, String),
+             user:sweep_funcall("sweep--colourise", [Start,Len,"comment"|String], _)
+           )).
 
 sweep_documentation([Path, Functor, Arity], Docs) :-
     atom_string(P, Path),
@@ -589,6 +599,12 @@ sweep_pack_info(pack(Name0, _, Desc0, Version0, URLS0), [Name, Desc, Version, UR
 sweep_pack_install(PackName, []) :-
     atom_string(Pack, PackName), pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
 
+sweep_handle_color(Offset, comment(Kind), Beg, Len) :-
+    !,
+    Start is Beg + Offset,
+    asserta(sweep_current_comment(Kind, Start, Len)).
+sweep_handle_color(Offset, Col, Beg, Len) :-
+    sweep_handle_query_color(Offset, Col, Beg, Len).
 
 sweep_colourise_query([String|Offset], _) :-
     prolog_colourise_query(String, module(sweep), sweep_handle_query_color(Offset)).
