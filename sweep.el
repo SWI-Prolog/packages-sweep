@@ -139,14 +139,16 @@ inserted to the input history in `sweep-top-level-mode' buffers."
 
 (defun sweep--ensure-module ()
   (let ((sweep-module-path (car
-                            (string-lines
-                             (shell-command-to-string
-                              (concat
-                               (or sweep-swipl-path (executable-find "swipl"))
-                               " -g"
-                               " write_sweep_module_location"
-                               " -t"
-                               " halt"))))))
+                            (save-match-data
+                              (split-string
+                               (shell-command-to-string
+                                (concat
+                                 (or sweep-swipl-path (executable-find "swipl"))
+                                 " -g"
+                                 " write_sweep_module_location"
+                                 " -t"
+                                 " halt"))
+                               "\n")))))
     (load sweep-module-path)))
 
 (defface sweep-debug-prefix-face
