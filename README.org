@@ -35,10 +35,10 @@ advanced features for developing SWI-Prolog programs in Emacs.
 :CUSTOM_ID: high-level-architecture
 :END:
 
-both SWI-Prolog and Emacs Lisp to create a dynamically loaded Emacs
-module that contains the SWI-Prolog runtime.  As such, =sweep= has parts
-written in C, in Prolog and in Emacs Lisp.
-
+=sweep= uses the C interfaces of both SWI-Prolog and Emacs Lisp to
+create a dynamically loaded Emacs module that contains the SWI-Prolog
+runtime.  As such, =sweep= has parts written in C, in Prolog and in
+Emacs Lisp.
 
 The different parts of =sweep= are structured as follows:
 
@@ -68,29 +68,33 @@ The different parts of =sweep= are structured as follows:
 :CUSTOM_ID: installation
 :END:
 
+The dynamic Emacs module =sweep-module= and the Prolog helper library
+=sweep.pl= are included in the latest SWI-Prolog distribution.  For
+instructions on how to build and install SWI-Prolog, see
+[[https://www.swi-prolog.org/build/]].
+
+To start using =sweep= in Emacs:
+
 1. Clone the =sweep= repository:
    #+begin_src sh
      git clone https://git.sr.ht/~eshel/sweep
    #+end_src
 
-2. Optionally, build the C module =sweep-module=:
+   Or:
+
    #+begin_src sh
-     cd sweep
-     make
+     git clone https://github.com/SWI-Prolog/packages-sweep sweep
    #+end_src
 
-3. Add =sweep= to Emacs' =load-path=:
+2. Add =sweep= to Emacs' =load-path=:
    #+begin_src emacs-lisp
      (add-to-list 'load-path "/path/to/sweep")
    #+end_src
 
-4. Load =sweep= into Emacs:
+3. Load =sweep= into Emacs:
    #+begin_src emacs-lisp
      (require 'sweep)
    #+end_src
-
-   If =sweep-module= is not already built, =sweep= will suggest to build
-   it when loaded.
 
 * Prolog initialization and cleanup
 :PROPERTIES:
