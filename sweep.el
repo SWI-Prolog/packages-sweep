@@ -138,17 +138,16 @@ inserted to the input history in `sweep-top-level-mode' buffers."
 (declare-function sweep-cleanup       "sweep-module")
 
 (defun sweep--ensure-module ()
-  (let ((swipl-lib-dir (car
-                        (split-string-and-unquote
-                         (shell-command-to-string
-                          (concat
-                           (or sweep-swipl-path (executable-find "swipl"))
-                           " --dump-runtime-variables |"
-                           " grep PLLIBDIR |"
-                           " cut -f 2 -d = |"
-                           " cut -f 1 -d ';'"))))))
-    (load (expand-file-name "sweep-module" swipl-lib-dir))))
-
+  (let ((sweep-module-path (car
+                            (string-lines
+                             (shell-command-to-string
+                              (concat
+                               (or sweep-swipl-path (executable-find "swipl"))
+                               " -g"
+                               " write_sweep_module_location"
+                               " -t"
+                               " halt"))))))
+    (load sweep-module-path)))
 
 (defface sweep-debug-prefix-face
   '((default :inherit shadow))

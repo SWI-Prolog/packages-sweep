@@ -54,7 +54,8 @@
             sweep_prefix_ops/2,
             sweep_op_info/2,
             sweep_imenu_index/2,
-            sweep_module_path/2
+            sweep_module_path/2,
+            write_sweep_module_location/0
           ]).
 
 :- use_module(library(pldoc)).
@@ -738,3 +739,9 @@ sweep_imenu_index(Path, Index) :-
               term_string(PI, String)
             ),
             Index).
+
+write_sweep_module_location :-
+    absolute_file_name(foreign('sweep-module'),
+                       Path,
+                       [file_type(executable), access(read)]),
+    writeln(Path).
