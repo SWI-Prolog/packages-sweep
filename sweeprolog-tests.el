@@ -1,36 +1,38 @@
-;;; sweep-tests.el --- ERT suite for sweep  -*- lexical-binding:t -*-
+;;; sweeprolog-tests.el --- ERT suite for sweep  -*- lexical-binding:t -*-
+
+(require 'sweeprolog)
 
 (ert-deftest lists:member/2 ()
   "Tests calling the Prolog predicate permutation/2 from Elisp."
-  (should (equal (sweep-open-query "user" "lists" "member" (list 1 2 3) t) t))
-  (should (equal (sweep-next-solution) (cons t 1)))
-  (should (equal (sweep-next-solution) (cons t 2)))
-  (should (equal (sweep-next-solution) (cons '! 3)))
-  (should (equal (sweep-cut-query) t)))
+  (should (equal (sweeprolog-open-query "user" "lists" "member" (list 1 2 3) t) t))
+  (should (equal (sweeprolog-next-solution) (cons t 1)))
+  (should (equal (sweeprolog-next-solution) (cons t 2)))
+  (should (equal (sweeprolog-next-solution) (cons '! 3)))
+  (should (equal (sweeprolog-cut-query) t)))
 
 (ert-deftest lists:permutation/2 ()
   "Tests calling the Prolog predicate permutation/2 from Elisp."
-  (should (equal (sweep-open-query "user" "lists" "permutation" (list 1 2 3)) t))
-  (should (equal (sweep-next-solution) (list t 1 2 3)))
-  (should (equal (sweep-next-solution) (list t 1 3 2)))
-  (should (equal (sweep-next-solution) (list t 2 1 3)))
-  (should (equal (sweep-next-solution) (list t 2 3 1)))
-  (should (equal (sweep-next-solution) (list t 3 1 2)))
-  (should (equal (sweep-next-solution) (list t 3 2 1)))
-  (should (equal (sweep-next-solution) nil))
-  (should (equal (sweep-cut-query) t)))
+  (should (equal (sweeprolog-open-query "user" "lists" "permutation" (list 1 2 3)) t))
+  (should (equal (sweeprolog-next-solution) (list t 1 2 3)))
+  (should (equal (sweeprolog-next-solution) (list t 1 3 2)))
+  (should (equal (sweeprolog-next-solution) (list t 2 1 3)))
+  (should (equal (sweeprolog-next-solution) (list t 2 3 1)))
+  (should (equal (sweeprolog-next-solution) (list t 3 1 2)))
+  (should (equal (sweeprolog-next-solution) (list t 3 2 1)))
+  (should (equal (sweeprolog-next-solution) nil))
+  (should (equal (sweeprolog-cut-query) t)))
 
 (ert-deftest system:=/2 ()
   "Tests unifying Prolog terms with =/2 from Elisp."
-  (should (equal (sweep-open-query "user" "system" "=" (list 1 nil (list "foo" "bar") 3.14)) t))
-  (should (equal (sweep-next-solution) (list '! 1 nil (list "foo" "bar") 3.14)))
-  (should (equal (sweep-next-solution) nil))
-  (should (equal (sweep-cut-query) t)))
+  (should (equal (sweeprolog-open-query "user" "system" "=" (list 1 nil (list "foo" "bar") 3.14)) t))
+  (should (equal (sweeprolog-next-solution) (list '! 1 nil (list "foo" "bar") 3.14)))
+  (should (equal (sweeprolog-next-solution) nil))
+  (should (equal (sweeprolog-cut-query) t)))
 
 
-(defun sweep-test-indentation (given expected)
+(defun sweeprolog-test-indentation (given expected)
   (with-temp-buffer
-    (sweep-mode)
+    (sweeprolog-mode)
     (insert given)
     (indent-region-line-by-line (point-min) (point-max))
     (should (string= (buffer-substring-no-properties (point-min) (point-max))
@@ -38,7 +40,7 @@
 
 (ert-deftest indentation ()
   "Tests indentation rules."
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 some_functor(
 arg1,
@@ -50,7 +52,7 @@ some_functor(
     arg2,
 )."
    )
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 asserta( some_functor(arg1, arg2) :-
 body_term
@@ -62,7 +64,7 @@ asserta( some_functor(arg1, arg2) :-
        ).
 "
    )
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 :- module(spam, [ foo,
 bar,
@@ -78,7 +80,7 @@ baz
          ).
 "
    )
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 :- module(spam, [
 foo,
@@ -96,7 +98,7 @@ baz
          ).
 "
    )
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 [
     ].
@@ -106,7 +108,7 @@ baz
 ].
 "
    )
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 :-
 use_module(foo),
@@ -118,7 +120,7 @@ use_module(bar).
     use_module(bar).
 "
    )
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 colourise_declaration(Module:PI, _, TB,
                       term_position(_,_,QF,QT,[PM,PG])) :-
@@ -147,7 +149,7 @@ colourise_declaration(Module:PI, _, TB,
     ;   colour_item(type_error(predicate_indicator), TB, PG)
     ).
 ")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 A is 1 * 2 + 3 *
 4.
@@ -156,7 +158,7 @@ A is 1 * 2 + 3 *
 A is 1 * 2 + 3 *
              4.
 ")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 A is 1 * 2 ^ 3 *
 4.
@@ -165,7 +167,7 @@ A is 1 * 2 ^ 3 *
 A is 1 * 2 ^ 3 *
      4.
 ")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 (   if
     ->  (   iff1, iff2, iff3,
@@ -186,7 +188,7 @@ iff4
 ;   else
 )
 ")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 (   if
     ->  (   iff
@@ -205,7 +207,7 @@ iff4
 ;   else
 )
 ")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 (   if
     ;   then
@@ -218,7 +220,7 @@ iff4
 ->  else
 )
 ")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 asserta(   foo(bar, baz) :-
 true).
@@ -227,7 +229,7 @@ true).
 asserta(   foo(bar, baz) :-
                true).
 ")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 foo(bar, baz) :-
 true.
@@ -237,7 +239,7 @@ foo(bar, baz) :-
     true.
 ")
 
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 :- multifile
 foo/2.
@@ -247,7 +249,7 @@ foo/2.
        foo/2.
 ")
 
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
     %%%%
     %%%%
@@ -257,14 +259,14 @@ foo/2.
     %%%%
 ")
 
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 (
 foo"
    "
 (
     foo")
-  (sweep-test-indentation
+  (sweeprolog-test-indentation
    "
 functor(
 foo"
@@ -273,4 +275,4 @@ functor(
     foo")
   )
 
-;;; sweep-tests.el ends here
+;;; sweeprolog-tests.el ends here

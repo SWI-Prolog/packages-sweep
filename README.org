@@ -14,8 +14,8 @@
 #+texinfo_header:        @set MAINTAINEREMAIL @email{me@eshelyaron.com}
 #+texinfo_header:        @set MAINTAINERCONTACT @uref{mailto:me@eshelyaron.com,contact the maintainer}
 
-This manual describes the Emacs package =sweep=, which provides an
-embedded SWI-Prolog runtime inside of Emacs.
+This manual describes the Emacs package =sweep= (or =sweeprolog=), which
+provides an embedded SWI-Prolog runtime inside of Emacs.
 
 #+toc: headlines 8 insert TOC here, with eight headline levels
 
@@ -42,7 +42,7 @@ Emacs Lisp.
 
 The different parts of =sweep= are structured as follows:
 
-#+CINDEX: sweep-module
+#+CINDEX: sweeprolog-module
 - =sweep.c= defines a dynamic Emacs module which is referred to from
   Elisp as =sweep-module=. This module is linked against the SWI-Prolog
   runtime library (=libswipl=) and exposes a subset of the SWI-Prolog C
@@ -50,17 +50,17 @@ The different parts of =sweep= are structured as follows:
   Prolog]]). Notably, =sweep-module= is responsible for translating Elisp
   objects to Prolog terms and vice versa.
 
-#+CINDEX: sweep.el
-- =sweep.el= defines an Elisp library (named simply =sweep=), which builds
+#+CINDEX: sweeprolog.el
+- =sweeprolog.el= defines an Elisp library (named simply =sweeprolog=), which builds
   on top of =sweep-module= to provide user-facing commands and
   functionality. It is also responsible for loading and compiling the
   dynamically loaded =sweep-module=.
 
 #+CINDEX: sweep.pl
 - =sweep.pl= defines a Prolog module (named, unsurprisingly, =sweep=)
-  which is by default arranged by =sweep.el= to be loaded when the
+  which is by default arranged by =sweeprolog.el= to be loaded when the
   embedded Prolog runtime is initialized. It contains predicates that
-  =sweep.el= invoke through =sweep-module= to facilitate its different
+  =sweeprolog.el= invoke through =sweep-module= to facilitate its different
   commands (see [[Finding Prolog code]]).
 
 * Installation
@@ -68,7 +68,7 @@ The different parts of =sweep= are structured as follows:
 :CUSTOM_ID: installation
 :END:
 
-The dynamic Emacs module =sweep-module= and the Prolog helper library
+The dynamic Emacs module =sweeprolog-module= and the Prolog helper library
 =sweep.pl= are included in the latest SWI-Prolog distribution.  For
 instructions on how to build and install SWI-Prolog, see
 [[https://www.swi-prolog.org/build/]].
@@ -93,7 +93,7 @@ To start using =sweep= in Emacs:
 
 3. Load =sweep= into Emacs:
    #+begin_src emacs-lisp
-     (require 'sweep)
+     (require 'sweeprolog)
    #+end_src
 
 * Prolog initialization and cleanup
@@ -101,42 +101,42 @@ To start using =sweep= in Emacs:
 :CUSTOM_ID: prolog-init
 :END:
 
-#+FINDEX: sweep-initialize
+#+FINDEX: sweeprolog-initialize
 The embedded SWI-Prolog runtime must be initialized before it can
 start executing queries.  In =sweep=, Prolog initialization is done via
-the C-implemented =sweep-initialize= Elisp function defined in
-=sweep-module=.  =sweep-initialize= takes one or more arguments, which
+the C-implemented =sweeprolog-initialize= Elisp function defined in
+=sweeprolog-module=.  =sweeprolog-initialize= takes one or more arguments, which
 must all be strings, and initializes the embedded Prolog as if it were
 invoked externally in a command line with the given strings as command
-line arguments, where the first argument to =sweep-initialize=
+line arguments, where the first argument to =sweeprolog-initialize=
 corresponds to =argv[0]=.
 
-#+VINDEX: sweep-init-args
-By default, =sweep.el= will initialize Prolog automatically when it is
+#+VINDEX: sweeprolog-init-args
+By default, =sweeprolog.el= will initialize Prolog automatically when it is
 loaded into Emacs.  The arguments used to initialize Prolog in that
-case are determined by the value of the user-option =sweep-init-args=
+case are determined by the value of the user-option =sweeprolog-init-args=
 which the user is free to extend with e.g.:
 
 #+begin_src emacs-lisp
-  (add-to-list 'sweep-init-args "--stack-limit=512m")
+  (add-to-list 'sweeprolog-init-args "--stack-limit=512m")
 #+end_src
 
-#+VINDEX: sweep-init-on-load
-To inhibit =sweep= from initializing Prolog on load, set the user-option
-=sweep-init-on-load= to nil.
+#+VINDEX: sweeprolog-init-on-load
+To inhibit =sweeprolog= from initializing Prolog on load, set the user-option
+=sweeprolog-init-on-load= to nil.
 
-#+FINDEX: sweep-cleanup
-The embedded Prolog runtime can be reset using the =sweep-cleanup=
+#+FINDEX: sweeprolog-cleanup
+The embedded Prolog runtime can be reset using the =sweeprolog-cleanup=
 function.  This function cleans up the Prolog state and resources,
-afterwards =sweep-initialize= can be called to start Prolog anew.
+afterwards =sweeprolog-initialize= can be called to start Prolog anew.
 
 * Querying Prolog
 :PROPERTIES:
 :CUSTOM_ID: querying-prolog
 :END:
 
-#+FINDEX: sweep-open-query
-=sweep= provides the Elisp function =sweep-open-query= for invoking Prolog
+#+FINDEX: sweeprolog-open-query
+=sweep= provides the Elisp function =sweeprolog-open-query= for invoking Prolog
 predicates.  The invoked predicate must be of arity two and will be
 called in mode =p(+In, -Out)= i.e. the predicate should treat the first
 argument as input and expect a variable for the second argument which
@@ -144,7 +144,7 @@ should be unified with some output.  This restriction is placed in
 order to facilitate a natural calling convention between Elisp, a
 functional language, and Prolog, a logical one.
 
-The =sweep-open-query= function takes five arguments, the first three
+The =sweeprolog-open-query= function takes five arguments, the first three
 are strings which denote:
 - The name of the Prolog context module from which to execute the
   query,
@@ -152,31 +152,31 @@ are strings which denote:
   and
 - The name of the predicate to call.
 
-The fourth argument to =sweep-open-query= is converted into a Prolog
+The fourth argument to =sweeprolog-open-query= is converted into a Prolog
 term and used as the first argument of the predicate (see [[Conversion
 of Elisp objects to Prolog terms]]).  The fifth argument is an
 optional "reverse" flag, when this flag is set to non-nil, the order
 of the arguments is reversed such that the predicate is called in mode
 =p(-Out, +In)= rather than =p(+In, -Out)=.
 
-#+FINDEX: sweep-next-solution
-The function =sweep-next-solution= can be used to examine the results of
-a query.  If the query succeeded, =sweep-next-solution= returns a cons
+#+FINDEX: sweeprolog-next-solution
+The function =sweeprolog-next-solution= can be used to examine the results of
+a query.  If the query succeeded, =sweeprolog-next-solution= returns a cons
 cell whose =car= is either the symbol =!= when the success was
 deterministic or =t= otherwise, and the =cdr= is the current value of the
 second (output) Prolog argument converted to an Elisp object (see
 [[Conversion of Prolog terms to Elisp objects]]).  If the query failed,
-=sweep-next-solution= returns nil.
+=sweeprolog-next-solution= returns nil.
 
-#+FINDEX: sweep-cut-query
-#+FINDEX: sweep-close-query
+#+FINDEX: sweeprolog-cut-query
+#+FINDEX: sweeprolog-close-query
 =sweep= only executes one Prolog query at a given time, thus queries
-opened with =sweep-open-query= need to be closed before other queries
+opened with =sweeprolog-open-query= need to be closed before other queries
 can be opened.  When no more solutions are available for the current
-query (i.e. after =sweep-next-solution= returned nil), or when otherwise
+query (i.e. after =sweeprolog-next-solution= returned nil), or when otherwise
 further solutions are not of interest, the query must be closed with
-either =sweep-cut-query= or =sweep-close-query=. Both of these functions
-close the current query, but =sweep-close-query= also destroys any
+either =sweeprolog-cut-query= or =sweeprolog-close-query=. Both of these functions
+close the current query, but =sweeprolog-close-query= also destroys any
 Prolog bindings created by the query.
 
 ** Conversion of Elisp objects to Prolog terms
@@ -186,7 +186,7 @@ Prolog bindings created by the query.
 
 =sweep= converts Elisp objects into Prolog terms to allow the Elisp
 programmers to specify arguments for Prolog predicates invocations (see
-=sweep-open-query=).  Seeing as some Elisp objects, like Elisp compiled
+=sweeprolog-open-query=).  Seeing as some Elisp objects, like Elisp compiled
 functions, wouldn't be as useful for a passing to Prolog as others,
 =sweep= only converts Elisp objects of certain types to Prolog, namely
 we convert /trees of strings and numbers/:
@@ -204,7 +204,7 @@ we convert /trees of strings and numbers/:
 :END:
 
 =sweep= converts Prolog terms into Elisp object to allow efficient
-processing of Prolog query results in Elisp (see =sweep-next-solution=).
+processing of Prolog query results in Elisp (see =sweeprolog-next-solution=).
 
 - Prolog strings are converted to equivalent Elisp strings.
 - Prolog integers are converted to equivalent Elisp integers.
@@ -235,13 +235,13 @@ permutations of the list =(1 2 3 4 5)=:
 
 #+name: count-list-permutations
 #+begin_src emacs-lisp
-  (sweep-open-query "user" "lists" "permutation" '(1 2 3 4 5))
+  (sweeprolog-open-query "user" "lists" "permutation" '(1 2 3 4 5))
   (let ((num 0)
-        (sol (sweep-next-solution)))
+        (sol (sweeprolog-next-solution)))
     (while sol
       (setq num (1+ num))
-      (setq sol (sweep-next-solution)))
-    (sweep-close-query)
+      (setq sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
     num)
 #+end_src
 
@@ -253,7 +253,7 @@ permutations of the list =(1 2 3 4 5)=:
 The =sweep-module= defines the foreign Prolog predicates =sweep_funcall/2=
 and =sweep_funcall/3=, which allow for calling Elisp functions from
 Prolog code.  These predicates may only be called in the context of a
-Prolog query initiated by =sweep-open-query=, i.e. only in the Prolog
+Prolog query initiated by =sweeprolog-open-query=, i.e. only in the Prolog
 thread controlled by Emacs.  The first argument to these predicates is
 a Prolog string holding the name of the Elisp function to call.  The
 last argument to these predicates is unified with the return value of
@@ -269,17 +269,17 @@ function without any arguments.
 :CUSTOM_ID: editing-prolog-code
 :END:
 
-#+CINDEX: sweep-mode
-#+FINDEX: sweep-mode
-#+VINDEX: sweep-mode
+#+CINDEX: sweeprolog-mode
+#+FINDEX: sweeprolog-mode
+#+VINDEX: sweeprolog-mode
 =sweep= includes a dedicated major mode for reading and editing Prolog
-code, called =sweep-mode=.  To activate this mode in a buffer, type =M-x
-sweep-mode=.  To instruct Emacs to always open Prolog files in
-=sweep-mode=, modify the Emacs variable =auto-mode-alist= like so:
+code, called =sweeprolog-mode=.  To activate this mode in a buffer, type =M-x
+sweeprolog-mode=.  To instruct Emacs to always open Prolog files in
+=sweeprolog-mode=, modify the Emacs variable =auto-mode-alist= like so:
 
 #+begin_src emacs-lisp
-  (add-to-list 'auto-mode-alist '("\\.pl\\'"   . sweep-mode))
-  (add-to-list 'auto-mode-alist '("\\.plt\\'"  . sweep-mode))
+  (add-to-list 'auto-mode-alist '("\\.pl\\'"   . sweeprolog-mode))
+  (add-to-list 'auto-mode-alist '("\\.plt\\'"  . sweeprolog-mode))
 #+end_src
 
 ** Indentation
@@ -289,16 +289,16 @@ sweep-mode=.  To instruct Emacs to always open Prolog files in
 
 #+CINDEX: indentation
 
-In =sweep-mode= buffers, the appropriate indentation for each line is
+In =sweeprolog-mode= buffers, the appropriate indentation for each line is
 determined by a bespoke /indentation engine/.  The indentation engine
 analyses the syntactic context of a given line and determines the
 appropriate indentation to apply based on a set of rules.
 
-#+FINDEX: sweep-indent-line
+#+FINDEX: sweeprolog-indent-line
 The entry point of the indentation engine is the function
-=sweep-indent-line= which takes no arguments and indents that line at
-point.  =sweep-mode= supports the standard Emacs interface for
-indentation by arranging for =sweep-indent-line= to be called whenever a
+=sweeprolog-indent-line= which takes no arguments and indents that line at
+point.  =sweeprolog-mode= supports the standard Emacs interface for
+indentation by arranging for =sweeprolog-indent-line= to be called whenever a
 line should be indented, notably after pressing =TAB=.  For more a full
 description of the available commands and options that pertain to
 indentation, see [[info:emacs#Indentation][Indentation in the Emacs manual]].
@@ -308,7 +308,7 @@ indentation, see [[info:emacs#Indentation][Indentation in the Emacs manual]].
 :CUSTOM_ID: indentation-rules
 :END:
 
-Lines in =sweep-mode= buffers are indented according to the following
+Lines in =sweeprolog-mode= buffers are indented according to the following
 rules:
 
 1. If the current line starts inside a string or a multi-line comment,
@@ -331,14 +331,14 @@ rules:
                  ).
    #+end_src
 
-#+VINDEX: sweep-indent-offset
+#+VINDEX: sweeprolog-indent-offset
 4. If the current line is the first non-comment line of a clause body,
    indent to the starting column of the head term plus the value of
-   the user option =sweep-indent-offset= (by default, four extra
+   the user option =sweeprolog-indent-offset= (by default, four extra
    columns).
 
    As an example, this rule yields the following layouts when
-   =sweep-indent-offset= is set to the default value of four columns:
+   =sweeprolog-indent-offset= is set to the default value of four columns:
 
    #+begin_src prolog
      some_functor(arg1, arg2) :-
@@ -368,7 +368,7 @@ rules:
 
 6. If the last non-comment line ends with a functor and its opening
    parenthesis, indent to the starting column of the functor plus
-   =sweep-indent-offset=.
+   =sweeprolog-indent-offset=.
 
    This rule yields the following layout:
 
@@ -378,7 +378,7 @@ rules:
    #+end_src
 
 7. If the last non-comment line ends with a prefix operator, indent to
-   starting column of the operator plus =sweep-indent-offset=.
+   starting column of the operator plus =sweeprolog-indent-offset=.
 
    This rule yields the following layout:
 
@@ -393,36 +393,36 @@ rules:
 :END:
 
 #+CINDEX: fontification
-=sweep-mode= integrates with the standard Emacs =font-lock= system which
+=sweeprolog-mode= integrates with the standard Emacs =font-lock= system which
 is used for highlighting text in buffers (see [[info:emacs#Font Lock][Font Lock in the Emacs
-manual]]).  =sweep-mode= highlights different tokens in Prolog code
+manual]]).  =sweeprolog-mode= highlights different tokens in Prolog code
 according to their semantics, determined through static analysis which
-is performed on demand.  When a buffer is first opened in =sweep-mode=,
+is performed on demand.  When a buffer is first opened in =sweeprolog-mode=,
 its entire contents are analyzed to collect and cache cross reference
 data, and the buffer is highlighted accordingly.  In contrast, when
 editing and moving around the buffer, a faster, local analysis is
 invoked to updated the semantic highlighting in response to changes in
 the buffer.
 
-#+FINDEX: sweep-colourise-buffer
-At any point in a =sweep-mode= buffer, the command =C-c C-c= (or =M-x
-sweep-colourise-buffer=) can be used to update the cross reference
+#+FINDEX: sweeprolog-colourise-buffer
+At any point in a =sweeprolog-mode= buffer, the command =C-c C-c= (or =M-x
+sweeprolog-colourise-buffer=) can be used to update the cross reference
 cache and highlight the buffer accordingly.  This may be useful
 e.g. after defining a new predicate.
 
-#+VINDEX: sweep-colourise-buffer-on-idle
-#+VINDEX: sweep-colourise-buffer-max-size
-#+VINDEX: sweep-colourise-buffer-min-interval
-If the user option =sweep-colourise-buffer-on-idle= is set to non-nil
-(as it is by default), =sweep-mode= also updates semantic highlighting
+#+VINDEX: sweeprolog-colourise-buffer-on-idle
+#+VINDEX: sweeprolog-colourise-buffer-max-size
+#+VINDEX: sweeprolog-colourise-buffer-min-interval
+If the user option =sweeprolog-colourise-buffer-on-idle= is set to non-nil
+(as it is by default), =sweeprolog-mode= also updates semantic highlighting
 in the buffer whenever Emacs is idle for a reasonable amount of time,
 unless the buffer is larger than the value of the
-=sweep-colourise-buffer-max-size= user option ( 100,000 by default).
+=sweeprolog-colourise-buffer-max-size= user option ( 100,000 by default).
 The minimum idle time to wait before automatically updating semantic
 highlighting can be set via the user option
-=sweep-colourise-buffer-min-interval=.
+=sweeprolog-colourise-buffer-min-interval=.
 
-#+CINDEX: sweep-faces
+#+CINDEX: sweeprolog-faces
 =sweep= defines more than 60 different faces (named sets of properties
 that determine the appearance of a specific text in Emacs buffers, see
 also [[info:emacs#Faces][Faces in the Emacs manual]]) to signify the specific semantics of
@@ -435,14 +435,14 @@ each token in a Prolog code buffer.  =sweep= comes with three /styles/:
 - The =dark= style mimics the colors used in the SWI-Prolog built-in
   editor in dark mode.
 
-#+VINDEX: sweep-faces-style
-To choose a style, customize the user option =sweep-faces-style= with
-=M-x customize-option RET sweep-faces-style RET=.  The new style will
-apply to all new =sweep-mode= buffers.  To apply the new style to an
+#+VINDEX: sweeprolog-faces-style
+To choose a style, customize the user option =sweeprolog-faces-style= with
+=M-x customize-option RET sweeprolog-faces-style RET=.  The new style will
+apply to all new =sweeprolog-mode= buffers.  To apply the new style to an
 existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
 
 To view and customize all of the faces defined and used in =sweep=, type
-=M-x customize-group RET sweep-faces RET=.
+=M-x customize-group RET sweeprolog-faces RET=.
 
 ** Term-based editing and motion commands
 :PROPERTIES:
@@ -453,7 +453,7 @@ To view and customize all of the faces defined and used in =sweep=, type
 Emacs includes many useful features for operating on syntactic units
 in source code buffer, such as marking, transposing and moving over
 expressions.  By default, these features are geared towards working
-with Lisp expressions, or "sexps".  =sweep-mode= extends the Emacs'
+with Lisp expressions, or "sexps".  =sweeprolog-mode= extends the Emacs'
 notion of syntactic expressions to accommodate for Prolog terms, which
 allows the standard sexp-based commands to operate on them seamlessly.
 
@@ -461,7 +461,7 @@ allows the standard sexp-based commands to operate on them seamlessly.
 [[info:emacs#Expressions][Expressions in the Emacs manual]] covers the most important commands
 that operate on sexps, and by extension on Prolog terms.  Another
 useful command for Prolog programmers is =M-x kill-backward-up-list=,
-bound by default to =C-M-^= in =sweep-mode= buffers.  This command
+bound by default to =C-M-^= in =sweeprolog-mode= buffers.  This command
 replaces the parent term containing the term at point with the term
 itself.  To illustrate the utility of this command, consider the
 following clause:
@@ -486,11 +486,11 @@ directly:
 
 ** Definitions and references
 :PROPERTIES:
-:CUSTOM_ID: sweep-xref
+:CUSTOM_ID: sweeprolog-xref
 :END:
 
 #+CINDEX: xref
-=sweep-mode= integrates with the Emacs =xref= API to facilitate quick
+=sweeprolog-mode= integrates with the Emacs =xref= API to facilitate quick
 access to predicate definitions and references in Prolog code buffers.
 This enables the many commands that the =xref= interface provides, like
 =M-.= for jumping to the definition of the predicate at point.  Refer to
@@ -498,7 +498,7 @@ This enables the many commands that the =xref= interface provides, like
 commands.
 
 #+CINDEX: imenu
-=sweep-mode= also integrates with Emacs' =imenu=, which provides a simple
+=sweeprolog-mode= also integrates with Emacs' =imenu=, which provides a simple
 facility for looking up and jumping to definitions in the current
 buffer.  To jump to a definition in the current buffer, type =M-x imenu=
 (bound by default to =M-g i= in Emacs version 29).  For information
@@ -509,9 +509,9 @@ about customizing =imenu=, see [[info:emacs#Imenu][Imenu in the Emacs manual]].
 :CUSTOM_ID: following-file-specs
 :END:
 
-#+FINDEX: sweep-find-file-at-point
-File specifications that occur in =sweep-mode= buffers can be followed
-with =C-c C-o= (or =M-x sweep-find-file-at-point=) whenever point is over
+#+FINDEX: sweeprolog-find-file-at-point
+File specifications that occur in =sweeprolog-mode= buffers can be followed
+with =C-c C-o= (or =M-x sweeprolog-find-file-at-point=) whenever point is over
 a valid file specification.  For example, consider a Prolog file buffer with the common
 directive =use_module/1=:
 
@@ -531,16 +531,16 @@ For more information about file specifications in SWI-Prolog, see
 :END:
 
 #+CINDEX: loading
-#+FINDEX: sweep-load-buffer
-The command =M-x sweep-load-buffer= can be used to load the contents of
-a =sweep-mode= buffer into the embedded SWI-Prolog runtime.  After a
+#+FINDEX: sweeprolog-load-buffer
+The command =M-x sweeprolog-load-buffer= can be used to load the contents of
+a =sweeprolog-mode= buffer into the embedded SWI-Prolog runtime.  After a
 buffer is loaded, the predicates it defines can be queried from Elisp
 (see [[Querying Prolog]]) and from the =sweep= top-level (see [[The Prolog
-top-level]]).  In =sweep-mode= buffers, =sweep-load-buffer= is bound by
+top-level]]).  In =sweeprolog-mode= buffers, =sweeprolog-load-buffer= is bound by
 default to =C-c C-l=.  By default this command loads the current buffer
-if its major mode is =sweep-mode=, and prompts for an appropriate buffer
+if its major mode is =sweeprolog-mode=, and prompts for an appropriate buffer
 otherwise.  To choose a different buffer to load while visiting a
-=sweep-mode= buffer, invoke =sweep-load-buffer= with a prefix argument
+=sweeprolog-mode= buffer, invoke =sweeprolog-load-buffer= with a prefix argument
 (=C-u C-c C-l=).
 
 More relevant information about loading code in SWI-Prolog can be
@@ -552,16 +552,16 @@ found in [[https://www.swi-prolog.org/pldoc/man?section=consulting][Loading Prol
 :END:
 
 #+CINDEX: top-level
-#+FINDEX: sweep-top-level
+#+FINDEX: sweeprolog-top-level
 =sweep= provides a classic Prolog top-level interface for interacting
 with the embedded Prolog runtime.  To start the top-level, use =M-x
-sweep-top-level=.  This command opens a buffer called =*sweep-top-level*=
+sweeprolog-top-level=.  This command opens a buffer called =*sweeprolog-top-level*=
 which hosts the live Prolog top-level.
 
-#+FINDEX: sweep-top-level-mode
-#+VINDEX: sweep-top-level-mode
+#+FINDEX: sweeprolog-top-level-mode
+#+VINDEX: sweeprolog-top-level-mode
 The top-level buffer uses a major mode named
-=sweep-top-level-mode=. This mode derives from =comint-mode=, which is the
+=sweeprolog-top-level-mode=. This mode derives from =comint-mode=, which is the
 common mode used in Emacs REPL interfaces.  As a result, the top-level
 buffer inherits the features present in other =comint-mode= derivatives,
 most of which are described in [[info:emacs#Shell Mode][the Emacs manual]].
@@ -572,30 +572,30 @@ most of which are described in [[info:emacs#Shell Mode][the Emacs manual]].
 :END:
 
 Any number of top-levels can be created and used concurrently, each in
-its own buffer.  If a top-level buffer already exists, =sweep-top-level=
+its own buffer.  If a top-level buffer already exists, =sweeprolog-top-level=
 will simply open it by default.  To create another one or more
-top-level buffers, run =sweep-top-level= with a prefix argument
-(i.e. =C-u M-x sweep-top-level-mode=) to choose a different buffer name.
+top-level buffers, run =sweeprolog-top-level= with a prefix argument
+(i.e. =C-u M-x sweeprolog-top-level-mode=) to choose a different buffer name.
 Alternatively, run the command =C-x x u= (or =M-x rename-uniquely=) in the
-buffer called =*sweep-top-level*= and then run =M-x sweep-top-level=
+buffer called =*sweeprolog-top-level*= and then run =M-x sweeprolog-top-level=
 again.  This will change the name of the original top-level buffer to
-something like =*sweep-top-level*<2>= and allow the new top-level to
-claim the buffer name =*sweep-top-level*=.
+something like =*sweeprolog-top-level*<2>= and allow the new top-level to
+claim the buffer name =*sweeprolog-top-level*=.
 
 ** Top-level history
 :PROPERTIES:
 :CUSTOM_ID: top-level-history
 :END:
 
-=sweep-top-level-mode= buffers provide a history of previously user
+=sweeprolog-top-level-mode= buffers provide a history of previously user
 inputs, similarly to other =comint-mode= derivatives such as =shell-mode=.
 To insert the last input from the history at the prompt, use =M-p=
 (=comint-previous-input=).  For a full description of history related
 commands, see [[info:emacs#Shell History][Shell History in the Emacs manual]].
 
-#+VINDEX: sweep-top-level-min-history-length
+#+VINDEX: sweeprolog-top-level-min-history-length
 The =sweep= top-level history only records inputs whose length is at
-least =sweep-top-level-min-history-length=.  This user option is set to
+least =sweeprolog-top-level-min-history-length=.  This user option is set to
 3 by default, and should generally be set to at least 2 to keep the
 history from being clobbered with single-character inputs, which are
 common in the top-level interaction, e.g. =;= as used to invoke
@@ -606,7 +606,7 @@ backtracking.
 :CUSTOM_ID: completion-in-top-level
 :END:
 
-The =sweep-top-level-mode=, enabled in the =sweep= top-level buffer,
+The =sweeprolog-top-level-mode=, enabled in the =sweep= top-level buffer,
 integrates with the standard Emacs symbol completion mechanism to
 provide completion for predicate names.  To complete a partial
 predicate name in the top-level prompt, use =C-M-i= (or =M-<TAB>=).  For
@@ -617,16 +617,16 @@ more information see [[info:emacs#Symbol Completion][Symbol Completion in the Em
 :CUSTOM_ID: finding-prolog-code
 :END:
 
-#+FINDEX: sweep-find-module
-=sweep= provides the command =M-x sweep-find-module= for
+#+FINDEX: sweeprolog-find-module
+=sweep= provides the command =M-x sweeprolog-find-module= for
 selecting and jumping to the source code of a loaded or auto-loadable
 Prolog module.  =sweep= integrates with Emacs' standard completion API
 to annotate candidate modules in the completion UI with their =PLDoc=
 description when available.
 
-#+FINDEX: sweep-find-predicate
-Along with =M-x sweep-find-module=, =sweep= provides the
-command =M-x sweep-find-predicate= jumping to the definition a
+#+FINDEX: sweeprolog-find-predicate
+Along with =M-x sweeprolog-find-module=, =sweep= provides the
+command =M-x sweeprolog-find-predicate= jumping to the definition a
 loaded or auto-loadable Prolog predicate.
 
 ** Prolog file specification expansion
@@ -649,19 +649,19 @@ source of the =pldoc_man= module from the Prolog library, and likewise
 :CUSTOM_ID: quick-command-access
 :END:
 
-#+VINDEX: sweep-prefix-map
-=sweep= defines a keymap called =sweep-prefix-map= which provides
+#+VINDEX: sweeprolog-prefix-map
+=sweep= defines a keymap called =sweeprolog-prefix-map= which provides
 keybinding for several useful =sweep= commands.  By default,
-=sweep-prefix-map= itself is not bound to any key.  To bind it globally
+=sweeprolog-prefix-map= itself is not bound to any key.  To bind it globally
 to a prefix key, e.g. =C-c p=, use:
 
 #+begin_src emacs-lisp
-  (keymap-global-set "C-c p" sweep-prefix-map)
+  (keymap-global-set "C-c p" sweeprolog-prefix-map)
 #+end_src
 
 As an example, with the above binding the =sweep= top-level can be
 accessed from anywhere with =C-c p t=, which invokes the command
-=sweep-top-level=.
+=sweeprolog-top-level=.
 
 * Examining Prolog messages
 :PROPERTIES:
@@ -669,11 +669,11 @@ accessed from anywhere with =C-c p t=, which invokes the command
 :END:
 
 #+CINDEX: messages
-#+VINDEX: sweep-messages-buffer-name
+#+VINDEX: sweeprolog-messages-buffer-name
 Messages emitted by the embedded Prolog are redirected by =sweep= to a
 dedicated Emacs buffer.  By default, the =sweep= messages buffer is
 named =*sweep Messages*=.  To instruct =sweep= to use another buffer name
-instead, type =M-x customize-option RET sweep-messages-buffer-name RET=
+instead, type =M-x customize-option RET sweeprolog-messages-buffer-name RET=
 and set the option to a suitable value.
 
 The =sweep= messages buffer uses the minor mode =compilation-minor-mode=,
@@ -682,10 +682,10 @@ warning directly from the corresponding message in the =sweep= messages
 buffer.  For more information about the features enabled by
 =compilation-minor-mode=, see [[info:emacs#Compilation Mode][Compilation Mode in the Emacs manual]].
 
-#+FINDEX: sweep-view-messages
-=sweep= includes the command =sweep-view-messages= for quickly switching
+#+FINDEX: sweeprolog-view-messages
+=sweep= includes the command =sweeprolog-view-messages= for quickly switching
 to the =sweep= messages buffer.  This command is bound by default in
-=sweep-prefix-map= to the =e= key (see [[Quick access to sweep commands]]).
+=sweeprolog-prefix-map= to the =e= key (see [[Quick access to sweep commands]]).
 
 * Setting Prolog flags
 :PROPERTIES:
@@ -693,8 +693,8 @@ to the =sweep= messages buffer.  This command is bound by default in
 :END:
 
 #+CINDEX: prolog flags
-#+FINDEX: sweep-set-prolog-flag
-The command =M-x sweep-set-prolog-flag= can be used to interactively
+#+FINDEX: sweeprolog-set-prolog-flag
+The command =M-x sweeprolog-set-prolog-flag= can be used to interactively
 configure the embedded Prolog execution environment by changing the
 values of Prolog flags.  This command first prompts the user for a
 Prolog flag to set, with completion candidates annotated with their
@@ -715,7 +715,7 @@ A = "foo".
 
 We can change the interpretation of double quotes to denote lists of
 character codes, by setting the value the =double_quotes= flag to =codes=
-with =M-x sweep-set-prolog-flag RET double_quotes RET codes RET=.
+with =M-x sweeprolog-set-prolog-flag RET double_quotes RET codes RET=.
 Evaluating =A = "foo"= again exhibits the different interpretation:
 
 #+begin_src prolog
@@ -728,8 +728,8 @@ A = [102, 111, 111].
 :CUSTOM_ID: prolog-packages
 :END:
 
-#+FINDEX: sweep-pack-install
-The command =M-x sweep-pack-install= can be used to install
+#+FINDEX: sweeprolog-pack-install
+The command =M-x sweeprolog-pack-install= can be used to install
 or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
 completion candidates are annotated with description and the version
 of each package.

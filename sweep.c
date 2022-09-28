@@ -550,7 +550,7 @@ emacs_module_init (struct emacs_runtime *runtime)
 {
   emacs_env *env = runtime->get_environment (runtime);
 
-  emacs_value symbol_initialize = env->intern (env, "sweep-initialize");
+  emacs_value symbol_initialize = env->intern (env, "sweeprolog-initialize");
   emacs_value func_initialize =
     env->make_function(env,
                        1, emacs_variadic_function,
@@ -562,7 +562,7 @@ REST is passed as the rest of the command line arguments to Prolog.",
   emacs_value args_initialize[] = {symbol_initialize, func_initialize};
   env->funcall (env, env->intern (env, "defalias"), 2, args_initialize);
 
-  emacs_value symbol_is_initialized = env->intern (env, "sweep-initialized-p");
+  emacs_value symbol_is_initialized = env->intern (env, "sweeprolog-initialized-p");
   emacs_value func_is_initialized =
     env->make_function(env,
                        0, 0,
@@ -572,7 +572,7 @@ REST is passed as the rest of the command line arguments to Prolog.",
   emacs_value args_is_initialized[] = {symbol_is_initialized, func_is_initialized};
   env->funcall (env, env->intern (env, "defalias"), 2, args_is_initialized);
 
-  emacs_value symbol_open_query = env->intern (env, "sweep-open-query");
+  emacs_value symbol_open_query = env->intern (env, "sweeprolog-open-query");
   emacs_value func_open_query =
     env->make_function(env,
                        4, 5,
@@ -583,23 +583,23 @@ ARG2 and ARG3 are strings designating the module and predicate name of the Prolo
 ARG4 is any object that can be converted to a Prolog term, and will be passed as the first argument of the invoked predicate.\n\
 The second argument of the predicate is left unbound and is assumed to treated by the invoked predicate as an output variable.\n\
 If ARG5 is non-nil, reverse the order of the predicate arguments such that the first argument is the output variable and the second argument is the input term derived from ARG4.\n\
-Further instantiations of the output variable can be examined via `sweep-next-solution'.",
+Further instantiations of the output variable can be examined via `sweeprolog-next-solution'.",
                        NULL);
   emacs_value args_open_query[] = {symbol_open_query, func_open_query};
   env->funcall (env, env->intern (env, "defalias"), 2, args_open_query);
 
-  emacs_value symbol_next_solution = env->intern (env, "sweep-next-solution");
+  emacs_value symbol_next_solution = env->intern (env, "sweeprolog-next-solution");
   emacs_value func_next_solution =
     env->make_function(env,
                        0, 0,
                        sweep_next_solution,
                        "Return the next solution from Prolog, or nil if there are none.\n\
-See also `sweep-open-query'.",
+See also `sweeprolog-open-query'.",
                        NULL);
   emacs_value args_next_solution[] = {symbol_next_solution, func_next_solution};
   env->funcall (env, env->intern (env, "defalias"), 2, args_next_solution);
 
-  emacs_value symbol_cut_query = env->intern (env, "sweep-cut-query");
+  emacs_value symbol_cut_query = env->intern (env, "sweeprolog-cut-query");
   emacs_value func_cut_query =
     env->make_function(env,
                        0, 0,
@@ -610,7 +610,7 @@ This function retains the current instantiation of the query variables.",
   emacs_value args_cut_query[] = {symbol_cut_query, func_cut_query};
   env->funcall (env, env->intern (env, "defalias"), 2, args_cut_query);
 
-  emacs_value symbol_close_query = env->intern (env, "sweep-close-query");
+  emacs_value symbol_close_query = env->intern (env, "sweeprolog-close-query");
   emacs_value func_close_query =
     env->make_function(env,
                        0, 0,
@@ -622,7 +622,7 @@ This function drops the current instantiation of the query variables.",
   env->funcall (env, env->intern (env, "defalias"), 2, args_close_query);
 
 
-  emacs_value symbol_cleanup = env->intern (env, "sweep-cleanup");
+  emacs_value symbol_cleanup = env->intern (env, "sweeprolog-cleanup");
   emacs_value func_cleanup = env->make_function (env, 0, 0, sweep_cleanup, "Cleanup Prolog.", NULL);
   emacs_value args_cleanup[] = {symbol_cleanup, func_cleanup};
   env->funcall (env, env->intern (env, "defalias"), 2, args_cleanup);

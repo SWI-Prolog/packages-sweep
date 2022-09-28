@@ -134,7 +134,7 @@ sweep_colourise_buffer_(Path0, Contents, []) :-
                             sweep_handle_color(1)),
     forall(sweep_current_comment(Kind, Start, Len),
            ( atom_string(Kind, String),
-             user:sweep_funcall("sweep--colourise", [Start,Len,"comment"|String], _)
+             user:sweep_funcall("sweeprolog--colourise", [Start,Len,"comment"|String], _)
            )),
     erase(Ref0),
     erase(Ref1).
@@ -325,7 +325,7 @@ sweep_colourise_some_terms_(Path0, Offset, Contents, []) :-
                             [operators(Ops)]),
     forall(sweep_current_comment(Kind, Start, Len),
            ( atom_string(Kind, String),
-             user:sweep_funcall("sweep--colourise", [Start,Len,"comment"|String], _)
+             user:sweep_funcall("sweeprolog--colourise", [Start,Len,"comment"|String], _)
            )).
 
 sweep_documentation([Path, Functor, Arity], Docs) :-
@@ -614,7 +614,7 @@ sweep_colourise_query([String|Offset], _) :-
 sweep_handle_query_color(Offset, Col, Beg, Len) :-
     sweep_color_normalized(Offset, Col, Nom),
     Start is Beg + Offset,
-    user:sweep_funcall("sweep--colourise", [Start,Len|Nom], _).
+    user:sweep_funcall("sweeprolog--colourise", [Start,Len|Nom], _).
 
 sweep_color_normalized(Offset, Col, Nom) :-
     Col =.. [Nom0|Rest],
@@ -674,14 +674,14 @@ sweep_setup_message_hook(_, _) :-
     retractall(user:thread_message_hook(_, _, _)),
     asserta((
              user:thread_message_hook(Term, Kind, Lines) :-
-             sweep_message_hook(Term, Kind, Lines)
+                 sweep_message_hook(Term, Kind, Lines)
              )).
 
 sweep_message_hook(Term, Kind0, _Lines) :-
     should_handle_message_kind(Kind0, Kind),
     !,
     message_to_string(Term, String),
-    user:sweep_funcall("sweep-message", [Kind|String], _).
+    user:sweep_funcall("sweeprolog-message", [Kind|String], _).
 
 should_handle_message_kind(error, "error").
 should_handle_message_kind(warning, "warning").
