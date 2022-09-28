@@ -447,64 +447,6 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   return r;
 }
 
-static emacs_value
-sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
-{
-  (void)data;
-  int i = 0, r = 0;
-  char **argv = (char**)malloc(sizeof(char*)*nargs);
-  if (argv == NULL) {
-    ethrow(env, "malloc failed");
-    return NULL;
-  }
-  for (i = 0; i < nargs; i++) {
-    if ((argv[i] = estring_to_cstring(env, args[i], NULL)) == NULL) {
-      free(argv);
-      return NULL;
-    }
-  }
-
-  if (PL_version_info(PL_VERSION_SYSTEM < 80516))
-    PL_action(PL_GMP_SET_ALLOC_FUNCTIONS, FALSE);
-
-  r = PL_initialise(nargs, argv);
-
-  for (i = 0; i < nargs; i++) {
-    free(argv[i]);
-  }
-  free(argv);
-  return env->intern(env, r ? "t" : "nil");
-}
-
-
-static emacs_value
-sweep_is_initialized(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
-{
-  (void)nargs;
-  (void)args;
-  (void)data;
-  if (PL_is_initialised(NULL, NULL) == FALSE) {
-    return enil(env);
-  } else return et(env);
-}
-
-static emacs_value
-sweep_cleanup(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
-{
-  (void)nargs;
-  (void)data;
-  (void)args;
-  return env->intern(env, (PL_cleanup(PL_CLEANUP_SUCCESS) ? "t" : "nil"));
-}
-
-
-static void provide(emacs_env *env, const char *feature) {
-  emacs_value Qfeat = env->intern(env, feature);
-  emacs_value Qprovide = env->intern(env, "provide");
-
-  env->funcall(env, Qprovide, 1, (emacs_value[]){Qfeat});
-}
-
 static foreign_t
 sweep_funcall0(term_t f, term_t v) {
   char * string = NULL;
@@ -543,6 +485,67 @@ sweep_funcall1(term_t f, term_t a, term_t v) {
     }
   }
   return FALSE;
+}
+
+static emacs_value
+sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
+{
+  (void)data;
+  int i = 0, r = 0;
+  char **argv = (char**)malloc(sizeof(char*)*nargs);
+  if (argv == NULL) {
+    ethrow(env, "malloc failed");
+    return NULL;
+  }
+  for (i = 0; i < nargs; i++) {
+    if ((argv[i] = estring_to_cstring(env, args[i], NULL)) == NULL) {
+      free(argv);
+      return NULL;
+    }
+  }
+
+  if (PL_version_info(PL_VERSION_SYSTEM < 80516))
+    PL_action(PL_GMP_SET_ALLOC_FUNCTIONS, FALSE);
+
+  PL_register_foreign("sweep_funcall", 3, sweep_funcall1, 0);
+  PL_register_foreign("sweep_funcall", 2, sweep_funcall0, 0);
+
+  r = PL_initialise(nargs, argv);
+
+  for (i = 0; i < nargs; i++) {
+    free(argv[i]);
+  }
+  free(argv);
+  return env->intern(env, r ? "t" : "nil");
+}
+
+
+static emacs_value
+sweep_is_initialized(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
+{
+  (void)nargs;
+  (void)args;
+  (void)data;
+  if (PL_is_initialised(NULL, NULL) == FALSE) {
+    return enil(env);
+  } else return et(env);
+}
+
+static emacs_value
+sweep_cleanup(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
+{
+  (void)nargs;
+  (void)data;
+  (void)args;
+  return env->intern(env, (PL_cleanup(PL_CLEANUP_SUCCESS) ? "t" : "nil"));
+}
+
+
+static void provide(emacs_env *env, const char *feature) {
+  emacs_value Qfeat = env->intern(env, feature);
+  emacs_value Qprovide = env->intern(env, "provide");
+
+  env->funcall(env, Qprovide, 1, (emacs_value[]){Qfeat});
 }
 
 int
@@ -626,9 +629,6 @@ This function drops the current instantiation of the query variables.",
   emacs_value func_cleanup = env->make_function (env, 0, 0, sweep_cleanup, "Cleanup Prolog.", NULL);
   emacs_value args_cleanup[] = {symbol_cleanup, func_cleanup};
   env->funcall (env, env->intern (env, "defalias"), 2, args_cleanup);
-
-  PL_register_foreign("sweep_funcall", 3, sweep_funcall1, 0);
-  PL_register_foreign("sweep_funcall", 2, sweep_funcall0, 0);
 
   provide(env, "sweep-module");
 

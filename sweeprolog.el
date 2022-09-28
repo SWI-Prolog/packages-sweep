@@ -277,9 +277,9 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 
 (defun sweeprolog-start-prolog-server ()
   (sweeprolog-open-query "user"
-                    "prolog_server"
-                    "prolog_server"
-                    nil t)
+                         "sweep"
+                         "sweep_top_level_server"
+                         nil)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
@@ -1164,7 +1164,9 @@ module name, F is a functor name and N is its arity."
      ;;  (remove-list-of-text-properties beg end '(font-lock-face)))
      (sweeprolog-grammar-rule-face))
     ("method"              (sweeprolog-method-face))
-    ("class"               (sweeprolog-class-face))))
+    ("class"               (sweeprolog-class-face))
+    ;; (_ (message "%S" arg) nil)
+    ))
 
 (defun sweeprolog--colourise (args)
   "ARGS is a list of the form (BEG LEN . SEM)."
@@ -1173,7 +1175,7 @@ module name, F is a functor name and N is its arity."
              (arg (cddr args))
              (flf (sweeprolog--colour-term-to-face arg)))
     (with-silent-modifications
-      (font-lock--add-text-property beg end 'font-lock-face flf (current-buffer) nil))))
+      (put-text-property beg end 'font-lock-face flf))))
 
 (defun sweeprolog-colourise-buffer (&optional buffer)
   (interactive)
@@ -1254,9 +1256,9 @@ buffer to load."
            (end (point-max))
            (contents (buffer-substring-no-properties beg end)))
       (sweeprolog-open-query "user"
-                        "sweep"
-                        "sweep_load_buffer"
-                        (cons contents (buffer-file-name)))
+                             "sweep"
+                             "sweep_load_buffer"
+                             (cons contents (buffer-file-name)))
       (let ((sol (sweeprolog-next-solution)))
         (sweeprolog-close-query)
         (if (sweeprolog-true-p sol)
@@ -1281,14 +1283,22 @@ Interactively, a prefix arg means to prompt for BUFFER."
                                (generate-new-buffer-name "*sweeprolog-top-level*"))))))
      (list buffer)))
   (let ((buf (get-buffer-create (or buffer "*sweeprolog-top-level*"))))
-   (with-current-buffer buf
-     (unless (eq major-mode 'sweeprolog-top-level-mode)
-       (sweeprolog-top-level-mode)))
-   (make-comint-in-buffer "sweeprolog-top-level"
-                          buf
-                          (cons "localhost"
-                                sweeprolog-prolog-server-port))
-   (pop-to-buffer buf sweeprolog-top-level-display-action)))
+    (with-current-buffer buf
+      (unless (eq major-mode 'sweeprolog-top-level-mode)
+        (sweeprolog-top-level-mode)))
+    (sweeprolog-open-query "user"
+                           "sweep"
+                           "sweep_accept_top_level_client"
+                           (buffer-name buf))
+    (let ((sol (sweeprolog-next-solution)))
+      (sweeprolog-close-query)
+      (unless (sweeprolog-true-p sol)
+        (error "Failed to create new top-level!")))
+    (make-comint-in-buffer "sweeprolog-top-level"
+                           buf
+                           (cons "localhost"
+                                 sweeprolog-prolog-server-port))
+    (pop-to-buffer buf sweeprolog-top-level-display-action)))
 
 (defun sweeprolog-top-level--post-self-insert-function ()
   (when-let ((pend (cdr comint-last-prompt)))

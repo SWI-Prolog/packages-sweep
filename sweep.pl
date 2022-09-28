@@ -55,6 +55,8 @@
             sweep_op_info/2,
             sweep_imenu_index/2,
             sweep_module_path/2,
+            sweep_top_level_server/2,
+            sweep_accept_top_level_client/2,
             write_sweep_module_location/0
           ]).
 
@@ -76,6 +78,7 @@
 
 :- dynamic sweep_current_color/3,
            sweep_open/2,
+           sweep_top_level_thread_buffer/2,
            sweep_source_time/2,
            sweep_current_comment/3.
 
@@ -671,11 +674,12 @@ sweep_path_module(Path0, Module) :-
 
 
 sweep_setup_message_hook(_, _) :-
-    retractall(user:thread_message_hook(_, _, _)),
     asserta((
              user:thread_message_hook(Term, Kind, Lines) :-
                  sweep_message_hook(Term, Kind, Lines)
-             )).
+            ),
+            Ref),
+    at_halt(erase(Ref)).
 
 sweep_message_hook(Term, Kind0, _Lines) :-
     should_handle_message_kind(Kind0, Kind),
@@ -745,3 +749,69 @@ write_sweep_module_location :-
                        Path,
                        [file_type(executable), access(read)]),
     writeln(Path).
+
+sweep_top_level_server(_, Port) :-
+    tcp_socket(ServerSocket),
+    tcp_setopt(ServerSocket, reuseaddr),
+    tcp_bind(ServerSocket, Port),
+    tcp_listen(ServerSocket, 5),
+    thread_create(sweep_top_level_server_loop(ServerSocket), T,
+                  [ alias(sweep_top_level_server)
+                  ]),
+    at_halt((   is_thread(T),
+                thread_property(T, status(running))
+            ->  thread_signal(T, thread_exit(0)),
+                thread_join(T, _)
+            ;   true
+            )).
+
+sweep_top_level_server_loop(ServerSocket) :-
+    thread_get_message(Message),
+    sweep_top_level_server_loop_(Message, ServerSocket).
+
+sweep_top_level_server_loop_(accept(Buffer), ServerSocket) :-
+    !,
+    tcp_accept(ServerSocket, Slave, Peer),
+    tcp_open_socket(Slave, InStream, OutStream),
+    set_stream(InStream, close_on_abort(false)),
+    set_stream(OutStream, close_on_abort(false)),
+    thread_create(sweep_top_level_client(InStream, OutStream, Peer), T, [detached(true)]),
+    at_halt((   is_thread(T),
+                thread_property(T, status(running))
+            ->  thread_signal(T, thread_exit(0)),
+                thread_join(T, _)
+            ;   true
+            )),
+    thread_property(T, id(Id)),
+    asserta(sweep_top_level_thread_buffer(Id, Buffer)),
+    sweep_top_level_server_loop(ServerSocket).
+sweep_top_level_server_loop_(_, _).
+
+sweep_top_level_client(InStream, OutStream, ip(127,0,0,1)) :-
+    !,
+    set_prolog_IO(InStream, OutStream, OutStream),
+    set_stream(InStream, tty(true)),
+    set_prolog_flag(tty_control, false),
+    current_prolog_flag(encoding, Enc),
+    set_stream(user_input, encoding(Enc)),
+    set_stream(user_output, encoding(Enc)),
+    set_stream(user_error, encoding(Enc)),
+    set_stream(user_input, newline(detect)),
+    set_stream(user_output, newline(dos)),
+    set_stream(user_error, newline(dos)),
+    call_cleanup(prolog,
+                 ( close(InStream, [force(true)]),
+                   close(OutStream, [force(true)]),
+                   thread_self(Self),
+                   thread_property(Self, id(Id)),
+                   retractall(sweep_top_level_thread_buffer(Id, _))
+                 )).
+sweep_top_level_client(InStream, OutStream, _) :-
+    close(InStream),
+    close(OutStream),
+    thread_self(Self),
+    thread_property(Self, id(Id)),
+    retractall(sweep_top_level_thread_buffer(Id, _)).
+
+sweep_accept_top_level_client(Buffer, _) :-
+    thread_send_message(sweep_top_level_server, accept(Buffer)).
