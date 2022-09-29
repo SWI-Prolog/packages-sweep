@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.4.0
+;; Package-Version: 0.4.1
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -119,9 +119,9 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
   :group 'sweeprolog)
 
 (defcustom sweeprolog-init-args (list "-q"
-                                 "--no-signals"
-                                 "-g"
-                                 "[library(sweep)]")
+                                      "--no-signals"
+                                      "-g"
+                                      "[library(sweep)]")
   "List of strings used as initialization arguments for Prolog."
   :package-version '((sweeprolog "0.3.1"))
   :type '(repeat string)
@@ -285,12 +285,41 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
     (when (sweeprolog-true-p sol)
       (setq sweeprolog-prolog-server-port (cdr sol)))))
 
-(defun sweeprolog-init ()
+(defun sweeprolog-init (&rest args)
   (apply #'sweeprolog-initialize
          (cons (or sweeprolog-swipl-path (executable-find "swipl"))
-               sweeprolog-init-args))
+               (append sweeprolog-init-args args)))
   (sweeprolog-setup-message-hook)
   (sweeprolog-start-prolog-server))
+
+(defun sweeprolog-restart (&rest args)
+  "Restart the embedded Prolog runtime.
+
+ARGS is a list of strings appended to the value of
+`sweeprolog-init-args' to produce the Prolog initialization
+arguments.
+
+Interactively, with a prefix arguments, prompt for ARGS.
+Otherwise set ARGS to nil."
+  (interactive
+   (and
+    current-prefix-arg
+    (split-string-shell-command (read-string "swipl arguments: "))))
+  (when-let ((top-levels (seq-filter (lambda (buffer)
+                                       (eq 'sweeprolog-top-level-mode
+                                           (buffer-local-value 'major-mode
+                                                               buffer)))
+                                     (buffer-list))))
+    (if (y-or-n-p "Stop running sweep top-level processes?")
+        (dolist (buffer top-levels)
+          (let ((process (get-buffer-process buffer)))
+            (when (process-live-p process)
+              (delete-process process))))
+      (user-error "Cannot restart sweep with running top-level processes")))
+  (message "Stoping sweep.")
+  (sweeprolog-cleanup)
+  (message "Starting sweep.")
+  (apply #'sweeprolog-init args))
 
 (defvar sweeprolog-predicate-completion-collection nil)
 
@@ -1342,13 +1371,14 @@ Interactively, a prefix arg means to prompt for BUFFER."
 ;;;###autoload
 (defvar sweeprolog-prefix-map
   (let ((map (make-sparse-keymap)))
+    (define-key map "F" #'sweeprolog-set-prolog-flag)
+    (define-key map "P" #'sweeprolog-pack-install)
+    (define-key map "R" #'sweeprolog-restart)
+    (define-key map "e" #'sweeprolog-view-messages)
+    (define-key map "l" #'sweeprolog-load-buffer)
     (define-key map "m" #'sweeprolog-find-module)
     (define-key map "p" #'sweeprolog-find-predicate)
     (define-key map "t" #'sweeprolog-top-level)
-    (define-key map "l" #'sweeprolog-load-buffer)
-    (define-key map "P" #'sweeprolog-pack-install)
-    (define-key map "F" #'sweeprolog-set-prolog-flag)
-    (define-key map "e" #'sweeprolog-view-messages)
     map)
   "Keymap for `sweeprolog' global commands.")
 

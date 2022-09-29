@@ -776,12 +776,6 @@ sweep_top_level_server_loop_(accept(Buffer), ServerSocket) :-
     set_stream(InStream, close_on_abort(false)),
     set_stream(OutStream, close_on_abort(false)),
     thread_create(sweep_top_level_client(InStream, OutStream, Peer), T, [detached(true)]),
-    at_halt((   is_thread(T),
-                thread_property(T, status(running))
-            ->  thread_signal(T, thread_exit(0)),
-                thread_join(T, _)
-            ;   true
-            )),
     thread_property(T, id(Id)),
     asserta(sweep_top_level_thread_buffer(Id, Buffer)),
     sweep_top_level_server_loop(ServerSocket).
