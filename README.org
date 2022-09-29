@@ -125,10 +125,13 @@ which the user is free to extend with e.g.:
 To inhibit =sweeprolog= from initializing Prolog on load, set the user-option
 =sweeprolog-init-on-load= to nil.
 
-#+FINDEX: sweeprolog-cleanup
-The embedded Prolog runtime can be reset using the =sweeprolog-cleanup=
-function.  This function cleans up the Prolog state and resources,
-afterwards =sweeprolog-initialize= can be called to start Prolog anew.
+#+FINDEX: sweeprolog-restart
+The embedded Prolog runtime can be reset using the command
+=sweeprolog-restart=.  This command cleans up the the Prolog state and
+resources, and starts it anew.  When called with a prefix argument
+(=C-u M-x sweeprolog-restart=), this command prompts the user for
+additional initialization arguments to pass to the embedded Prolog
+runtime on startup.
 
 * Querying Prolog
 :PROPERTIES:
