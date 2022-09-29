@@ -2143,14 +2143,18 @@ Interactively, POINT is set to the current point."
   (add-hook 'file-name-at-point-functions #'sweeprolog-file-at-point nil t)
   (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point-function nil t)
   (when sweeprolog-colourise-buffer-on-idle
-    (setq sweeprolog--timer (run-with-idle-timer (max sweeprolog-colourise-buffer-min-interval
-                                                 (* 10 sweeprolog--colourise-buffer-duration))
-                                            t
-                                            (let ((buffer (current-buffer)))
-                                              (lambda ()
-                                                (unless (< sweeprolog-colourise-buffer-max-size
-                                                           (buffer-size buffer))
-                                                  (sweeprolog-colourise-buffer buffer))))))
+    (setq sweeprolog--timer
+          (run-with-idle-timer
+           (max sweeprolog-colourise-buffer-min-interval
+                (* 10 sweeprolog--colourise-buffer-duration))
+           t
+           (let ((buffer (current-buffer)))
+             (lambda ()
+               (when (and (buffer-live-p buffer)
+                          (not (< sweeprolog-colourise-buffer-max-size
+                                  (buffer-size buffer)))
+                          (get-buffer-window buffer))
+                 (sweeprolog-colourise-buffer buffer))))))
     (add-hook 'kill-buffer-hook
               (lambda ()
                 (when (timerp sweeprolog--timer)
