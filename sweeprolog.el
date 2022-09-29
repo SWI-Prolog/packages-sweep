@@ -993,6 +993,13 @@ module name, F is a functor name and N is its arity."
   "The empty list.")
 
 (sweeprolog-defface
+  variable-at-point
+  (:underline t)
+  (:underline t)
+  (:underline t)
+  "Variables.")
+
+(sweeprolog-defface
   variable
   (:inherit font-lock-variable-name-face)
   (:foreground "red4")
@@ -1111,6 +1118,8 @@ module name, F is a functor name and N is its arity."
   (:inherit font-lock-doc-face :foreground "green")
   "Structured comments.")
 
+(defvar-local sweeprolog--variable-at-point nil)
+
 (defun sweeprolog--colour-term-to-faces (beg end arg)
   (pcase arg
     (`("comment" . "structured")
@@ -1202,7 +1211,14 @@ module name, F is a functor name and N is its arity."
     ("control"
      (list (list beg end (sweeprolog-control-face))))
     ("var"
-     (list (list beg end (sweeprolog-variable-face))))
+     (let ((var (buffer-substring-no-properties beg end)))
+       (with-silent-modifications
+         (put-text-property beg end 'cursor-sensor-functions
+                            (sweeprolog-cursor-sensor-functions var)))
+       (cons (list beg end (sweeprolog-variable-face))
+             (and sweeprolog--variable-at-point
+                  (string= sweeprolog--variable-at-point var)
+                  (list (list beg end (sweeprolog-variable-at-point-face)))))))
     ("fullstop"
      (list (list beg end (sweeprolog-fullstop-face))))
     ("functor"
@@ -1296,11 +1312,11 @@ module name, F is a functor name and N is its arity."
     (with-silent-modifications
       (font-lock-unfontify-region beg end))
     (sweeprolog-open-query "user"
-                      "sweep"
-                      "sweep_colourise_some_terms"
-                      (list contents
-                            (buffer-file-name)
-                            beg))
+                           "sweep"
+                           "sweep_colourise_some_terms"
+                           (list contents
+                                 (buffer-file-name)
+                                 beg))
     (let ((sol (sweeprolog-next-solution)))
       (sweeprolog-close-query)
       (when (sweeprolog-true-p sol)
@@ -2165,6 +2181,15 @@ Interactively, POINT is set to the current point."
                 (when (timerp sweeprolog--timer)
                   (cancel-timer sweeprolog--timer))))))
 
+
+(defun sweeprolog-cursor-sensor-functions (var)
+  (list
+   (lambda (_win old dir)
+     (if (eq dir 'entered)
+         (let ((sweeprolog--variable-at-point var))
+           (font-lock-fontify-region (point) (point)))
+       (let ((sweeprolog--variable-at-point nil))
+         (font-lock-fontify-region old old))))))
 
 (provide 'sweeprolog)
 
