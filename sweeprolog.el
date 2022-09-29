@@ -127,6 +127,16 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
   :type '(repeat string)
   :group 'sweeprolog)
 
+(defcustom sweeprolog-enable-cursor-sensor t
+  "If non-nil, enable `cursor-sensor-mode' in `sweeprolog-mode'.
+
+When enabled, `sweeprolog-mode' leverages `cursor-sensor-mode' to
+highlight all occurences of the variable at point in the current
+clause."
+  :package-version '((sweeprolog "0.4.2"))
+  :type 'boolean
+  :group 'sweeprolog)
+
 (defvar sweeprolog-prolog-server-port nil)
 
 (declare-function sweeprolog-initialize    "sweep-module")
@@ -2179,17 +2189,10 @@ Interactively, POINT is set to the current point."
     (add-hook 'kill-buffer-hook
               (lambda ()
                 (when (timerp sweeprolog--timer)
-                  (cancel-timer sweeprolog--timer))))))
+                  (cancel-timer sweeprolog--timer)))))
+  (when sweeprolog-enable-cursor-sensor
+    (cursor-sensor-mode 1)))
 
-
-(defun sweeprolog-cursor-sensor-functions (var)
-  (list
-   (lambda (_win old dir)
-     (if (eq dir 'entered)
-         (let ((sweeprolog--variable-at-point var))
-           (font-lock-fontify-region (point) (point)))
-       (let ((sweeprolog--variable-at-point nil))
-         (font-lock-fontify-region old old))))))
 
 (provide 'sweeprolog)
 
