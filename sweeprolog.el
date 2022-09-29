@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2022 Eshel Yaron
 
-;; Author: Eshel Yaron <me(at)eshelyaron(dot)com>
-;; Maintainer: Eshel Yaron <me(at)eshelyaron(dot)com>
+;; Author: Eshel Yaron <me@eshelyaron.com>
+;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
 ;; Package-Version: 0.4.1
