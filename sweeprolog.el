@@ -1106,105 +1106,161 @@ module name, F is a functor name and N is its arity."
   (:inherit font-lock-doc-face :foreground "green")
   "Structured comments.")
 
-(defun sweeprolog--colour-term-to-face (arg)
+(defun sweeprolog--colour-term-to-faces (beg end arg)
   (pcase arg
     (`("comment" . "structured")
-     ;; (remove-list-of-text-properties beg end '(font-lock-face))
-     (sweeprolog-structured-comment-face))
+     (list (list beg end nil)
+           (list beg end (sweeprolog-structured-comment-face))))
     (`("comment" . ,_)
-     ;; (remove-list-of-text-properties beg end '(font-lock-face))
-     (sweeprolog-comment-face))
-    (`("head" "unreferenced" . ,_) (sweeprolog-head-unreferenced-face))
-    (`("head" "meta" . ,_) (sweeprolog-head-meta-face))
-    (`("head" "exported" . ,_) (sweeprolog-head-exported-face))
-    (`("head" "hook" . ,_) (sweeprolog-head-hook-face))
-    (`("head" "built_in" . ,_) (sweeprolog-head-built-in-face))
-    (`("head" ,(rx "extern(") . ,_) (sweeprolog-head-extern-face))
-    (`("head" ,(rx "public(") . ,_) (sweeprolog-head-public-face))
-    (`("head" ,(rx "local(") . ,_) (sweeprolog-head-local-face))
-    (`("goal" "recursion" . ,_) (sweeprolog-recursion-face))
-    (`("goal" "meta"      . ,_) (sweeprolog-meta-face))
-    (`("goal" "built_in"  . ,_) (sweeprolog-built-in-face))
-    (`("goal" "undefined" . ,_) (sweeprolog-undefined-face))
-    (`("goal" "global" . ,_) (sweeprolog-global-face))
-    (`("goal",(rx "dynamic ") . ,_) (sweeprolog-dynamic-face))
-    (`("goal",(rx "multifile ") . ,_) (sweeprolog-multifile-face))
-    (`("goal",(rx "thread_local ") . ,_) (sweeprolog-thread-local-face))
-    (`("goal",(rx "extern(") . ,_) (sweeprolog-extern-face))
-    (`("goal",(rx "autoload(") . ,_) (sweeprolog-autoload-face))
-    (`("goal",(rx "imported(") . ,_) (sweeprolog-imported-face))
-    (`("goal",(rx "global(") . ,_) (sweeprolog-global-face))
-    (`("goal",(rx "local(") . ,_) (sweeprolog-local-face))
+     (list (list beg end nil)
+           (list beg end (sweeprolog-comment-face))))
+    (`("head" "unreferenced" . ,_)
+     (list (list beg end (sweeprolog-head-unreferenced-face))))
+    (`("head" "meta" . ,_)
+     (list (list beg end (sweeprolog-head-meta-face))))
+    (`("head" "exported" . ,_)
+     (list (list beg end (sweeprolog-head-exported-face))))
+    (`("head" "hook" . ,_)
+     (list (list beg end (sweeprolog-head-hook-face))))
+    (`("head" "built_in" . ,_)
+     (list (list beg end (sweeprolog-head-built-in-face))))
+    (`("head" ,(rx "extern(") . ,_)
+     (list (list beg end (sweeprolog-head-extern-face))))
+    (`("head" ,(rx "public(") . ,_)
+     (list (list beg end (sweeprolog-head-public-face))))
+    (`("head" ,(rx "local(") . ,_)
+     (list (list beg end (sweeprolog-head-local-face))))
+    (`("goal" "recursion" . ,_)
+     (list (list beg end (sweeprolog-recursion-face))))
+    (`("goal" "meta"      . ,_)
+     (list (list beg end (sweeprolog-meta-face))))
+    (`("goal" "built_in"  . ,_)
+     (list (list beg end (sweeprolog-built-in-face))))
+    (`("goal" "undefined" . ,_)
+     (list (list beg end (sweeprolog-undefined-face))))
+    (`("goal" "global" . ,_)
+     (list (list beg end (sweeprolog-global-face))))
+    (`("goal",(rx "dynamic ") . ,_)
+     (list (list beg end (sweeprolog-dynamic-face))))
+    (`("goal",(rx "multifile ") . ,_)
+     (list (list beg end (sweeprolog-multifile-face))))
+    (`("goal",(rx "thread_local ") . ,_)
+     (list (list beg end (sweeprolog-thread-local-face))))
+    (`("goal",(rx "extern(") . ,_)
+     (list (list beg end (sweeprolog-extern-face))))
+    (`("goal",(rx "autoload(") . ,_)
+     (list (list beg end (sweeprolog-autoload-face))))
+    (`("goal",(rx "imported(") . ,_)
+     (list (list beg end (sweeprolog-imported-face))))
+    (`("goal",(rx "global(") . ,_)
+     (list (list beg end (sweeprolog-global-face))))
+    (`("goal",(rx "local(") . ,_)
+     (list (list beg end (sweeprolog-local-face))))
     (`("syntax_error" ,_message ,eb ,ee)
-     (with-silent-modifications
-       (put-text-property eb ee 'font-lock-face
-                          (sweeprolog-around-syntax-error-face)))
-     (sweeprolog-syntax-error-face))
-    ("unused_import"       (sweeprolog-unused-import-face))
-    ("undefined_import"    (sweeprolog-undefined-import-face))
-    ("html_attribute"      (sweeprolog-html-attribute-face))
-    ("html_call"           (sweeprolog-html-call-face))
-    ("dict_tag"            (sweeprolog-dict-tag-face))
-    ("dict_key"            (sweeprolog-dict-key-face))
-    ("dict_sep"            (sweeprolog-dict-sep-face))
-    ("meta"                (sweeprolog-meta-spec-face))
-    ("flag_name"           (sweeprolog-flag-name-face))
-    ("no_flag_name"        (sweeprolog-flag-name-face))
-    ("ext_quant"           (sweeprolog-ext-quant-face))
-    ("atom"                (sweeprolog-atom-face))
-    ("float"               (sweeprolog-float-face))
-    ("int"                 (sweeprolog-int-face))
-    ("singleton"           (sweeprolog-singleton-face))
-    ("option_name"         (sweeprolog-option-name-face))
-    ("no_option_name"      (sweeprolog-no-option-name-face))
-    ("control"             (sweeprolog-control-face))
-    ("var"                 (sweeprolog-variable-face))
-    ("fullstop"            (sweeprolog-fullstop-face))
-    ("functor"             (sweeprolog-functor-face))
-    ("arity"               (sweeprolog-arity-face))
-    ("predicate_indicator" (sweeprolog-predicate-indicator-face))
-    ("string"              (sweeprolog-string-face))
-    ("module"              (sweeprolog-module-face))
-    ("neck"                (sweeprolog-neck-face))
-    ("hook"                (sweeprolog-hook-face))
-    ("qq_type"             (sweeprolog-qq-type-face))
-    ("qq_sep"              (sweeprolog-qq-sep-face))
-    ("qq_open"             (sweeprolog-qq-open-face))
-    ("qq_close"            (sweeprolog-qq-close-face))
-    ("identifier"          (sweeprolog-identifier-face))
-    ("file"                (sweeprolog-file-face))
-    ("file_no_depend"      (sweeprolog-file-no-depend-face))
-    ("nofile"              (sweeprolog-no-file-face))
-    ("op_type"             (sweeprolog-op-type-face))
+     (list (list eb ee nil)
+           (list eb ee (sweeprolog-around-syntax-error-face))
+           (list beg end (sweeprolog-syntax-error-face))))
+    ("unused_import"
+     (list (list beg end (sweeprolog-unused-import-face))))
+    ("undefined_import"
+     (list (list beg end (sweeprolog-undefined-import-face))))
+    ("html_attribute"
+     (list (list beg end (sweeprolog-html-attribute-face))))
+    ("html_call"
+     (list (list beg end (sweeprolog-html-call-face))))
+    ("dict_tag"
+     (list (list beg end (sweeprolog-dict-tag-face))))
+    ("dict_key"
+     (list (list beg end (sweeprolog-dict-key-face))))
+    ("dict_sep"
+     (list (list beg end (sweeprolog-dict-sep-face))))
+    ("meta"
+     (list (list beg end (sweeprolog-meta-spec-face))))
+    ("flag_name"
+     (list (list beg end (sweeprolog-flag-name-face))))
+    ("no_flag_name"
+     (list (list beg end (sweeprolog-flag-name-face))))
+    ("ext_quant"
+     (list (list beg end (sweeprolog-ext-quant-face))))
+    ("atom"
+     (list (list beg end (sweeprolog-atom-face))))
+    ("float"
+     (list (list beg end (sweeprolog-float-face))))
+    ("int"
+     (list (list beg end (sweeprolog-int-face))))
+    ("singleton"
+     (list (list beg end (sweeprolog-singleton-face))))
+    ("option_name"
+     (list (list beg end (sweeprolog-option-name-face))))
+    ("no_option_name"
+     (list (list beg end (sweeprolog-no-option-name-face))))
+    ("control"
+     (list (list beg end (sweeprolog-control-face))))
+    ("var"
+     (list (list beg end (sweeprolog-variable-face))))
+    ("fullstop"
+     (list (list beg end (sweeprolog-fullstop-face))))
+    ("functor"
+     (list (list beg end (sweeprolog-functor-face))))
+    ("arity"
+     (list (list beg end (sweeprolog-arity-face))))
+    ("predicate_indicator"
+     (list (list beg end (sweeprolog-predicate-indicator-face))))
+    ("string"
+     (list (list beg end (sweeprolog-string-face))))
+    ("module"
+     (list (list beg end (sweeprolog-module-face))))
+    ("neck"
+     (list (list beg end (sweeprolog-neck-face))))
+    ("hook"
+     (list (list beg end (sweeprolog-hook-face))))
+    ("qq_type"
+     (list (list beg end (sweeprolog-qq-type-face))))
+    ("qq_sep"
+     (list (list beg end (sweeprolog-qq-sep-face))))
+    ("qq_open"
+     (list (list beg end (sweeprolog-qq-open-face))))
+    ("qq_close"
+     (list (list beg end (sweeprolog-qq-close-face))))
+    ("identifier"
+     (list (list beg end (sweeprolog-identifier-face))))
+    ("file"
+     (list (list beg end (sweeprolog-file-face))))
+    ("file_no_depend"
+     (list (list beg end (sweeprolog-file-no-depend-face))))
+    ("nofile"
+     (list (list beg end (sweeprolog-no-file-face))))
+    ("op_type"
+     (list (list beg end (sweeprolog-op-type-face))))
     ("directive"
-     ;; (with-silent-modifications
-     ;;  (remove-list-of-text-properties beg end '(font-lock-face)))
-     (sweeprolog-directive-face))
+     (list (list beg end nil) (list beg end (sweeprolog-directive-face))))
     ("clause"
-     ;; (with-silent-modifications
-     ;;  (remove-list-of-text-properties beg end '(font-lock-face)))
-     (sweeprolog-clause-face))
+     (list (list beg end nil) (list beg end (sweeprolog-clause-face))))
     ("term"
-     ;; (with-silent-modifications
-     ;;  (remove-list-of-text-properties beg end '(font-lock-face)))
-     (sweeprolog-term-face))
+     (list (list beg end nil) (list beg end (sweeprolog-term-face))))
     ("grammar_rule"
-     ;; (with-silent-modifications
-     ;;  (remove-list-of-text-properties beg end '(font-lock-face)))
-     (sweeprolog-grammar-rule-face))
-    ("method"              (sweeprolog-method-face))
-    ("class"               (sweeprolog-class-face))
-    ;; (_ (message "%S" arg) nil)
-    ))
+     (list (list beg end nil) (list beg end (sweeprolog-grammar-rule-face))))
+    ("method"
+     (list (list beg end (sweeprolog-method-face))))
+    ("class"
+     (list (list beg end (sweeprolog-class-face))))))
 
 (defun sweeprolog--colourise (args)
   "ARGS is a list of the form (BEG LEN . SEM)."
   (when-let ((beg (max (point-min) (car  args)))
              (end (min (point-max) (+ beg (cadr args))))
              (arg (cddr args))
-             (flf (sweeprolog--colour-term-to-face arg)))
+             (fll (sweeprolog--colour-term-to-faces beg end arg)))
     (with-silent-modifications
-      (put-text-property beg end 'font-lock-face flf))))
+      (dolist (ent fll)
+        (let ((b (car ent))
+              (e (cadr ent))
+              (flf (caddr ent)))
+          (if flf
+              (font-lock--add-text-property b e
+                                            'font-lock-face flf
+                                            (current-buffer) nil)
+            (remove-list-of-text-properties b e '(font-lock-face))))))))
 
 (defun sweeprolog-colourise-buffer (&optional buffer)
   (interactive)
