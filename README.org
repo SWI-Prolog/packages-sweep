@@ -73,7 +73,11 @@ The dynamic Emacs module =sweeprolog-module= and the Prolog helper library
 instructions on how to build and install SWI-Prolog, see
 [[https://www.swi-prolog.org/build/]].
 
-To start using =sweep= in Emacs:
+The =sweeprolog= Elisp package is available on NonGNU ELPA, to install
+=sweeprolog= simply type =M-x package-install RET sweeprolog RET=.
+
+An alternative to installing from ELPA is to get the Elisp library
+from the =sweep= Git repository:
 
 1. Clone the =sweep= repository:
    #+begin_src sh

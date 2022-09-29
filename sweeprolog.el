@@ -2165,10 +2165,6 @@ Interactively, POINT is set to the current point."
                 (when (timerp sweeprolog--timer)
                   (cancel-timer sweeprolog--timer))))))
 
-;;;; Testing:
-
-;; (add-to-list 'load-path (file-name-directory (buffer-file-name)))
-;; (require 'sweeprolog)
 
 (provide 'sweeprolog)
 
