@@ -430,10 +430,21 @@ highlighting can be set via the user option
 =sweeprolog-colourise-buffer-min-interval=.
 
 #+CINDEX: sweeprolog-faces
-=sweep= defines more than 60 different faces (named sets of properties
-that determine the appearance of a specific text in Emacs buffers, see
-also [[info:emacs#Faces][Faces in the Emacs manual]]) to signify the specific semantics of
-each token in a Prolog code buffer.  =sweep= comes with three /styles/:
+=sweep= defines three highlighting /styles/, each containing more than 60
+different faces (named sets of properties that determine the
+appearance of a specific text in Emacs buffers, see also [[info:emacs#Faces][Faces in the
+Emacs manual]]) to signify the specific semantics of each token in a
+Prolog code buffer.
+
+To view and customize all of the faces defined and used in =sweep=, type
+=M-x customize-group RET sweeprolog-faces RET=.
+
+*** Available styles
+:PROPERTIES:
+:CUSTOM_ID: highlighting-styles
+:END:
+
+=sweep= comes with three highlighting styles:
 
 - The =default= style includes faces that mostly inherit from standard
   Emacs faces commonly used in programming modes.
@@ -448,8 +459,31 @@ To choose a style, customize the user option =sweeprolog-faces-style= with
 apply to all new =sweeprolog-mode= buffers.  To apply the new style to an
 existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
 
-To view and customize all of the faces defined and used in =sweep=, type
-=M-x customize-group RET sweeprolog-faces RET=.
+*** Extra highlighting features
+:PROPERTIES:
+:CUSTOM_ID: highlighting-extras
+:END:
+
+#+CINDEX: variable highlighting
+=sweeprolog-mode= can highlight all occurrences of a given Prolog
+variable in the clause in which it appears.  By default, occurrences
+of the variable at point are highlighted automatically whenever the
+cursor is moved into a variable.  To achieve this, =sweep= uses the
+Emacs minor mode =cursor-sensor-mode= which allows for running hooks
+when the cursor enters or leaves certain text regions (see also [[info:elisp#Special
+Properties][Special Properties in the Elisp manual]]).
+
+#+VINDEX: sweeprolog-enable-cursor-sensor
+To disable automatic variable highlighting based on the variable at
+point, customize the variable =sweeprolog-enable-cursor-sensor= to nil.
+
+#+FINDEX: sweeprolog-highlight-variable
+To manually highlight occurrences of a variable in the clause
+surrounding point, =sweeprolog-mode= provides the command =M-x
+sweeprolog-highlight-variable=.  This command prompts for variable to
+highlight, defaulting to the variable at point, if any.  If called
+with a prefix argument (=C-u M-x sweeprolog-highlight-variable=), it
+clears all variable highlighting in the current clause instead.
 
 ** Term-based editing and motion commands
 :PROPERTIES:
