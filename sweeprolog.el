@@ -149,7 +149,12 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
                                  " -t"
                                  " halt"))
                                "\n")))))
-    (load sweep-module-path)))
+    (condition-case _
+        (load sweep-module-path)
+      (file-error (user-error
+                   (concat "Failed to locate `sweep-module'. "
+                           "Make sure SWI-Prolog is installed "
+                           "and up to date"))))))
 
 (defface sweeprolog-debug-prefix-face
   '((default :inherit shadow))
