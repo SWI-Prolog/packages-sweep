@@ -2143,6 +2143,37 @@ Interactively, POINT is set to the current point."
                    (cons car (line-beginning-position))))
                (cdr sol)))))
 
+(defun sweeprolog-highlight-variable (var)
+  "Highlight occurences of the variable VAR in the current clause.
+
+If VAR is nil, clear variable highlighting in the current clause
+instead.
+
+Interactively, if a prefix argument is specificed, clear variable
+highlighting in the current clause.  Otherwise prompt for VAR,
+defaulting to the variable at point, if any."
+  (interactive (unless current-prefix-arg
+                 (let ((v (symbol-at-point)))
+                   (list (read-string "Highlight variable: "
+                                      nil nil
+                                      (and v
+                                           (save-match-data
+                                             (let ((case-fold-search nil))
+                                               (string-match
+                                                (rx bos upper)
+                                                (symbol-name v))))
+                                           (symbol-name v))))))
+               sweeprolog-mode sweeprolog-top-level-mode)
+  (let ((sweeprolog--variable-at-point var))
+    (font-lock-fontify-region (point) (point))))
+
+(defun sweeprolog-cursor-sensor-functions (var)
+  (list
+   (lambda (_win old dir)
+     (if (eq dir 'entered)
+         (sweeprolog-highlight-variable var)
+       (sweeprolog-highlight-variable nil)))))
+
 (defvar-local sweeprolog--timer nil)
 (defvar-local sweeprolog--colourise-buffer-duration 0.2)
 
