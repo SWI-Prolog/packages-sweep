@@ -40,6 +40,14 @@
   :type 'integer
   :group 'sweeprolog)
 
+(defcustom sweeprolog-qq-mode-alist '(("graphql"    . graphql-mode)
+                                      ("javascript" . js-mode)
+                                      ("html"       . html-mode))
+  "Association between Prolog quasi-quotation types and Emacs modes."
+  :package-version '((sweeprolog . "0.4.3"))
+  :type '(alist :key-type string :value-type symbol)
+  :group 'sweeprolog)
+
 (defcustom sweeprolog-colourise-buffer-on-idle t
   "If non-nil, update highlighting of `sweeprolog-mode' buffers on idle."
   :package-version '((sweeprolog . "0.2.0"))
@@ -905,6 +913,13 @@ module name, F is a functor name and N is its arity."
   "Quasi-quotation open sequences.")
 
 (sweeprolog-defface
+  qq-content
+  (:inherit default)
+  (:foreground "red4")
+  (:foreground "red4")
+  "Quasi-quotation content.")
+
+(sweeprolog-defface
   qq-close
   (:inherit font-lock-type-face)
   (:weight bold)
@@ -1245,6 +1260,29 @@ module name, F is a functor name and N is its arity."
      (list (list beg end (sweeprolog-neck-face))))
     ("hook"
      (list (list beg end (sweeprolog-hook-face))))
+    (`("qq_content" . ,type)
+     (let ((mode (cdr (assoc-string type sweeprolog-qq-mode-alist))))
+       (if (and mode (fboundp mode))
+           (let ((res nil)
+                 (string (buffer-substring-no-properties beg end)))
+             (with-current-buffer
+                 (get-buffer-create
+                  (format " *sweep-qq-content:%s*" type))
+               (with-silent-modifications
+                 (erase-buffer)
+                 (insert string " "))
+               (unless (eq major-mode mode) (funcall mode))
+               (font-lock-ensure)
+               (let ((pos (point-min)) next)
+                 (while (setq next (next-property-change pos))
+                   (dolist (prop '(font-lock-face face))
+                     (let ((new-prop (get-text-property pos prop)))
+                       (when new-prop
+                         (setq res (cons (list (+ beg (1- pos)) (1- (+ beg next)) new-prop) res)))))
+                   (setq pos next)))
+               (set-buffer-modified-p nil)
+               res))
+         (list (list beg end (sweeprolog-qq-content-face))))))
     ("qq_type"
      (list (list beg end (sweeprolog-qq-type-face))))
     ("qq_sep"
