@@ -1634,6 +1634,20 @@ Interactively, a prefix arg means to prompt for BUFFER."
     map)
   "Keymap for `sweeprolog-mode'.")
 
+(easy-menu-define sweeprolog-menu (list sweeprolog-mode-map
+                                        sweeprolog-top-level-mode-map)
+  "`sweep' menu."
+  '("Sweep"
+    [ "Set Prolog flag"        sweeprolog-set-prolog-flag t ]
+    [ "Install Prolog package" sweeprolog-pack-install    t ]
+    [ "Load Prolog buffer"     sweeprolog-load-buffer     t ]
+    [ "Find Prolog module"     sweeprolog-find-module     t ]
+    [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
+    [ "Open top-level"         sweeprolog-top-level       t ]
+    "--"
+    [ "Reset sweep"            sweeprolog-restart         t ]
+    [ "View sweep messages"    sweeprolog-view-messages   t ]))
+
 (defun sweeprolog-token-boundaries (&optional pos)
   (let ((point (or pos (point))))
     (save-excursion
