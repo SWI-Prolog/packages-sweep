@@ -95,10 +95,27 @@ from the =sweep= Git repository:
      (add-to-list 'load-path "/path/to/sweep")
    #+end_src
 
-3. Load =sweep= into Emacs:
-   #+begin_src emacs-lisp
-     (require 'sweeprolog)
-   #+end_src
+* Getting started
+:PROPERTIES:
+:CUSTOM_ID: getting-started
+:END:
+
+After installing the =sweeprolog= Elisp library, load it into Emacs:
+
+#+begin_src emacs-lisp
+  (require 'sweeprolog)
+#+end_src
+
+All set!  =sweeprolog= automatically loads =sweep-module= and initializes
+the embedded SWI-Prolog runtime.  For a description of the different
+features of =sweep=, see the following sections of this manual.
+
+_Important note for Linux users_: prior to version 29, Emacs would load
+dynamic modules in a way that is not fully compatible with the way the
+SWI-Prolog native library, =libswipl=, loads its own native extensions.
+This may lead to =sweep= failing after loading =sweep-module=.  To work
+around this issue, users running Emacs 28 or earlier on Linux can
+start Emacs with =libswipl= loaded upfront via =LD_PRELOAD=, for example:
 
 * Prolog initialization and cleanup
 :PROPERTIES:
