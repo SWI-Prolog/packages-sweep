@@ -503,6 +503,9 @@ If a quasi-quotation type does not have a matching mode in
 =sweeprolog-qq-mode-alist=, the function =sweeprolog-qq-content-face= is
 used to determine a default face for quoted content.
 
+For more information about quasi-quotations in SWI-Prolog, see
+[[https://www.swi-prolog.org/pldoc/man?section=quasiquotations][library(quasi_quotations) in the SWI-Prolog manual]].
+
 
 
 ** Term-based editing and motion commands
