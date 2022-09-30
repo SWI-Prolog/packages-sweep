@@ -1782,7 +1782,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
              (sweeprolog--forward-term pre))
          (if-let ((ppre (sweeprolog-op-suffix-precedence
                          (buffer-substring-no-properties obeg oend))))
-             (if (> opre pre)
+             (if (> ppre pre)
                  (signal 'scan-error
                          (list (format "Cannot scan beyond suffix operator of higher precedence %s." opre)
                                obeg
@@ -1803,7 +1803,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
            (sweeprolog--forward-term pre))
        (if-let ((ppre (sweeprolog-op-prefix-precedence
                        (buffer-substring-no-properties obeg oend))))
-           (if (> opre pre)
+           (if (> ppre pre)
                (signal 'scan-error
                        (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
                              obeg
@@ -1856,7 +1856,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
              (sweeprolog--backward-term pre))
          (if-let ((ppre (sweeprolog-op-prefix-precedence
                          (buffer-substring-no-properties obeg oend))))
-             (if (> opre pre)
+             (if (> ppre pre)
                  (signal 'scan-error
                          (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
                                obeg
@@ -1877,7 +1877,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
            (sweeprolog--backward-term pre))
        (if-let ((ppre (sweeprolog-op-prefix-precedence
                        (buffer-substring-no-properties obeg oend))))
-           (if (> opre pre)
+           (if (> ppre pre)
                (signal 'scan-error
                        (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
                              obeg
