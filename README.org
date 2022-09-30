@@ -42,7 +42,7 @@ Emacs Lisp.
 
 The different parts of =sweep= are structured as follows:
 
-#+CINDEX: sweeprolog-module
+#+CINDEX: sweep-module
 - =sweep.c= defines a dynamic Emacs module which is referred to from
   Elisp as =sweep-module=. This module is linked against the SWI-Prolog
   runtime library (=libswipl=) and exposes a subset of the SWI-Prolog C
@@ -68,7 +68,7 @@ The different parts of =sweep= are structured as follows:
 :CUSTOM_ID: installation
 :END:
 
-The dynamic Emacs module =sweeprolog-module= and the Prolog helper library
+The dynamic Emacs module =sweep-module= and the Prolog helper library
 =sweep.pl= are included in the latest SWI-Prolog distribution.  For
 instructions on how to build and install SWI-Prolog, see
 [[https://www.swi-prolog.org/build/]].
@@ -130,7 +130,7 @@ start Emacs with =libswipl= loaded upfront via =LD_PRELOAD=, for example:
 The embedded SWI-Prolog runtime must be initialized before it can
 start executing queries.  In =sweep=, Prolog initialization is done via
 the C-implemented =sweeprolog-initialize= Elisp function defined in
-=sweeprolog-module=.  =sweeprolog-initialize= takes one or more arguments, which
+=sweep-module=.  =sweeprolog-initialize= takes one or more arguments, which
 must all be strings, and initializes the embedded Prolog as if it were
 invoked externally in a command line with the given strings as command
 line arguments, where the first argument to =sweeprolog-initialize=
