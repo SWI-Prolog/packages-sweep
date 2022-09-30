@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.4.2
+;; Package-Version: 0.4.3
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -43,7 +43,11 @@
 (defcustom sweeprolog-qq-mode-alist '(("graphql"    . graphql-mode)
                                       ("javascript" . js-mode)
                                       ("html"       . html-mode))
-  "Association between Prolog quasi-quotation types and Emacs modes."
+  "Association between Prolog quasi-quotation types and Emacs modes.
+
+This is a list of pairs of the form (TYPE . MODE), where TYPE is
+a Prolog quasi-quotation type given as a string, and MODE is a
+symbol specifing a major mode."
   :package-version '((sweeprolog . "0.4.3"))
   :type '(alist :key-type string :value-type symbol)
   :group 'sweeprolog)

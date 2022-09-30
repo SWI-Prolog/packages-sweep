@@ -459,9 +459,9 @@ To choose a style, customize the user option =sweeprolog-faces-style= with
 apply to all new =sweeprolog-mode= buffers.  To apply the new style to an
 existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
 
-*** Extra highlighting features
+*** Highlighting occurrences of a variable
 :PROPERTIES:
-:CUSTOM_ID: highlighting-extras
+:CUSTOM_ID: variable-highlighting
 :END:
 
 #+CINDEX: variable highlighting
@@ -484,6 +484,26 @@ sweeprolog-highlight-variable=.  This command prompts for variable to
 highlight, defaulting to the variable at point, if any.  If called
 with a prefix argument (=C-u M-x sweeprolog-highlight-variable=), it
 clears all variable highlighting in the current clause instead.
+
+*** Quasi-quotation highlighting
+:PROPERTIES:
+:CUSTOM_ID: qq-highlighting
+:END:
+
+Quasi-quotations in =sweeprolog-mode= buffer are highlighted according
+to the Emacs mode corresponding to the quoted language by default.
+
+#+VINDEX: sweeprolog-qq-mode-alist
+The association between SWI-Prolog quasi-quotation types and Emacs
+major modes is determined by the user option =sweeprolog-qq-mode-alist=.
+To modify the default associations provided by =sweeprolog-mode=, type
+=M-x customize-option RET sweeprolog-qq-mode-alist RET=.
+
+If a quasi-quotation type does not have a matching mode in
+=sweeprolog-qq-mode-alist=, the function =sweeprolog-qq-content-face= is
+used to determine a default face for quoted content.
+
+
 
 ** Term-based editing and motion commands
 :PROPERTIES:
