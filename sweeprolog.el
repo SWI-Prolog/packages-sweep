@@ -700,6 +700,13 @@ module name, F is a functor name and N is its arity."
   "Meta predicate definitions.")
 
 (sweeprolog-defface
+  head-dynamic
+  (:inherit font-lock-constant-face)
+  (:foreground "magenta" :weight bold)
+  (:foreground "magenta" :weight bold)
+  "Dynamic predicate definitions.")
+
+(sweeprolog-defface
   head-multifile
   (:inherit font-lock-type-face)
   (:foreground "navyblue" :weight bold)
@@ -739,7 +746,14 @@ module name, F is a functor name and N is its arity."
   (:inherit font-lock-keyword-face)
   (:background "orange" :weight bold)
   (:background "orange" :weight bold)
-  "Hook definitions.")
+  "ISO specified predicate definitions.")
+
+(sweeprolog-defface
+  head-imported
+  (:inherit font-lock-function-name-face)
+  (:foreground "darkgoldenrod4" :weight bold)
+  (:foreground "darkgoldenrod4" :weight bold)
+  "Imported head terms.")
 
 (sweeprolog-defface
   head-undefined
@@ -865,7 +879,7 @@ module name, F is a functor name and N is its arity."
   (:inherit font-lock-keyword-face)
   (:foreground "magenta4" :weight bold)
   (:foreground "magenta4" :weight bold)
-  "Multifile predicate calls.")
+  "HTML calls.")
 
 (sweeprolog-defface
   option-name
@@ -1161,16 +1175,24 @@ module name, F is a functor name and N is its arity."
      (list (list beg end (sweeprolog-head-unreferenced-face))))
     (`("head" "meta" . ,_)
      (list (list beg end (sweeprolog-head-meta-face))))
+    (`("head" "iso" . ,_)
+     (list (list beg end (sweeprolog-head-iso-face))))
     (`("head" "exported" . ,_)
      (list (list beg end (sweeprolog-head-exported-face))))
     (`("head" "hook" . ,_)
      (list (list beg end (sweeprolog-head-hook-face))))
     (`("head" "built_in" . ,_)
      (list (list beg end (sweeprolog-head-built-in-face))))
+    (`("head" ,(rx "imported(") . ,_)
+     (list (list beg end (sweeprolog-head-imported-face))))
     (`("head" ,(rx "extern(") . ,_)
      (list (list beg end (sweeprolog-head-extern-face))))
     (`("head" ,(rx "public(") . ,_)
      (list (list beg end (sweeprolog-head-public-face))))
+    (`("head",(rx "dynamic ") . ,_)
+     (list (list beg end (sweeprolog-head-dynamic-face))))
+    (`("head",(rx "multifile ") . ,_)
+     (list (list beg end (sweeprolog-head-multifile-face))))
     (`("head" ,(rx "local(") . ,_)
      (list (list beg end (sweeprolog-head-local-face))))
     (`("goal" "recursion" . ,_)
@@ -1209,7 +1231,7 @@ module name, F is a functor name and N is its arity."
      (list (list beg end (sweeprolog-undefined-import-face))))
     ("html_attribute"
      (list (list beg end (sweeprolog-html-attribute-face))))
-    ("html_call"
+    ("html"
      (list (list beg end (sweeprolog-html-call-face))))
     ("dict_tag"
      (list (list beg end (sweeprolog-dict-tag-face))))
