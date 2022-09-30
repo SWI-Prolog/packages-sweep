@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.4.4
+;; Package-Version: 0.4.5
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -1271,7 +1271,13 @@ module name, F is a functor name and N is its arity."
                   (string= sweeprolog--variable-at-point var)
                   (list (list beg end (sweeprolog-variable-at-point-face)))))))
     ("fullstop"
-     (list (list beg end (sweeprolog-fullstop-face))))
+     (list (list beg
+                 (save-excursion
+                   (goto-char (min (1+ end) (point-max)))
+                   (skip-chars-forward " \t\n")
+                   (point))
+                 nil)
+           (list beg end (sweeprolog-fullstop-face))))
     ("functor"
      (list (list beg end (sweeprolog-functor-face))))
     ("arity"
