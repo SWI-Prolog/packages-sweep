@@ -117,6 +117,10 @@ This may lead to =sweep= failing after loading =sweep-module=.  To work
 around this issue, users running Emacs 28 or earlier on Linux can
 start Emacs with =libswipl= loaded upfront via =LD_PRELOAD=, for example:
 
+#+begin_src sh
+  LD_PRELOAD=/usr/local/lib/libswipl.so emacs
+#+end_src
+
 * Prolog initialization and cleanup
 :PROPERTIES:
 :CUSTOM_ID: prolog-init
