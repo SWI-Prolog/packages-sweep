@@ -4,59 +4,57 @@
 #+language:              en
 #+options:               ':t toc:nil num:nil ^:{}
 #+startup:               content indent
-#+MACRO: version (eval (mapconcat #'number-to-string (save-current-buffer (with-current-buffer (find-file (expand-file-name "sweep.el" (file-name-directory $1))) (package-desc-version (package-buffer-info)))) "."))
 
-This file is about changes in =sweep= up to version
-{{{version({{{input-file}}})}}}.
+This file describes changes in =sweep= up to version =0.4.4=.
 
-* New commands available in =sweep= {{{version({{{input-file}}})}}}
-** New command =sweep-load-buffer=.
+* New commands in =sweep= version =0.4.0=
+** New command =sweeprolog-load-buffer=.
 
-Loads a =sweep-mode= buffer.  If called from a =sweep-mode= buffer, loads
+Loads a =sweeprolog-mode= buffer.  If called from a =sweeprolog-mode= buffer, loads
 the current buffer by default.
 
-** New command =sweep-find-file-at-point=.
+** New command =sweeprolog-find-file-at-point=.
 
-Follows file specifications in =sweep-mode= buffers.
-
-
-* New keybindings in =sweep-mode= buffers
-
-** =C-c C-l= is now bound to =sweep-load-buffer=.
-
-** =C-c C-o= is now bound to =sweep-find-file-at-point=.
+Follows file specifications in =sweeprolog-mode= buffers.
 
 
-* New user options available in =sweep= {{{version({{{input-file}}})}}}
+* New keybindings in =sweeprolog-mode= buffers
 
-** New user option =sweep-faces-style=
+** =C-c C-l= is now bound to =sweeprolog-load-buffer=.
+
+** =C-c C-o= is now bound to =sweeprolog-find-file-at-point=.
+
+
+* New user options in =sweep= version =0.4.0=
+
+** New user option =sweeprolog-faces-style=
 
 This option controls the which style of faces will be used for
-highlighting in =sweep-mode= buffers.  Possible options are =light=, =dark=
+highlighting in =sweeprolog-mode= buffers.  Possible options are =light=, =dark=
 and =default=.
 
-** New user option =sweep-indent-offset=
+** New user option =sweeprolog-indent-offset=
 
 This option, set by default to 4, is an integer denoting the number of
-columns used as the indent increment in =sweep-mode= buffers.
+columns used as the indent increment in =sweeprolog-mode= buffers.
 
-** New user option =sweep-colourise-buffer-on-idle=
+** New user option =sweeprolog-colourise-buffer-on-idle=
 
 This option is a boolean flag that determines whether to enable
-automatic updating of semantic highlighting in =sweep-mode= buffers.
+automatic updating of semantic highlighting in =sweeprolog-mode= buffers.
 
-** New user option =sweep-colourise-buffer-min-interval=
+** New user option =sweeprolog-colourise-buffer-min-interval=
 
 This option determines the minimum number of idle seconds that =sweep=
-will wait before updating semantic highlighting in a =sweep-mode=
+will wait before updating semantic highlighting in a =sweeprolog-mode=
 buffer.
 
-** New user option =sweep-colourise-buffer-max-size=
+** New user option =sweeprolog-colourise-buffer-max-size=
 
-This option determines the maximum size of a =sweep-mode= buffer for
+This option determines the maximum size of a =sweeprolog-mode= buffer for
 which =sweep= will periodically update semantic highlighting on idle.
 
-** New user option =sweep-top-level-min-history-length=
+** New user option =sweeprolog-top-level-min-history-length=
 
 This option, set by default to 3, determines a minimum length for
 inputs inserted into =sweep= top-level history ring.  The default value,
@@ -65,6 +63,6 @@ history ring.  This kind of inputs includes, for example, the =;=
 character typed to invoke backtracking.
 
 
-* New keybindings in =sweep-prefix-map=
+* New keybindings in =sweeprolog-prefix-map=
 
-** The =l= key is now bound to =sweep-load-buffer=.
+** The =l= key is now bound to =sweeprolog-load-buffer=.
