@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.4.5
+;; Package-Version: 0.4.6
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -29,10 +29,28 @@
 
 (require 'comint)
 (require 'xref)
+(require 'autoinsert)
 
 (defgroup sweeprolog nil
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
+
+(defcustom sweeprolog-module-header-comment-skeleton ?\n
+  "Additional content for the topmost comment in module headers.
+
+The SWI-Prolog module header inserted by \\[auto-insert] includes
+a multiline comment at the very start of the buffer which
+contains the name and mail address of the author based on the
+user options `user-full-name' and `user-mail-address'
+respectively, followed by the value of this variable, is
+interpreted as a skeleton (see `skeleton-insert').  In its
+simplest form, this may be a string or a character.
+
+This user option may be useful, for example, to include copyright
+notices with the module header."
+  :package-version '((sweeprolog . "0.4.6"))
+  :type 'any
+  :group 'sweeprolog)
 
 (defcustom sweeprolog-indent-offset 4
   "Number of columns to indent lines with in `sweeprolog-mode' buffers."
@@ -1650,6 +1668,9 @@ Interactively, a prefix arg means to prompt for BUFFER."
     [ "Find Prolog module"     sweeprolog-find-module     t ]
     [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
     [ "Open top-level"         sweeprolog-top-level       t ]
+    [ "Insert module template"
+      auto-insert
+      (eq major-mode 'sweeprolog-mode) ]
     "--"
     [ "Reset sweep"            sweeprolog-restart         t ]
     [ "View sweep messages"    sweeprolog-view-messages   t ]))
@@ -2310,6 +2331,24 @@ variable at point, if any."
   (when sweeprolog-enable-cursor-sensor
     (cursor-sensor-mode 1)))
 
+(add-to-list 'auto-insert-alist
+             '((sweeprolog-mode . "SWI-Prolog module header")
+               (or (and (buffer-file-name)
+                        (file-name-sans-extension (file-name-base (buffer-file-name))))
+                   (read-string "Module name: "))
+               "/*"
+               "\n    Author:        "
+               (progn user-full-name)
+               "\n    Email:         "
+               (progn user-mail-address)
+               (progn sweeprolog-module-header-comment-skeleton)
+               "\n*/"
+               "\n\n:- module("
+               str
+               ", [])."
+               "\n\n/** <module> "
+               str
+               "\n\n*/\n\n"))
 
 (provide 'sweeprolog)
 

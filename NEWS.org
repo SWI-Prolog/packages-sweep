@@ -5,7 +5,20 @@
 #+options:               ':t toc:nil num:nil ^:{}
 #+startup:               content indent
 
-This file describes changes in =sweep= up to version =0.4.4=.
+This file contains the release notes for =sweep=, an embedding of
+SWI-Prolog in Emacs.
+
+For further details, please consult the manual:
+<https://eshelyaron.com/sweep.html>.
+
+* Version 0.4.6 on 2022-10-01
+
+** Added integration with =auto-insert=
+
+=sweeprolog.el= now extends =auto-insert-alist= with a Prolog module
+template associated with =sweeprolog-mode=.  The module template is
+inserted into empty =sweeprolog-buffers= when =auto-insert-mode= is
+enabled.
 
 * New commands in =sweep= version =0.4.0=
 ** New command =sweeprolog-load-buffer=.
