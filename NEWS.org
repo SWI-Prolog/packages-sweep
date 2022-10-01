@@ -11,6 +11,18 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.4.7 on 2022-10-01
+
+** Added integration with =eldoc=
+
+=sweeprolog.el= can now leverage =eldoc= to display short documentation
+for the Prolog predicate at point in =sweeprolog-mode= buffers.
+
+** New user option =sweeprolog-enable-eldoc=
+
+Boolean flag, enabled by default. When customized to nil,
+=sweeprolog-mode= integration with =eldoc= is disabled.
+
 * Version 0.4.6 on 2022-10-01
 
 ** Added integration with =auto-insert=

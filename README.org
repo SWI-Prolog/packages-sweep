@@ -682,6 +682,20 @@ To automatically insert the module skeleton when opening new files in
 information about =auto-insert= and its customization options, see
 [[info:autotype#Autoinserting][Autoinserting in the Autotyping manual]].
 
+** Displaying predicate documentation
+:PROPERTIES:
+:CUSTOM_ID: eldoc-integration
+:END:
+
+=sweep= integrates with the Emacs minor mode =ElDoc=, which automatically
+displays documentation for the predicate at point.  Whenever the
+cursor enters a predicate definition or invocation, the signature and
+summary of that predicate are displayed in the echo area at the bottom
+of the frame.
+
+#+VINDEX: sweeprolog-enable-eldoc
+To disable the =ElDoc= integration in =sweeprolog-mode= buffers, customize
+the user option =sweeprolog-enable-eldoc= to nil.
 
 * The Prolog top-level
 :PROPERTIES:
