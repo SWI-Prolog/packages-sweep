@@ -184,23 +184,25 @@ clause."
 (declare-function sweeprolog-cleanup       "sweep-module")
 
 (defun sweeprolog--ensure-module ()
-  (let ((sweep-module-path (car
-                            (save-match-data
-                              (split-string
-                               (shell-command-to-string
-                                (concat
-                                 (or sweeprolog-swipl-path (executable-find "swipl"))
-                                 " -g"
-                                 " write_sweep_module_location"
-                                 " -t"
-                                 " halt"))
-                               "\n")))))
-    (condition-case _
-        (load sweep-module-path)
-      (file-error (user-error
-                   (concat "Failed to locate `sweep-module'. "
-                           "Make sure SWI-Prolog is installed "
-                           "and up to date"))))))
+  "Locate and load `sweep-module', unless already loaded."
+  (unless (featurep 'sweep-module)
+    (let ((sweep-module-path (car
+                              (save-match-data
+                                (split-string
+                                 (shell-command-to-string
+                                  (concat
+                                   (or sweeprolog-swipl-path (executable-find "swipl"))
+                                   " -g"
+                                   " write_sweep_module_location"
+                                   " -t"
+                                   " halt"))
+                                 "\n")))))
+      (condition-case _
+          (load sweep-module-path)
+        (file-error (user-error
+                     (concat "Failed to locate `sweep-module'. "
+                             "Make sure SWI-Prolog is installed "
+                             "and up to date")))))))
 
 (defface sweeprolog-debug-prefix-face
   '((default :inherit shadow))
@@ -2143,6 +2145,28 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (defun sweeprolog-at-beginning-of-top-term-p ()
   (and (looking-at-p (rx bol graph))
        (not (nth 8 (syntax-ppss)))))
+
+(defun sweeprolog-definition-at-point (&optional point)
+  (let* ((p (or point (point)))
+         (beg (save-mark-and-excursion
+                (goto-char p)
+                (unless (sweeprolog-at-beginning-of-top-term-p)
+                  (sweeprolog-beginning-of-top-term))
+                (max (1- (point)) (point-min))))
+         (end (save-mark-and-excursion
+                (goto-char p)
+                (sweeprolog-end-of-top-term)
+                (point)))
+         (contents (buffer-substring-no-properties beg end)))
+    (sweeprolog-open-query "user"
+                           "sweep"
+                           "sweep_definition_at_point"
+                           (cons contents
+                                 (buffer-file-name)))
+    (let ((sol (sweeprolog-next-solution)))
+      (sweeprolog-close-query)
+      (when (sweeprolog-true-p sol)
+        (cons (+ beg (cadr sol)) (cddr sol))))))
 
 (defun sweeprolog-file-at-point (&optional point)
   (let* ((p (or point (point)))
