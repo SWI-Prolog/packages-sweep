@@ -129,7 +129,7 @@ sweep_colourise_buffer_(Path0, Contents, []) :-
     get_time(Time),
     asserta(sweep_open(Path, Contents), Ref0),
     asserta(sweep_source_time(Path, Time), Ref1),
-    xref_source(Path, []),
+    xref_source(Path, [comments(store)]),
     seek(Contents, 0, bof, _),
     retractall(sweep_current_comment(_, _, _)),
     prolog_colourise_stream(Contents,
@@ -249,6 +249,7 @@ sweep_handle_identifier_at_point_goal(_Path, _M0, built_in, Goal) :-
 sweep_handle_identifier_at_point_goal(_Path, _M0, imported(Path), Goal) :-
     !,
     pi_head(PI, Goal),
+    xref_source(Path, [comments(store)]),
     xref_module(Path, M),
     asserta(sweep_current_identifier_at_point(M:PI)).
 sweep_handle_identifier_at_point_goal(_Path, _M0, Extern, Goal) :-
@@ -331,18 +332,11 @@ sweep_colourise_some_terms_(Path0, Offset, Contents, []) :-
              user:sweep_funcall("sweeprolog--colourise", [Start,Len,"comment"|String], _)
            )).
 
-sweep_documentation([Path, Functor, Arity], Docs) :-
-    atom_string(P, Path),
-    atom_string(F, Functor),
-    PI = F/Arity,
-    pi_head(PI, Head),
-    (   module_property(M, file(P)),
-        \+ predicate_property(M:Head, imported_from(_))
+sweep_documentation(PI0, Docs) :-
+    term_string(PI1, PI0),
+    (   PI1 = M:PI
     ->  true
-    ;   module_property(M0, file(P)),
-        predicate_property(M0:Head, imported_from(M))
-    ->  true
-    ;   M=user
+    ;   M=user, PI=PI1
     ),
     findall(Doc, sweep_documentation_(M, PI, Doc), Docs).
 

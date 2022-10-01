@@ -157,6 +157,12 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
   :type '(repeat string)
   :group 'sweeprolog)
 
+(defcustom sweeprolog-enable-eldoc t
+  "If non-nil, enable `eldoc' suport in `sweeprolog-mode' buffers."
+  :package-version '((sweeprolog "0.4.7"))
+  :type 'boolean
+  :group 'sweeprolog)
+
 (defcustom sweeprolog-enable-cursor-sensor t
   "If non-nil, enable `cursor-sensor-mode' in `sweeprolog-mode'.
 
@@ -2281,6 +2287,18 @@ variable at point, if any."
          (sweeprolog-highlight-variable (point) var)
        (sweeprolog-highlight-variable old)))))
 
+
+(defun sweeprolog-predicate-modes-doc (cb)
+  (when-let ((pi (sweeprolog-identifier-at-point)))
+    (sweeprolog-open-query "user"
+                           "sweep"
+                           "sweep_documentation"
+                           pi)
+    (let ((sol (sweeprolog-next-solution)))
+      (sweeprolog-close-query)
+      (when (sweeprolog-true-p sol)
+        (funcall cb (cadr sol) :thing pi :face font-lock-function-name-face)))))
+
 (defvar-local sweeprolog--timer nil)
 (defvar-local sweeprolog--colourise-buffer-duration 0.2)
 
@@ -2304,6 +2322,9 @@ variable at point, if any."
                 nil
                 nil
                 (font-lock-fontify-region-function . sweeprolog-colourise-some-terms)))
+  (when sweeprolog-enable-eldoc
+    (setq-local eldoc-documentation-strategy #'eldoc-documentation-default)
+    (add-hook 'eldoc-documentation-functions #'sweeprolog-predicate-modes-doc nil t))
   (let ((time (current-time)))
     (sweeprolog-colourise-buffer)
     (setq sweeprolog--colourise-buffer-duration (float-time (time-since time))))
