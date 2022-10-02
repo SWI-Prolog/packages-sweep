@@ -682,6 +682,38 @@ To automatically insert the module skeleton when opening new files in
 information about =auto-insert= and its customization options, see
 [[info:autotype#Autoinserting][Autoinserting in the Autotyping manual]].
 
+** Documenting predicates
+:PROPERTIES:
+:CUSTOM_ID: sweeprolog-pldoc
+:END:
+
+#+CINDEX: pldoc
+SWI-Prolog predicates can be documented with specially structured
+comments placed above the predicate definition, which are processed by
+the =PlDoc= source documentation system.  Emacs comes with many useful
+commands for specifically intended for working with comments in
+programming languages, which apply also to writing =PlDoc= comments for
+Prolog predicates.  For an overview of the relevant standard Emacs
+commands, see [[info:emacs#Comment Commands][Comment Commands in the Emacs manual]].
+
+#+FINDEX: sweeprolog-document-predicate-at-point
+=sweep= also includes a dedicated command called
+=sweeprolog-document-predicate-at-point= for interactively creating
+=PlDoc= comments for predicates in =sweeprolog-mode= buffers.  This
+command, bound by default to =C-c C-d=, finds the beginning of the
+predicate definition under or right above the current cursor location,
+and inserts formatted =PlDoc= comments while prompting the user to
+interactively fill in the argument modes, determinism specification,
+and initial contents of the predicate documentation.
+=sweeprolog-document-predicate-at-point= leaves the cursor at the end of
+the newly inserted documentation comment for the user to extend or
+edit it if needed.  To add another comment line, use =M-j=
+(=comment-indent-new-line=) which starts a new line with the comment
+prefix filled in.  To reformat the current paragraph of =PlDoc= comments, =M-q= (=fill-paragraph=).
+
+For more information about =PlDoc= and source documentation in
+SWI-Prolog, see [[https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/pldoc.html%27)][the PlDoc manual]].
+
 ** Displaying predicate documentation
 :PROPERTIES:
 :CUSTOM_ID: eldoc-integration
