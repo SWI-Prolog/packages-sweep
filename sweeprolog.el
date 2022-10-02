@@ -254,6 +254,7 @@ clause."
       win)))
 
 (defun sweeprolog-current-prolog-flags (&optional prefix)
+  "Return the list of defined Prolog flags defined with prefix PREFIX."
   (sweeprolog-open-query "user" "sweep" "sweep_current_prolog_flags" (or prefix ""))
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
@@ -290,18 +291,20 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
       (user-error "Setting %s to %s failed!" flag value))))
 
 (defun sweeprolog-setup-message-hook ()
+  "Setup `thread_message_hook/3' to redirecet Prolog messages."
   (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
     (setq-local window-point-insertion-type t)
     (compilation-minor-mode 1))
   (sweeprolog-open-query "user"
-                    "sweep"
-                    "sweep_setup_message_hook"
-                    nil)
+                         "sweep"
+                         "sweep_setup_message_hook"
+                         nil)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     sol))
 
 (defun sweeprolog-message (message)
+  "Emit the Prolog message MESSAGE to the `sweep' messages buffer."
   (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
     (save-excursion
       (goto-char (point-max))
@@ -329,6 +332,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
       (newline))))
 
 (defun sweeprolog-start-prolog-server ()
+  "Start the `sweep' Prolog top-level embedded server."
   (sweeprolog-open-query "user"
                          "sweep"
                          "sweep_top_level_server"
@@ -339,6 +343,10 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
       (setq sweeprolog-prolog-server-port (cdr sol)))))
 
 (defun sweeprolog-init (&rest args)
+  "Initialize and setup the embedded Prolog runtime.
+
+If specified, ARGS should be a list of string passed to Prolog as
+extra initialization arguments."
   (apply #'sweeprolog-initialize
          (cons (or sweeprolog-swipl-path (executable-find "swipl"))
                (append sweeprolog-init-args args)))
@@ -379,6 +387,9 @@ Otherwise set ARGS to nil."
 (defvar-local sweeprolog-buffer-module "user")
 
 (defun sweeprolog-local-predicates-collection (&optional prefix)
+  "Return a list of prediactes accessible in the current buffer.
+
+When non-nil, only predicates whose name contains PREFIX are returned."
   (sweeprolog-open-query "user" "sweep" "sweep_local_predicate_completion"
                     (cons sweeprolog-buffer-module
                           prefix))
@@ -388,6 +399,7 @@ Otherwise set ARGS to nil."
       (setq sweeprolog-predicate-completion-collection (cdr sol)))))
 
 (defun sweeprolog-predicates-collection (&optional prefix)
+  "Return a list of prediacte completion candidates matchitng PREFIX."
   (sweeprolog-open-query "user" "sweep" "sweep_predicates_collection" prefix)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
@@ -395,6 +407,7 @@ Otherwise set ARGS to nil."
       (cdr sol))))
 
 (defun sweeprolog-predicate-references (mfn)
+  "Find source locations where the predicate MFN is called."
   (sweeprolog-open-query "user" "sweep" "sweep_predicate_references" mfn)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
@@ -402,6 +415,7 @@ Otherwise set ARGS to nil."
       (cdr sol))))
 
 (defun sweeprolog-predicate-location (mfn)
+  "Return the source location where the predicate MFN is defined."
   (sweeprolog-open-query "user" "sweep" "sweep_predicate_location" mfn)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
@@ -409,6 +423,7 @@ Otherwise set ARGS to nil."
       (cdr sol))))
 
 (defun sweeprolog-predicate-apropos (pattern)
+  "Return a list of predicates whose name resembeles PATTERN."
   (sweeprolog-open-query "user" "sweep" "sweep_predicate_apropos" pattern)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
