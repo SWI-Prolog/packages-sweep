@@ -1662,6 +1662,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map (kbd "C-c C-c") #'sweeprolog-colourise-buffer)
     (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
+    (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     map)
   "Keymap for `sweeprolog-mode'.")
@@ -1679,6 +1680,10 @@ Interactively, a prefix arg means to prompt for BUFFER."
     [ "Insert module template"
       auto-insert
       (eq major-mode 'sweeprolog-mode) ]
+    [ "Document current predicate"
+      sweeprolog-document-predicate-at-point
+      (and (eq major-mode 'sweeprolog-mode)
+           (sweeprolog-definition-at-point)) ]
     "--"
     [ "Reset sweep"            sweeprolog-restart         t ]
     [ "View sweep messages"    sweeprolog-view-messages   t ]))
@@ -2167,6 +2172,71 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (sweeprolog-close-query)
       (when (sweeprolog-true-p sol)
         (cons (+ beg (cadr sol)) (cddr sol))))))
+
+(defun sweeprolog-insert-pldoc-for-predicate (functor arguments det summary)
+  (insert "\n\n")
+  (forward-char -2)
+  (insert (format "%%!  %s%s is %s.\n%%\n%%   %s"
+                  functor
+                  (if arguments
+                      (concat "(" (mapconcat #'identity arguments ", ") ")")
+                    "")
+                  det
+                  summary))
+  (fill-paragraph))
+
+(defun sweeprolog-beginning-of-predicate-at-point (&optional point)
+  "Find the beginning of the predicate definition at or above POINT.
+
+Return a cons cell (FUN . ARI) where FUN is the functor name of
+the defined predicate and ARI is its arity, or nil if there is no
+predicate definition at or directly above POINT."
+  (when-let* ((def (sweeprolog-definition-at-point point)))
+    (unless (sweeprolog-at-beginning-of-top-term-p)
+      (sweeprolog-beginning-of-top-term)
+      (backward-char 1))
+    (let ((point (point))
+          (fun (cadr def))
+          (ari (caddr def)))
+      (while point
+        (sweeprolog-beginning-of-top-term)
+        (backward-char 1)
+        (if-let* ((ndef (sweeprolog-definition-at-point (point)))
+                  (nfun (cadr ndef))
+                  (nari (caddr ndef))
+                  (same (and (string= fun nfun)
+                             (=       ari nari))))
+            (progn (message "%s %s" ndef (point)) (setq point (point)))
+          (goto-char point)
+          (setq point nil)))
+      (cons fun ari))))
+
+(defun sweeprolog-document-predicate-at-point (point)
+  "Insert PlDoc documentation for the predicate at or above POINT."
+  (interactive "d" sweeprolog-mode)
+  (when-let* ((pred (sweeprolog-beginning-of-predicate-at-point point))
+              (fun  (car pred))
+              (ari  (cdr pred)))
+    (let ((cur 1)
+          (arguments nil))
+      (while (<= cur ari)
+        (let ((num (pcase cur
+                     (1 "First")
+                     (2 "Second")
+                     (3 "Third")
+                     (_ (concat (number-to-string cur) "th")))))
+          (setq arguments (cons (read-string (concat num " argument: "))
+                                arguments)))
+        (setq cur (1+ cur)))
+      (let ((det (cadr (read-multiple-choice "Determinism: "
+                                             '((?d "det"       "Succeeds exactly once")
+                                               (?s "semidet"   "Succeeds at most once")
+                                               (?f "failure"   "Always fails")
+                                               (?n "nondet"    "Succeeds any number of times")
+                                               (?m "multi"     "Succeeds at least once")
+                                               (?u "undefined" "Undefined")))))
+            (summary (read-string "Summary: ")))
+        (sweeprolog-insert-pldoc-for-predicate fun arguments det summary)))))
 
 (defun sweeprolog-file-at-point (&optional point)
   (let* ((p (or point (point)))
