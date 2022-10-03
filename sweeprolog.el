@@ -2480,6 +2480,85 @@ variable at point, if any."
                str
                "\n\n*/\n\n"))
 
+(defun sweeprolog-top-level-menu--entries ()
+  (sweeprolog-open-query "user"
+                         "sweep"
+                         "sweep_top_level_threads"
+                         nil)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (mapcar (lambda (th)
+                (let ((id (nth 0 th))
+                      (bn (nth 1 th))
+                      (st (nth 2 th))
+                      (sz (number-to-string (nth 3 th)))
+                      (ct (number-to-string (nth 4 th))))
+                  (list id (vector bn st sz ct))))
+              (cdr sol)))))
+
+(defun sweeprolog-top-level-menu--refresh ()
+  (tabulated-list-init-header)
+  (setq tabulated-list-entries (sweeprolog-top-level-menu--entries)))
+
+(defun sweeprolog-top-level-menu-new (name)
+  "Create and switch to a new Prolog top-level buffer named NAME."
+  (interactive (list
+                (read-string
+                 "New top-level buffer name: "
+                 nil nil
+                 (generate-new-buffer-name "*sweeprolog-top-level*")))
+               sweeprolog-top-level-menu-mode)
+  (sweeprolog-top-level name))
+
+(defun sweeprolog-top-level-menu-kill ()
+  "Kill the buffer of to the `sweep' Top-level Menu entry at point."
+  (interactive "" sweeprolog-top-level-menu-mode)
+  (if-let ((vec (tabulated-list-get-entry)))
+      (let ((bn (seq-elt vec 0)))
+        (kill-buffer bn))
+    (user-error "No top-level menu entry here")))
+
+(defun sweeprolog-top-level-menu-go-to ()
+  "Go to the buffer of to the `sweep' Top-level Menu entry at point."
+  (interactive "" sweeprolog-top-level-menu-mode)
+  (if-let ((vec (tabulated-list-get-entry)))
+      (let* ((bn (seq-elt vec 0))
+             (buf (get-buffer bn)))
+        (if (buffer-live-p buf)
+            (pop-to-buffer buf sweeprolog-top-level-display-action)
+          (message "Buffer %s is no longer availabe." bn)))
+    (user-error "No top-level menu entry here")))
+
+(defvar-keymap sweeprolog-top-level-menu-mode-map
+  :doc "Local keymap for `sweeprolog-top-level-menu-mode' buffers."
+  "RET" #'sweeprolog-top-level-menu-go-to
+  "k"   #'sweeprolog-top-level-menu-kill
+  "t"   #'sweeprolog-top-level-menu-new)
+
+(define-derived-mode sweeprolog-top-level-menu-mode
+  tabulated-list-mode "sweep Top-level Menu"
+  "Major mode for browsing a list of active `sweep' top-levels."
+  (setq tabulated-list-format [("Buffer"      32 t)
+                               ("Status"      32 t)
+                               ("Stacks Size" 20 t)
+                               ("CPU Time"    20 t)])
+  (setq tabulated-list-padding 2)
+  (setq tabulated-list-sort-key (cons "Buffer" nil))
+  (add-hook 'tabulated-list-revert-hook
+            #'sweeprolog-top-level-menu--refresh nil t)
+  (tabulated-list-init-header))
+
+(defun sweeprolog-list-top-levels ()
+  "Display a list of Prolog top-level threads."
+  (interactive)
+  (let ((buf (get-buffer-create "*sweep Top-levels*")))
+    (with-current-buffer buf
+      (sweeprolog-top-level-menu-mode)
+      (sweeprolog-top-level-menu--refresh)
+      (tabulated-list-print))
+    (pop-to-buffer-same-window buf)))
+
 (provide 'sweeprolog)
 
 ;;; sweeprolog.el ends here

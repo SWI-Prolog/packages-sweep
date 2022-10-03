@@ -57,6 +57,7 @@
             sweep_imenu_index/2,
             sweep_module_path/2,
             sweep_top_level_server/2,
+            sweep_top_level_threads/2,
             sweep_accept_top_level_client/2,
             write_sweep_module_location/0
           ]).
@@ -99,6 +100,15 @@ prolog:xref_open_source(Source, Stream) :-
 prolog:xref_close_source(Source, Stream) :-
     sweep_open(Source, Stream).
 
+sweep_top_level_threads(_, Ts) :-
+    findall([Id, Buffer, Status, Stack, CPUTime],
+            (   sweep_top_level_thread_buffer(Id, Buffer),
+                thread_property(Id, status(Status0)),
+                term_string(Status0, Status),
+                thread_statistics(Id, stack, Stack),
+                thread_statistics(Id, cputime, CPUTime)
+            ),
+            Ts).
 
 sweep_current_prolog_flags(Sub, Flags) :-
     findall([Flag|Value],
