@@ -1,4 +1,4 @@
-#+title:                 sweep NEWS -- history of user-visible changes.
+#+title:                 sweep NEWS -- history of user-visible changes
 #+author:                Eshel Yaron
 #+email:                 me@eshelyaron.com
 #+language:              en
@@ -10,6 +10,15 @@ SWI-Prolog in Emacs.
 
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
+
+* Development version 0.4.8-dev
+
+** New command ~sweeprolog-document-predicate-at-point~ in ~sweeprolog-mode~ buffers
+
+~sweeprolog-document-predicate-at-point~ is a new command available in
+~sweeprolog-mode~ buffers for interactively inserting =PlDoc=
+documentation comments for the predicate defined at point.  Bound to
+=C-c C-d= in ~sweeprolog-mode-map~.
 
 * Version 0.4.7 on 2022-10-01
 
