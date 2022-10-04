@@ -766,6 +766,82 @@ again.  This will change the name of the original top-level buffer to
 something like =*sweeprolog-top-level*<2>= and allow the new top-level to
 claim the buffer name =*sweeprolog-top-level*=.
 
+** The Top-level Menu buffer
+:PROPERTIES:
+:DESCRIPTION: A special buffer for operating on active top-levels
+:CUSTOM_ID: top-level-menu
+:END:
+
+#+CINDEX: Top-level Menu
+=sweep= provides a convenient interface for listing the active Prolog
+top-levels and operating on them, called the Top-level Menu buffer.
+This buffer shows the list of active =sweep= top-level buffers in a
+table that includes information and statistics for each top-level.
+
+#+FINDEX: sweeprolog-list-top-levels
+To open the Top-level Menu buffer, use the command ~M-x
+sweeprolog-list-top-levels~.  By default, the buffer is will be named
+=*sweep Top-levels*=.
+
+The Top-level Menu buffer uses a special major mode named
+~sweeprolog-top-level-menu-mode~.  This mode provides several commands
+that operate on the top-level corresponding to the table row at point.
+The available commands are:
+
+- ~RET~ (~sweeprolog-top-level-menu-go-to~) ::
+
+  #+FINDEX: sweeprolog-top-level-menu-go-to
+  Open the specified top-level buffer.
+
+- ~k~ (~sweeprolog-top-level-menu-kill~) ::
+
+  #+FINDEX: sweeprolog-top-level-menu-kill
+  Kill the specified top-level buffer.
+
+- ~s~ (~sweeprolog-top-level-menu-signal~) ::
+
+  #+FINDEX: sweeprolog-top-level-menu-signal
+  Signal the specified top-level buffer (see [[*Sending signals to running top-levels][Sending signals to
+  running top-levels]]).
+
+- ~t~ (~sweeprolog-top-level-menu-new~) ::
+
+  #+FINDEX: sweeprolog-top-level-menu-new
+  Create a new top-level buffer.
+
+- ~g~ (~revert-buffer~) ::
+
+  Update the Top-level Menu contents.
+
+** Sending signals to running top-levels
+:PROPERTIES:
+:CUSTOM_ID: top-level-signals
+:END:
+
+#+CINDEX: signaling Prolog threads
+#+FINDEX: sweeprolog-top-level-signal
+When executing long running Prolog queries in the top-level, there may
+arise a need to interrupt the query, either to inspect the state of
+the top-level or to free it for running other queries.  To signal a
+=sweep= top-level that it should stop executing the current query and do
+something else instead, use the command ~M-x
+sweeprolog-top-level-signal~.  This command prompts for an active =sweep=
+top-level buffer followed by a Prolog goal, and interrupts the
+top-level causing it to run the specified goal.
+
+#+FINDEX: sweeprolog-top-level-signal-current
+In ~sweeprolog-top-level-mode~ buffers, the command
+~sweeprolog-top-level-signal-current~ is available for signaling the
+current top-level.  It is bound by default to ~C-c C-c~.
+
+It is also possible to signal top-levels from the =sweep= Top-level Menu
+buffer with the command ~sweeprolog-top-level-menu-signal~ with point at
+the entry corresponding to the wanted top-level (see [[The Top-level
+Menu buffer]]).
+
+For more information about interrupting threads in SWI-Prolog, see
+[[https://www.swi-prolog.org/pldoc/man?section=thread-signal][Signaling threads in the SWI-Prolog manual]].
+
 ** Top-level history
 :PROPERTIES:
 :CUSTOM_ID: top-level-history

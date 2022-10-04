@@ -1577,9 +1577,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
                         (let ((bb (or (and (consp b) (car b)) b)))
                           (with-current-buffer bb
                             (and (derived-mode-p 'sweeprolog-top-level-mode)
-                                 sweeprolog-top-level-thread-id)))
-                        (eq 'sweeprolog-top-level-mode
-                            (buffer-local-value 'major-mode b))))
+                                 sweeprolog-top-level-thread-id)))))
          (read-string "Signal goal: ?- ")))
   (sweeprolog-signal-thread (buffer-local-value 'sweeprolog-top-level-thread-id
                                                 (get-buffer buffer))
@@ -1752,7 +1750,6 @@ Interactively, a prefix arg means to prompt for BUFFER."
     [ "Load Prolog buffer"     sweeprolog-load-buffer     t ]
     [ "Find Prolog module"     sweeprolog-find-module     t ]
     [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
-    [ "Open top-level"         sweeprolog-top-level       t ]
     [ "Insert module template"
       auto-insert
       (eq major-mode 'sweeprolog-mode) ]
@@ -1761,8 +1758,17 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (and (eq major-mode 'sweeprolog-mode)
            (sweeprolog-definition-at-point)) ]
     "--"
-    [ "Reset sweep"            sweeprolog-restart         t ]
+    [ "Open top-level"         sweeprolog-top-level       t ]
+    [ "Signal top-level"
+      sweeprolog-top-level-signal
+      (seq-filter (lambda (b)
+                    (with-current-buffer b
+                      (and (derived-mode-p 'sweeprolog-top-level-mode)
+                           sweeprolog-top-level-thread-id)))
+                  (buffer-list)) ]
     [ "Open Top-level Menu"    sweeprolog-list-top-levels t ]
+    "--"
+    [ "Reset sweep"            sweeprolog-restart         t ]
     [ "View sweep messages"    sweeprolog-view-messages   t ]))
 
 (defun sweeprolog-token-boundaries (&optional pos)
