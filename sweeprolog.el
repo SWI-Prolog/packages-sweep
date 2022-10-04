@@ -1541,6 +1541,45 @@ Interactively, a prefix arg means to prompt for BUFFER."
         (comint-send-input)))))
 
 (defvar-local sweeprolog-top-level-timer nil "Buffer-local timer.")
+(defvar-local sweeprolog-top-level-thread-id nil
+  "Prolog top-level thread ID corresponding to this buffer.")
+
+(defun sweeprolog-top-level--populate-thread-id ()
+  (sweeprolog-open-query "user"
+                         "sweep"
+                         "sweep_top_level_thread_buffer"
+                         (buffer-name)
+                         t)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (setq sweeprolog-top-level-thread-id (cdr sol)))))
+
+(defun sweeprolog-signal-thread (tid goal)
+  (sweeprolog-open-query "user"
+                         "sweep"
+                         "sweep_thread_signal"
+                         (cons tid goal))
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    sol))
+
+(defun sweeprolog-top-level-signal (buffer goal)
+  "Signal the top-level thread corresponding to BUFFER to run GOAL."
+  (interactive
+   (list (read-buffer "Top-level buffer: "
+                      nil t
+                      (lambda (b)
+                        (let ((bb (or (and (consp b) (car b)) b)))
+                          (with-current-buffer bb
+                            (and (derived-mode-p 'sweeprolog-top-level-mode)
+                                 sweeprolog-top-level-thread-id)))
+                        (eq 'sweeprolog-top-level-mode
+                            (buffer-local-value 'major-mode b))))
+         (read-string "Signal goal: ?- ")))
+  (sweeprolog-signal-thread (buffer-local-value 'sweeprolog-top-level-thread-id
+                                                buffer)
+                            goal))
 
 ;;;###autoload
 (define-derived-mode sweeprolog-top-level-mode comint-mode "sweep Top-level"
@@ -1554,14 +1593,21 @@ Interactively, a prefix arg means to prompt for BUFFER."
                                                   (length s)))
               comint-delimiter-argument-list '(?,)
               comment-start "%")
+  (add-hook 'comint-exec-hook #'sweeprolog-top-level--populate-thread-id nil t)
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
   (setq sweeprolog-buffer-module "user")
   (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point-function nil t)
   (setq sweeprolog-top-level-timer (run-with-idle-timer 0.2 t #'sweeprolog-colourise-query (current-buffer)))
   (add-hook 'kill-buffer-hook
             (lambda ()
+              (sweeprolog-top-level-signal (current-buffer)
+                                           "thread_exit(0)"))
+            nil t)
+  (add-hook 'kill-buffer-hook
+            (lambda ()
               (when (timerp sweeprolog-top-level-timer)
-                (cancel-timer sweeprolog-top-level-timer)))))
+                (cancel-timer sweeprolog-top-level-timer)))
+            nil t))
 
 (sweeprolog--ensure-module)
 (when sweeprolog-init-on-load (sweeprolog-init))

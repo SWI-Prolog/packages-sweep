@@ -56,6 +56,7 @@
             sweep_op_info/2,
             sweep_imenu_index/2,
             sweep_module_path/2,
+            sweep_thread_signal/2,
             sweep_top_level_server/2,
             sweep_top_level_threads/2,
             sweep_accept_top_level_client/2,
@@ -842,5 +843,14 @@ sweep_top_level_client(InStream, OutStream, _) :-
     thread_property(Self, id(Id)),
     retractall(sweep_top_level_thread_buffer(Id, _)).
 
+%!  sweep_accept_top_level_client(+Buffer, -Result) is det.
+%
+%   Signal the top-level server thread to accept a new TCP connection
+%   from buffer Buffer.
+
 sweep_accept_top_level_client(Buffer, _) :-
     thread_send_message(sweep_top_level_server, accept(Buffer)).
+
+sweep_thread_signal([ThreadId|Goal0], _) :-
+    term_string(Goal, Goal0),
+    thread_signal(ThreadId, Goal).
