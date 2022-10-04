@@ -2572,6 +2572,14 @@ variable at point, if any."
                sweeprolog-top-level-menu-mode)
   (sweeprolog-top-level name))
 
+(defun sweeprolog-top-level-menu-signal (goal)
+  "Signal the thread of to Top-level Menu entry at point to run GOAL."
+  (interactive (list (read-string "Signal goal: ?- "))
+               sweeprolog-top-level-menu-mode)
+  (if-let ((tid (tabulated-list-get-id)))
+      (sweeprolog-signal-thread tid goal)
+    (user-error "No top-level menu entry here")))
+
 (defun sweeprolog-top-level-menu-kill ()
   "Kill the buffer of to the `sweep' Top-level Menu entry at point."
   (interactive "" sweeprolog-top-level-menu-mode)
@@ -2595,7 +2603,8 @@ variable at point, if any."
   :doc "Local keymap for `sweeprolog-top-level-menu-mode' buffers."
   "RET" #'sweeprolog-top-level-menu-go-to
   "k"   #'sweeprolog-top-level-menu-kill
-  "t"   #'sweeprolog-top-level-menu-new)
+  "t"   #'sweeprolog-top-level-menu-new
+  "s"   #'sweeprolog-top-level-menu-signal)
 
 (define-derived-mode sweeprolog-top-level-menu-mode
   tabulated-list-mode "sweep Top-level Menu"
