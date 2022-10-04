@@ -1632,6 +1632,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map "F" #'sweeprolog-set-prolog-flag)
     (define-key map "P" #'sweeprolog-pack-install)
     (define-key map "R" #'sweeprolog-restart)
+    (define-key map "T" #'sweeprolog-list-top-levels)
     (define-key map "e" #'sweeprolog-view-messages)
     (define-key map "l" #'sweeprolog-load-buffer)
     (define-key map "m" #'sweeprolog-find-module)
@@ -1761,6 +1762,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
            (sweeprolog-definition-at-point)) ]
     "--"
     [ "Reset sweep"            sweeprolog-restart         t ]
+    [ "Open Top-level Menu"    sweeprolog-list-top-levels t ]
     [ "View sweep messages"    sweeprolog-view-messages   t ]))
 
 (defun sweeprolog-token-boundaries (&optional pos)
