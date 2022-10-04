@@ -829,12 +829,12 @@ sweep_top_level_client(InStream, OutStream, ip(127,0,0,1)) :-
     set_stream(user_input, newline(detect)),
     set_stream(user_output, newline(dos)),
     set_stream(user_error, newline(dos)),
+    thread_self(Self),
+    thread_property(Self, id(Id)),
+    thread_at_exit(retractall(sweep_top_level_thread_buffer(Id, _))),
     call_cleanup(prolog,
                  ( close(InStream, [force(true)]),
-                   close(OutStream, [force(true)]),
-                   thread_self(Self),
-                   thread_property(Self, id(Id)),
-                   retractall(sweep_top_level_thread_buffer(Id, _))
+                   close(OutStream, [force(true)])
                  )).
 sweep_top_level_client(InStream, OutStream, _) :-
     close(InStream),

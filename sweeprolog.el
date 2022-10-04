@@ -1521,10 +1521,14 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (sweeprolog-close-query)
       (unless (sweeprolog-true-p sol)
         (error "Failed to create new top-level!")))
-    (make-comint-in-buffer "sweeprolog-top-level"
-                           buf
-                           (cons "localhost"
-                                 sweeprolog-prolog-server-port))
+    (with-current-buffer buf
+      (make-comint-in-buffer "sweeprolog-top-level"
+                             buf
+                             (cons "localhost"
+                                   sweeprolog-prolog-server-port))
+      (unless comint-last-prompt
+        (accept-process-output (get-buffer-process (current-buffer)) 1))
+      (sweeprolog-top-level--populate-thread-id))
     (pop-to-buffer buf sweeprolog-top-level-display-action)))
 
 (defun sweeprolog-top-level--post-self-insert-function ()
@@ -1578,7 +1582,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
                             (buffer-local-value 'major-mode b))))
          (read-string "Signal goal: ?- ")))
   (sweeprolog-signal-thread (buffer-local-value 'sweeprolog-top-level-thread-id
-                                                buffer)
+                                                (get-buffer buffer))
                             goal))
 
 ;;;###autoload
@@ -1593,7 +1597,6 @@ Interactively, a prefix arg means to prompt for BUFFER."
                                                   (length s)))
               comint-delimiter-argument-list '(?,)
               comment-start "%")
-  (add-hook 'comint-exec-hook #'sweeprolog-top-level--populate-thread-id nil t)
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
   (setq sweeprolog-buffer-module "user")
   (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point-function nil t)
