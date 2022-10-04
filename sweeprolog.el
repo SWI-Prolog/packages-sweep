@@ -2243,6 +2243,7 @@ predicate definition at or directly above POINT."
           (setq arguments (cons (read-string (concat num " argument: "))
                                 arguments)))
         (setq cur (1+ cur)))
+      (setq arguments (reverse arguments))
       (let ((det (cadr (read-multiple-choice "Determinism: "
                                              '((?d "det"       "Succeeds exactly once")
                                                (?s "semidet"   "Succeeds at most once")
