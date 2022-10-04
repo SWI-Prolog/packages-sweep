@@ -1585,6 +1585,17 @@ Interactively, a prefix arg means to prompt for BUFFER."
                                                 (get-buffer buffer))
                             goal))
 
+(defun sweeprolog-top-level-signal-current (goal)
+  "Signal the current top-level thread to run GOAL."
+  (interactive "MSignal goal: ?- " sweeprolog-top-level-mode)
+  (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
+
+(defvar sweeprolog-top-level-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
+    map)
+  "Keymap for `sweeprolog-top-level-mode'.")
+
 ;;;###autoload
 (define-derived-mode sweeprolog-top-level-mode comint-mode "sweep Top-level"
   "Major mode for interacting with an inferior Prolog interpreter."
