@@ -11,7 +11,27 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
-* Development version 0.4.8-dev
+* Version 0.5.0 on 2022-10-04
+
+** New special buffer for listing and working with multiple top-levels
+
+=sweep= is now able to create a special buffer that contains a table of
+all active top-levels, called the Top-level Menu buffer.  This buffer
+has its own special major mode, ~sweeprolog-top-level-menu-mode~, which
+provides convenient commands that operate on the listed top-levels.
+
+** New commands for interrupting running top-levels
+
+=sweep= now includes a new command ~M-x sweeprolog-top-level-signal~ which
+prompts for a =sweep= top-level buffer and a Prolog goal and signals the
+specified top-level to execute the given goal.  This can be used to
+interrupt long running queries.
+
+The ~sweeprolog-top-level-mode~ major mode provides a variant of the
+above command called ~sweeprolog-top-level-signal-current~ that operates
+on the top-level thread of the current buffer.  This command is also
+newly bound to ~C-c C-c~ in top-level buffers.
+
 
 ** New command ~sweeprolog-document-predicate-at-point~ in ~sweeprolog-mode~ buffers
 
