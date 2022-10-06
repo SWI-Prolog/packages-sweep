@@ -40,6 +40,8 @@ newly bound to ~C-c C-c~ in top-level buffers.
 documentation comments for the predicate defined at point.  Bound to
 =C-c C-d= in ~sweeprolog-mode-map~.
 
+** New manual sections "Contributing" and "Things to do"
+
 * Version 0.4.7 on 2022-10-01
 
 ** Added integration with =eldoc=
