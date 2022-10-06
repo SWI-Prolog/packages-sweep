@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.5.0
+;; Package-Version: 0.5.1
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -2607,12 +2607,14 @@ variable at point, if any."
           (message "Buffer %s is no longer availabe." bn)))
     (user-error "No top-level menu entry here")))
 
-(defvar-keymap sweeprolog-top-level-menu-mode-map
-  :doc "Local keymap for `sweeprolog-top-level-menu-mode' buffers."
-  "RET" #'sweeprolog-top-level-menu-go-to
-  "k"   #'sweeprolog-top-level-menu-kill
-  "t"   #'sweeprolog-top-level-menu-new
-  "s"   #'sweeprolog-top-level-menu-signal)
+(defvar sweeprolog-top-level-menu-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") #'sweeprolog-top-level-menu-go-to)
+    (define-key map (kbd "k")   #'sweeprolog-top-level-menu-kill)
+    (define-key map (kbd "t")   #'sweeprolog-top-level-menu-new)
+    (define-key map (kbd "s")   #'sweeprolog-top-level-menu-signal)
+    map)
+  "Local keymap for `sweeprolog-top-level-menu-mode' buffers.")
 
 (define-derived-mode sweeprolog-top-level-menu-mode
   tabulated-list-mode "sweep Top-level Menu"
