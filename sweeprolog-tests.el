@@ -2,6 +2,29 @@
 
 (require 'sweeprolog)
 
+(defconst sweeprolog-tests-greeting
+  "Hello from Elisp from Prolog from Elisp from Prolog from Elisp!")
+
+(defun sweeprolog-tests-greet ()
+  (sweeprolog-open-query "user" "user"
+                         "sweep_funcall"
+                         "sweeprolog-tests-greet-1")
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-cut-query)
+    (cdr sol)))
+
+(defun sweeprolog-tests-greet-1 ()
+  (message sweeprolog-tests-greeting))
+
+(ert-deftest elisp->prolog->elisp->prolog->elisp ()
+  "Tests calling Elisp from Prolog from Elisp from Prolog from Elisp."
+  (should (equal (sweeprolog-open-query "user" "user"
+                                        "sweep_funcall"
+                                        "sweeprolog-tests-greet")
+                 t))
+  (should (equal (sweeprolog-next-solution) (cons '! sweeprolog-tests-greeting)))
+  (should (equal (sweeprolog-cut-query) t)))
+
 (ert-deftest lists:member/2 ()
   "Tests calling the Prolog predicate permutation/2 from Elisp."
   (should (equal (sweeprolog-open-query "user" "lists" "member" (list 1 2 3) t) t))
