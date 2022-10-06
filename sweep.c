@@ -39,8 +39,37 @@
 
 int plugin_is_GPL_compatible;
 
-term_t      output_term = 0;
-emacs_env * current_env = NULL;
+struct sweep_env {
+  term_t      output_term;
+  emacs_env * current_env;
+  struct sweep_env * next;
+};
+
+struct sweep_env * env_stack = NULL;
+int sweep_thread_id = -1;
+
+int sweep_env_push() {
+  int r = -1;
+  struct sweep_env * e = (struct sweep_env *)malloc(sizeof(*e));
+  if (e != NULL) {
+    memset(e, 0, sizeof(*e));
+    e->next = env_stack;
+    env_stack = e;
+    r = 0;
+  }
+  return r;
+}
+
+int sweep_env_pop() {
+  int r = -1;
+  struct sweep_env * e = env_stack;
+  if (e != NULL) {
+    env_stack = e->next;
+    free(e);
+    r = 0;
+  }
+  return r;
+}
 
 static int         value_to_term(emacs_env*, emacs_value, term_t);
 static emacs_value term_to_value(emacs_env*, term_t);
@@ -149,7 +178,8 @@ term_to_value_string(emacs_env *eenv, term_t t) {
   char * string = NULL;
   emacs_value v = NULL;
   size_t      l = -1;
-  if (PL_get_nchars(t, &l, &string, CVT_STRING|REP_UTF8)) {
+  if (PL_get_nchars(t, &l, &string, CVT_STRING|REP_UTF8|CVT_EXCEPTION)) {
+
     v = eenv->make_string(eenv, string, l);
   }
   return v;
@@ -162,7 +192,7 @@ term_to_value_atom(emacs_env *eenv, term_t t) {
   emacs_value s = NULL;
   size_t      l = -1;
 
-  if (PL_get_nchars(t, &l, &string, CVT_ATOM|REP_UTF8)) {
+  if (PL_get_nchars(t, &l, &string, CVT_ATOM|REP_UTF8|CVT_EXCEPTION)) {
     s = eenv->make_string(eenv, string, l);
     v = econs(eenv, eenv->intern(eenv, "atom"), s);
   }
@@ -322,7 +352,7 @@ sweep_close_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data
   (void)nargs;
   (void)args;
 
-  if (d == 0) {
+  if (d == 0 || sweep_env_pop() < 0) {
     ethrow(env, "No current query");
     return NULL;
   }
@@ -344,7 +374,7 @@ sweep_cut_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   (void)nargs;
   (void)args;
 
-  if (d == 0) {
+  if (d == 0 || sweep_env_pop() < 0) {
     ethrow(env, "No current query");
     return NULL;
   }
@@ -366,12 +396,12 @@ sweep_next_solution(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *da
   (void)nargs;
   (void)args;
 
-  if (d == 0) {
+  if (d == 0 || env_stack == NULL) {
     ethrow(env, "No current query");
     return NULL;
   }
 
-  current_env = env;
+  env_stack->current_env = env;
 
   switch (PL_next_solution(d)) {
   case PL_S_EXCEPTION:
@@ -379,9 +409,9 @@ sweep_next_solution(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *da
   case PL_S_FALSE:
     return enil(env);
   case PL_S_TRUE:
-    return econs(env, et(env), term_to_value(env, output_term));
+    return econs(env, et(env), term_to_value(env, env_stack->output_term));
   case PL_S_LAST:
-    return econs(env, env->intern(env, "!"), term_to_value(env, output_term));
+    return econs(env, env->intern(env, "!"), term_to_value(env, env_stack->output_term));
   default:
     return NULL;
   }
@@ -406,11 +436,6 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
     s = args[4];
   }
 
-  if (PL_current_query() != 0) {
-    ethrow(env, "Prolog is already executing a query");
-    goto cleanup;
-  }
-
   if ((c = estring_to_cstring(env, args[0], NULL)) == NULL) {
     goto cleanup;
   }
@@ -431,11 +456,13 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
     goto cleanup;
   }
 
-  current_env = env;
+  if (sweep_env_push() < 0) {
+    goto cleanup;
+  }
 
   PL_open_query(n, PL_Q_NODEBUG | PL_Q_EXT_STATUS | PL_Q_CATCH_EXCEPTION, p, a);
 
-  output_term = a+(env->is_not_nil(env, s) ? 0 : 1);
+  env_stack->output_term = a+(env->is_not_nil(env, s) ? 0 : 1);
 
   r = et(env);
 
@@ -453,10 +480,18 @@ sweep_funcall0(term_t f, term_t v) {
   emacs_value r = NULL;
   size_t      l = -1;
   term_t      n = PL_new_term_ref();
+  emacs_env * env = NULL;
 
-  if (PL_get_nchars(f, &l, &string, CVT_STRING|REP_UTF8)) {
-    r = current_env->funcall(current_env, current_env->intern(current_env, string), 0, NULL);
-    if (value_to_term(current_env, r, n) >= 0) {
+  if (PL_thread_self() != sweep_thread_id || env_stack == NULL) {
+    PL_permission_error("sweep_funcall", "elisp_environment", f);
+    return FALSE;
+  }
+
+  env = env_stack->current_env;
+
+  if (PL_get_nchars(f, &l, &string, CVT_STRING|REP_UTF8|CVT_EXCEPTION)) {
+    r = env->funcall(env, env->intern(env, string), 0, NULL);
+    if (value_to_term(env, r, n) >= 0) {
       if (PL_unify(n, v)) {
         return TRUE;
       }
@@ -472,12 +507,20 @@ sweep_funcall1(term_t f, term_t a, term_t v) {
   emacs_value r = NULL;
   size_t      l = -1;
   term_t      n = PL_new_term_ref();
+  emacs_env * env = NULL;
 
-  if (PL_get_nchars(f, &l, &string, CVT_STRING|REP_UTF8)) {
-    e = term_to_value(current_env, a);
+  if (PL_thread_self() != sweep_thread_id || env_stack == NULL) {
+    PL_permission_error("sweep_funcall", "elisp_environment", f);
+    return FALSE;
+  }
+
+  env = env_stack->current_env;
+
+  if (PL_get_nchars(f, &l, &string, CVT_STRING|REP_UTF8|CVT_EXCEPTION)) {
+    e = term_to_value(env, a);
     if (e != NULL) {
-      r = current_env->funcall(current_env, current_env->intern(current_env, string), 1, &e);
-      if (value_to_term(current_env, r, n) >= 0) {
+      r = env->funcall(env, env->intern(env, string), 1, &e);
+      if (value_to_term(env, r, n) >= 0) {
         if (PL_unify(n, v)) {
           return TRUE;
         }
@@ -511,6 +554,8 @@ sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   PL_register_foreign("sweep_funcall", 2, sweep_funcall0, 0);
 
   r = PL_initialise(nargs, argv);
+
+  sweep_thread_id = PL_thread_self();
 
   for (i = 0; i < nargs; i++) {
     free(argv[i]);
