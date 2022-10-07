@@ -68,10 +68,9 @@ The different parts of =sweep= are structured as follows:
 :CUSTOM_ID: installation
 :END:
 
-The dynamic Emacs module =sweep-module= and the Prolog helper library
-=sweep.pl= are included in the latest SWI-Prolog distribution.  For
-instructions on how to build and install SWI-Prolog, see
-[[https://www.swi-prolog.org/build/]].
+The dynamic Emacs module =sweep-module= is included in the SWI-Prolog
+distribution from version 8.5.18.  For instructions on how to build
+and install SWI-Prolog, see [[https://www.swi-prolog.org/build/]].
 
 The =sweeprolog= Elisp package is available on NonGNU ELPA, to install
 =sweeprolog= simply type =M-x package-install RET sweeprolog RET=.

@@ -13,10 +13,16 @@ find_path(
 
 if(EMACS_INCLUDE_DIR)
 
-swipl_plugin(
+  swipl_plugin(
     sweep-module
     C_SOURCES sweep.c
     C_INCLUDE_DIR ${EMACS_INCLUDE_DIR}
     PL_LIBS sweep.pl)
+
+  pkg_doc(
+    sweep
+    SECTION
+    SOURCES sweep.doc)
+
 
 endif(EMACS_INCLUDE_DIR)
