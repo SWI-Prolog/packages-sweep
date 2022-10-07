@@ -11,6 +11,16 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.5.2 on 2022-10-07
+
+** Fixed bug in detecting the end of a clause with commented fullstops
+
+This version includes a fix in ~sweeprolog-end-of-top-term~, which is
+used to locate the end of the current clause.  Previously this
+function would get "confused" by in-clause comments that end with a
+fullstop (see the added test case in ~sweeprolog-test.el~ for an
+example).  Reported by Jan Wielemaker.
+
 * Version 0.5.0 on 2022-10-04
 
 ** New special buffer for listing and working with multiple top-levels
@@ -31,7 +41,6 @@ The ~sweeprolog-top-level-mode~ major mode provides a variant of the
 above command called ~sweeprolog-top-level-signal-current~ that operates
 on the top-level thread of the current buffer.  This command is also
 newly bound to ~C-c C-c~ in top-level buffers.
-
 
 ** New command ~sweeprolog-document-predicate-at-point~ in ~sweeprolog-mode~ buffers
 

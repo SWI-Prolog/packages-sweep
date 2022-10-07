@@ -53,6 +53,24 @@
   (should (equal (sweeprolog-cut-query) t)))
 
 
+(ert-deftest fullstop-detection ()
+  "Tests detecting the fullstop in presence of confusing comments."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+scasp_and_show(Q, Model, Tree) :-
+    scasp_mode(M0, T0),
+    setup_call_cleanup(
+        set_scasp_mode(Model, Tree),
+        (   scasp(Q, [])
+        ;   false                       % make always nondet.
+        ),
+        set_scasp_mode(M0, T0)).
+")
+    (goto-char (point-min))
+    (sweeprolog-end-of-top-term)
+    (should (= (point) 252))))
+
 (defun sweeprolog-test-indentation (given expected)
   (with-temp-buffer
     (sweeprolog-mode)

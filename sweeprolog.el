@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.5.1
+;; Package-Version: 0.5.2
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -1708,7 +1708,11 @@ Interactively, a prefix arg means to prompt for BUFFER."
         (forward-char))
     (or (re-search-forward (rx "." (or white "\n")) nil t)
         (goto-char (point-max)))
-    (while (and (nth 8 (syntax-ppss)) (not (eobp)))
+    (while (and (or (nth 8 (syntax-ppss))
+                    (save-excursion
+                      (nth 8 (syntax-ppss (max (point-min)
+                                               (1- (point)))))))
+                (not (eobp)))
       (while (and (nth 8 (syntax-ppss)) (not (eobp)))
         (forward-char))
       (or (re-search-forward (rx "." (or white "\n")) nil t)
