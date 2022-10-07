@@ -1024,8 +1024,8 @@ Changes in the Elisp library =sweeprolog.el= do not require rebuilding
 SWI-Prolog, and can be applied and tested directly inside Emacs (see [[info:emacs#Lisp
 Eval][Evaluating Elisp in the Emacs manual]]).
 
-Most often rebuilding SWI-Prolog after changing =sweep.c= and/or
-=sweep.pl= can be achieved with the following command executed in
+Most often rebuilding SWI-Prolog after changing =sweep.c= can be
+achieved with the following command executed in
 =swipl-devel/packages/sweep=:
 
 #+begin_src sh

@@ -16,8 +16,7 @@ if(EMACS_INCLUDE_DIR)
   swipl_plugin(
     sweep-module
     C_SOURCES sweep.c
-    C_INCLUDE_DIR ${EMACS_INCLUDE_DIR}
-    PL_LIBS sweep.pl)
+    C_INCLUDE_DIR ${EMACS_INCLUDE_DIR})
 
   pkg_doc(
     sweep

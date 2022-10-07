@@ -150,10 +150,11 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
 
 (defcustom sweeprolog-init-args (list "-q"
                                       "--no-signals"
-                                      "-g"
-                                      "[library(sweep)]")
+                                      (expand-file-name
+                                       "sweep.pl"
+                                       (file-name-directory load-file-name)))
   "List of strings used as initialization arguments for Prolog."
-  :package-version '((sweeprolog "0.3.1"))
+  :package-version '((sweeprolog "0.5.2"))
   :type '(repeat string)
   :group 'sweeprolog)
 
