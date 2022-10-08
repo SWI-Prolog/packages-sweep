@@ -11,6 +11,22 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.5.3 on 2022-10-08
+
+** New command ~sweeprolog-align-spaces~ in ~sweeprolog-mode~ buffers
+
+~sweeprolog-align-spaces~ is a new command available in ~sweeprolog-mode~
+buffers for updating the whitespace around point according to the
+SWI-Prolog convention used in if-then-else constructs where the next
+token begins four columns after the start of the previous token.
+
+** New user option ~sweeprolog-enable-cycle-spacing~
+
+In Emacs 29, when this user option is non-nil (the default),
+~sweeprolog-align-spaces~ is added to ~cycle-spacing-actions~ such that
+pressing ~M-SPC~ once invokes it by default.
+
+
 * Version 0.5.2 on 2022-10-07
 
 ** Fixed bug in detecting the end of a clause with commented fullstops

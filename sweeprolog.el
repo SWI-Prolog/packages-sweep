@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.5.2
+;; Package-Version: 0.5.3
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -68,6 +68,16 @@ a Prolog quasi-quotation type given as a string, and MODE is a
 symbol specifing a major mode."
   :package-version '((sweeprolog . "0.4.3"))
   :type '(alist :key-type string :value-type symbol)
+  :group 'sweeprolog)
+
+(defcustom sweeprolog-enable-cycle-spacing t
+  "If non-nil and `cycle-spacing-actions' is defined, extend it.
+
+This makes the first invocation of \\[cycle-spacing] in
+`sweeprolog-mode' buffers update whitespace around point using
+`sweeprolog-align-spaces', which see."
+  :package-version '((sweeprolog . "0.5.3"))
+  :type 'boolean
   :group 'sweeprolog)
 
 (defcustom sweeprolog-colourise-buffer-on-idle t
@@ -2485,6 +2495,26 @@ variable at point, if any."
 (defvar-local sweeprolog--timer nil)
 (defvar-local sweeprolog--colourise-buffer-duration 0.2)
 
+
+(defun sweeprolog-align-spaces (&optional _)
+  "Adjust in-line whitespace between the previous next Prolog tokens.
+
+This command ensures that the next token starts at a column
+distanced from the beginning of the previous by a multiple of
+four columns, which accommodates the convetional alignment for
+if-then-else constructs in SWI-Prolog."
+  (interactive "" sweeprolog-mode)
+  (let ((bol (line-beginning-position)))
+    (pcase (sweeprolog-last-token-boundaries)
+      (`(,_ ,lbeg ,lend)
+       (when (<= bol lend)
+         (let ((num (- 4 (% (- lend lbeg) 4))))
+           (when (< 0 num)
+             (goto-char lend)
+             (combine-after-change-calls
+               (delete-horizontal-space)
+               (insert (make-string num ? ))))))))))
+
 ;;;###autoload
 (define-derived-mode sweeprolog-mode prog-mode "sweep"
   "Major mode for reading and editing Prolog code."
@@ -2508,6 +2538,10 @@ variable at point, if any."
   (when sweeprolog-enable-eldoc
     (setq-local eldoc-documentation-strategy #'eldoc-documentation-default)
     (add-hook 'eldoc-documentation-functions #'sweeprolog-predicate-modes-doc nil t))
+  (when (and (boundp 'cycle-spacing-actions)
+             (consp cycle-spacing-actions)
+             sweeprolog-enable-cycle-spacing
+             (setq-local cycle-spacing-actions (cons #'sweeprolog-align-spaces cycle-spacing-actions))))
   (let ((time (current-time)))
     (sweeprolog-colourise-buffer)
     (setq sweeprolog--colourise-buffer-duration (float-time (time-since time))))

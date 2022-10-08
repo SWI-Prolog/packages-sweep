@@ -527,6 +527,74 @@ For more information about quasi-quotations in SWI-Prolog, see
 [[https://www.swi-prolog.org/pldoc/man?section=quasiquotations][library(quasi_quotations) in the SWI-Prolog manual]].
 
 
+** Aligning with multiple spaces
+:PROPERTIES:
+:CUSTOM_ID: whitespace
+:END:
+
+#+CINDEX: whitespace
+By convention, if-then-else constructs are aligned such that each goal
+starts at the fourth column after the /start/ of the opening parenthesis
+or operator, as follows:
+
+  #+begin_src prolog
+    (   if
+    ->  then
+    ;   else
+    ,*-> elif
+    ;   true
+    )
+  #+end_src
+
+To simplify maintaining the desired layout without manually counting
+spaces, ~sweep~ provides a command that updates the whitespace around
+point such that the next token is aligned to a (multiple of) four
+columns from the start of the previous token.
+
+#+FINDEX: sweeprolog-align-spaces
+#+FINDEX: cycle-spacing
+To insert or update whitespace around point, use the command ~M-x
+sweeprolog-align-spaces~.  For example, consider a ~sweeprolog-mode~
+buffer with the following contents, where =^= designates the location of
+the cursor:
+
+#+begin_src prolog
+  foo :-
+      (   if
+      ;
+       ^
+#+end_src
+
+Calling ~M-x sweeprolog-align-spaces~ will insert three spaces, to yield
+the expected layout:
+
+#+begin_src prolog
+  foo :-
+      (   if
+      ;
+          ^
+#+end_src
+
+In Emacs 29, the command ~M-x cycle-spacing~ is extensible through a
+list of callback functions stored in the variable
+~cycle-spacing-actions~.  ~sweep~ leverages this facility and adds
+~sweeprolog-align-spaces~ as the first action of ~cycle-spacing~.  To
+inhibit this ~sweeprolog-mode~ from doing so, set the user option
+~sweeprolog-enable-cycle-spacing~ to nil.
+
+Moreover, in Emacs 29 ~cycle-spacing~ is bound by default to ~M-SPC~, thus
+aligning if-then-else and similar constructs only requires typing
+~M-SPC~ after the first token.
+
+In Emacs prior to version 29, users are advised to bind
+~sweeprolog-align-spaces~ to ~M-SPC~ directly by adding the following
+lines to Emacs' initialization file (see [[info:emacs#Init File][The Emacs Initialization File]]).
+
+#+begin_src emacs-lisp
+  (eval-after-load 'sweeprolog
+    '(define-key sweeprolog-mode-map (kbd "M-SPC") #'sweeprolog-align-spaces))
+#+end_src
+
 ** Term-based editing and motion commands
 :PROPERTIES:
 :CUSTOM_ID: term-based-commands
@@ -994,6 +1062,9 @@ completion candidates are annotated with description and the version
 of each package.
 
 * Contributing
+:PROPERTIES:
+:CUSTOM_ID: contributing
+:END:
 
 We highly appreciate all contributions, including bug reports,
 patches, improvement suggestions, and general feedback.
@@ -1001,6 +1072,9 @@ patches, improvement suggestions, and general feedback.
 For a list of known desired improvements in ~sweep~, see [[*Things to do][Things to do]].
 
 ** Setting up sweep for local development
+:PROPERTIES:
+:CUSTOM_ID: development-setup
+:END:
 
 Since the Prolog and C parts of ~sweep~ are intended to be distributed
 and installed along with SWI-Prolog (see [[#installation][Installation]]), the easiest
@@ -1033,6 +1107,9 @@ achieved with the following command executed in
 #+end_src
 
 ** Submitting patches and bug reports
+:PROPERTIES:
+:CUSTOM_ID: submitting-patches
+:END:
 
 The best way to get in touch with the ~sweep~ maintainers is via [[https://lists.sr.ht/~eshel/dev][the
 sweep mailing list]].
@@ -1044,11 +1121,17 @@ new buffer with a message template ready to be sent to the ~sweep~
 mailing list.
 
 * Things to do
+:PROPERTIES:
+:CUSTOM_ID: thigs-to-do
+:END:
 
 While ~sweep~ is ready to be used for effective editing of Prolog code,
 there some further improvements that we want to pursue:
 
 ** Improvements around editing Prolog
+:PROPERTIES:
+:CUSTOM_ID: todo-editing
+:END:
 
 - Inherit user customizations from ~prolog-mode~ :: ~sweep~ should inherit
   user customizations from the standard =prolog.el= built into Emacs to
@@ -1057,31 +1140,6 @@ there some further improvements that we want to pursue:
   of the generic ~prog-mode~ to inherit user-set hooks and
   modifications, but careful consideration is required to make sure
   ~sweeprolog-mode~ overrides all conflicting ~prolog-mode~ features.
-
-- Provide automatic whitespace formatting for if-then-else constructs :: By
-  convention, if-then-else constructs are aligned such that each goal
-  starts at the fourth column after the /start/ of the opening
-  parenthesis or operator, as follows:
-
-  #+begin_src prolog
-    (   if
-    ->  then
-    ;   else
-    ,*-> elif
-    ;   true
-    )
-  #+end_src
-
-  Note that the number of spaces differs from line to line, e.g. in
-  the first line there are three spaces because the opening
-  parenthesis in only spans a single column, while the second line
-  contains two spaces since the operator ~->~ is already two columns
-  long.
-
-  ~sweep~ should make it trivial for users to achieve the conventional
-  layout without manually counting spaces.  Ideally, pressing ~TAB~ or
-  ~SPC~, possibly with a modifier, after the opening parenthesis or
-  operator should result in the above layout.
 
 - Reflect buffer status in the mode line :: It may be useful to
   indicate in the mode line whether the current ~sweeprolog-mode~ buffer
@@ -1149,11 +1207,17 @@ there some further improvements that we want to pursue:
   to matching candidates in the specified module.
 
 ** Improvements around running Prolog
+:PROPERTIES:
+:CUSTOM_ID: todo-running
+:END:
 - Persist top-level history across sessions :: ~sweep~ should persist
   Prolog top-level histories across invocations of
   ~sweeprolog-top-level~, ideally also across different Emacs sessions.
 
 ** General improvements
+:PROPERTIES:
+:CUSTOM_ID: todo-general
+:END:
 - Facilitate interactive debugging :: ~sweep~ should facilitate
   interactive debugging of SWI-Prolog code.  This is a big topic that
   we don't currently address.  Perhaps this should handled through
