@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.6.0 on 2022-10-10
+
+** Added integration with Flymake
+
+=sweeprolog.el= can now leverage ~flymake~ to highlight and browse
+diagnostics in ~sweeprolog-mode~ buffers.
+
+** New user option ~sweeprolog-enable-flymake~
+
+Boolean flag, enabled by default. When customized to nil,
+~sweeprolog-mode~ integration with ~flymake~ is disabled.
+
+** New command ~sweeprolog-show-diagnostics~
+
+Wrapper around ~flymake-show-buffer-diagnostics~ for ~sweeprolog-mode~,
+bound to ~C-c C-`~.  With a prefix argument, calls
+~flymake-show-project-diagnostics~ instead.
+
 * Version 0.5.4 on 2022-10-09
 
 ** The manual now has a short description attached to each section

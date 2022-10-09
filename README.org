@@ -261,6 +261,7 @@ processing of Prolog query results in Elisp (see =sweeprolog-next-solution=).
 ** Example - counting solutions for a Prolog predicate in Elisp
 :PROPERTIES:
 :CUSTOM_ID: count-permutations
+:DESCRIPTION:
 :END:
 
 As an example of using the =sweep= interface for executing Prolog
@@ -447,8 +448,10 @@ the buffer.
 #+FINDEX: sweeprolog-colourise-buffer
 At any point in a =sweeprolog-mode= buffer, the command =C-c C-c= (or =M-x
 sweeprolog-colourise-buffer=) can be used to update the cross reference
-cache and highlight the buffer accordingly.  This may be useful
-e.g. after defining a new predicate.
+cache and highlight the buffer accordingly.  When ~flymake~ integration
+is enabled, this command also updates the diagnostics for the current
+buffer (see [[*Examining diagnostics][Examining diagnostics]]).  This may be useful e.g. after
+defining a new predicate.
 
 #+VINDEX: sweeprolog-colourise-buffer-on-idle
 #+VINDEX: sweeprolog-colourise-buffer-max-size
@@ -819,6 +822,43 @@ of the frame.
 #+VINDEX: sweeprolog-enable-eldoc
 To disable the =ElDoc= integration in =sweeprolog-mode= buffers, customize
 the user option =sweeprolog-enable-eldoc= to nil.
+
+** Examining diagnostics
+:PROPERTIES:
+:CUSTOM_ID: diagnostics
+:DESCRIPTION: Commands for finding errors in Prolog code
+:END:
+
+#+CINDEX: flymake
+#+CINDEX: diagnostics
+~sweeprolog-mode~ can diagnose problems in Prolog code and report them
+to the user by integrating with ~flymake~, a powerful interface for
+on-the-fly diagnostics built into Emacs.
+
+#+FINDEX: sweeprolog-enable-flymake
+~flymake~ integration is enabled by default, to disable it customize the
+user option ~sweeprolog-enable-flymake~ to nil.
+
+#+FINDEX: next-error
+#+KINDEX: M-g n
+#+KINDEX: M-g p
+When this integration is enabled, several ~flymake~ commands are
+available for listing and jumping between found errors.  For a full
+description of these commands, see [[info:flymake#Finding diagnostics][Finding diagnostics in the Flymake
+manual]].  Additionally, ~sweeprolog-mode~ configures the standard
+command ~M-x next-error~ to operate on ~flymake~ diagnostics.  This allows
+for moving to the next (or previous) error location with the common
+~M-g n~ (or ~M-g p~) keybinding.  For more information about these
+commands, see [[info:emacs#Compilation Mode][Compilation Mode in the Emacs manual]].
+
+#+FINDEX: sweeprolog-show-diagnostics
+#+KINDEX: C-c C-`
+#+KINDEX: C-u C-c C-`
+The command ~sweeprolog-show-diagnostics~ shows a list of ~flymake~
+diagnostics for the current buffer.  It is bound by default to ~C-c C-`~
+in ~sweeprolog-mode~ buffers with ~flymake~ integration enabled.  When
+called with a prefix argument (~C-u C-c C-`~), shows a list of
+diagnostics for all buffers in the current project.
 
 * The Prolog top-level
 :PROPERTIES:
@@ -1289,24 +1329,35 @@ there some further improvements that we want to pursue:
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: indices
+:DESCRIPTION:
 :END:
 
 ** Function index
 :PROPERTIES:
 :INDEX: fn
 :CUSTOM_ID: findex
+:DESCRIPTION:
 :END:
 
 ** Variable index
 :PROPERTIES:
 :INDEX: vr
 :CUSTOM_ID: vindex
+:DESCRIPTION:
+:END:
+
+** Keystroke index
+:PROPERTIES:
+:INDEX: ky
+:CUSTOM_ID: kindex
+:DESCRIPTION:
 :END:
 
 ** Concept index
 :PROPERTIES:
 :INDEX: cp
 :CUSTOM_ID: cindex
+:DESCRIPTION:
 :END:
 
 #+html: -->

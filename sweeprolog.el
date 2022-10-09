@@ -30,6 +30,8 @@
 (require 'comint)
 (require 'xref)
 (require 'autoinsert)
+(require 'eldoc)
+(require 'flymake)
 
 (defgroup sweeprolog nil
   "SWI-Prolog Embedded in Emacs."
@@ -166,6 +168,12 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
   "List of strings used as initialization arguments for Prolog."
   :package-version '((sweeprolog "0.5.2"))
   :type '(repeat string)
+  :group 'sweeprolog)
+
+(defcustom sweeprolog-enable-flymake t
+  "If non-nil, enable `flymake' suport in `sweeprolog-mode' buffers."
+  :package-version '((sweeprolog "0.6.0"))
+  :type 'boolean
   :group 'sweeprolog)
 
 (defcustom sweeprolog-enable-eldoc t
@@ -652,6 +660,7 @@ module name, F is a functor name and N is its arity."
            ,(concat "Face used to highlight " (downcase doc))
            :group 'sweeprolog-faces)
          (defun ,func ()
+           ,(concat "Return the face used to highlight " (downcase doc))
            (pcase sweeprolog-faces-style
              ('light ',facl)
              ('dark  ',facd)
@@ -1217,6 +1226,16 @@ module name, F is a functor name and N is its arity."
   "Structured comments.")
 
 (defvar-local sweeprolog--variable-at-point nil)
+(defvar-local sweeprolog--diagnostics nil)
+(defvar-local sweeprolog--diagnostics-report-fn nil)
+(defvar-local sweeprolog--diagnostics-changes-beg nil)
+(defvar-local sweeprolog--diagnostics-changes-end nil)
+
+(defun sweeprolog-diagnostic-function (report-fn &rest rest)
+  (setq sweeprolog--diagnostics nil
+        sweeprolog--diagnostics-report-fn report-fn
+        sweeprolog--diagnostics-changes-beg (plist-get rest :changes-start)
+        sweeprolog--diagnostics-changes-end (plist-get rest :changes-end)))
 
 (defun sweeprolog--colour-term-to-faces (beg end arg)
   (pcase arg
@@ -1226,7 +1245,12 @@ module name, F is a functor name and N is its arity."
     (`("comment" . ,_)
      (list (list beg end nil)
            (list beg end (sweeprolog-comment-face))))
-    (`("head" "unreferenced" . ,_)
+    (`("head" "unreferenced" ,f ,a)
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end
+                                 :note (format "Unreferenced definition for %s/%s" f a))
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-head-unreferenced-face))))
     (`("head" "meta" . ,_)
      (list (list beg end (sweeprolog-head-meta-face))))
@@ -1256,7 +1280,12 @@ module name, F is a functor name and N is its arity."
      (list (list beg end (sweeprolog-meta-face))))
     (`("goal" "built_in"  . ,_)
      (list (list beg end (sweeprolog-built-in-face))))
-    (`("goal" "undefined" . ,_)
+    (`("goal" "undefined" ,f ,a)
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end
+                                 :warning (format "Undefined predicate %s/%s" f a))
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-undefined-face))))
     (`("goal" "global" . ,_)
      (list (list beg end (sweeprolog-global-face))))
@@ -1276,14 +1305,44 @@ module name, F is a functor name and N is its arity."
      (list (list beg end (sweeprolog-global-face))))
     (`("goal",(rx "local(") . ,_)
      (list (list beg end (sweeprolog-local-face))))
-    (`("syntax_error" ,_message ,eb ,ee)
+    ("instantiation_error"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :warning "Instantiation error")
+        sweeprolog--diagnostics))
+     (list (list beg end (sweeprolog-instantiation-error-face))))
+    ("type_error"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :warning "Type error")
+        sweeprolog--diagnostics))
+     (list (list beg end (sweeprolog-type-error-face))))
+    (`("syntax_error" ,message ,eb ,ee)
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :error message)
+        sweeprolog--diagnostics))
      (list (list eb ee nil)
            (list eb ee (sweeprolog-around-syntax-error-face))
            (list beg end (sweeprolog-syntax-error-face))))
     ("unused_import"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :note "Unused import")
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-unused-import-face))))
     ("undefined_import"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :warning "Undefined import")
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-undefined-import-face))))
+    ("error"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :warning "Unspecified error")
+        sweeprolog--diagnostics))
+     (list (list beg end (sweeprolog-error-face))))
     ("html_attribute"
      (list (list beg end (sweeprolog-html-attribute-face))))
     ("html"
@@ -1299,6 +1358,10 @@ module name, F is a functor name and N is its arity."
     ("flag_name"
      (list (list beg end (sweeprolog-flag-name-face))))
     ("no_flag_name"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :warning "No such flag")
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-flag-name-face))))
     ("ext_quant"
      (list (list beg end (sweeprolog-ext-quant-face))))
@@ -1309,10 +1372,18 @@ module name, F is a functor name and N is its arity."
     ("int"
      (list (list beg end (sweeprolog-int-face))))
     ("singleton"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :note "Singleton variable")
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-singleton-face))))
     ("option_name"
      (list (list beg end (sweeprolog-option-name-face))))
     ("no_option_name"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :warning "No such option")
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-no-option-name-face))))
     ("control"
      (list (list beg end (sweeprolog-control-face))))
@@ -1365,7 +1436,8 @@ module name, F is a functor name and N is its arity."
                    (dolist (prop '(font-lock-face face))
                      (let ((new-prop (get-text-property pos prop)))
                        (when new-prop
-                         (setq res (cons (list (+ beg (1- pos)) (1- (+ beg next)) new-prop) res)))))
+                         (push (list (+ beg (1- pos)) (1- (+ beg next)) new-prop)
+                               res))))
                    (setq pos next)))
                (set-buffer-modified-p nil)
                res))
@@ -1383,8 +1455,16 @@ module name, F is a functor name and N is its arity."
     ("file"
      (list (list beg end (sweeprolog-file-face))))
     ("file_no_depend"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :note "Unused dependency")
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-file-no-depend-face))))
     ("nofile"
+     (when sweeprolog-enable-flymake
+       (push
+        (flymake-make-diagnostic (current-buffer) beg end :warning "No such file")
+        sweeprolog--diagnostics))
      (list (list beg end (sweeprolog-no-file-face))))
     ("op_type"
      (list (list beg end (sweeprolog-op-type-face))))
@@ -1419,7 +1499,10 @@ module name, F is a functor name and N is its arity."
             (remove-list-of-text-properties b e '(font-lock-face))))))))
 
 (defun sweeprolog-colourise-buffer (&optional buffer)
+  "Update cross-reference data and semantic highlighting in BUFFER."
   (interactive)
+  (when sweeprolog-enable-flymake
+    (flymake-start))
   (with-current-buffer (or buffer (current-buffer))
     (let* ((beg (point-min))
            (end (point-max))
@@ -1427,20 +1510,25 @@ module name, F is a functor name and N is its arity."
       (with-silent-modifications
         (font-lock-unfontify-region beg end))
       (sweeprolog-open-query "user"
-                        "sweep"
-                        "sweep_colourise_buffer"
-                        (cons contents (buffer-file-name)))
+                             "sweep"
+                             "sweep_colourise_buffer"
+                             (cons contents (buffer-file-name)))
       (let ((sol (sweeprolog-next-solution)))
         (sweeprolog-close-query)
+        (when sweeprolog--diagnostics-report-fn
+          (funcall sweeprolog--diagnostics-report-fn sweeprolog--diagnostics)
+          (setq sweeprolog--diagnostics-report-fn nil))
         sol))))
 
 (defun sweeprolog-colourise-some-terms (beg0 end0 &optional _verbose)
+  (when sweeprolog-enable-flymake
+    (flymake-start))
   (let* ((beg (save-mark-and-excursion
-                (goto-char beg0)
+                (goto-char (min beg0 (or sweeprolog--diagnostics-changes-beg beg0)))
                 (sweeprolog-beginning-of-top-term)
                 (max (1- (point)) (point-min))))
          (end (save-mark-and-excursion
-                (goto-char end0)
+                (goto-char (max end0 (or sweeprolog--diagnostics-changes-end end0)))
                 (sweeprolog-end-of-top-term)
                 (point)))
          (contents (buffer-substring-no-properties beg end)))
@@ -1454,6 +1542,11 @@ module name, F is a functor name and N is its arity."
                                  beg))
     (let ((sol (sweeprolog-next-solution)))
       (sweeprolog-close-query)
+      (when sweeprolog--diagnostics-report-fn
+        (funcall sweeprolog--diagnostics-report-fn
+                 sweeprolog--diagnostics
+                 :region (cons beg end))
+        (setq sweeprolog--diagnostics-report-fn nil))
       (when (sweeprolog-true-p sol)
         `(jit-lock-bounds ,beg . ,end)))))
 
@@ -1718,7 +1811,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (defun sweeprolog-end-of-top-term ()
   (unless (eobp)
     (while (and (nth 8 (syntax-ppss)) (not (eobp)))
-        (forward-char))
+      (forward-char))
     (or (re-search-forward (rx "." (or white "\n")) nil t)
         (goto-char (point-max)))
     (while (and (or (nth 8 (syntax-ppss))
@@ -1730,6 +1823,18 @@ Interactively, a prefix arg means to prompt for BUFFER."
         (forward-char))
       (or (re-search-forward (rx "." (or white "\n")) nil t)
           (goto-char (point-max))))))
+
+(defun sweeprolog-show-diagnostics (&optional proj)
+  "Show diagnostics for the current project, or buffer if PROJ is nil.
+
+Interactively, PROJ is the prefix argument."
+  (interactive "P" sweeprolog-mode)
+  (if (and sweeprolog-enable-flymake
+           flymake-mode)
+      (if proj
+          (flymake-show-project-diagnostics)
+        (flymake-show-buffer-diagnostics))
+    (user-error "Flymake is not active in the current buffer")))
 
 (defvar sweeprolog-mode-syntax-table
   (let ((table (make-syntax-table)))
@@ -1755,6 +1860,10 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
     (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
+    (define-key map (kbd "C-c C-`")
+                (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
+                    #'sweeprolog-show-diagnostics
+                  #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     map)
   "Keymap for `sweeprolog-mode'.")
@@ -2326,8 +2435,7 @@ predicate definition at or directly above POINT."
                      (2 "Second")
                      (3 "Third")
                      (_ (concat (number-to-string cur) "th")))))
-          (setq arguments (cons (read-string (concat num " argument: "))
-                                arguments)))
+          (push (read-string (concat num " argument: ")) arguments))
         (setq cur (1+ cur)))
       (setq arguments (reverse arguments))
       (let ((det (cadr (read-multiple-choice "Determinism: "
@@ -2541,6 +2649,10 @@ if-then-else constructs in SWI-Prolog."
   (when sweeprolog-enable-eldoc
     (setq-local eldoc-documentation-strategy #'eldoc-documentation-default)
     (add-hook 'eldoc-documentation-functions #'sweeprolog-predicate-modes-doc nil t))
+  (when sweeprolog-enable-flymake
+    (add-hook 'flymake-diagnostic-functions #'sweeprolog-diagnostic-function nil t)
+    (flymake-mode)
+    (setq-local next-error-function #'flymake-goto-next-error))
   (when (and (boundp 'cycle-spacing-actions)
              (consp cycle-spacing-actions)
              sweeprolog-enable-cycle-spacing
