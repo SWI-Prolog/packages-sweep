@@ -22,6 +22,7 @@ provides an embedded SWI-Prolog runtime inside of Emacs.
 * Overview
 :PROPERTIES:
 :CUSTOM_ID: overview
+:DESCRIPTION: Major mode for reading and writing Prolog
 :END:
 
 =sweep= is an embedding of SWI-Prolog in Emacs.  It provides an
@@ -33,6 +34,7 @@ advanced features for developing SWI-Prolog programs in Emacs.
 ** High-level architecture
 :PROPERTIES:
 :CUSTOM_ID: high-level-architecture
+:DESCRIPTION: Overall structure of this project
 :END:
 
 =sweep= uses the C interfaces of both SWI-Prolog and Emacs Lisp to
@@ -66,6 +68,7 @@ The different parts of =sweep= are structured as follows:
 * Installation
 :PROPERTIES:
 :CUSTOM_ID: installation
+:DESCRIPTION: Intructions for installing sweep
 :END:
 
 The dynamic Emacs module =sweep-module= is included in the SWI-Prolog
@@ -97,6 +100,7 @@ from the =sweep= Git repository:
 * Getting started
 :PROPERTIES:
 :CUSTOM_ID: getting-started
+:DESCRIPTION: First steps with sweep
 :END:
 
 After installing the =sweeprolog= Elisp library, load it into Emacs:
@@ -123,6 +127,7 @@ start Emacs with =libswipl= loaded upfront via =LD_PRELOAD=, for example:
 * Prolog initialization and cleanup
 :PROPERTIES:
 :CUSTOM_ID: prolog-init
+:DESCRIPTION: Functions for starting and stopping the embedded Prolog runtime
 :END:
 
 #+FINDEX: sweeprolog-initialize
@@ -160,6 +165,7 @@ runtime on startup.
 * Querying Prolog
 :PROPERTIES:
 :CUSTOM_ID: querying-prolog
+:DESCRIPTION: Functions for invoking Prolog predicates and consuming their results
 :END:
 
 #+FINDEX: sweeprolog-open-query
@@ -209,6 +215,7 @@ Prolog bindings created by the query.
 ** Conversion of Elisp objects to Prolog terms
 :PROPERTIES:
 :CUSTOM_ID: elisp-to-prolog
+:DESCRIPTION: How sweep translates Emacs Lisp to Prolog
 :END:
 
 =sweep= converts Elisp objects into Prolog terms to allow the Elisp
@@ -228,6 +235,7 @@ we convert /trees of strings and numbers/:
 ** Conversion of Prolog terms to Elisp objects
 :PROPERTIES:
 :CUSTOM_ID: prolog-to-elisp
+:DESCRIPTION: How sweep translates Prolog to Emacs Lisp
 :END:
 
 =sweep= converts Prolog terms into Elisp object to allow efficient
@@ -275,6 +283,7 @@ permutations of the list =(1 2 3 4 5)=:
 ** Calling Elisp function inside Prolog queries
 :PROPERTIES:
 :CUSTOM_ID: funcall-from-prolog
+:DESCRIPTION: Special predicates for calling back to Emacs from Prolog
 :END:
 
 The =sweep-module= defines the foreign Prolog predicates =sweep_funcall/2=
@@ -294,6 +303,7 @@ function without any arguments.
 * Editing Prolog code
 :PROPERTIES:
 :CUSTOM_ID: editing-prolog-code
+:DESCRIPTION: Major mode for reading and writing Prolog
 :END:
 
 #+CINDEX: sweeprolog-mode
@@ -312,6 +322,7 @@ sweeprolog-mode=.  To instruct Emacs to always open Prolog files in
 ** Indentation
 :PROPERTIES:
 :CUSTOM_ID: indentation
+:DESCRIPTION: How sweep indents Prolog code
 :END:
 
 #+CINDEX: indentation
@@ -333,6 +344,7 @@ indentation, see [[info:emacs#Indentation][Indentation in the Emacs manual]].
 *** Indentation rules
 :PROPERTIES:
 :CUSTOM_ID: indentation-rules
+:DESCRIPTION: The intented indentation scenaria
 :END:
 
 Lines in =sweeprolog-mode= buffers are indented according to the following
@@ -417,6 +429,7 @@ rules:
 ** Semantic highlighting
 :PROPERTIES:
 :CUSTOM_ID: semantic-highlighting
+:DESCRIPTION: Rich fontification for Prolog code
 :END:
 
 #+CINDEX: fontification
@@ -462,6 +475,7 @@ To view and customize all of the faces defined and used in =sweep=, type
 *** Available styles
 :PROPERTIES:
 :CUSTOM_ID: highlighting-styles
+:DESCRIPTION: Available highlighting styles
 :END:
 
 =sweep= comes with three highlighting styles:
@@ -482,6 +496,7 @@ existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
 *** Highlighting occurrences of a variable
 :PROPERTIES:
 :CUSTOM_ID: variable-highlighting
+:DESCRIPTION: Commands for emphasizing all occurrences of a Prolog variable
 :END:
 
 #+CINDEX: variable highlighting
@@ -508,6 +523,7 @@ clears all variable highlighting in the current clause instead.
 *** Quasi-quotation highlighting
 :PROPERTIES:
 :CUSTOM_ID: qq-highlighting
+:DESCRIPTION: Delegating fontification of quasi-quoted contents to other Emacs major modes
 :END:
 
 Quasi-quotations in =sweeprolog-mode= buffer are highlighted according
@@ -526,10 +542,10 @@ used to determine a default face for quoted content.
 For more information about quasi-quotations in SWI-Prolog, see
 [[https://www.swi-prolog.org/pldoc/man?section=quasiquotations][library(quasi_quotations) in the SWI-Prolog manual]].
 
-
 ** Aligning with multiple spaces
 :PROPERTIES:
 :CUSTOM_ID: whitespace
+:DESCRIPTION: Commands for aligning Prolog code without having to count spaces
 :END:
 
 #+CINDEX: whitespace
@@ -598,6 +614,7 @@ lines to Emacs' initialization file (see [[info:emacs#Init File][The Emacs Initi
 ** Term-based editing and motion commands
 :PROPERTIES:
 :CUSTOM_ID: term-based-commands
+:DESCRIPTION: Commands that recognize and operate on Prolog terms
 :END:
 
 #+CINDEX: sexps
@@ -638,6 +655,7 @@ directly:
 ** Definitions and references
 :PROPERTIES:
 :CUSTOM_ID: sweeprolog-xref
+:DESCRIPTION: Commands for finding cross-references for Prolog predicates
 :END:
 
 #+CINDEX: xref
@@ -658,6 +676,7 @@ about customizing =imenu=, see [[info:emacs#Imenu][Imenu in the Emacs manual]].
 ** Following file specifications
 :PROPERTIES:
 :CUSTOM_ID: following-file-specs
+:DESCRIPTION: Commands for jumping to files that appear in Prolog code
 :END:
 
 #+FINDEX: sweeprolog-find-file-at-point
@@ -679,6 +698,7 @@ For more information about file specifications in SWI-Prolog, see
 ** Loading buffers
 :PROPERTIES:
 :CUSTOM_ID: loading-buffers
+:DESCRIPTION: Commands for loading Prolog predicates from the current buffer
 :END:
 
 #+CINDEX: loading
@@ -700,6 +720,7 @@ found in [[https://www.swi-prolog.org/pldoc/man?section=consulting][Loading Prol
 ** Using templates for creating new modules
 :PROPERTIES:
 :CUSTOM_ID: auto-insert
+:DESCRIPTION: Commands for populating new Prolog modules with predefined contents
 :END:
 
 #+CINDEX: auto-insert
@@ -752,6 +773,7 @@ information about =auto-insert= and its customization options, see
 ** Documenting predicates
 :PROPERTIES:
 :CUSTOM_ID: sweeprolog-pldoc
+:DESCRIPTION: Commands for adding documentation to Prolog predicate definitions
 :END:
 
 #+CINDEX: pldoc
@@ -785,6 +807,7 @@ SWI-Prolog, see [[https://www.swi-prolog.org/pldoc/doc_for?object=section(%27pac
 ** Displaying predicate documentation
 :PROPERTIES:
 :CUSTOM_ID: eldoc-integration
+:DESCRIPTION: Commands for showing documentation for Prolog predicates
 :END:
 
 =sweep= integrates with the Emacs minor mode =ElDoc=, which automatically
@@ -800,6 +823,7 @@ the user option =sweeprolog-enable-eldoc= to nil.
 * The Prolog top-level
 :PROPERTIES:
 :CUSTOM_ID: prolog-top-level
+:DESCRIPTION: Executing Prolog queries in a REPL-like interface
 :END:
 
 #+CINDEX: top-level
@@ -820,6 +844,7 @@ most of which are described in [[info:emacs#Shell Mode][the Emacs manual]].
 ** Multiple top-levels
 :PROPERTIES:
 :CUSTOM_ID: multiple-top-levels
+:DESCRIPTION: Creating and handling multiple Prolog top-level buffers
 :END:
 
 Any number of top-levels can be created and used concurrently, each in
@@ -883,6 +908,7 @@ The available commands are:
 ** Sending signals to running top-levels
 :PROPERTIES:
 :CUSTOM_ID: top-level-signals
+:DESCRIPTION: Commands for interrupting running Prolog top-levels
 :END:
 
 #+CINDEX: signaling Prolog threads
@@ -912,6 +938,7 @@ For more information about interrupting threads in SWI-Prolog, see
 ** Top-level history
 :PROPERTIES:
 :CUSTOM_ID: top-level-history
+:DESCRIPTION: Accessing previous queries posted to the Prolog top-level
 :END:
 
 =sweeprolog-top-level-mode= buffers provide a history of previously user
@@ -931,6 +958,7 @@ backtracking.
 ** Completion in the top-level
 :PROPERTIES:
 :CUSTOM_ID: completion-in-top-level
+:DESCRIPTION: Commands for completing partiat Prolog predicate names
 :END:
 
 The =sweeprolog-top-level-mode=, enabled in the =sweep= top-level buffer,
@@ -942,6 +970,7 @@ more information see [[info:emacs#Symbol Completion][Symbol Completion in the Em
 * Finding Prolog code
 :PROPERTIES:
 :CUSTOM_ID: finding-prolog-code
+:DESCRIPTION: Commands for locating and opening Prolog files
 :END:
 
 #+FINDEX: sweeprolog-find-module
@@ -959,6 +988,7 @@ loaded or auto-loadable Prolog predicate.
 ** Prolog file specification expansion
 :PROPERTIES:
 :CUSTOM_ID: file-spec-expansion
+:DESCRIPTION: Integration with standard Emacs file-finding commands
 :END:
 
 =sweep= defines a handler for the Emacs function =expand-file-file= that
@@ -974,6 +1004,7 @@ source of the =pldoc_man= module from the Prolog library, and likewise
 * Quick access to sweep commands
 :PROPERTIES:
 :CUSTOM_ID: quick-command-access
+:DESCRIPTION: Keymap for useful commands that can be invoked from any buffer
 :END:
 
 #+VINDEX: sweeprolog-prefix-map
@@ -993,6 +1024,7 @@ accessed from anywhere with =C-c p t=, which invokes the command
 * Examining Prolog messages
 :PROPERTIES:
 :CUSTOM_ID: prolog-messages
+:DESCRIPTION: Messages emitted in the embedded Prolog runtime and how to display them
 :END:
 
 #+CINDEX: messages
@@ -1017,6 +1049,7 @@ to the =sweep= messages buffer.  This command is bound by default in
 * Setting Prolog flags
 :PROPERTIES:
 :CUSTOM_ID: prolog-flags
+:DESCRIPTION: Commands for modifying the configuration of the embedded Prolog runtime by setting Prolog flags
 :END:
 
 #+CINDEX: prolog flags
@@ -1053,6 +1086,7 @@ A = [102, 111, 111].
 * Installing Prolog packages
 :PROPERTIES:
 :CUSTOM_ID: prolog-packages
+:DESCRIPTION: Commands for installing SWI-Prolog add-ons
 :END:
 
 #+FINDEX: sweeprolog-pack-install
@@ -1064,6 +1098,7 @@ of each package.
 * Contributing
 :PROPERTIES:
 :CUSTOM_ID: contributing
+:DESCRIPTION: Information for users and hackers looking to get involved in the development of this project
 :END:
 
 We highly appreciate all contributions, including bug reports,
@@ -1074,6 +1109,7 @@ For a list of known desired improvements in ~sweep~, see [[*Things to do][Things
 ** Setting up sweep for local development
 :PROPERTIES:
 :CUSTOM_ID: development-setup
+:DESCRIPTION: Instructions for preparing a local development environment for working on sweep
 :END:
 
 Since the Prolog and C parts of ~sweep~ are intended to be distributed
@@ -1109,6 +1145,7 @@ achieved with the following command executed in
 ** Submitting patches and bug reports
 :PROPERTIES:
 :CUSTOM_ID: submitting-patches
+:DESCRIPTION: Commands for contacting the maintainers of this project
 :END:
 
 The best way to get in touch with the ~sweep~ maintainers is via [[https://lists.sr.ht/~eshel/dev][the
@@ -1123,6 +1160,7 @@ mailing list.
 * Things to do
 :PROPERTIES:
 :CUSTOM_ID: thigs-to-do
+:DESCRIPTION: Breakdown of topics that deserve more attention
 :END:
 
 While ~sweep~ is ready to be used for effective editing of Prolog code,
@@ -1131,6 +1169,7 @@ there some further improvements that we want to pursue:
 ** Improvements around editing Prolog
 :PROPERTIES:
 :CUSTOM_ID: todo-editing
+:DESCRIPTION: List of potential enhancements for reading and writing Prolog
 :END:
 
 - Inherit user customizations from ~prolog-mode~ :: ~sweep~ should inherit
@@ -1209,7 +1248,9 @@ there some further improvements that we want to pursue:
 ** Improvements around running Prolog
 :PROPERTIES:
 :CUSTOM_ID: todo-running
+:DESCRIPTION: List of potential enhancements for executing Prolog
 :END:
+
 - Persist top-level history across sessions :: ~sweep~ should persist
   Prolog top-level histories across invocations of
   ~sweeprolog-top-level~, ideally also across different Emacs sessions.
@@ -1217,7 +1258,9 @@ there some further improvements that we want to pursue:
 ** General improvements
 :PROPERTIES:
 :CUSTOM_ID: todo-general
+:DESCRIPTION: List of potentially useful new features
 :END:
+
 - Facilitate interactive debugging :: ~sweep~ should facilitate
   interactive debugging of SWI-Prolog code.  This is a big topic that
   we don't currently address.  Perhaps this should handled through

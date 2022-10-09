@@ -11,6 +11,11 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.5.4 on 2022-10-09
+
+** The manual now has a short description attached to each section
+** Fixed issue with loading ~sweep-module~ from a directory with spaces in its name
+
 * Version 0.5.3 on 2022-10-08
 
 ** New command ~sweeprolog-align-spaces~ in ~sweeprolog-mode~ buffers
