@@ -202,11 +202,14 @@ clause."
                                 (split-string
                                  (shell-command-to-string
                                   (concat
-                                   (or sweeprolog-swipl-path (executable-find "swipl"))
-                                   " -g"
-                                   " write_sweep_module_location"
-                                   " -t"
-                                   " halt"))
+                                   (shell-quote-argument
+                                    (or sweeprolog-swipl-path (executable-find "swipl")))
+                                   " -g write_sweep_module_location"
+                                   " -t halt "
+                                   (shell-quote-argument
+                                    (expand-file-name
+                                     "sweep.pl"
+                                     (file-name-directory load-file-name)))))
                                  "\n")))))
       (condition-case _
           (load sweep-module-path)
