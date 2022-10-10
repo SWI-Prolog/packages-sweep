@@ -29,6 +29,13 @@ Wrapper around ~flymake-show-buffer-diagnostics~ for ~sweeprolog-mode~,
 bound to ~C-c C-`~.  With a prefix argument, calls
 ~flymake-show-project-diagnostics~ instead.
 
+** Fixed bug in end of a clause detection in presence of ~=..~
+
+This version includes a fix in ~sweeprolog-end-of-top-term~, which is
+used to locate the end of the current clause.  Previously this
+function would get "confused" by occurrences of the ~=../2~ ("univ")
+operator in the clause's body.
+
 * Version 0.5.4 on 2022-10-09
 
 ** The manual now has a short description attached to each section

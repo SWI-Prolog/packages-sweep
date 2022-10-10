@@ -52,6 +52,31 @@
   (should (equal (sweeprolog-next-solution) nil))
   (should (equal (sweeprolog-cut-query) t)))
 
+(ert-deftest end-of-top-term-with-univ ()
+  "Tests detecting the fullstop in presence of `=..'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+html_program_section(Section, Dict) -->
+    { _{module:M, options:Options} :< Dict,
+      Content = Dict.get(Section),
+      Content \= [],
+      scasp_code_section_title(Section, Default, Title),
+      Opt =.. [Section,true],
+      option(Opt, Options, Default)
+    },
+    !,
+    html(h2(Title)),
+    (   {Section == query}
+    ->  {ovar_set_bindings(Dict.bindings)},
+        html_query(M:Content, Options)
+    ;   sequence(predicate_r(M:Options), Content)
+    ).
+")
+    (goto-char (point-min))
+    (sweeprolog-end-of-top-term)
+    (should (= (point) 466))))
+
 
 (ert-deftest fullstop-detection ()
   "Tests detecting the fullstop in presence of confusing comments."

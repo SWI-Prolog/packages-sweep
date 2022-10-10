@@ -1264,10 +1264,6 @@ there some further improvements that we want to pursue:
   moving to the next predicate definition and ~C-c C-p~ for moving to
   the previous.
 
-- Integrate with ~flymake~ to provide on-the-fly diagnostics :: ~sweeprolog-mode~
-  should integrate with ~flymake~ to provide diagnostics and feedback
-  for errors in Prolog code in an Emacs-standard manner.
-
 - Improve the information provided for predicate completion candidates :: predicate
   completion with ~C-M-i~ should annotate each completion candidate with
   the names and modes of its arguments, when available.  E.g. say
