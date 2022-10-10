@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.5.4
+;; Package-Version: 0.6.0
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -2655,7 +2655,14 @@ if-then-else constructs in SWI-Prolog."
   (when sweeprolog-enable-flymake
     (add-hook 'flymake-diagnostic-functions #'sweeprolog-diagnostic-function nil t)
     (flymake-mode)
-    (setq-local next-error-function #'flymake-goto-next-error))
+    (setq-local next-error-function #'flymake-goto-next-error)
+    (add-hook 'window-selection-change-functions
+              (let ((buffer (current-buffer)))
+                (lambda (win)
+                  (when (equal buffer
+                               (window-buffer win))
+                    (next-error-select-buffer buffer))))
+              nil t))
   (when (and (boundp 'cycle-spacing-actions)
              (consp cycle-spacing-actions)
              sweeprolog-enable-cycle-spacing
