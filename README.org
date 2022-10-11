@@ -1199,7 +1199,7 @@ mailing list.
 
 * Things to do
 :PROPERTIES:
-:CUSTOM_ID: thigs-to-do
+:CUSTOM_ID: things-to-do
 :DESCRIPTION: Breakdown of topics that deserve more attention
 :END:
 
@@ -1281,6 +1281,20 @@ there some further improvements that we want to pursue:
   starts with a module-qualification ~foo:ba<|>~ and restrict completion
   to matching candidates in the specified module.
 
+- Respect ~font-lock-maximum-decoration~ :: We should take into account
+  the value of ~font-lock-maximum-decoration~ while highlighting
+  ~sweeprolog-mode~ buffers.  This variable conveys the user's preferred
+  degree of highlighting.  A possible approach would be changing
+  ~sweeprolog--colour-term-to-faces~ such that each color fragment in
+  returned list states its target decoration level (i.e. 1, 2 or 3).
+  ~sweeprolog--colourise~ would then compare this target to the value of
+
+  #+begin_src emacs-lisp
+    (font-lock-value-in-major-mode font-lock-maximum-decoration)
+  #+end_src
+
+  And decide whether or not to apply the fragment.
+
 ** Improvements around running Prolog
 :PROPERTIES:
 :CUSTOM_ID: todo-running
@@ -1302,6 +1316,12 @@ there some further improvements that we want to pursue:
   we don't currently address.  Perhaps this should handled through
   some Debug Adapter Protocol integration similar to what was done in
   ~dap-swi-prolog~ (see [[https://github.com/eshelyaron/debug_adapter/blob/main/README.md][Debug Adapter Protocol for SWI-Prolog]]).
+
+- Provide predicate documentation in a ~help-mode~ buffer :: ~sweep~
+  should include a command ~sweeprolog-describe-predicate~ that works
+  similarly to the built-in ~describe-function~ by opening a ~help-mode~
+  buffer and populating it with the full cross-referenced
+  documentation of a given Prolog predicate.
 
 - Integrate with =project.el= adding support for SWI-Prolog packs :: It
   would be nice if ~sweep~ would "teach" =project.el= to detect
