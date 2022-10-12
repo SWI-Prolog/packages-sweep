@@ -9,6 +9,7 @@ find_path(
   EMACS_INCLUDE_DIR
   NAMES "emacs-module.h"
   PATHS /Applications/Emacs.app/Contents/Resources/include
+	${MINGW_ROOT}/include
 )
 
 if(EMACS_INCLUDE_DIR)
