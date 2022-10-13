@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.6.0
+;; Package-Version: 0.6.1
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -103,9 +103,19 @@ This makes the first invocation of \\[cycle-spacing] in
 (defcustom sweeprolog-swipl-path nil
   "Path to the swipl executable.
 When non-nil, this is used by the embedded SWI-Prolog runtime to
-locate its \"home\" directory.  Otherwise, the `executable-find'
-is used to find a the swipl executable."
+locate its \"home\" directory.  Otherwise, `executable-find' is
+used to find the swipl executable."
   :package-version '((sweeprolog . "0.1.1"))
+  :type 'string
+  :group 'sweeprolog)
+
+(defcustom sweeprolog-libswipl-path nil
+  "Path to the libswipl shared object.
+On Linux and other ELF-based platforms, `sweep' first loads
+libswipl before loading `sweep-module'.  When this option is
+nil (the default), libswipl is located automatically, otherwise
+the value of this option is used as its path."
+  :package-version '((sweeprolog . "0.6.1"))
   :type 'string
   :group 'sweeprolog)
 
@@ -205,6 +215,37 @@ clause."
 (defun sweeprolog--ensure-module ()
   "Locate and load `sweep-module', unless already loaded."
   (unless (featurep 'sweep-module)
+    (when-let ((exec-format (car
+                             (save-match-data
+                               (split-string
+                                (shell-command-to-string
+                                 (concat
+                                  (shell-quote-argument
+                                   (or sweeprolog-swipl-path (executable-find "swipl")))
+                                  " -q"
+                                  " -g 'current_prolog_flag(executable_format, X), writeln(X)'"
+                                  " -t halt"))
+                                "\n"
+                                t)))))
+      (when (string= exec-format "elf")
+        (let ((libswipl-path (or sweeprolog-libswipl-path
+                                 (car
+                                  (save-match-data
+                                    (split-string
+                                     (shell-command-to-string
+                                      (concat
+                                       (shell-quote-argument
+                                        (or sweeprolog-swipl-path (executable-find "swipl")))
+                                       " -q"
+                                       " -g 'current_prolog_flag(libswipl, X), writeln(X)'"
+                                       " -t halt"))
+                                     "\n"))))))
+          (condition-case _
+              (load libswipl-path)
+            (file-error (user-error
+                         (concat "Failed to load `libswipl'. "
+                                 "Make sure SWI-Prolog is installed "
+                                 "and up to date")))))))
     (let ((sweep-module-path (car
                               (save-match-data
                                 (split-string
