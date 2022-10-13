@@ -445,6 +445,7 @@ editing and moving around the buffer, a faster, local analysis is
 invoked to updated the semantic highlighting in response to changes in
 the buffer.
 
+#+KINDEX: C-c C-c (sweeprolog-mode)
 #+FINDEX: sweeprolog-colourise-buffer
 At any point in a =sweeprolog-mode= buffer, the command =C-c C-c= (or =M-x
 sweeprolog-colourise-buffer=) can be used to update the cross reference
@@ -628,6 +629,7 @@ with Lisp expressions, or "sexps".  =sweeprolog-mode= extends the Emacs'
 notion of syntactic expressions to accommodate for Prolog terms, which
 allows the standard sexp-based commands to operate on them seamlessly.
 
+#+KINDEX: C-M-^
 #+FINDEX: raise-sexp
 [[info:emacs#Expressions][Expressions in the Emacs manual]] covers the most important commands
 that operate on sexps, and by extension on Prolog terms.  Another
@@ -682,6 +684,7 @@ about customizing =imenu=, see [[info:emacs#Imenu][Imenu in the Emacs manual]].
 :DESCRIPTION: Commands for jumping to files that appear in Prolog code
 :END:
 
+#+KINDEX: C-c C-o
 #+FINDEX: sweeprolog-find-file-at-point
 File specifications that occur in =sweeprolog-mode= buffers can be followed
 with =C-c C-o= (or =M-x sweeprolog-find-file-at-point=) whenever point is over
@@ -704,6 +707,8 @@ For more information about file specifications in SWI-Prolog, see
 :DESCRIPTION: Commands for loading Prolog predicates from the current buffer
 :END:
 
+#+KINDEX: C-c C-l
+#+KINDEX: C-u C-c C-l
 #+CINDEX: loading
 #+FINDEX: sweeprolog-load-buffer
 The command =M-x sweeprolog-load-buffer= can be used to load the contents of
@@ -788,6 +793,7 @@ programming languages, which apply also to writing =PlDoc= comments for
 Prolog predicates.  For an overview of the relevant standard Emacs
 commands, see [[info:emacs#Comment Commands][Comment Commands in the Emacs manual]].
 
+#+KINDEX: C-c C-d
 #+FINDEX: sweeprolog-document-predicate-at-point
 =sweep= also includes a dedicated command called
 =sweeprolog-document-predicate-at-point= for interactively creating
@@ -962,6 +968,7 @@ sweeprolog-top-level-signal~.  This command prompts for an active =sweep=
 top-level buffer followed by a Prolog goal, and interrupts the
 top-level causing it to run the specified goal.
 
+#+KINDEX: C-c C-c (sweeprolog-top-level-mode)
 #+FINDEX: sweeprolog-top-level-signal-current
 In ~sweeprolog-top-level-mode~ buffers, the command
 ~sweeprolog-top-level-signal-current~ is available for signaling the
