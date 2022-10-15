@@ -782,6 +782,11 @@ write_sweep_module_location :-
     absolute_file_name(foreign('sweep-module'),
                        Path,
                        [file_type(executable), access(read)]),
+    (   current_prolog_flag(executable_format, elf)
+    ->  current_prolog_flag(libswipl, Libpath),
+        writeln(Libpath)
+    ;   true
+    ),
     writeln(Path).
 
 sweep_top_level_server(_, Port) :-

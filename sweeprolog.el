@@ -217,57 +217,20 @@ clause."
 (defun sweeprolog--ensure-module ()
   "Locate and load `sweep-module', unless already loaded."
   (unless (featurep 'sweep-module)
-    (when-let ((exec-format (car
-                             (save-match-data
-                               (split-string
-                                (shell-command-to-string
-                                 (concat
-                                  (shell-quote-argument
-                                   (or sweeprolog-swipl-path (executable-find "swipl")))
-                                  " -q"
-                                  " -g 'current_prolog_flag(executable_format, X), writeln(X)'"
-                                  " -t halt"))
-                                "\n"
-                                t)))))
-      (when (string= exec-format "elf")
-        (let ((libswipl-path (or sweeprolog-libswipl-path
-                                 (car
-                                  (save-match-data
-                                    (split-string
-                                     (shell-command-to-string
-                                      (concat
-                                       (shell-quote-argument
-                                        (or sweeprolog-swipl-path (executable-find "swipl")))
-                                       " -q"
-                                       " -g 'current_prolog_flag(libswipl, X), writeln(X)'"
-                                       " -t halt"))
-                                     "\n"))))))
-          (condition-case _
-              (load libswipl-path)
-            (file-error (user-error
-                         (concat "Failed to load `libswipl'. "
-                                 "Make sure SWI-Prolog is installed "
-                                 "and up to date")))))))
-    (let ((sweep-module-path (car
-                              (save-match-data
-                                (split-string
-                                 (shell-command-to-string
-                                  (concat
-                                   (shell-quote-argument
-                                    (or sweeprolog-swipl-path (executable-find "swipl")))
-                                   " -g write_sweep_module_location"
-                                   " -t halt "
-                                   (shell-quote-argument
-                                    (expand-file-name
-                                     "sweep.pl"
-                                     (file-name-directory load-file-name)))))
-                                 "\n")))))
-      (condition-case _
-          (load sweep-module-path)
-        (file-error (user-error
-                     (concat "Failed to locate `sweep-module'. "
-                             "Make sure SWI-Prolog is installed "
-                             "and up to date")))))))
+    (if-let ((paths (save-match-data
+                      (split-string
+                       (with-output-to-string
+                         (with-current-buffer standard-output
+                           (call-process
+                            (or sweeprolog-swipl-path "swipl")
+                            nil '(t nil) nil
+                            "-q" "-g" "write_sweep_module_location"
+                            "-t" "halt" "sweep.pl")))
+                       "\n" t))))
+        (mapc #'load paths)
+      (error (concat "Failed to locate `sweep-module'. "
+                       "Make sure SWI-Prolog is installed "
+                       "and up to date")))))
 
 (defface sweeprolog-debug-prefix-face
   '((default :inherit shadow))
