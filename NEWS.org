@@ -13,6 +13,13 @@ For further details, please consult the manual:
 
 * Version 0.6.2 on 2022-10-15
 
+** New command ~sweeprolog-export-predicate~ in ~sweeprolog-mode~ buffers
+
+~sweeprolog-export-predicate~ is a new command available in
+~sweeprolog-mode~ buffers for adding the predicate defined at point to
+the current module's export list.  Bound to =C-c C-e= in
+~sweeprolog-mode-map~.
+
 ** Added a Prolog indicating the Prolog is running under ~sweep~
 
 =sweeprolog.el= now creates a boolean Prolog flag ~sweep~ set to ~true~ when

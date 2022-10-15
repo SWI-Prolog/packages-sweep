@@ -60,6 +60,7 @@
             sweep_top_level_server/2,
             sweep_top_level_threads/2,
             sweep_accept_top_level_client/2,
+            sweep_local_predicate_export_comment/2,
             write_sweep_module_location/0
           ]).
 
@@ -858,3 +859,23 @@ sweep_accept_top_level_client(Buffer, _) :-
 sweep_thread_signal([ThreadId|Goal0], _) :-
     term_string(Goal, Goal0),
     thread_signal(ThreadId, Goal).
+
+sweep_local_predicate_export_comment([Path0,F0,A],Comm) :-
+    atom_string(Path, Path0),
+    atom_string(F, F0),
+    doc_comment(_:F/A, Path:_, _Summary, Comment),
+    comment_modes(Comment, Modes),
+    pi_head(F/A, Head),
+    member(ModeAndDet, Modes),
+    strip_det(ModeAndDet, Head),
+    Head =.. [_|Args],
+    Head2 =.. ['DUMMY'|Args],
+    term_string(Head2, Syn0,
+                [ module(pldoc_modes),
+                  quoted(false)
+                ]),
+    sub_string(Syn0, 6, _, 1, Comm).
+
+strip_det(Mode is _, Mode) :- !.
+strip_det(//(Mode), Mode) :- !.
+strip_det(Mode, Mode).

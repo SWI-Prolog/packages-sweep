@@ -871,6 +871,29 @@ in ~sweeprolog-mode~ buffers with ~flymake~ integration enabled.  When
 called with a prefix argument (~C-u C-c C-`~), shows a list of
 diagnostics for all buffers in the current project.
 
+** Exporting predicates
+
+#+CINDEX: exported predicates
+By default, a predicate defined in Prolog module is not visible to
+dependent modules unless they it is /exported/, by including it in the
+export list of the defining module (i.e. the second argument of the
+~module/2~ directive).
+
+#+FINDEX: sweeprolog-export-predicate
+#+KINDEX: C-c C-e
+#+KINDEX: C-u C-c C-e
+~sweep~ provides a convenient command for exporting predicates defined
+in ~sweeprolog-mode~ buffer.  To add the predicate near point to the
+export list of the current module, use the command ~C-c C-e~
+(~sweeprolog-export-predicate~).  If the current predicate is documented
+with a =PlDoc= comment, a comment with the predicate's mode is added
+after the predicate name in the export list.  If point is not near a
+predicate definition, calling ~sweeprolog-export-predicate~ will prompt
+for a predicate to export, providing completion candidates based on
+the non-exported predicates defined in the current buffer.  To force
+prompting for a predicate, invoke ~sweeprolog-export-predicate~ with a
+prefix argument (~C-u C-c C-e~).
+
 * The Prolog top-level
 :PROPERTIES:
 :CUSTOM_ID: prolog-top-level

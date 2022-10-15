@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.6.1
+;; Package-Version: 0.6.2
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -138,8 +138,14 @@ the value of this option is used as its path."
   :group 'sweeprolog)
 
 (defcustom sweeprolog-read-predicate-prompt "Predicate: "
-  "Prompt used for reading a Prolog precicate name from the minibuffer."
+  "Prompt used for reading a Prolog predicate name from the minibuffer."
   :package-version '((sweeprolog . "0.1.0"))
+  :type 'string
+  :group 'sweeprolog)
+
+(defcustom sweeprolog-read-exportable-predicate-prompt "Export predicate: "
+  "Prompt used for reading an exportable predicate name."
+  :package-version '((sweeprolog . "0.6.2"))
   :type 'string
   :group 'sweeprolog)
 
@@ -1234,11 +1240,18 @@ module name, F is a functor name and N is its arity."
   (:inherit font-lock-doc-face :foreground "green")
   "Structured comments.")
 
+(defvar-local sweeprolog--module-term nil)
 (defvar-local sweeprolog--variable-at-point nil)
 (defvar-local sweeprolog--diagnostics nil)
 (defvar-local sweeprolog--diagnostics-report-fn nil)
 (defvar-local sweeprolog--diagnostics-changes-beg nil)
 (defvar-local sweeprolog--diagnostics-changes-end nil)
+(defvar-local sweeprolog--exportable-predicates nil)
+
+(defun sweeprolog-read-exportable-predicate ()
+  "Read a predicate name that can be exported in the current buffer."
+  (completing-read sweeprolog-read-exportable-predicate-prompt
+                   sweeprolog--exportable-predicates))
 
 (defun sweeprolog-diagnostic-function (report-fn &rest rest)
   (setq sweeprolog--diagnostics nil
@@ -1255,6 +1268,7 @@ module name, F is a functor name and N is its arity."
      (list (list beg end nil)
            (list beg end (sweeprolog-comment-face))))
     (`("head" "unreferenced" ,f ,a)
+     (add-to-list 'sweeprolog--exportable-predicates (concat f "/" (number-to-string a)))
      (when sweeprolog-enable-flymake
        (push
         (flymake-make-diagnostic (current-buffer) beg end
@@ -1277,11 +1291,13 @@ module name, F is a functor name and N is its arity."
      (list (list beg end (sweeprolog-head-extern-face))))
     (`("head" ,(rx "public(") . ,_)
      (list (list beg end (sweeprolog-head-public-face))))
-    (`("head",(rx "dynamic ") . ,_)
+    (`("head",(rx "dynamic ") ,f ,a)
+     (add-to-list sweeprolog--exportable-predicates (concat f "/" (number-to-string a)))
      (list (list beg end (sweeprolog-head-dynamic-face))))
     (`("head",(rx "multifile ") . ,_)
      (list (list beg end (sweeprolog-head-multifile-face))))
-    (`("head" ,(rx "local(") . ,_)
+    (`("head" ,(rx "local(") ,f ,a)
+     (add-to-list 'sweeprolog--exportable-predicates (concat f "/" (number-to-string a)))
      (list (list beg end (sweeprolog-head-local-face))))
     (`("goal" "recursion" . ,_)
      (list (list beg end (sweeprolog-recursion-face))))
@@ -1314,6 +1330,9 @@ module name, F is a functor name and N is its arity."
      (list (list beg end (sweeprolog-global-face))))
     (`("goal",(rx "local(") . ,_)
      (list (list beg end (sweeprolog-local-face))))
+    (`("goal_term" "built_in" "module" 2)
+     (setq sweeprolog--module-term (cons beg end))
+     nil)
     ("instantiation_error"
      (when sweeprolog-enable-flymake
        (push
@@ -1513,6 +1532,7 @@ module name, F is a functor name and N is its arity."
   (when sweeprolog-enable-flymake
     (flymake-start))
   (with-current-buffer (or buffer (current-buffer))
+    (setq sweeprolog--exportable-predicates nil)
     (let* ((beg (point-min))
            (end (point-max))
            (contents (buffer-substring-no-properties beg end)))
@@ -1872,6 +1892,7 @@ Interactively, PROJ is the prefix argument."
     (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
     (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
+    (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
     (define-key map (kbd "C-c C-`")
                 (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
                     #'sweeprolog-show-diagnostics
@@ -1889,6 +1910,9 @@ Interactively, PROJ is the prefix argument."
     [ "Load Prolog buffer"     sweeprolog-load-buffer     t ]
     [ "Find Prolog module"     sweeprolog-find-module     t ]
     [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
+    [ "Export predicate"
+      sweeprolog-export-predicate
+      sweeprolog--exportable-predicates ]
     [ "Insert module template"
       auto-insert
       (eq major-mode 'sweeprolog-mode) ]
@@ -2618,6 +2642,69 @@ variable at point, if any."
 (defvar-local sweeprolog--timer nil)
 (defvar-local sweeprolog--colourise-buffer-duration 0.2)
 
+(defun sweeprolog-local-predicate-export-comment (fun ari)
+  (sweeprolog-open-query "user"
+                         "sweep"
+                         "sweep_local_predicate_export_comment"
+                         (list (buffer-file-name) fun ari))
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (cdr sol))))
+
+(defun sweeprolog-export-predicate (pred &optional comm)
+  "Add PRED to the export list of the current module.
+Optional argument COMM is a comment to insert after the PRED in
+the export list.
+
+Interactively, if called without a prefix argument and point is
+near a predicate definiton, export that predicate and derive the
+export comment from its PlDoc comment.  Otherwise, prompt for a
+predicate to export providing completion candidates based on the
+non-exported predicates defined in the current buffer."
+  (interactive (or (and (not current-prefix-arg)
+                        (when-let ((def (sweeprolog-definition-at-point))
+                                   (fun (cadr def))
+                                   (ari (caddr def)))
+                          (list (concat fun "/" (number-to-string ari))
+                                (sweeprolog-local-predicate-export-comment fun ari))))
+                   (list
+                    (sweeprolog-read-exportable-predicate)
+                    (read-string "Export comment: ")))
+               sweeprolog-mode)
+  (sweeprolog-colourise-buffer)
+  (unless (member pred sweeprolog--exportable-predicates)
+    (user-error "Cannot add %s to export list" pred))
+  (if-let ((mbeg (car sweeprolog--module-term))
+           (mend (cdr sweeprolog--module-term)))
+      (save-excursion
+        (goto-char mend)
+        (let ((pos (- (point-max) (point))))
+          (if (search-backward "]" (car sweeprolog--module-term) t)
+              (combine-after-change-calls
+                (pcase (sweeprolog-last-token-boundaries)
+                  (`(open ,_ ,_)
+                   (insert pred)
+                   (when (and comm (not (string-empty-p comm)))
+                     (insert "  % " comm))
+                   (insert "\n")
+                   (indent-region mbeg (1+ (point))))
+                  (`(symbol ,_ ,oend)
+                   (let ((point (point)))
+                     (goto-char oend)
+                     (insert ",")
+                     (goto-char (1+ point))
+                     (insert "\n")
+                     (backward-char)
+                     (insert pred)
+                     (when (and comm (not (string-empty-p comm)))
+                       (insert "  % " comm))
+                     (indent-region mbeg (- (point-max) pos))
+                     (align-regexp mbeg (- (point-max) pos) (rx (group (zero-or-more blank)) "%"))
+                     ))
+                  (_ (user-error "Unexpected token while looking for export list"))))
+            (user-error "Cannot find export list"))))
+    (user-error "Buffer is not a module")))
 
 (defun sweeprolog-align-spaces (&optional _)
   "Adjust in-line whitespace between the previous next Prolog tokens.
