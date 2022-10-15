@@ -150,6 +150,11 @@ which the user is free to extend with e.g.:
   (add-to-list 'sweeprolog-init-args "--stack-limit=512m")
 #+end_src
 
+#+CINDEX: sweep Prolog flag
+The default value of ~sweeprolog-init-args~ is set to load the Prolog
+helper library =sweep.pl= and to create a boolean Prolog flag ~sweep~, set
+to ~true~, which indicates to SWI-Prolog that it is running under ~sweep~.
+
 #+VINDEX: sweeprolog-init-on-load
 To inhibit =sweeprolog= from initializing Prolog on load, set the user-option
 =sweeprolog-init-on-load= to nil.
