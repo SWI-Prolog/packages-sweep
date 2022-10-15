@@ -74,8 +74,6 @@
 :- use_module(library(pldoc/man_index)).
 :- use_module(library(lynx/html_text)).
 :- use_module(library(prolog_pack)).
-:- use_module(library(help)).
-:- use_module(library(prolog_server)).
 
 :- meta_predicate with_buffer_stream(-, +, 0).
 
