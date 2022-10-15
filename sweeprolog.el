@@ -172,6 +172,8 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
 
 (defcustom sweeprolog-init-args (list "-q"
                                       "--no-signals"
+                                      "-g"
+                                      "create_prolog_flag(sweep,true,[access(read_only),type(boolean)])"
                                       (expand-file-name
                                        "sweep.pl"
                                        (file-name-directory load-file-name)))
