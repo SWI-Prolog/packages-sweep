@@ -235,6 +235,7 @@ sweep_identifier_at_point_(Path0, Point, Contents, Identifier) :-
     prolog_colourise_term(Contents, Path,
                           sweep_handle_identifier_at_point(Path, M, Point),
                           []),
+    !,
     sweep_current_identifier_at_point(Identifier0),
     term_string(Identifier0, Identifier).
 

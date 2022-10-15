@@ -2505,11 +2505,11 @@ Interactively, POINT is set to the current point."
                 (point)))
          (contents (buffer-substring-no-properties beg end)))
     (sweeprolog-open-query "user"
-                      "sweep"
-                      "sweep_identifier_at_point"
-                      (list contents
-                            (buffer-file-name)
-                            (- p beg)))
+                           "sweep"
+                           "sweep_identifier_at_point"
+                           (list contents
+                                 (buffer-file-name)
+                                 (- p beg)))
     (let ((sol (sweeprolog-next-solution)))
       (sweeprolog-close-query)
       (when (sweeprolog-true-p sol)
