@@ -61,7 +61,8 @@
             sweep_top_level_threads/2,
             sweep_accept_top_level_client/2,
             sweep_local_predicate_export_comment/2,
-            write_sweep_module_location/0
+            write_sweep_module_location/0,
+            sweep_module_html_documentation/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -72,8 +73,10 @@
 :- use_module(library(pldoc/doc_wiki)).
 :- use_module(library(pldoc/doc_modes)).
 :- use_module(library(pldoc/doc_man)).
+:- use_module(library(pldoc/doc_html)).
 :- use_module(library(pldoc/man_index)).
 :- use_module(library(lynx/html_text)).
+:- use_module(library(http/html_write)).
 :- use_module(library(prolog_pack)).
 
 :- meta_predicate with_buffer_stream(-, +, 0).
@@ -427,8 +430,21 @@ sweep_module_path(ModuleName, Path) :-
 sweep_module_path_(Module, Path) :-
     module_property(Module, file(Path)), !.
 sweep_module_path_(Module, Path) :-
+    xref_module(Path, Module), !.
+sweep_module_path_(Module, Path) :-
     '$autoload':library_index(_, Module, Path0), !, string_concat(Path0, ".pl", Path).
 
+sweep_module_html_documentation(M0, D) :-
+    atom_string(M, M0),
+    (   sweep_module_path_(M, _)
+    ->  true
+    ;   '$autoload':library_index(_, M, Path),
+        xref_source(Path, [comments(store)])
+    ),
+    doc_comment(M:module(Desc), Pos, _, Comment),
+    pldoc_html:pred_dom(M:module(Desc), [], Pos-Comment, DOM),
+    phrase(pldoc_html:html(DOM), HTML),
+    with_output_to(string(D), html_write:print_html(HTML)).
 
 sweep_modules_collection([], Modules) :-
     findall([M|P], ( module_property(M, file(P0)), atom_string(P0, P) ), Modules0, Tail),

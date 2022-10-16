@@ -872,6 +872,10 @@ called with a prefix argument (~C-u C-c C-`~), shows a list of
 diagnostics for all buffers in the current project.
 
 ** Exporting predicates
+:PROPERTIES:
+:CUSTOM_ID: exporting-predicates
+:DESCRIPTION: Commands for adding Prolog predicates to their module's export list
+:END:
 
 #+CINDEX: exported predicates
 By default, a predicate defined in Prolog module is not visible to
@@ -893,6 +897,26 @@ for a predicate to export, providing completion candidates based on
 the non-exported predicates defined in the current buffer.  To force
 prompting for a predicate, invoke ~sweeprolog-export-predicate~ with a
 prefix argument (~C-u C-c C-e~).
+
+* Prolog Help
+:PROPERTIES:
+:CUSTOM_ID: prolog-help
+:DESCRIPTION: Commands for displaying detailed Prolog documentation
+:END:
+
+#+CINDEX: prolog help
+~sweep~ provides a way to read SWI-Prolog documentation via the standard
+Emacs ~help~ user interface, akin to Emacs' built-in ~describe-function~
+(~C-h f~) and ~describe-variable~ (~C-h v~).  For more information about
+Emacs ~help~ and its special major mode, ~help-mode~, see [[info:emacs#Help Mode][Help Mode in the
+Emacs manual]].
+
+#+FINDEX: sweeprolog-describe-module
+#+KINDEX: s (help-mode)
+The command ~M-x sweeprolog-describe-module~ prompts for the name of a
+Prolog module and displays its documentation in the =*Help*= buffer.  To
+jump to the source code from its documentation, press ~s~
+(~help-view-source~).
 
 * The Prolog top-level
 :PROPERTIES:
@@ -1270,11 +1294,6 @@ there some further improvements that we want to pursue:
   ~help-echo~ property that says what kind of token this is, to expose
   the precise semantics of each token to the user.
 
-- Add a command for exporting the current predicate :: ~sweeprolog-mode~
-  should provide a command for adding a predicate to the export list
-  of the module defined in the current buffer, defaulting to the
-  predicate at point.
-
 - Add a command for updating the dependencies for the current module :: ~sweeprolog-mode~
   should provide a command for adding and/or updating ~use_module/2~ and
   ~autoload/2~ directives as needed according to the predicates that the
@@ -1356,7 +1375,9 @@ there some further improvements that we want to pursue:
   should include a command ~sweeprolog-describe-predicate~ that works
   similarly to the built-in ~describe-function~ by opening a ~help-mode~
   buffer and populating it with the full cross-referenced
-  documentation of a given Prolog predicate.
+  documentation of a given Prolog predicate.  We currently have
+  ~sweeprolog-describe-module~ as a proof of concept which should be
+  extended to cover predicate documentation as well.
 
 - Integrate with =project.el= adding support for SWI-Prolog packs :: It
   would be nice if ~sweep~ would "teach" =project.el= to detect

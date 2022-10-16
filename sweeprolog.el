@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.6.2
+;; Package-Version: 0.6.3
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -32,6 +32,9 @@
 (require 'autoinsert)
 (require 'eldoc)
 (require 'flymake)
+(require 'help-mode)
+(require 'find-func)
+(require 'shr)
 
 (defgroup sweeprolog nil
   "SWI-Prolog Embedded in Emacs."
@@ -572,6 +575,8 @@ module name, F is a functor name and N is its arity."
     (when (sweeprolog-true-p sol)
       (cdr sol))))
 
+(defvar sweeprolog-read-module-history nil)
+
 (defun sweeprolog-read-module-name ()
   "Read a Prolog module name from the minibuffer, with completion."
   (let* ((col (sweeprolog-modules-collection))
@@ -585,7 +590,9 @@ module name, F is a functor name and N is its arity."
                             (if des
                                 (concat pat (make-string (max 0 (- 80 (length pat))) ? ) des)
                               pat)))))))
-    (completing-read sweeprolog-read-module-prompt col)))
+    (completing-read sweeprolog-read-module-prompt col nil nil nil
+                     'sweeprolog-read-module-history
+                     sweeprolog-buffer-module)))
 
 
 (defun sweeprolog--set-buffer-module ()
@@ -1761,6 +1768,13 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (when sweeprolog-init-on-load (sweeprolog-init))
 
 ;;;###autoload
+(defvar sweeprolog-help-prefix-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "m" #'sweeprolog-describe-module)
+    map)
+  "Keymap for `sweeprolog' help commands.")
+
+;;;###autoload
 (defvar sweeprolog-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "F" #'sweeprolog-set-prolog-flag)
@@ -1768,6 +1782,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (define-key map "R" #'sweeprolog-restart)
     (define-key map "T" #'sweeprolog-list-top-levels)
     (define-key map "e" #'sweeprolog-view-messages)
+    (define-key map "h" sweeprolog-help-prefix-map)
     (define-key map "l" #'sweeprolog-load-buffer)
     (define-key map "m" #'sweeprolog-find-module)
     (define-key map "p" #'sweeprolog-find-predicate)
@@ -1932,6 +1947,8 @@ Interactively, PROJ is the prefix argument."
                            sweeprolog-top-level-thread-id)))
                   (buffer-list)) ]
     [ "Open Top-level Menu"    sweeprolog-list-top-levels t ]
+    "--"
+    [ "Describe Prolog module" sweeprolog-describe-module t ]
     "--"
     [ "Reset sweep"            sweeprolog-restart         t ]
     [ "View sweep messages"    sweeprolog-view-messages   t ]))
@@ -2901,6 +2918,54 @@ if-then-else constructs in SWI-Prolog."
       (sweeprolog-top-level-menu--refresh)
       (tabulated-list-print))
     (pop-to-buffer-same-window buf)))
+
+(defun sweeprolog--describe-module (mod)
+  (let ((page
+         (progn
+           (sweeprolog-open-query "user"
+                                  "sweep"
+                                  "sweep_module_html_documentation"
+                                  mod)
+           (let ((sol (sweeprolog-next-solution)))
+             (sweeprolog-close-query)
+             (when (sweeprolog-true-p sol)
+               (with-temp-buffer
+                 (insert (cdr sol))
+                 (let ((shr-external-rendering-functions
+                        '((a . shr-generic))))
+                   (shr-render-region (point-min) (point-max)))
+                 (buffer-string)))))))
+    (help-setup-xref (list #'sweeprolog--describe-module mod)
+                     (called-interactively-p 'interactive))
+    (with-help-window (help-buffer)
+      (with-current-buffer (help-buffer)
+        (if-let ((path (sweeprolog-module-path mod)))
+            (progn
+              (setq help-mode--current-data
+                    (list :symbol (intern mod)
+                          :type   'swi-prolog-module
+                          :file   path))
+              (if page
+                  (insert (buttonize mod #'sweeprolog-find-module mod)
+                          " is a SWI-Prolog module.\n\n"
+                          page)
+                (insert (buttonize mod #'sweeprolog-find-module mod)
+                        " is an undocumented SWI-Prolog module.")))
+          (insert mod " is not documented as a SWI-Prolog module."))))))
+
+;;;###autoload
+(defun sweeprolog-describe-module (mod)
+  "Display the full documentation for MOD (a Prolog module)."
+  (interactive (list (sweeprolog-read-module-name)))
+  (sweeprolog--describe-module mod))
+
+(defvar sweeprolog-module-documentation-regexp (rx bol  (zero-or-more whitespace)
+                                                   ":-" (zero-or-more whitespace)
+                                                   "module("))
+
+(add-to-list 'find-function-regexp-alist
+             (cons 'swi-prolog-module
+                   'sweeprolog-module-documentation-regexp))
 
 (provide 'sweeprolog)
 

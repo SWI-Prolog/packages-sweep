@@ -11,6 +11,21 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.6.3 on 2022-10-16
+
+** New command ~sweeprolog-describe-module~
+
+Experimental.  Renders the full =PlDoc= documentation of the specified
+Prolog module in a ~help-mode~ buffer.
+
+** Bug fix affecting ~sweeprolog-document-predicate-at-point~
+
+This version includes a fix in ~sweeprolog-beginning-of-top-term~, which
+is used to locate the beginning of the current clause.  Previously
+this function could hang when invoked with point before the first term
+on the buffer.  This affected commands that depend of this function,
+such as ~M-x sweeprolog-document-predicate-at-point~.
+
 * Version 0.6.2 on 2022-10-15
 
 ** New command ~sweeprolog-export-predicate~ in ~sweeprolog-mode~ buffers
@@ -20,7 +35,7 @@ For further details, please consult the manual:
 the current module's export list.  Bound to =C-c C-e= in
 ~sweeprolog-mode-map~.
 
-** Added a Prolog indicating the Prolog is running under ~sweep~
+** Added a Prolog flag indicating the Prolog is running under ~sweep~
 
 =sweeprolog.el= now creates a boolean Prolog flag ~sweep~ set to ~true~ when
 initiating Prolog, to allow users to customize their Prolog init file
