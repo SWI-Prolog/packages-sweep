@@ -796,16 +796,21 @@ sweep_imenu_index(Path, Index) :-
             ),
             Index).
 
+:- if(exists_source(library(sweep_link))).
+:- use_module(library(sweep_link), [write_sweep_module_location/0]).
+:- else.
 write_sweep_module_location :-
+    format('V ~w~n', 1),
     absolute_file_name(foreign('sweep-module'),
                        Path,
                        [file_type(executable), access(read)]),
     (   current_prolog_flag(executable_format, elf)
     ->  current_prolog_flag(libswipl, Libpath),
-        writeln(Libpath)
+        format('L ~w~n', Libpath)
     ;   true
     ),
-    writeln(Path).
+    format('M ~w~n', Path).
+:- endif.
 
 sweep_top_level_server(_, Port) :-
     tcp_socket(ServerSocket),

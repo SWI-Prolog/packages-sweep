@@ -223,10 +223,20 @@ clause."
 (declare-function sweeprolog-close-query   "sweep-module")
 (declare-function sweeprolog-cleanup       "sweep-module")
 
+(defun sweeprolog--load-module (line)
+  (save-match-data
+    (when (string-match (rx bos
+                            (or "L" "M")
+                            (one-or-more whitespace)
+                            (group-n 1 (one-or-more not-newline))
+                            eos)
+                        line)
+      (load (match-string 1 line)))))
+
 (defun sweeprolog--ensure-module ()
   "Locate and load `sweep-module', unless already loaded."
   (unless (featurep 'sweep-module)
-    (if-let ((paths (save-match-data
+    (if-let ((lines (save-match-data
                       (split-string
                        (with-output-to-string
                          (with-current-buffer standard-output
@@ -239,7 +249,7 @@ clause."
                              "sweep.pl"
                              (file-name-directory load-file-name)))))
                        "\n" t))))
-        (mapc #'load paths)
+        (mapc #'sweeprolog--load-module lines)
       (error (concat "Failed to locate `sweep-module'. "
                      "Make sure SWI-Prolog is installed "
                      "and up to date")))))
@@ -599,8 +609,10 @@ module name, F is a functor name and N is its arity."
   (sweeprolog-open-query "user" "sweep" "sweep_path_module" (buffer-file-name))
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
-    (when (sweeprolog-true-p sol)
-      (setq sweeprolog-buffer-module (cdr sol)))))
+    (setq sweeprolog-buffer-module
+          (if (sweeprolog-true-p sol)
+              (cdr sol)
+            "user"))))
 
 ;;;###autoload
 (defun sweeprolog-find-module (mod)
@@ -1554,6 +1566,7 @@ module name, F is a functor name and N is its arity."
         (when sweeprolog--diagnostics-report-fn
           (funcall sweeprolog--diagnostics-report-fn sweeprolog--diagnostics)
           (setq sweeprolog--diagnostics-report-fn nil))
+        (sweeprolog--set-buffer-module)
         sol))))
 
 (defun sweeprolog-colourise-some-terms (beg0 end0 &optional _verbose)
