@@ -62,7 +62,8 @@
             sweep_accept_top_level_client/2,
             sweep_local_predicate_export_comment/2,
             write_sweep_module_location/0,
-            sweep_module_html_documentation/2
+            sweep_module_html_documentation/2,
+            sweep_predicate_html_documentation/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -434,9 +435,32 @@ sweep_module_path_(Module, Path) :-
 sweep_module_path_(Module, Path) :-
     '$autoload':library_index(_, Module, Path0), !, string_concat(Path0, ".pl", Path).
 
+sweep_predicate_html_documentation(P0, D) :-
+    term_string(P1, P0),
+    (   P1 = M:F/N
+    ->  true
+    ;   P1 = F/N, M = system
+    ),
+    (   (   current_module(M)
+        ;   xref_module(_, M)
+        )
+    ->  true
+    ;   '$autoload':library_index(_, M, Path),
+        xref_source(Path, [comments(store)])
+    ),
+    (   M == system
+    ->  pldoc_man:load_man_object(F/N, _, _, DOM)
+    ;   doc_comment(M:F/N, Pos, _, Comment),
+        pldoc_html:pred_dom(M:F/N, [], Pos-Comment, DOM)
+    ),
+    phrase(pldoc_html:html(DOM), HTML),
+    with_output_to(string(D), html_write:print_html(HTML)).
+
 sweep_module_html_documentation(M0, D) :-
     atom_string(M, M0),
-    (   sweep_module_path_(M, _)
+    (   (   current_module(M)
+        ;   xref_module(_, M)
+        )
     ->  true
     ;   '$autoload':library_index(_, M, Path),
         xref_source(Path, [comments(store)])
@@ -626,7 +650,7 @@ sweep_predicate_matches(Sub, [String|_]) :-
     sub_string(String, _, _, _, Sub).
 
 sweep_predicate_non_hidden([String|_]) :-
-    \+ sub_string(String, _, _, _, ":'$").
+    \+ sub_string(String, _, _, _, "$").
 
 sweep_predicate_description(M:F/N, [S|T]) :-
     sweep_predicate_description_(M, F, N, T),

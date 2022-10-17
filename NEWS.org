@@ -11,6 +11,21 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.7.0 on 2022-10-17
+
+** New command ~sweeprolog-describe-predicate~
+
+Similarly to ~sweeprolog-describe-module~, this command renders the full
+=PlDoc= documentation of the specified Prolog predicate in a ~help-mode~
+buffer.
+
+** Prolog ~*Help*~ buffers are now cross-referenced
+
+References to Prolog predicates in the ~*Help*~ buffer produced by
+~sweeprolog-describe-module~ and ~sweeprolog-describe-predicate~ are now
+"buttonized" such that pressing ~RET~ on them shows the description of
+the referenced predicate.
+
 * Version 0.6.3 on 2022-10-16
 
 ** New command ~sweeprolog-describe-module~

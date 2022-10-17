@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.6.3
+;; Package-Version: 0.7.0
 ;; Package-Requires: ((emacs "28"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -480,6 +480,8 @@ When non-nil, only predicates whose name contains PREFIX are returned."
     (when (sweeprolog-true-p sol)
       (cdr sol))))
 
+(defvar sweeprolog-read-predicate-history nil)
+
 (defun sweeprolog-read-predicate ()
   "Read a Prolog predicate (M:F/N) from the minibuffer, with completion."
   (let* ((col (sweeprolog-predicates-collection))
@@ -490,7 +492,9 @@ When non-nil, only predicates whose name contains PREFIX are returned."
                     (if val
                         (concat (make-string (- 64 (length key)) ? ) (car val))
                       nil))))))
-    (completing-read sweeprolog-read-predicate-prompt col)))
+    (completing-read sweeprolog-read-predicate-prompt col nil nil nil
+                     'sweeprolog-read-predicate-history
+                     (sweeprolog-identifier-at-point))))
 
 (defun sweeprolog-predicate-prefix-boundaries (&optional point)
   (let ((case-fold-search nil))
@@ -1311,7 +1315,7 @@ module name, F is a functor name and N is its arity."
     (`("head" ,(rx "public(") . ,_)
      (list (list beg end (sweeprolog-head-public-face))))
     (`("head",(rx "dynamic ") ,f ,a)
-     (add-to-list sweeprolog--exportable-predicates (concat f "/" (number-to-string a)))
+     (add-to-list 'sweeprolog--exportable-predicates (concat f "/" (number-to-string a)))
      (list (list beg end (sweeprolog-head-dynamic-face))))
     (`("head",(rx "multifile ") . ,_)
      (list (list beg end (sweeprolog-head-multifile-face))))
@@ -1784,6 +1788,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (defvar sweeprolog-help-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "m" #'sweeprolog-describe-module)
+    (define-key map "p" #'sweeprolog-describe-predicate)
     map)
   "Keymap for `sweeprolog' help commands.")
 
@@ -1961,6 +1966,7 @@ Interactively, PROJ is the prefix argument."
                   (buffer-list)) ]
     [ "Open Top-level Menu"    sweeprolog-list-top-levels t ]
     "--"
+    [ "Describe Predicate"  sweeprolog-describe-predicate t ]
     [ "Describe Prolog module" sweeprolog-describe-module t ]
     "--"
     [ "Reset sweep"            sweeprolog-restart         t ]
@@ -2932,6 +2938,44 @@ if-then-else constructs in SWI-Prolog."
       (tabulated-list-print))
     (pop-to-buffer-same-window buf)))
 
+(defun sweeprolog-render-html-a (dom)
+  (let* ((url (dom-attr dom 'href))
+         (parsed (url-generic-parse-url url))
+         (target (url-target parsed))
+         (start (point)))
+    (shr-generic dom)
+    (cond
+     ((url-host parsed))
+     (target
+      (when (string-match (rx (one-or-more anychar)
+                              "/"
+                              (one-or-more digit) eos)
+                          target)
+        (buttonize-region start
+                          (point)
+                          #'sweeprolog-describe-predicate
+                          target)))
+     (t (let* ((path-and-query (url-path-and-query parsed))
+               (path (car path-and-query))
+               (query (cdr path-and-query)))
+          (cond
+           ((string= path "/pldoc/man")
+            (pcase (url-parse-query-string query)
+              (`(("predicate" ,pred))
+               (buttonize-region start
+                                 (point)
+                                 #'sweeprolog-describe-predicate
+                                 pred))))))))))
+
+(defun sweeprolog-render-html (html)
+  (with-temp-buffer
+    (insert html)
+    (let ((shr-external-rendering-functions
+           '((a . sweeprolog-render-html-a)
+             (var . shr-tag-i))))
+      (shr-render-region (point-min) (point-max)))
+    (buffer-string)))
+
 (defun sweeprolog--describe-module (mod)
   (let ((page
          (progn
@@ -2942,12 +2986,7 @@ if-then-else constructs in SWI-Prolog."
            (let ((sol (sweeprolog-next-solution)))
              (sweeprolog-close-query)
              (when (sweeprolog-true-p sol)
-               (with-temp-buffer
-                 (insert (cdr sol))
-                 (let ((shr-external-rendering-functions
-                        '((a . shr-generic))))
-                   (shr-render-region (point-min) (point-max)))
-                 (buffer-string)))))))
+               (sweeprolog-render-html (cdr sol)))))))
     (help-setup-xref (list #'sweeprolog--describe-module mod)
                      (called-interactively-p 'interactive))
     (with-help-window (help-buffer)
@@ -2972,13 +3011,57 @@ if-then-else constructs in SWI-Prolog."
   (interactive (list (sweeprolog-read-module-name)))
   (sweeprolog--describe-module mod))
 
+(defun sweeprolog--describe-predicate (pred)
+  (let ((page
+         (progn
+           (sweeprolog-open-query "user"
+                                  "sweep"
+                                  "sweep_predicate_html_documentation"
+                                  pred)
+           (let ((sol (sweeprolog-next-solution)))
+             (sweeprolog-close-query)
+             (when (sweeprolog-true-p sol)
+               (sweeprolog-render-html (cdr sol))))))
+        (path (car (sweeprolog-predicate-location pred))))
+    (help-setup-xref (list #'sweeprolog--describe-predicate pred)
+                     (called-interactively-p 'interactive))
+    (with-help-window (help-buffer)
+      (with-current-buffer (help-buffer)
+        (if path
+            (progn (setq help-mode--current-data
+                         (list :symbol (intern pred)
+                               :type   'swi-prolog-predicate
+                               :file   path))
+                   (insert (buttonize pred #'sweeprolog-find-predicate pred)
+                           (if page
+                               (concat " is a SWI-Prolog predicate.\n\n"
+                                       page)
+                             " is an undocumented SWI-Prolog predicate.")))
+          (if page
+              (insert pred " is a built-in SWI-Prolog predicate.\n\n"
+                      page)
+            (insert pred " is not documented as a SWI-Prolog predicate.")))))))
+
+;;;###autoload
+(defun sweeprolog-describe-predicate (pred)
+  "Display the full documentation for PRED (a Prolog predicate)."
+  (interactive (list (sweeprolog-read-predicate)))
+  (sweeprolog--describe-predicate pred))
+
 (defvar sweeprolog-module-documentation-regexp (rx bol  (zero-or-more whitespace)
                                                    ":-" (zero-or-more whitespace)
                                                    "module("))
 
+(defun sweeprolog--find-predicate-from-symbol (sym)
+  (sweeprolog-find-predicate (symbol-name sym)))
+
 (add-to-list 'find-function-regexp-alist
              (cons 'swi-prolog-module
                    'sweeprolog-module-documentation-regexp))
+
+(add-to-list 'find-function-regexp-alist
+             (cons 'swi-prolog-predicate
+                   'sweeprolog--find-predicate-from-symbol))
 
 (provide 'sweeprolog)
 
