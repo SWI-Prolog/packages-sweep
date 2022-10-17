@@ -2944,7 +2944,16 @@ if-then-else constructs in SWI-Prolog."
 (defun sweeprolog--buttonize (string callback data)
   (if (fboundp 'buttonize)
       (buttonize string callback data)
-    (button-buttonize string callback data)))
+    (if (fboundp 'button-buttonize)
+        (button-buttonize string callback data)
+      (propertize string
+                  'face 'button
+                  'button t
+                  'follow-link t
+                  'category t
+                  'button-data data
+                  'keymap button-map
+                  'action callback))))
 
 (defun sweeprolog--buttonize-region (start end callback data)
   (if (fboundp 'buttonize-region)

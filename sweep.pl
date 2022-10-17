@@ -320,7 +320,7 @@ sweep_handle_identifier_at_point_goal(_Path, _M0, undefined, M:Goal) :-
 sweep_handle_identifier_at_point_goal(_Path, _M0, undefined, Goal) :-
     !,
     pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(undefined:PI)).
+    asserta(sweep_current_identifier_at_point(PI)).
 sweep_handle_identifier_at_point_goal(_Path, _M0, meta, _:Goal) :-
     !,
     pi_head(PI, Goal),
