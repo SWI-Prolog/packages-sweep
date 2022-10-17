@@ -2938,6 +2938,11 @@ if-then-else constructs in SWI-Prolog."
       (tabulated-list-print))
     (pop-to-buffer-same-window buf)))
 
+(defun sweeprolog--buttonize (string callback data)
+  (if (fboundp 'buttonize)
+      (buttonize string callback data)
+    (button-buttonize string callback data)))
+
 (defun sweeprolog--buttonize-region (start end callback data)
   (if (fboundp 'buttonize-region)
       (buttonize-region start end callback data)
@@ -3029,10 +3034,10 @@ if-then-else constructs in SWI-Prolog."
                           :type   'swi-prolog-module
                           :file   path))
               (if page
-                  (insert (buttonize mod #'sweeprolog-find-module mod)
+                  (insert (sweeprolog--buttonize mod #'sweeprolog-find-module mod)
                           " is a SWI-Prolog module.\n\n"
                           page)
-                (insert (buttonize mod #'sweeprolog-find-module mod)
+                (insert (sweeprolog--buttonize mod #'sweeprolog-find-module mod)
                         " is an undocumented SWI-Prolog module.")))
           (insert mod " is not documented as a SWI-Prolog module."))))))
 
@@ -3063,7 +3068,7 @@ if-then-else constructs in SWI-Prolog."
                          (list :symbol (intern pred)
                                :type   'swi-prolog-predicate
                                :file   path))
-                   (insert (buttonize pred #'sweeprolog-find-predicate pred)
+                   (insert (sweeprolog--buttonize pred #'sweeprolog-find-predicate pred)
                            (if page
                                (concat " is a SWI-Prolog predicate.\n\n"
                                        page)
