@@ -482,8 +482,10 @@ When non-nil, only predicates whose name contains PREFIX are returned."
 
 (defvar sweeprolog-read-predicate-history nil)
 
-(defun sweeprolog-read-predicate ()
-  "Read a Prolog predicate (M:F/N) from the minibuffer, with completion."
+(defun sweeprolog-read-predicate (&optional prompt)
+  "Read a Prolog predicate from the minibuffer with prompt PROMPT.
+If PROMPT is nil, `sweeprolog-read-predicate-prompt' is used by
+default."
   (let* ((col (sweeprolog-predicates-collection))
          (completion-extra-properties
           (list :annotation-function
@@ -492,7 +494,8 @@ When non-nil, only predicates whose name contains PREFIX are returned."
                     (if val
                         (concat (make-string (- 64 (length key)) ? ) (car val))
                       nil))))))
-    (completing-read sweeprolog-read-predicate-prompt col nil nil nil
+    (completing-read (or prompt sweeprolog-read-predicate-prompt)
+                     col nil nil nil
                      'sweeprolog-read-predicate-history
                      (sweeprolog-identifier-at-point))))
 
@@ -3081,7 +3084,11 @@ if-then-else constructs in SWI-Prolog."
 ;;;###autoload
 (defun sweeprolog-describe-predicate (pred)
   "Display the full documentation for PRED (a Prolog predicate)."
-  (interactive (list (sweeprolog-read-predicate)))
+  (interactive (list (sweeprolog-read-predicate
+                      (concat "Describe predicate"
+                              (when-let ((def (sweeprolog-identifier-at-point)))
+                                (concat " (default " def ")"))
+                              ": "))))
   (sweeprolog--describe-predicate pred))
 
 (defvar sweeprolog-module-documentation-regexp (rx bol  (zero-or-more whitespace)
