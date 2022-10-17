@@ -41,13 +41,13 @@ sweep_link_version(1).
 
 write_sweep_module_location :-
     sweep_link_version(V),
-    format('V ~w~n', V),
+    format('V ~w~n', [V]),
     absolute_file_name(foreign('sweep-module'),
                        Path,
                        [file_type(executable), access(read)]),
     (   current_prolog_flag(executable_format, elf)
     ->  current_prolog_flag(libswipl, Libpath),
-        format('L ~w~n', Libpath)
+        format('L ~w~n', [Libpath])
     ;   true
     ),
-    format('M ~w~n', Path).
+    format('M ~w~n', [Path]).
