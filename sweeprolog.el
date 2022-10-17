@@ -2938,6 +2938,29 @@ if-then-else constructs in SWI-Prolog."
       (tabulated-list-print))
     (pop-to-buffer-same-window buf)))
 
+(defun sweeprolog--buttonize-region (start end callback data)
+  (if (fboundp 'buttonize-region)
+      (buttonize-region start end callback data)
+    (add-text-properties start end
+                         (list 'font-lock-face 'button
+                               'mouse-face 'highlight
+                               'help-echo nil
+                               'button t
+                               'follow-link t
+                               'category t
+                               'button-data data
+                               'keymap button-map
+                               'action callback))
+    (add-face-text-property start end 'button t)))
+
+(defvar-local sweeprolog--html-footnotes nil)
+
+(defun sweeprolog-render-html-span (dom)
+  (if (string= "fn-text" (dom-attr dom 'class))
+      (progn (insert " ")
+             (push dom sweeprolog--html-footnotes))
+    (shr-tag-span dom)))
+
 (defun sweeprolog-render-html-a (dom)
   (let* ((url (dom-attr dom 'href))
          (parsed (url-generic-parse-url url))
@@ -2951,7 +2974,7 @@ if-then-else constructs in SWI-Prolog."
                               "/"
                               (one-or-more digit) eos)
                           target)
-        (buttonize-region start
+        (sweeprolog--buttonize-region start
                           (point)
                           #'sweeprolog-describe-predicate
                           target)))
@@ -2962,7 +2985,7 @@ if-then-else constructs in SWI-Prolog."
            ((string= path "/pldoc/man")
             (pcase (url-parse-query-string query)
               (`(("predicate" ,pred))
-               (buttonize-region start
+               (sweeprolog--buttonize-region start
                                  (point)
                                  #'sweeprolog-describe-predicate
                                  pred))))))))))
@@ -2970,10 +2993,18 @@ if-then-else constructs in SWI-Prolog."
 (defun sweeprolog-render-html (html)
   (with-temp-buffer
     (insert html)
+    (setq sweeprolog--html-footnotes nil)
     (let ((shr-external-rendering-functions
            '((a . sweeprolog-render-html-a)
-             (var . shr-tag-i))))
-      (shr-render-region (point-min) (point-max)))
+             (var . shr-tag-i)
+             (span . sweeprolog-render-html-span))))
+      (shr-render-region (point-min) (point-max))
+      (goto-char (point-max))
+      (when sweeprolog--html-footnotes
+        (insert "\n\nFootnotes:")
+       (dolist (footnote sweeprolog--html-footnotes)
+         (insert "\n\n")
+         (shr-tag-span footnote))))
     (buffer-string)))
 
 (defun sweeprolog--describe-module (mod)
