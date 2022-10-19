@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+
+* Version 0.7.1 on 2022-10-19
+
+** Jumping to source works also for built-in predicates defined in C
+
+~sweep~ now knows how to find and jump to the definitions of native
+built-in SWI-Prolog predicates defined in C, under the condition that
+the user has the SWI-Prolog sources checked out locally.
+
+See ~C-h v sweeprolog-swipl-sources~ and the new section "Built-in
+Native Predicates" in the manual for more information about this
+feature.
+
+** Fixes and improvements to ~sweeprolog-describe-predicate~
+
+This version fixes some compatibility issues with Emacs versions prior
+to 29 in ~sweeprolog-describe-predicate~.  Reported by Jan Wielemaker.
+
 * Version 0.7.0 on 2022-10-17
 
 ** New command ~sweeprolog-describe-predicate~

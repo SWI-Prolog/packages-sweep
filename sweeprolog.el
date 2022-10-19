@@ -6,8 +6,8 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.7.0
-;; Package-Requires: ((emacs "28"))
+;; Package-Version: 0.7.1
+;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -39,6 +39,24 @@
 (defgroup sweeprolog nil
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
+
+(defcustom sweeprolog-swipl-sources t
+  "Location of the SWI-Prolog source code root directory.
+
+When non-nil, the function `sweeprolog-predicate-location' will
+attempt to find the C defintions of SWI-Prolog native built-in
+predicates.
+
+The value of this option can be a string, in which case it should
+be a path to the SWI-Prolog source code root directory.  Any
+other non-nil value instructs `sweeprolog-predicate-location' to
+try and find the SWI-Prolog sources among known project roots
+obtained from `project-known-project-roots', which see."
+  :package-version '((sweeprolog . "0.4.6"))
+  :type '(choice (const  :tag "Detect"  t)
+                 (string :tag "Manual")
+                 (const  :tag "Disable" nil))
+  :group 'sweeprolog)
 
 (defcustom sweeprolog-module-header-comment-skeleton ?\n
   "Additional content for the topmost comment in module headers.
@@ -415,6 +433,7 @@ Otherwise set ARGS to nil."
   (interactive
    (and
     current-prefix-arg
+    (fboundp 'split-string-shell-command)
     (split-string-shell-command (read-string "swipl arguments: "))))
   (when-let ((top-levels (seq-filter (lambda (buffer)
                                        (eq 'sweeprolog-top-level-mode
@@ -464,13 +483,68 @@ When non-nil, only predicates whose name contains PREFIX are returned."
     (when (sweeprolog-true-p sol)
       (cdr sol))))
 
+(defun sweeprolog--mfn-to-functor-arity (mfn)
+  (let ((functor-arity (split-string (car (reverse (split-string mfn ":"))) "/")))
+    (cons (car functor-arity)
+          (string-to-number (cadr functor-arity)))))
+
+(defun sweeprolog--swipl-source-directory ()
+  (when sweeprolog-swipl-sources
+    (if (stringp sweeprolog-swipl-sources)
+        sweeprolog-swipl-sources
+      (when (fboundp 'project-known-project-roots)
+        (car (seq-filter
+              (lambda (root)
+                (member (car
+                         (reverse
+                          (seq-filter
+                           (lambda (s)
+                             (not (string-empty-p s)))
+                           (file-name-split root))))
+                        '("swipl" "swipl-devel")))
+              (project-known-project-roots)))))))
+
+(defun sweeprolog-native-predicate-location (mfn)
+  (let ((functor-arity (sweeprolog--mfn-to-functor-arity mfn)))
+    (when-let ((default-directory (sweeprolog--swipl-source-directory))
+               (match
+                (car (xref-matches-in-files
+                      (rx (or "PRED_IMPL" "FRG")
+                          (zero-or-more whitespace)
+                          "(\""
+                          (zero-or-more whitespace)
+                          (literal (car functor-arity))
+                          "\""
+                          (zero-or-more whitespace)
+                          ","
+                          (zero-or-more whitespace)
+                          (literal (number-to-string (cdr functor-arity))))
+                      (project-files (project-current)
+                                     (list (expand-file-name "src"
+                                                             default-directory))))))
+               (location (if (fboundp 'xref-match-item-location)
+                             (xref-match-item-location match)
+                           (xref-item-location match))))
+      (if (fboundp 'xref-file-location-file)
+          (cons (xref-file-location-file location)
+                (xref-file-location-line location))
+        (with-slots ((file file)
+                     (line line))
+            location
+          (cons file line))))))
+
 (defun sweeprolog-predicate-location (mfn)
-  "Return the source location where the predicate MFN is defined."
+  "Return the source location where the predicate MFN is defined.
+
+For native built-in predicates, the behavior of this function
+depends on the value of the user option
+`sweeprolog-swipl-sources', which see."
   (sweeprolog-open-query "user" "sweep" "sweep_predicate_location" mfn)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
-    (when (sweeprolog-true-p sol)
-      (cdr sol))))
+    (if (sweeprolog-true-p sol)
+        (cdr sol)
+      (sweeprolog-native-predicate-location mfn))))
 
 (defun sweeprolog-predicate-apropos (pattern)
   "Return a list of predicates whose name resembeles PATTERN."
@@ -2788,7 +2862,8 @@ if-then-else constructs in SWI-Prolog."
                 nil
                 (font-lock-fontify-region-function . sweeprolog-colourise-some-terms)))
   (when sweeprolog-enable-eldoc
-    (setq-local eldoc-documentation-strategy #'eldoc-documentation-default)
+    (when (fboundp 'eldoc-documentation-default)
+      (setq-local eldoc-documentation-strategy #'eldoc-documentation-default))
     (add-hook 'eldoc-documentation-functions #'sweeprolog-predicate-modes-doc nil t))
   (when sweeprolog-enable-flymake
     (add-hook 'flymake-diagnostic-functions #'sweeprolog-diagnostic-function nil t)
