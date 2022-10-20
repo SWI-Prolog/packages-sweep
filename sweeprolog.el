@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.7.1
+;; Package-Version: 0.7.2
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -36,6 +36,10 @@
 (require 'find-func)
 (require 'shr)
 
+(defvar sweeprolog--directory (file-name-directory load-file-name))
+
+(defvar sweeprolog-prolog-server-port nil)
+
 (defgroup sweeprolog nil
   "SWI-Prolog Embedded in Emacs."
   :group 'prolog)
@@ -52,7 +56,7 @@ be a path to the SWI-Prolog source code root directory.  Any
 other non-nil value instructs `sweeprolog-predicate-location' to
 try and find the SWI-Prolog sources among known project roots
 obtained from `project-known-project-roots', which see."
-  :package-version '((sweeprolog . "0.4.6"))
+  :package-version '((sweeprolog . "0.7.1"))
   :type '(choice (const  :tag "Detect"  t)
                  (string :tag "Manual")
                  (const  :tag "Disable" nil))
@@ -197,13 +201,19 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
   :type 'boolean
   :group 'sweeprolog)
 
+(make-obsolete-variable 'sweeprolog-init-on-load
+                        (concat
+                         "Prolog is initialized on-demand,"
+                         " regardless of the value of this option.")
+                        "sweeprolog version 0.7.2")
+
 (defcustom sweeprolog-init-args (list "-q"
                                       "--no-signals"
                                       "-g"
                                       "create_prolog_flag(sweep,true,[access(read_only),type(boolean)])"
                                       (expand-file-name
                                        "sweep.pl"
-                                       (file-name-directory load-file-name)))
+                                       sweeprolog--directory))
   "List of strings used as initialization arguments for Prolog."
   :package-version '((sweeprolog "0.5.2"))
   :type '(repeat string)
@@ -231,7 +241,6 @@ clause."
   :type 'boolean
   :group 'sweeprolog)
 
-(defvar sweeprolog-prolog-server-port nil)
 
 (declare-function sweeprolog-initialize    "sweep-module")
 (declare-function sweeprolog-initialized-p "sweep-module")
@@ -265,12 +274,77 @@ clause."
                             "-t" "halt"
                             (expand-file-name
                              "sweep.pl"
-                             (file-name-directory load-file-name)))))
+                             sweeprolog--directory))))
                        "\n" t))))
         (mapc #'sweeprolog--load-module lines)
       (error (concat "Failed to locate `sweep-module'. "
                      "Make sure SWI-Prolog is installed "
                      "and up to date")))))
+
+(defun sweeprolog-ensure-initialized ()
+  (sweeprolog--ensure-module)
+  (sweeprolog-init))
+
+(defun sweeprolog--open-query (ctx mod fun arg &optional rev)
+  "Ensure that Prolog is initialized and execute a new query.
+
+CTX, MOD and FUN are strings.  CTX is the context Prolog module
+in which the query in invoked.  MOD is the Prolog module in which
+the invoked predicate is defined.  FUN is the functor of the
+invoked predicate.
+
+ARG is converted to a Prolog term and used as the input argument
+for the query.  When REV is a nil, the input argument is the
+first argument, and the output argument is second.  Otherwise,
+the order of the arguments is reversed."
+  (sweeprolog-ensure-initialized)
+  (sweeprolog-open-query ctx mod fun arg rev))
+
+(defvar sweeprolog--initialized nil)
+
+(defun sweeprolog-init (&rest args)
+  "Initialize and setup the embedded Prolog runtime.
+
+If specified, ARGS should be a list of string passed to Prolog as
+extra initialization arguments."
+  (unless sweeprolog--initialized
+    (apply #'sweeprolog-initialize
+           (cons (or sweeprolog-swipl-path (executable-find "swipl"))
+                 (append sweeprolog-init-args args)))
+    (setq sweeprolog--initialized t)
+    (sweeprolog-setup-message-hook)
+    (sweeprolog-start-prolog-server)))
+
+(defun sweeprolog-restart (&rest args)
+  "Restart the embedded Prolog runtime.
+
+ARGS is a list of strings appended to the value of
+`sweeprolog-init-args' to produce the Prolog initialization
+arguments.
+
+Interactively, with a prefix arguments, prompt for ARGS.
+Otherwise set ARGS to nil."
+  (interactive
+   (and
+    current-prefix-arg
+    (fboundp 'split-string-shell-command)
+    (split-string-shell-command (read-string "swipl arguments: "))))
+  (when-let ((top-levels (seq-filter (lambda (buffer)
+                                       (eq 'sweeprolog-top-level-mode
+                                           (buffer-local-value 'major-mode
+                                                               buffer)))
+                                     (buffer-list))))
+    (if (y-or-n-p "Stop running sweep top-level processes?")
+        (dolist (buffer top-levels)
+          (let ((process (get-buffer-process buffer)))
+            (when (process-live-p process)
+              (delete-process process))))
+      (user-error "Cannot restart sweep with running top-level processes")))
+  (message "Stoping sweep.")
+  (sweeprolog-cleanup)
+  (message "Starting sweep.")
+  (apply #'sweeprolog-init args))
+
 
 (defface sweeprolog-debug-prefix-face
   '((default :inherit shadow))
@@ -323,7 +397,7 @@ clause."
 
 (defun sweeprolog-current-prolog-flags (&optional prefix)
   "Return the list of defined Prolog flags defined with prefix PREFIX."
-  (sweeprolog-open-query "user" "sweep" "sweep_current_prolog_flags" (or prefix ""))
+  (sweeprolog--open-query "user" "sweep" "sweep_current_prolog_flags" (or prefix ""))
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
@@ -348,7 +422,7 @@ clause."
 FLAG and VALUE are specified as strings and read as Prolog terms."
   (interactive (let ((f (sweeprolog-read-prolog-flag)))
                  (list f (read-string (concat "Set " f " to: ")))))
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                     "sweep"
                     "sweep_set_prolog_flag"
                     (cons flag value))
@@ -363,7 +437,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
   (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
     (setq-local window-point-insertion-type t)
     (compilation-minor-mode 1))
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                          "sweep"
                          "sweep_setup_message_hook"
                          nil)
@@ -401,7 +475,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 
 (defun sweeprolog-start-prolog-server ()
   "Start the `sweep' Prolog top-level embedded server."
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                          "sweep"
                          "sweep_top_level_server"
                          nil)
@@ -410,46 +484,6 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
     (when (sweeprolog-true-p sol)
       (setq sweeprolog-prolog-server-port (cdr sol)))))
 
-(defun sweeprolog-init (&rest args)
-  "Initialize and setup the embedded Prolog runtime.
-
-If specified, ARGS should be a list of string passed to Prolog as
-extra initialization arguments."
-  (apply #'sweeprolog-initialize
-         (cons (or sweeprolog-swipl-path (executable-find "swipl"))
-               (append sweeprolog-init-args args)))
-  (sweeprolog-setup-message-hook)
-  (sweeprolog-start-prolog-server))
-
-(defun sweeprolog-restart (&rest args)
-  "Restart the embedded Prolog runtime.
-
-ARGS is a list of strings appended to the value of
-`sweeprolog-init-args' to produce the Prolog initialization
-arguments.
-
-Interactively, with a prefix arguments, prompt for ARGS.
-Otherwise set ARGS to nil."
-  (interactive
-   (and
-    current-prefix-arg
-    (fboundp 'split-string-shell-command)
-    (split-string-shell-command (read-string "swipl arguments: "))))
-  (when-let ((top-levels (seq-filter (lambda (buffer)
-                                       (eq 'sweeprolog-top-level-mode
-                                           (buffer-local-value 'major-mode
-                                                               buffer)))
-                                     (buffer-list))))
-    (if (y-or-n-p "Stop running sweep top-level processes?")
-        (dolist (buffer top-levels)
-          (let ((process (get-buffer-process buffer)))
-            (when (process-live-p process)
-              (delete-process process))))
-      (user-error "Cannot restart sweep with running top-level processes")))
-  (message "Stoping sweep.")
-  (sweeprolog-cleanup)
-  (message "Starting sweep.")
-  (apply #'sweeprolog-init args))
 
 (defvar sweeprolog-predicate-completion-collection nil)
 
@@ -459,7 +493,7 @@ Otherwise set ARGS to nil."
   "Return a list of prediactes accessible in the current buffer.
 
 When non-nil, only predicates whose name contains PREFIX are returned."
-  (sweeprolog-open-query "user" "sweep" "sweep_local_predicate_completion"
+  (sweeprolog--open-query "user" "sweep" "sweep_local_predicate_completion"
                     (cons sweeprolog-buffer-module
                           prefix))
   (let ((sol (sweeprolog-next-solution)))
@@ -469,7 +503,7 @@ When non-nil, only predicates whose name contains PREFIX are returned."
 
 (defun sweeprolog-predicates-collection (&optional prefix)
   "Return a list of prediacte completion candidates matchitng PREFIX."
-  (sweeprolog-open-query "user" "sweep" "sweep_predicates_collection" prefix)
+  (sweeprolog--open-query "user" "sweep" "sweep_predicates_collection" prefix)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
@@ -477,7 +511,7 @@ When non-nil, only predicates whose name contains PREFIX are returned."
 
 (defun sweeprolog-predicate-references (mfn)
   "Find source locations where the predicate MFN is called."
-  (sweeprolog-open-query "user" "sweep" "sweep_predicate_references" mfn)
+  (sweeprolog--open-query "user" "sweep" "sweep_predicate_references" mfn)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
@@ -539,7 +573,7 @@ When non-nil, only predicates whose name contains PREFIX are returned."
 For native built-in predicates, the behavior of this function
 depends on the value of the user option
 `sweeprolog-swipl-sources', which see."
-  (sweeprolog-open-query "user" "sweep" "sweep_predicate_location" mfn)
+  (sweeprolog--open-query "user" "sweep" "sweep_predicate_location" mfn)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (if (sweeprolog-true-p sol)
@@ -548,7 +582,7 @@ depends on the value of the user option
 
 (defun sweeprolog-predicate-apropos (pattern)
   "Return a list of predicates whose name resembeles PATTERN."
-  (sweeprolog-open-query "user" "sweep" "sweep_predicate_apropos" pattern)
+  (sweeprolog--open-query "user" "sweep" "sweep_predicate_apropos" pattern)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
@@ -593,7 +627,7 @@ default."
             (cons start (point))))))))
 
 (defun sweeprolog-prefix-operators (&optional file)
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                     "sweep" "sweep_prefix_ops"
                     (or file (buffer-file-name)))
   (let ((sol (sweeprolog-next-solution)))
@@ -653,14 +687,14 @@ module name, F is a functor name and N is its arity."
     (user-error "Unable to locate predicate %s" mfn)))
 
 (defun sweeprolog-modules-collection ()
-  (sweeprolog-open-query "user" "sweep" "sweep_modules_collection" nil)
+  (sweeprolog--open-query "user" "sweep" "sweep_modules_collection" nil)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
       (cdr sol))))
 
 (defun sweeprolog-module-path (mod)
-  (sweeprolog-open-query "user" "sweep" "sweep_module_path" mod)
+  (sweeprolog--open-query "user" "sweep" "sweep_module_path" mod)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
@@ -687,7 +721,7 @@ module name, F is a functor name and N is its arity."
 
 
 (defun sweeprolog--set-buffer-module ()
-  (sweeprolog-open-query "user" "sweep" "sweep_path_module" (buffer-file-name))
+  (sweeprolog--open-query "user" "sweep" "sweep_path_module" (buffer-file-name))
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (setq sweeprolog-buffer-module
@@ -702,7 +736,7 @@ module name, F is a functor name and N is its arity."
   (find-file (sweeprolog-module-path mod)))
 
 (defun sweeprolog-packs-collection ()
-  (sweeprolog-open-query "user" "sweep" "sweep_packs_collection" "")
+  (sweeprolog--open-query "user" "sweep" "sweep_packs_collection" "")
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
@@ -731,7 +765,7 @@ module name, F is a functor name and N is its arity."
 (defun sweeprolog-pack-install (pack)
   "Install or upgrade Prolog package PACK."
   (interactive (list (sweeprolog-read-pack-name)))
-  (sweeprolog-open-query "user" "sweep" "sweep_pack_install" pack)
+  (sweeprolog--open-query "user" "sweep" "sweep_pack_install" pack)
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-close-query)
     (if (sweeprolog-true-p sol)
@@ -1638,7 +1672,7 @@ module name, F is a functor name and N is its arity."
            (contents (buffer-substring-no-properties beg end)))
       (with-silent-modifications
         (font-lock-unfontify-region beg end))
-      (sweeprolog-open-query "user"
+      (sweeprolog--open-query "user"
                              "sweep"
                              "sweep_colourise_buffer"
                              (cons contents (buffer-file-name)))
@@ -1664,7 +1698,7 @@ module name, F is a functor name and N is its arity."
          (contents (buffer-substring-no-properties beg end)))
     (with-silent-modifications
       (font-lock-unfontify-region beg end))
-    (sweeprolog-open-query "user"
+    (sweeprolog--open-query "user"
                            "sweep"
                            "sweep_colourise_some_terms"
                            (list contents
@@ -1688,7 +1722,7 @@ module name, F is a functor name and N is its arity."
                  (query (buffer-substring-no-properties beg end)))
         (with-silent-modifications
           (font-lock-unfontify-region beg end))
-        (sweeprolog-open-query "user"
+        (sweeprolog--open-query "user"
                           "sweep"
                           "sweep_colourise_query"
                           (cons query (marker-position beg)))
@@ -1719,7 +1753,7 @@ buffer to load."
     (let* ((beg (point-min))
            (end (point-max))
            (contents (buffer-substring-no-properties beg end)))
-      (sweeprolog-open-query "user"
+      (sweeprolog--open-query "user"
                              "sweep"
                              "sweep_load_buffer"
                              (cons contents (buffer-file-name)))
@@ -1750,7 +1784,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (with-current-buffer buf
       (unless (eq major-mode 'sweeprolog-top-level-mode)
         (sweeprolog-top-level-mode)))
-    (sweeprolog-open-query "user"
+    (sweeprolog--open-query "user"
                            "sweep"
                            "sweep_accept_top_level_client"
                            (buffer-name buf))
@@ -1786,7 +1820,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
   "Prolog top-level thread ID corresponding to this buffer.")
 
 (defun sweeprolog-top-level--populate-thread-id ()
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                          "sweep"
                          "sweep_top_level_thread_buffer"
                          (buffer-name)
@@ -1797,7 +1831,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
       (setq sweeprolog-top-level-thread-id (cdr sol)))))
 
 (defun sweeprolog-signal-thread (tid goal)
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                          "sweep"
                          "sweep_thread_signal"
                          (cons tid goal))
@@ -1858,9 +1892,6 @@ Interactively, a prefix arg means to prompt for BUFFER."
                 (cancel-timer sweeprolog-top-level-timer)))
             nil t))
 
-(sweeprolog--ensure-module)
-(when sweeprolog-init-on-load (sweeprolog-init))
-
 ;;;###autoload
 (defvar sweeprolog-help-prefix-map
   (let ((map (make-sparse-keymap)))
@@ -1890,7 +1921,7 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (cond ((eq operation 'expand-file-name)
          (let ((fn (car  args))
                (dn (cadr args)))
-           (sweeprolog-open-query "user"
+           (sweeprolog--open-query "user"
                              "sweep"
                              "sweep_expand_file_name"
                              (cons fn dn))
@@ -2351,7 +2382,7 @@ Interactively, PROJ is the prefix argument."
       (setq times (1- times)))))
 
 (defun sweeprolog-op-suffix-precedence (token)
-  (sweeprolog-open-query "user" "sweep" "sweep_op_info" (cons token (buffer-file-name)))
+  (sweeprolog--open-query "user" "sweep" "sweep_op_info" (cons token (buffer-file-name)))
   (let ((res nil) (go t))
     (while go
       (if-let ((sol (sweeprolog-next-solution))
@@ -2367,7 +2398,7 @@ Interactively, PROJ is the prefix argument."
     res))
 
 (defun sweeprolog-op-prefix-precedence (token)
-  (sweeprolog-open-query "user" "sweep" "sweep_op_info" (cons token (buffer-file-name)))
+  (sweeprolog--open-query "user" "sweep" "sweep_op_info" (cons token (buffer-file-name)))
   (let ((res nil) (go t))
     (while go
       (if-let ((sol (sweeprolog-next-solution))
@@ -2383,7 +2414,7 @@ Interactively, PROJ is the prefix argument."
     res))
 
 (defun sweeprolog-op-infix-precedence (token)
-  (sweeprolog-open-query "user" "sweep" "sweep_op_info" (cons token (buffer-file-name)))
+  (sweeprolog--open-query "user" "sweep" "sweep_op_info" (cons token (buffer-file-name)))
   (let ((res nil) (go t))
     (while go
       (if-let ((sol (sweeprolog-next-solution))
@@ -2524,7 +2555,7 @@ Interactively, PROJ is the prefix argument."
                 (sweeprolog-end-of-top-term)
                 (point)))
          (contents (buffer-substring-no-properties beg end)))
-    (sweeprolog-open-query "user"
+    (sweeprolog--open-query "user"
                            "sweep"
                            "sweep_definition_at_point"
                            (cons contents
@@ -2611,7 +2642,7 @@ predicate definition at or directly above POINT."
                 (sweeprolog-end-of-top-term)
                 (point)))
          (contents (buffer-substring-no-properties beg end)))
-    (sweeprolog-open-query "user"
+    (sweeprolog--open-query "user"
                       "sweep"
                       "sweep_file_at_point"
                       (list contents
@@ -2643,7 +2674,7 @@ Interactively, POINT is set to the current point."
                 (sweeprolog-end-of-top-term)
                 (point)))
          (contents (buffer-substring-no-properties beg end)))
-    (sweeprolog-open-query "user"
+    (sweeprolog--open-query "user"
                            "sweep"
                            "sweep_identifier_at_point"
                            (list contents
@@ -2694,7 +2725,7 @@ Interactively, POINT is set to the current point."
              matches)))
 
 (defun sweeprolog-create-index-function ()
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                     "sweep"
                     "sweep_imenu_index"
                     (buffer-file-name))
@@ -2745,7 +2776,7 @@ variable at point, if any."
 
 (defun sweeprolog-predicate-modes-doc (cb)
   (when-let ((pi (sweeprolog-identifier-at-point)))
-    (sweeprolog-open-query "user"
+    (sweeprolog--open-query "user"
                            "sweep"
                            "sweep_documentation"
                            pi)
@@ -2758,7 +2789,7 @@ variable at point, if any."
 (defvar-local sweeprolog--colourise-buffer-duration 0.2)
 
 (defun sweeprolog-local-predicate-export-comment (fun ari)
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                          "sweep"
                          "sweep_local_predicate_export_comment"
                          (list (buffer-file-name) fun ari))
@@ -2927,7 +2958,7 @@ if-then-else constructs in SWI-Prolog."
                "\n\n*/\n\n"))
 
 (defun sweeprolog-top-level-menu--entries ()
-  (sweeprolog-open-query "user"
+  (sweeprolog--open-query "user"
                          "sweep"
                          "sweep_top_level_threads"
                          nil)
@@ -3102,7 +3133,7 @@ if-then-else constructs in SWI-Prolog."
 (defun sweeprolog--describe-module (mod)
   (let ((page
          (progn
-           (sweeprolog-open-query "user"
+           (sweeprolog--open-query "user"
                                   "sweep"
                                   "sweep_module_html_documentation"
                                   mod)
@@ -3137,7 +3168,7 @@ if-then-else constructs in SWI-Prolog."
 (defun sweeprolog--describe-predicate (pred)
   (let ((page
          (progn
-           (sweeprolog-open-query "user"
+           (sweeprolog--open-query "user"
                                   "sweep"
                                   "sweep_predicate_html_documentation"
                                   pred)

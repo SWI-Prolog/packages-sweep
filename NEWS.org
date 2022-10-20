@@ -11,6 +11,22 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.7.2 on 2022-10-20
+
+** ~sweep-module~ is now loaded on-demand
+
+Previously, loading =sweeprolog.el= with e.g. ~(require 'sweeprolog)~
+would cause Emacs to also load =sweep-module= immediately, unless the
+user option ~sweeprolog-init-on-load~ had been explicitly set by the
+user to nil.  This version implements lazy loading of =sweep-module=,
+which makes loading =sweeprolog.el= a lot faster and circumvents
+potential problems with byte-compiling Elisp files that depend on
+=sweeprolog.el= but do not have =sweep-module= available at compile time.
+
+** Newly deprecated user option ~sweeprolog-init-on-load~
+
+The embedded Prolog is now loaded and initiated lazily, regardless of
+the value of ~sweeprolog-init-on-load~, which is now obsolete.
 
 * Version 0.7.1 on 2022-10-19
 
