@@ -1991,7 +1991,10 @@ Interactively, a prefix arg means to prompt for BUFFER."
                       (nth 8 (syntax-ppss (max (point-min)
                                                (1- (point))))))
                     (save-match-data
-                      (looking-back (rx "=.." (or white "\n"))
+                      (looking-back (rx (or "#" "$" "&" "*" "+" "-"
+                                            "." "/" ":" "<" "=" ">"
+                                            "?" "@" "\\" "^" "~")
+                                        "." (or white "\n"))
                                     (line-beginning-position))))
                 (not (eobp)))
       (while (and (nth 8 (syntax-ppss)) (not (eobp)))

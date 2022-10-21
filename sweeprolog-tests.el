@@ -6,7 +6,7 @@
   "Hello from Elisp from Prolog from Elisp from Prolog from Elisp!")
 
 (defun sweeprolog-tests-greet ()
-  (sweeprolog-open-query "user" "user"
+  (sweeprolog--open-query "user" "user"
                          "sweep_funcall"
                          "sweeprolog-tests-greet-1")
   (let ((sol (sweeprolog-next-solution)))
@@ -18,7 +18,7 @@
 
 (ert-deftest elisp->prolog->elisp->prolog->elisp ()
   "Tests calling Elisp from Prolog from Elisp from Prolog from Elisp."
-  (should (equal (sweeprolog-open-query "user" "user"
+  (should (equal (sweeprolog--open-query "user" "user"
                                         "sweep_funcall"
                                         "sweeprolog-tests-greet")
                  t))
@@ -27,7 +27,7 @@
 
 (ert-deftest lists:member/2 ()
   "Tests calling the Prolog predicate permutation/2 from Elisp."
-  (should (equal (sweeprolog-open-query "user" "lists" "member" (list 1 2 3) t) t))
+  (should (equal (sweeprolog--open-query "user" "lists" "member" (list 1 2 3) t) t))
   (should (equal (sweeprolog-next-solution) (cons t 1)))
   (should (equal (sweeprolog-next-solution) (cons t 2)))
   (should (equal (sweeprolog-next-solution) (cons '! 3)))
@@ -35,7 +35,7 @@
 
 (ert-deftest lists:permutation/2 ()
   "Tests calling the Prolog predicate permutation/2 from Elisp."
-  (should (equal (sweeprolog-open-query "user" "lists" "permutation" (list 1 2 3)) t))
+  (should (equal (sweeprolog--open-query "user" "lists" "permutation" (list 1 2 3)) t))
   (should (equal (sweeprolog-next-solution) (list t 1 2 3)))
   (should (equal (sweeprolog-next-solution) (list t 1 3 2)))
   (should (equal (sweeprolog-next-solution) (list t 2 1 3)))
@@ -47,7 +47,7 @@
 
 (ert-deftest system:=/2 ()
   "Tests unifying Prolog terms with =/2 from Elisp."
-  (should (equal (sweeprolog-open-query "user" "system" "=" (list 1 nil (list "foo" "bar") 3.14)) t))
+  (should (equal (sweeprolog--open-query "user" "system" "=" (list 1 nil (list "foo" "bar") 3.14)) t))
   (should (equal (sweeprolog-next-solution) (list '! 1 nil (list "foo" "bar") 3.14)))
   (should (equal (sweeprolog-next-solution) nil))
   (should (equal (sweeprolog-cut-query) t)))
@@ -95,6 +95,27 @@ scasp_and_show(Q, Model, Tree) :-
     (goto-char (point-min))
     (sweeprolog-end-of-top-term)
     (should (= (point) 252))))
+
+(ert-deftest end-of-top-term-with-other-symbols ()
+  "Tests detecting the fullstop in presence of `.=.'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+loop_term(I, Arity, Goal1, Goal2) :-
+    I =< Arity,
+    arg(I, Goal1, A),
+    arg(I, Goal2, B),
+    (   loop_var_disequality(A,B)
+    ->  true
+    ;   A .=. B,
+        I2 is I+1,
+        loop_term(I2, Arity, Goal1, Goal2)
+    ).
+")
+    (goto-char (point-min))
+    (sweeprolog-end-of-top-term)
+    (should (= (point) 232))))
+
 
 (defun sweeprolog-test-indentation (given expected)
   (with-temp-buffer
