@@ -81,6 +81,11 @@
 :- use_module(library(http/html_write)).
 :- use_module(library(prolog_pack)).
 
+:- if(exists_source(library(help))).
+:- use_module(library(help)).
+:- endif.
+
+
 :- meta_predicate with_buffer_stream(-, +, 0).
 
 :- dynamic sweep_current_color/3,
@@ -523,14 +528,14 @@ sweep_predicate_location(FN, [Path|Line]) :-
 sweep_predicate_apropos(Query0, Matches) :-
     atom_string(Query, Query0),
     findall([S,Path|Line],
-            (prolog_help:apropos(Query, M:F/N, _, _),
-             format(string(S), '~w:~W/~w', [M, F, [quoted(true), character_escapes(true)], N]),
+            (prolog_help:apropos(Query, M:F/N, _, P), P >= 0.3,
+             format(string(S), '~W', [M:F/N, [quoted(true), character_escapes(true)]]),
              pi_head(F/N, Head),
              sweep_predicate_location_(M, Head, Path, Line)),
             Matches, Tail),
     findall([S,Path],
-            (prolog_help:apropos(Query, F/N, _, _),
-             format(string(S), '~W/~w', [F, [quoted(true), character_escapes(true)], N]),
+            (prolog_help:apropos(Query, F/N, _, P), P >= 0.3,
+             format(string(S), '~W', [F/N, [quoted(true), character_escapes(true)]]),
              pi_head(F/N, Head),
              sweep_predicate_location_(Head, Path, Line)),
             Tail).
