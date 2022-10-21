@@ -583,9 +583,9 @@ sweep_local_predicate_completion([Mod|Sub], Preds) :-
     convlist(sweep_predicate_completion_annotated(Sub, M), Preds1, Preds).
 
 sweep_predicate_completion_annotated(Sub, M, F/N, [S|A]) :-
-    format(string(S), '~W/~w', [F, [quoted(true), character_escapes(true)], N]),
+    format(string(S), '~W', [F/N, [quoted(true), character_escapes(true)]]),
     sub_string(S, _, _, _, Sub),
-    \+ sub_string(S, _, _, _, "$"),
+    \+ sub_string(S, 0, _, _, "'$"),
     pi_head(F/N, Head),
     findall(P, @(predicate_property(Head, P), M), Ps0),
     sweep_predicate_completion_op_annotation(F, Ps0, Ps),
@@ -620,7 +620,10 @@ sweep_predicates_collection(Sub, Preds) :-
     findall(M:F/N,
             ( current_predicate(M:F/N),
               pi_head(F/N, H),
-              \+ (predicate_property(M:H, imported_from(M1)), M \= M1)
+              (   M == system
+              ->  true
+              ;   \+ (predicate_property(M:H, imported_from(M1)), M \= M1)
+              )
             ),
             Preds0,
             Tail0),
@@ -661,13 +664,13 @@ sweep_predicate_matches(Sub, [String|_]) :-
     sub_string(String, _, _, _, Sub).
 
 sweep_predicate_non_hidden([String|_]) :-
-    \+ sub_string(String, _, _, _, "$").
+    \+ sub_string(String, _, _, _, ":'$").
 
 sweep_predicate_description(M:F/N, [S|T]) :-
     sweep_predicate_description_(M, F, N, T),
     format(string(S),
-           '~w:~W/~w',
-           [M, F, [quoted(true), character_escapes(true)], N]).
+           '~W',
+           [M:F/N, [quoted(true), character_escapes(true)]]).
 
 sweep_predicate_description_(M, F, N, [D]) :-
     doc_comment(M:F/N, _, D0, _), !, atom_string(D0, D).
