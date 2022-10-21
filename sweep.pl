@@ -63,7 +63,8 @@
             sweep_local_predicate_export_comment/2,
             write_sweep_module_location/0,
             sweep_module_html_documentation/2,
-            sweep_predicate_html_documentation/2
+            sweep_predicate_html_documentation/2,
+            sweep_predicate_properties/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -434,6 +435,11 @@ sweep_module_path_(Module, Path) :-
     xref_module(Path, Module), !.
 sweep_module_path_(Module, Path) :-
     '$autoload':library_index(_, Module, Path0), !, string_concat(Path0, ".pl", Path).
+
+sweep_predicate_properties(P0, Props) :-
+    term_string(P, P0),
+    pi_head(P, Head),
+    findall(Prop, predicate_property(Head, Prop), Props).
 
 sweep_predicate_html_documentation(P0, D) :-
     term_string(P1, P0),

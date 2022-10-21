@@ -3165,17 +3165,65 @@ if-then-else constructs in SWI-Prolog."
   (interactive (list (sweeprolog-read-module-name)))
   (sweeprolog--describe-module mod))
 
+(defun sweeprolog--render-predicate-properties (props)
+  (concat
+   "\n\nPredicate properties: "
+   (string-join
+    (delq nil
+          (mapcar
+           (lambda (prop)
+             (pcase prop
+               (`(atom . "built_in") "built-in")
+               (`(atom . "dynamic") "dynamic")
+               (`(atom . "foreign") "foreign")
+               (`(atom . "quasi_quotation_syntax")
+                "defines a quasi-quotation syntax")
+               (`(atom . "ssu")
+                "defined using single sided unification rules")
+               (`(atom . "tabled") "tabled")
+               (`(atom . "thread_local") "thread-local")
+               (`(atom . "transparent") "module-transparent")
+               (`(atom . "volatile") "volatile.")
+               (`(atom . "iso") "specified in the ISO standard")
+               (`(atom . "multifile") "multifile")
+               (`(compound "meta_predicate" . ,_) "meta-predicate")
+               (`(atom . "non_terminal") "DCG non-terminal")
+               (`(compound "size" ,s) (concat (number-to-string s)
+                                              " bytes"))
+               (`(compound "number_of_clauses" ,n)
+                (concat "has "
+                        (pcase n
+                          (1 "one clause")
+                          (_ (concat (number-to-string n)
+                                     " clauses")))))
+               (`(atom . "det") "deterministic")
+               (`(atom . "discontiguous") "discontiguous")
+               (`(atom . "exported") "exported")))
+           props))
+    ", ")
+   "."))
+
 (defun sweeprolog--describe-predicate (pred)
   (let ((page
          (progn
            (sweeprolog--open-query "user"
-                                  "sweep"
-                                  "sweep_predicate_html_documentation"
-                                  pred)
+                                   "sweep"
+                                   "sweep_predicate_html_documentation"
+                                   pred)
            (let ((sol (sweeprolog-next-solution)))
              (sweeprolog-close-query)
              (when (sweeprolog-true-p sol)
                (sweeprolog-render-html (cdr sol))))))
+        (props
+         (progn
+           (sweeprolog--open-query "user"
+                                   "sweep"
+                                   "sweep_predicate_properties"
+                                   pred)
+           (let ((sol (sweeprolog-next-solution)))
+             (sweeprolog-close-query)
+             (when (sweeprolog-true-p sol)
+               (cdr sol)))))
         (path (car (sweeprolog-predicate-location pred))))
     (help-setup-xref (list #'sweeprolog--describe-predicate pred)
                      (called-interactively-p 'interactive))
@@ -3190,10 +3238,13 @@ if-then-else constructs in SWI-Prolog."
                            (if page
                                (concat " is a SWI-Prolog predicate.\n\n"
                                        page)
-                             " is an undocumented SWI-Prolog predicate.")))
+                             " is an undocumented SWI-Prolog predicate.")
+                           (when props
+                             (sweeprolog--render-predicate-properties props))))
           (if page
-              (insert pred " is a built-in SWI-Prolog predicate.\n\n"
-                      page)
+              (insert pred " is a SWI-Prolog predicate.\n\n" page
+                      (when props
+                        (sweeprolog--render-predicate-properties props)))
             (insert pred " is not documented as a SWI-Prolog predicate.")))))))
 
 ;;;###autoload
