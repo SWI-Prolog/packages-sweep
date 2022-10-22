@@ -26,10 +26,16 @@ predicate after the current predicate definition.
 ** New command ~sweeprolog-forward-hole~ in ~sweeprolog-mode~ buffers
 
 This command, bound to ~C-c C-i~ in ~sweeprolog-mode-map~, moves the
- cursor and marks the next hole (placeholder variable) inserted by
- ~sweeprolog-insert-term-dwim~ for the user to fill it.
+cursor and marks the next hole (placeholder variable) inserted by
+~sweeprolog-insert-term-dwim~ for the user to fill it.
 
-** Newly deprecated user option ~sweeprolog-init-on-load
+** References to Prolog library files are now linkified in help buffers
+
+The HTML rendering ~sweep~ performs to display Prolog documentation in
+~*Help*~ buffers now also recognizes reference to Prolog library files,
+such as ~library(list)~, in Prolog documentation.  Clicking on such
+reference opens the corresponding file from the local Prolog library.
+
 * Version 0.7.2 on 2022-10-20
 
 ** ~sweep-module~ is now loaded on-demand
