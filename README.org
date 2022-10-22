@@ -895,6 +895,80 @@ the non-exported predicates defined in the current buffer.  To force
 prompting for a predicate, invoke ~sweeprolog-export-predicate~ with a
 prefix argument (~C-u C-c C-e~).
 
+** Context-Based Term Insertion
+:PROPERTIES:
+:CUSTOM_ID: insert-term-at-point
+:DESCRIPTION: Commands for smart insertion of Prolog terms based on the surrounding context
+:END:
+
+#+CINDEX: context-based term insertion
+#+CINDEX: term insertion at-point
+#+FINDEX: sweeprolog-insert-term-dwim
+#+KINDEX: M-RET
+#+KINDEX: C-M-m
+As a means of automating common Prolog code editing tasks, such as
+adding new clauses to an existing predicate, ~sweeprolog-mode~ provides
+the "do what I mean" command ~M-x sweeprolog-insert-term-dwim~, bound by
+default to ~C-M-m~ (or equivalently, ~M-RET~).  This command inserts a new
+term at or after point according to the context in which
+~sweeprolog-insert-term-dwim~ is invoked.
+
+#+VINDEX: sweeprolog-insert-term-functions
+To determine which term to insert and exactly where, this command
+calls the functions in the list held by the variable
+~sweeprolog-insert-term-functions~ one after the other until one of the
+functions signal success by returning non-nil.
+
+By default, ~sweeprolog-insert-term-dwim~ tries the following insertion
+functions, in order:
+
+#+FINDEX: sweeprolog-maybe-insert-next-clause
+#+FINDEX: sweeprolog-maybe-define-predicate
+- ~sweeprolog-maybe-insert-next-clause~ :: If the last token before
+  point is a fullstop ending a predicate clause, insert a new clause
+  below it.
+- ~sweeprolog-maybe-define-predicate~ :: If point is over a call to an
+  undefined predicate, insert a definition for that predicate below
+  the last clause of the current predicate definition.
+
+*** Filling Holes
+:PROPERTIES:
+:CUSTOM_ID: filling-holes
+:DESCRIPTION: Commands for finding and filling holes for interactive term insertion
+:END:
+
+#+CINDEX: holes
+The default term insertion functions used by
+~sweeprolog-insert-term-dwim~ create a new clause in the buffer, with
+placeholders for the arguments of the head term (if any) and for the
+clause's body.  These placeholders are simply anonymous variables (~_~),
+but they are annotated by the insertion functions with a special text
+property[fn:1] that allows ~sweeprolog-mode~ to recognize them as
+"holes" needed to be filled.  After a term is inserted with
+~sweeprolog-insert-term-dwim~, the region is set to the first hole and
+the cursor left at the its end.
+
+#+FINDEX: sweeprolog-forward-hole
+#+KINDEX: C-c C-i
+#+KINDEX: C-c TAB
+#+KINDEX: C-- C-c C-i
+#+KINDEX: C-- C-c TAB
+To jump to the next hole in a ~sweeprolog-mode~ buffer, use the command
+~C-c C-i~ (~M-x sweeprolog-forward-hole~).  This command sets up the
+region to cover the next hole after point leaving the cursor at right
+after the hole.  To jump to the previous hole instead, call
+~sweeprolog-forward-hole~ with a negative prefix argument (~C-- C-c C-i~).
+
+To "fill" a hole marked by one of the aforementioned commands, type
+~C-w~ (~M-x kill-region~) to kill the region and remove the placeholder
+variable, then insert Prolog code as usual.  As an alternative to
+manually killing the region with ~C-w~, with ~delete-selection-mode~
+enabled the placeholder is automatically deleted when the user inserts
+a character while the region is active (see also [[info:emacs#Using Region][Using Region in the
+Emacs manual]]).
+
+[fn:1] see [[info:elisp#Text Properties][Text Properties in the Elisp manual]]
+
 * Prolog Help
 :PROPERTIES:
 :CUSTOM_ID: prolog-help
@@ -1343,10 +1417,6 @@ there some further improvements that we want to pursue:
   current buffer depends on. The directives should be inserted in the
   appropriate position, i.e. before the first predicate definition in
   the buffer.
-
-- Add a command for inserting a new clause, similar to ~C-M-m~ in ~prolog-mode~ :: ~sweeprolog-mode~
-  should provide a command for inserting a new clause for the
-  predicate at or above point.
 
 - Add a command for interactively inserting a new predicate :: ~sweeprolog-mode~
   should provide a command for interactively inserting a new predicate

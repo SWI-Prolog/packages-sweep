@@ -52,6 +52,25 @@
   (should (equal (sweeprolog-next-solution) nil))
   (should (equal (sweeprolog-cut-query) t)))
 
+
+(ert-deftest dwim-define-predicate ()
+  "Tests defining a new predicate with `sweeprolog-insert-term-dwim'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo :- bar.
+")
+    (backward-word)
+    (sweeprolog-insert-term-dwim)
+    (call-interactively #'kill-region)
+    (insert "foo")
+    (should (string= (buffer-string)
+                     "
+foo :- bar.
+
+bar :- foo.
+"))))
+
 (ert-deftest end-of-top-term-with-univ ()
   "Tests detecting the fullstop in presence of `=..'."
   (with-temp-buffer

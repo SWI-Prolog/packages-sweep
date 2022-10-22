@@ -2014,6 +2014,100 @@ Interactively, PROJ is the prefix argument."
         (flymake-show-buffer-diagnostics))
     (user-error "Flymake is not active in the current buffer")))
 
+(defun sweeprolog--forward-hole ()
+  (if-let ((prop (text-property-search-forward 'sweeprolog-hole)))
+      (progn
+        (push-mark (prop-match-beginning prop) t t))
+    (user-error "No holes following point")))
+
+(defun sweeprolog--backward-hole ()
+  (if-let ((prop (text-property-search-backward 'sweeprolog-hole))
+           (end (prop-match-end prop)))
+      (progn
+        (goto-char end)
+        (push-mark (1- end) t t))
+    (user-error "No holes before point")))
+
+(defun sweeprolog-forward-hole (&optional arg)
+  "Move point to the next hole in a `sweeprolog-mode' buffer.
+
+With negative prefix argument ARG, move to the previous hole
+instead."
+  (interactive "p" sweeprolog-mode)
+  (setq arg (or arg 1)
+        deactivate-mark nil)
+  (if (> 0 arg)
+      (sweeprolog--backward-hole)
+    (sweeprolog--forward-hole)))
+
+(defun sweeprolog--hole ()
+  (propertize "_"
+              'sweeprolog-hole t
+              'rear-sticky     '(sweeprolog-hole)))
+
+(defun sweeprolog-insert-clause (functor arity)
+  (let ((point nil))
+    (combine-after-change-calls
+      (insert "\n" functor)
+      (setq point (point))
+      (when (< 0 arity)
+        (insert "(")
+        (dotimes (_ (1- arity))
+          (insert (sweeprolog--hole) ", "))
+        (insert (sweeprolog--hole) ")"))
+      (insert " :- " (sweeprolog--hole) ".\n"))
+    (goto-char point)
+    (sweeprolog-forward-hole)))
+
+(defun sweeprolog-maybe-insert-next-clause (point kind beg end)
+  (when-let ((current-predicate (and (eq kind 'operator)
+                                     (string= "." (buffer-substring-no-properties beg end))
+                                     (cdr (sweeprolog-definition-at-point point))))
+             (functor (car current-predicate))
+             (arity (cadr current-predicate)))
+    (goto-char end)
+    (end-of-line)
+    (sweeprolog-insert-clause functor arity)
+    t))
+
+(defun sweeprolog-maybe-define-predicate (point _kind _beg _end)
+  (when-let ((pred (sweeprolog-identifier-at-point point)))
+    (unless (sweeprolog-predicate-properties pred)
+      (push-mark)
+      (sweeprolog-end-of-predicate-definition)
+      (let ((functor-arity (sweeprolog--mfn-to-functor-arity pred)))
+        (sweeprolog-insert-clause (car functor-arity)
+                                  (cdr functor-arity)))
+      t)))
+
+(defvar sweeprolog-insert-term-functions
+  '(sweeprolog-maybe-insert-next-clause
+    sweeprolog-maybe-define-predicate)
+  "Hook of functions that insert a Prolog term in a certain context.
+
+Each hook function is called with four arguments describing the
+current context.  The first argument, POINT, is the buffer
+position in which insertion should take place.  The rest of the
+arguments, KIND, BEG and END, describe the previous non-comment
+Prolog token as returned from `sweeprolog-last-token-boundaries'.")
+
+(defun sweeprolog-insert-term-dwim (&optional point)
+  "Insert an appropriate Prolog term at POINT.
+
+This command calls the functions in
+`sweeprolog-insert-term-functions' one after the other until one
+of them signal success by returning non-nil."
+  (interactive "d" sweeprolog-mode)
+  (setq point (or point (point)))
+  (let* ((bounds (sweeprolog-last-token-boundaries))
+         (kind (car bounds))
+         (beg  (cadr bounds))
+         (end  (caddr bounds)))
+    (unless (run-hook-with-args-until-success
+             'sweeprolog-insert-term-functions
+             point kind beg end)
+      (user-error "No term insertion function applies here"))))
+
 (defvar sweeprolog-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?_ "_" table)
@@ -2039,11 +2133,13 @@ Interactively, PROJ is the prefix argument."
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
     (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
     (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
+    (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
     (define-key map (kbd "C-c C-`")
                 (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
                     #'sweeprolog-show-diagnostics
                   #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
+    (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
     map)
   "Keymap for `sweeprolog-mode'.")
 
@@ -2579,6 +2675,23 @@ Interactively, PROJ is the prefix argument."
                   det
                   summary))
   (fill-paragraph))
+
+(defun sweeprolog-end-of-predicate-definition ()
+  "Move to the end of the predicate definition at point."
+  (when-let* ((def (sweeprolog-definition-at-point)))
+    (let ((point (point))
+          (fun (cadr def))
+          (ari (caddr def)))
+      (while (and point (not (eobp)))
+        (sweeprolog-end-of-top-term)
+        (if-let* ((ndef (sweeprolog-definition-at-point (point)))
+                  (nfun (cadr ndef))
+                  (nari (caddr ndef))
+                  (same (and (string= fun nfun)
+                             (=       ari nari))))
+            (setq point (point))
+          (goto-char point)
+          (setq point nil))))))
 
 (defun sweeprolog-beginning-of-predicate-at-point (&optional point)
   "Find the beginning of the predicate definition at or above POINT.
