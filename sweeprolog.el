@@ -2601,7 +2601,7 @@ predicate definition at or directly above POINT."
                   (nari (caddr ndef))
                   (same (and (string= fun nfun)
                              (=       ari nari))))
-            (progn (message "%s %s" ndef (point)) (setq point (point)))
+            (setq point (point))
           (goto-char point)
           (setq point nil)))
       (cons fun ari))))
@@ -3089,6 +3089,7 @@ if-then-else constructs in SWI-Prolog."
 
 (defun sweeprolog-render-html-a (dom)
   (let* ((url (dom-attr dom 'href))
+         (class (dom-attr dom 'class))
          (parsed (url-generic-parse-url url))
          (target (url-target parsed))
          (start (point)))
@@ -3101,20 +3102,28 @@ if-then-else constructs in SWI-Prolog."
                               (one-or-more digit) eos)
                           target)
         (sweeprolog--buttonize-region start
-                          (point)
-                          #'sweeprolog-describe-predicate
-                          target)))
+                                      (point)
+                                      #'sweeprolog-describe-predicate
+                                      target)))
      (t (let* ((path-and-query (url-path-and-query parsed))
                (path (car path-and-query))
                (query (cdr path-and-query)))
           (cond
+           ((string= class "file")
+            (let ((dir (file-name-directory path))
+                  (base (file-name-base path)))
+              (when (string= dir "/pldoc/doc/_SWI_/library/")
+                (sweeprolog--buttonize-region start
+                                              (point)
+                                              #'find-file
+                                              (concat "library(" base ")")))))
            ((string= path "/pldoc/man")
             (pcase (url-parse-query-string query)
               (`(("predicate" ,pred))
                (sweeprolog--buttonize-region start
-                                 (point)
-                                 #'sweeprolog-describe-predicate
-                                 pred))))))))))
+                                             (point)
+                                             #'sweeprolog-describe-predicate
+                                             pred))))))))))
 
 (defun sweeprolog-render-html (html)
   (with-temp-buffer
@@ -3206,6 +3215,16 @@ if-then-else constructs in SWI-Prolog."
     ", ")
    "."))
 
+(defun sweeprolog-predicate-properties (pred)
+  (sweeprolog--open-query "user"
+                          "sweep"
+                          "sweep_predicate_properties"
+                          pred)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (cdr sol))))
+
 (defun sweeprolog--describe-predicate (pred)
   (let ((page
          (progn
@@ -3217,16 +3236,7 @@ if-then-else constructs in SWI-Prolog."
              (sweeprolog-close-query)
              (when (sweeprolog-true-p sol)
                (sweeprolog-render-html (cdr sol))))))
-        (props
-         (progn
-           (sweeprolog--open-query "user"
-                                   "sweep"
-                                   "sweep_predicate_properties"
-                                   pred)
-           (let ((sol (sweeprolog-next-solution)))
-             (sweeprolog-close-query)
-             (when (sweeprolog-true-p sol)
-               (cdr sol)))))
+        (props (sweeprolog-predicate-properties pred))
         (path (car (sweeprolog-predicate-location pred))))
     (help-setup-xref (list #'sweeprolog--describe-predicate pred)
                      (called-interactively-p 'interactive))
