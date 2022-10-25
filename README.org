@@ -1424,9 +1424,9 @@ there some further improvements that we want to pursue:
   predicates]]).
 
 - Add commands for narrowing and moving by predicate definitions :: ~sweeprolog-mode~
-  should include commands moving point to the next/previous predicate
-  definition.  We already have commands for clause-based motion
-  (~C-M-a~, ~C-M-e~) but it would be useful to have predicate-based
+  should include commands for moving point to the next/previous
+  predicate definition.  We already have commands for clause-based
+  motion (~C-M-a~, ~C-M-e~) but it would be useful to have predicate-based
   variants as well.  These commands could then be bound to ~C-c C-n~ for
   moving to the next predicate definition and ~C-c C-p~ for moving to
   the previous.

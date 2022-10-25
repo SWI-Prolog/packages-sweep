@@ -635,6 +635,49 @@ default."
     (when (sweeprolog-true-p sol)
       (cdr sol))))
 
+(defun sweeprolog-local-variables-collection (&rest exclude)
+  "Return a list of variable names that occur in the current clause.
+
+EXCLUDE is a list of variables name to be excluded from the
+resulting list even when found in the current clause."
+  (let* ((beg (save-mark-and-excursion
+                (unless (sweeprolog-at-beginning-of-top-term-p)
+                  (sweeprolog-beginning-of-top-term))
+                (max (1- (point)) (point-min))))
+         (end (save-mark-and-excursion
+                (sweeprolog-end-of-top-term)
+                (point)))
+         (vars nil))
+    (save-excursion
+      (goto-char beg)
+      (save-match-data
+        (while (search-forward-regexp (rx bow (or "_" upper)
+                                          (* alnum))
+                                      end t)
+          (unless (nth 8 (syntax-ppss))
+            (let ((match (match-string-no-properties 0)))
+              (unless (or (member match exclude)
+                          (member match vars))
+                (push (match-string-no-properties 0) vars)))))))
+    vars))
+
+
+(defun sweeprolog-variable-completion-at-point ()
+  "Prolog variable name completion backend for `completion-at-point'."
+  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
+             (beg (car bounds))
+             (end (cdr bounds)))
+    (when (and (<= beg (point) end)
+               (let ((first (char-after beg)))
+                 (or (char-uppercase-p first)
+                     (= first ?_))))
+      (when-let ((col (sweeprolog-local-variables-collection
+                       (buffer-substring-no-properties beg end))))
+        (list beg end col
+              :exclusive 'no
+              :annotation-function
+              (lambda (_) " Var"))))))
+
 (defun sweeprolog-completion-at-point-function ()
   (when-let ((bounds (sweeprolog-predicate-prefix-boundaries)))
     (let ((start (car bounds))
@@ -2110,12 +2153,21 @@ of them signal success by returning non-nil."
 
 (defvar sweeprolog-mode-syntax-table
   (let ((table (make-syntax-table)))
-    (modify-syntax-entry ?_ "_" table)
+    (modify-syntax-entry ?# "." table)
+    (modify-syntax-entry ?$ "." table)
+    (modify-syntax-entry ?& "." table)
     (modify-syntax-entry ?+ "." table)
     (modify-syntax-entry ?- "." table)
-    (modify-syntax-entry ?= "." table)
+    (modify-syntax-entry ?. "." table)
+    (modify-syntax-entry ?: "." table)
     (modify-syntax-entry ?< "." table)
+    (modify-syntax-entry ?= "." table)
     (modify-syntax-entry ?> "." table)
+    (modify-syntax-entry ?? "." table)
+    (modify-syntax-entry ?@ "." table)
+    (modify-syntax-entry ?^ "." table)
+    (modify-syntax-entry ?~ "." table)
+    (modify-syntax-entry ?_ "_" table)
     (modify-syntax-entry ?| "." table)
     (modify-syntax-entry ?\' "\"" table)
     (modify-syntax-entry ?` "\"" table)
@@ -3034,6 +3086,7 @@ if-then-else constructs in SWI-Prolog."
   (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
   (add-hook 'file-name-at-point-functions #'sweeprolog-file-at-point nil t)
   (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point-function nil t)
+  (add-hook 'completion-at-point-functions #'sweeprolog-variable-completion-at-point nil t)
   (when sweeprolog-colourise-buffer-on-idle
     (setq sweeprolog--timer
           (run-with-idle-timer
