@@ -92,7 +92,7 @@ from the =sweep= Git repository:
      git clone https://github.com/SWI-Prolog/packages-sweep sweep
    #+end_src
 
-2. Add =sweep= to Emacs' =load-path=:
+2. Add =sweep= to Emacs's =load-path=:
    #+begin_src emacs-lisp
      (add-to-list 'load-path "/path/to/sweep")
    #+end_src
@@ -610,7 +610,7 @@ aligning if-then-else and similar constructs only requires typing
 
 In Emacs prior to version 29, users are advised to bind
 ~sweeprolog-align-spaces~ to ~M-SPC~ directly by adding the following
-lines to Emacs' initialization file (see [[info:emacs#Init File][The Emacs Initialization File]]).
+lines to Emacs's initialization file (see [[info:emacs#Init File][The Emacs Initialization File]]).
 
 #+begin_src emacs-lisp
   (eval-after-load 'sweeprolog
@@ -627,7 +627,7 @@ lines to Emacs' initialization file (see [[info:emacs#Init File][The Emacs Initi
 Emacs includes many useful features for operating on syntactic units
 in source code buffer, such as marking, transposing and moving over
 expressions.  By default, these features are geared towards working
-with Lisp expressions, or "sexps".  =sweeprolog-mode= extends the Emacs'
+with Lisp expressions, or "sexps".  =sweeprolog-mode= extends the Emacs's
 notion of syntactic expressions to accommodate for Prolog terms, which
 allows the standard sexp-based commands to operate on them seamlessly.
 
@@ -674,7 +674,7 @@ This enables the many commands that the =xref= interface provides, like
 commands.
 
 #+CINDEX: imenu
-=sweeprolog-mode= also integrates with Emacs' =imenu=, which provides a simple
+=sweeprolog-mode= also integrates with Emacs's =imenu=, which provides a simple
 facility for looking up and jumping to definitions in the current
 buffer.  To jump to a definition in the current buffer, type =M-x imenu=
 (bound by default to =M-g i= in Emacs version 29).  For information
@@ -895,7 +895,6 @@ the non-exported predicates defined in the current buffer.  To force
 prompting for a predicate, invoke ~sweeprolog-export-predicate~ with a
 prefix argument (~C-u C-c C-e~).
 
-
 ** Code Completion
 :PROPERTIES:
 :CUSTOM_ID: code-completion
@@ -1003,7 +1002,7 @@ Emacs manual]]).
 
 #+CINDEX: prolog help
 ~sweep~ provides a way to read SWI-Prolog documentation via the standard
-Emacs ~help~ user interface, akin to Emacs' built-in ~describe-function~
+Emacs ~help~ user interface, akin to Emacs's built-in ~describe-function~
 (~C-h f~) and ~describe-variable~ (~C-h v~).  For more information about
 Emacs ~help~ and its special major mode, ~help-mode~, see [[info:emacs#Help Mode][Help Mode in the
 Emacs manual]].
@@ -1180,7 +1179,7 @@ more information see [[info:emacs#Symbol Completion][Symbol Completion in the Em
 #+FINDEX: sweeprolog-find-module
 =sweep= provides the command =M-x sweeprolog-find-module= for
 selecting and jumping to the source code of a loaded or auto-loadable
-Prolog module.  =sweep= integrates with Emacs' standard completion API
+Prolog module.  =sweep= integrates with Emacs's standard completion API
 to annotate candidate modules in the completion UI with their =PLDoc=
 description when available.
 
@@ -1198,7 +1197,7 @@ loaded or auto-loadable Prolog predicate.
 =sweep= defines a handler for the Emacs function =expand-file-file= that
 recognizes Prolog file specifications, such as =library(lists)=, and
 expands them to their corresponding absolute paths.  This means that
-one can use Prolog file specifications with Emacs' standard =find-file=
+one can use Prolog file specifications with Emacs's standard =find-file=
 (=C-x C-f=) to locate Prolog resources directly.
 
 For example, typing =C-x C-f library(pldoc/doc_man)= will open the
@@ -1226,7 +1225,7 @@ option ~sweeprolog-swipl-sources~.  When customized to a string, it is
 taken to be the path to the root directory of the SWI-Prolog source
 code.  If instead ~sweeprolog-swipl-sources~ is set to ~t~ (the default),
 ~sweep~ will try to locate a local checkout of the SWI-Prolog sources
-automatically among known project root directories provided by Emacs'
+automatically among known project root directories provided by Emacs's
 built-in ~project-known-project-roots~ from =project.el= (see [[info:emacs#Projects][Projects in
 the Emacs manual]] for more information about =project.el= projects).
 Lastly, setting ~sweeprolog-swipl-sources~ to ~nil~ disables searching for
