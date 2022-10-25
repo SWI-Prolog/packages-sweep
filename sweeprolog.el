@@ -36,9 +36,60 @@
 (require 'find-func)
 (require 'shr)
 
+
+;;;; Global variables
+
 (defvar sweeprolog--directory (file-name-directory load-file-name))
 
+(defvar sweeprolog--initialized nil)
+
 (defvar sweeprolog-prolog-server-port nil)
+
+(defvar sweeprolog-predicate-completion-collection nil)
+
+(defvar sweeprolog-read-predicate-history nil)
+
+(defvar sweeprolog-read-module-history nil)
+
+(defvar sweeprolog-insert-term-functions
+  '(sweeprolog-maybe-insert-next-clause
+    sweeprolog-maybe-define-predicate)
+  "Hook of functions that insert a Prolog term in a certain context.
+
+Each hook function is called with four arguments describing the
+current context.  The first argument, POINT, is the buffer
+position in which insertion should take place.  The rest of the
+arguments, KIND, BEG and END, describe the previous non-comment
+Prolog token as returned from `sweeprolog-last-token-boundaries'.")
+
+(defvar sweeprolog-mode-syntax-table
+  (let ((table (make-syntax-table)))
+    (modify-syntax-entry ?# "." table)
+    (modify-syntax-entry ?$ "." table)
+    (modify-syntax-entry ?& "." table)
+    (modify-syntax-entry ?+ "." table)
+    (modify-syntax-entry ?- "." table)
+    (modify-syntax-entry ?. "." table)
+    (modify-syntax-entry ?: "." table)
+    (modify-syntax-entry ?< "." table)
+    (modify-syntax-entry ?= "." table)
+    (modify-syntax-entry ?> "." table)
+    (modify-syntax-entry ?? "." table)
+    (modify-syntax-entry ?@ "." table)
+    (modify-syntax-entry ?^ "." table)
+    (modify-syntax-entry ?~ "." table)
+    (modify-syntax-entry ?_ "_" table)
+    (modify-syntax-entry ?| "." table)
+    (modify-syntax-entry ?\' "\"" table)
+    (modify-syntax-entry ?` "\"" table)
+    (modify-syntax-entry ?% "<" table)
+    (modify-syntax-entry ?\n ">" table)
+    (modify-syntax-entry ?* ". 23b" table)
+    (modify-syntax-entry ?/ ". 14" table)
+    table))
+
+
+;;;; User options
 
 (defgroup sweeprolog nil
   "SWI-Prolog Embedded in Emacs."
@@ -242,6 +293,141 @@ clause."
   :group 'sweeprolog)
 
 
+;;;; Keymaps
+
+(defvar sweeprolog-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
+    (define-key map (kbd "C-c C-c") #'sweeprolog-colourise-buffer)
+    (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
+    (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
+    (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
+    (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
+    (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
+    (define-key map (kbd "C-c C-`")
+                (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
+                    #'sweeprolog-show-diagnostics
+                  #'flymake-show-diagnostics-buffer))
+    (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
+    (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
+    map)
+  "Keymap for `sweeprolog-mode'.")
+
+(defvar sweeprolog-top-level-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
+    map)
+  "Keymap for `sweeprolog-top-level-mode'.")
+
+(defvar sweeprolog-top-level-menu-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") #'sweeprolog-top-level-menu-go-to)
+    (define-key map (kbd "k")   #'sweeprolog-top-level-menu-kill)
+    (define-key map (kbd "t")   #'sweeprolog-top-level-menu-new)
+    (define-key map (kbd "s")   #'sweeprolog-top-level-menu-signal)
+    map)
+  "Local keymap for `sweeprolog-top-level-menu-mode' buffers.")
+
+(defvar sweeprolog-module-documentation-regexp (rx bol (zero-or-more whitespace)
+                                                   ":-" (zero-or-more whitespace)
+                                                   "module("))
+
+;;;###autoload
+(defvar sweeprolog-help-prefix-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "m" #'sweeprolog-describe-module)
+    (define-key map "p" #'sweeprolog-describe-predicate)
+    map)
+  "Keymap for `sweeprolog' help commands.")
+
+;;;###autoload
+(defvar sweeprolog-prefix-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "F" #'sweeprolog-set-prolog-flag)
+    (define-key map "P" #'sweeprolog-pack-install)
+    (define-key map "R" #'sweeprolog-restart)
+    (define-key map "T" #'sweeprolog-list-top-levels)
+    (define-key map "e" #'sweeprolog-view-messages)
+    (define-key map "h" sweeprolog-help-prefix-map)
+    (define-key map "l" #'sweeprolog-load-buffer)
+    (define-key map "m" #'sweeprolog-find-module)
+    (define-key map "p" #'sweeprolog-find-predicate)
+    (define-key map "t" #'sweeprolog-top-level)
+    map)
+  "Keymap for `sweeprolog' global commands.")
+
+
+;;;; Menu bar
+
+(easy-menu-define sweeprolog-menu (list sweeprolog-mode-map
+                                        sweeprolog-top-level-mode-map)
+  "`sweep' menu."
+  '("Sweep"
+    [ "Set Prolog flag"        sweeprolog-set-prolog-flag t ]
+    [ "Install Prolog package" sweeprolog-pack-install    t ]
+    [ "Load Prolog buffer"     sweeprolog-load-buffer     t ]
+    [ "Find Prolog module"     sweeprolog-find-module     t ]
+    [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
+    [ "Export predicate"
+      sweeprolog-export-predicate
+      sweeprolog--exportable-predicates ]
+    [ "Insert module template"
+      auto-insert
+      (eq major-mode 'sweeprolog-mode) ]
+    [ "Document current predicate"
+      sweeprolog-document-predicate-at-point
+      (and (eq major-mode 'sweeprolog-mode)
+           (sweeprolog-definition-at-point)) ]
+    "--"
+    [ "Open top-level"         sweeprolog-top-level       t ]
+    [ "Signal top-level"
+      sweeprolog-top-level-signal
+      (seq-filter (lambda (b)
+                    (with-current-buffer b
+                      (and (derived-mode-p 'sweeprolog-top-level-mode)
+                           sweeprolog-top-level-thread-id)))
+                  (buffer-list)) ]
+    [ "Open Top-level Menu"    sweeprolog-list-top-levels t ]
+    "--"
+    [ "Describe Predicate"  sweeprolog-describe-predicate t ]
+    [ "Describe Prolog module" sweeprolog-describe-module t ]
+    "--"
+    [ "Reset sweep"            sweeprolog-restart         t ]
+    [ "View sweep messages"    sweeprolog-view-messages   t ]))
+
+
+;;;; Local variables
+
+(defvar-local sweeprolog-buffer-module "user")
+
+(defvar-local sweeprolog--module-term nil)
+
+(defvar-local sweeprolog--variable-at-point nil)
+
+(defvar-local sweeprolog--diagnostics nil)
+
+(defvar-local sweeprolog--diagnostics-report-fn nil)
+
+(defvar-local sweeprolog--diagnostics-changes-beg nil)
+
+(defvar-local sweeprolog--diagnostics-changes-end nil)
+
+(defvar-local sweeprolog--exportable-predicates nil)
+
+(defvar-local sweeprolog--timer nil)
+
+(defvar-local sweeprolog--colourise-buffer-duration 0.2)
+
+(defvar-local sweeprolog--html-footnotes nil)
+
+(defvar-local sweeprolog-top-level-timer nil "Buffer-local timer.")
+
+(defvar-local sweeprolog-top-level-thread-id nil
+  "Prolog top-level thread ID corresponding to this buffer.")
+
+
+;;;; Declarations for functions defined in `sweep-module'
+
 (declare-function sweeprolog-initialize    "sweep-module")
 (declare-function sweeprolog-initialized-p "sweep-module")
 (declare-function sweeprolog-open-query    "sweep-module")
@@ -249,6 +435,9 @@ clause."
 (declare-function sweeprolog-cut-query     "sweep-module")
 (declare-function sweeprolog-close-query   "sweep-module")
 (declare-function sweeprolog-cleanup       "sweep-module")
+
+
+;;;; Initialization
 
 (defun sweeprolog--load-module (line)
   (save-match-data
@@ -284,23 +473,6 @@ clause."
 (defun sweeprolog-ensure-initialized ()
   (sweeprolog--ensure-module)
   (sweeprolog-init))
-
-(defun sweeprolog--open-query (ctx mod fun arg &optional rev)
-  "Ensure that Prolog is initialized and execute a new query.
-
-CTX, MOD and FUN are strings.  CTX is the context Prolog module
-in which the query in invoked.  MOD is the Prolog module in which
-the invoked predicate is defined.  FUN is the functor of the
-invoked predicate.
-
-ARG is converted to a Prolog term and used as the input argument
-for the query.  When REV is a nil, the input argument is the
-first argument, and the output argument is second.  Otherwise,
-the order of the arguments is reversed."
-  (sweeprolog-ensure-initialized)
-  (sweeprolog-open-query ctx mod fun arg rev))
-
-(defvar sweeprolog--initialized nil)
 
 (defun sweeprolog-init (&rest args)
   "Initialize and setup the embedded Prolog runtime.
@@ -345,6 +517,47 @@ Otherwise set ARGS to nil."
   (message "Starting sweep.")
   (apply #'sweeprolog-init args))
 
+(defun sweeprolog--open-query (ctx mod fun arg &optional rev)
+  "Ensure that Prolog is initialized and execute a new query.
+
+CTX, MOD and FUN are strings.  CTX is the context Prolog module
+in which the query in invoked.  MOD is the Prolog module in which
+the invoked predicate is defined.  FUN is the functor of the
+invoked predicate.
+
+ARG is converted to a Prolog term and used as the input argument
+for the query.  When REV is a nil, the input argument is the
+first argument, and the output argument is second.  Otherwise,
+the order of the arguments is reversed."
+  (sweeprolog-ensure-initialized)
+  (sweeprolog-open-query ctx mod fun arg rev))
+
+(defun sweeprolog-start-prolog-server ()
+  "Start the `sweep' Prolog top-level embedded server."
+  (sweeprolog--open-query "user"
+                         "sweep"
+                         "sweep_top_level_server"
+                         nil)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (setq sweeprolog-prolog-server-port (cdr sol)))))
+
+(defun sweeprolog-setup-message-hook ()
+  "Setup `thread_message_hook/3' to redirecet Prolog messages."
+  (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
+    (setq-local window-point-insertion-type t)
+    (compilation-minor-mode 1))
+  (sweeprolog--open-query "user"
+                         "sweep"
+                         "sweep_setup_message_hook"
+                         nil)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    sol))
+
+
+;;;; Prolog messages
 
 (defface sweeprolog-debug-prefix-face
   '((default :inherit shadow))
@@ -395,6 +608,37 @@ Otherwise set ARGS to nil."
       (set-window-point win (point))
       win)))
 
+(defun sweeprolog-message (message)
+  "Emit the Prolog message MESSAGE to the `sweep' messages buffer."
+  (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
+    (save-excursion
+      (goto-char (point-max))
+      (let ((kind (car message))
+            (content (cdr message)))
+        (pcase kind
+          (`("debug" . ,topic)
+           (insert (propertize "DEBUG" 'face sweeprolog-debug-prefix-face))
+           (insert "[")
+           (insert (propertize topic 'face sweeprolog-debug-topic-face))
+           (insert "]: ")
+           (insert content))
+          ("informational"
+           (insert (propertize "INFO" 'face sweeprolog-info-prefix-face))
+           (insert ": ")
+           (insert content))
+          ("warning"
+           (insert (propertize "WARNING" 'face sweeprolog-warning-prefix-face))
+           (insert ": ")
+           (insert content))
+          ("error"
+           (insert (propertize "ERROR" 'face sweeprolog-error-prefix-face))
+           (insert ": ")
+           (insert content))))
+      (newline))))
+
+
+;;;; Flags
+
 (defun sweeprolog-current-prolog-flags (&optional prefix)
   "Return the list of defined Prolog flags defined with prefix PREFIX."
   (sweeprolog--open-query "user" "sweep" "sweep_current_prolog_flags" (or prefix ""))
@@ -432,74 +676,8 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
         (message "Prolog flag %s set to %s" flag value)
       (user-error "Setting %s to %s failed!" flag value))))
 
-(defun sweeprolog-setup-message-hook ()
-  "Setup `thread_message_hook/3' to redirecet Prolog messages."
-  (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
-    (setq-local window-point-insertion-type t)
-    (compilation-minor-mode 1))
-  (sweeprolog--open-query "user"
-                         "sweep"
-                         "sweep_setup_message_hook"
-                         nil)
-  (let ((sol (sweeprolog-next-solution)))
-    (sweeprolog-close-query)
-    sol))
 
-(defun sweeprolog-message (message)
-  "Emit the Prolog message MESSAGE to the `sweep' messages buffer."
-  (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
-    (save-excursion
-      (goto-char (point-max))
-      (let ((kind (car message))
-            (content (cdr message)))
-        (pcase kind
-          (`("debug" . ,topic)
-           (insert (propertize "DEBUG" 'face sweeprolog-debug-prefix-face))
-           (insert "[")
-           (insert (propertize topic 'face sweeprolog-debug-topic-face))
-           (insert "]: ")
-           (insert content))
-          ("informational"
-           (insert (propertize "INFO" 'face sweeprolog-info-prefix-face))
-           (insert ": ")
-           (insert content))
-          ("warning"
-           (insert (propertize "WARNING" 'face sweeprolog-warning-prefix-face))
-           (insert ": ")
-           (insert content))
-          ("error"
-           (insert (propertize "ERROR" 'face sweeprolog-error-prefix-face))
-           (insert ": ")
-           (insert content))))
-      (newline))))
-
-(defun sweeprolog-start-prolog-server ()
-  "Start the `sweep' Prolog top-level embedded server."
-  (sweeprolog--open-query "user"
-                         "sweep"
-                         "sweep_top_level_server"
-                         nil)
-  (let ((sol (sweeprolog-next-solution)))
-    (sweeprolog-close-query)
-    (when (sweeprolog-true-p sol)
-      (setq sweeprolog-prolog-server-port (cdr sol)))))
-
-
-(defvar sweeprolog-predicate-completion-collection nil)
-
-(defvar-local sweeprolog-buffer-module "user")
-
-(defun sweeprolog-local-predicates-collection (&optional prefix)
-  "Return a list of prediactes accessible in the current buffer.
-
-When non-nil, only predicates whose name contains PREFIX are returned."
-  (sweeprolog--open-query "user" "sweep" "sweep_local_predicate_completion"
-                    (cons sweeprolog-buffer-module
-                          prefix))
-  (let ((sol (sweeprolog-next-solution)))
-    (sweeprolog-close-query)
-    (when (sweeprolog-true-p sol)
-      (setq sweeprolog-predicate-completion-collection (cdr sol)))))
+;;;; Predicates
 
 (defun sweeprolog-predicates-collection (&optional prefix)
   "Return a list of prediacte completion candidates matchitng PREFIX."
@@ -588,8 +766,6 @@ depends on the value of the user option
     (when (sweeprolog-true-p sol)
       (cdr sol))))
 
-(defvar sweeprolog-read-predicate-history nil)
-
 (defun sweeprolog-read-predicate (&optional prompt)
   "Read a Prolog predicate from the minibuffer with prompt PROMPT.
 If PROMPT is nil, `sweeprolog-read-predicate-prompt' is used by
@@ -635,6 +811,96 @@ default."
     (when (sweeprolog-true-p sol)
       (cdr sol))))
 
+;;;###autoload
+(defun sweeprolog-find-predicate (mfn)
+  "Jump to the definition of the Prolog predicate MFN.
+MFN must be a string of the form \"M:F/N\" where M is a Prolog
+module name, F is a functor name and N is its arity."
+  (interactive (list (sweeprolog-read-predicate)))
+  (if-let ((loc (sweeprolog-predicate-location mfn)))
+      (let ((path (car loc))
+            (line (or (cdr loc) 1)))
+        (find-file path)
+        (goto-char (point-min))
+        (forward-line (1- line)))
+    (user-error "Unable to locate predicate %s" mfn)))
+
+(defun sweeprolog-identifier-at-point (&optional point)
+  (let* ((p (or point (point)))
+         (beg (save-mark-and-excursion
+                (goto-char p)
+                (unless (sweeprolog-at-beginning-of-top-term-p)
+                  (sweeprolog-beginning-of-top-term))
+                (max (1- (point)) (point-min))))
+         (end (save-mark-and-excursion
+                (goto-char p)
+                (sweeprolog-end-of-top-term)
+                (point)))
+         (contents (buffer-substring-no-properties beg end)))
+    (sweeprolog--open-query "user"
+                           "sweep"
+                           "sweep_identifier_at_point"
+                           (list contents
+                                 (buffer-file-name)
+                                 (- p beg)))
+    (let ((sol (sweeprolog-next-solution)))
+      (sweeprolog-close-query)
+      (when (sweeprolog-true-p sol)
+        (cdr sol)))))
+
+
+;;;; Modules
+
+(defun sweeprolog-modules-collection ()
+  (sweeprolog--open-query "user" "sweep" "sweep_modules_collection" nil)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (cdr sol))))
+
+(defun sweeprolog-module-path (mod)
+  (sweeprolog--open-query "user" "sweep" "sweep_module_path" mod)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (cdr sol))))
+
+(defun sweeprolog-read-module-name ()
+  "Read a Prolog module name from the minibuffer, with completion."
+  (let* ((col (sweeprolog-modules-collection))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (key)
+                  (let* ((val (cdr (assoc-string key col)))
+                         (pat (car val))
+                         (des (cdr val)))
+                    (concat (make-string (max 0 (- 32 (length key))) ? )
+                            (if des
+                                (concat pat (make-string (max 0 (- 80 (length pat))) ? ) des)
+                              pat)))))))
+    (completing-read sweeprolog-read-module-prompt col nil nil nil
+                     'sweeprolog-read-module-history
+                     sweeprolog-buffer-module)))
+
+;;;###autoload
+(defun sweeprolog-find-module (mod)
+  "Jump to the source file of the Prolog module MOD."
+  (interactive (list (sweeprolog-read-module-name)))
+  (find-file (sweeprolog-module-path mod)))
+
+(defun sweeprolog--set-buffer-module ()
+  (sweeprolog--open-query "user" "sweep" "sweep_path_module"
+                          (buffer-file-name))
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (setq sweeprolog-buffer-module
+          (if (sweeprolog-true-p sol)
+              (cdr sol)
+            "user"))))
+
+
+;;;; Completion at point
+
 (defun sweeprolog-local-variables-collection (&rest exclude)
   "Return a list of variable names that occur in the current clause.
 
@@ -661,7 +927,6 @@ resulting list even when found in the current clause."
                 (push (match-string-no-properties 0) vars)))))))
     vars))
 
-
 (defun sweeprolog-variable-completion-at-point ()
   "Prolog variable name completion backend for `completion-at-point'."
   (when-let ((bounds (bounds-of-thing-at-point 'symbol))
@@ -677,6 +942,18 @@ resulting list even when found in the current clause."
               :exclusive 'no
               :annotation-function
               (lambda (_) " Var"))))))
+
+(defun sweeprolog-local-predicates-collection (&optional prefix)
+  "Return a list of prediactes accessible in the current buffer.
+
+When non-nil, only predicates whose name contains PREFIX are returned."
+  (sweeprolog--open-query "user" "sweep" "sweep_local_predicate_completion"
+                    (cons sweeprolog-buffer-module
+                          prefix))
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (setq sweeprolog-predicate-completion-collection (cdr sol)))))
 
 (defun sweeprolog-completion-at-point-function ()
   (when-let ((bounds (sweeprolog-predicate-prefix-boundaries)))
@@ -715,68 +992,8 @@ resulting list even when found in the current clause."
                             (insert "_)")
                             (goto-char (1- opoint))))))))))))))
 
-;;;###autoload
-(defun sweeprolog-find-predicate (mfn)
-  "Jump to the definition of the Prolog predicate MFN.
-MFN must be a string of the form \"M:F/N\" where M is a Prolog
-module name, F is a functor name and N is its arity."
-  (interactive (list (sweeprolog-read-predicate)))
-  (if-let ((loc (sweeprolog-predicate-location mfn)))
-      (let ((path (car loc))
-            (line (or (cdr loc) 1)))
-        (find-file path)
-        (goto-char (point-min))
-        (forward-line (1- line)))
-    (user-error "Unable to locate predicate %s" mfn)))
 
-(defun sweeprolog-modules-collection ()
-  (sweeprolog--open-query "user" "sweep" "sweep_modules_collection" nil)
-  (let ((sol (sweeprolog-next-solution)))
-    (sweeprolog-close-query)
-    (when (sweeprolog-true-p sol)
-      (cdr sol))))
-
-(defun sweeprolog-module-path (mod)
-  (sweeprolog--open-query "user" "sweep" "sweep_module_path" mod)
-  (let ((sol (sweeprolog-next-solution)))
-    (sweeprolog-close-query)
-    (when (sweeprolog-true-p sol)
-      (cdr sol))))
-
-(defvar sweeprolog-read-module-history nil)
-
-(defun sweeprolog-read-module-name ()
-  "Read a Prolog module name from the minibuffer, with completion."
-  (let* ((col (sweeprolog-modules-collection))
-         (completion-extra-properties
-          (list :annotation-function
-                (lambda (key)
-                  (let* ((val (cdr (assoc-string key col)))
-                         (pat (car val))
-                         (des (cdr val)))
-                    (concat (make-string (max 0 (- 32 (length key))) ? )
-                            (if des
-                                (concat pat (make-string (max 0 (- 80 (length pat))) ? ) des)
-                              pat)))))))
-    (completing-read sweeprolog-read-module-prompt col nil nil nil
-                     'sweeprolog-read-module-history
-                     sweeprolog-buffer-module)))
-
-
-(defun sweeprolog--set-buffer-module ()
-  (sweeprolog--open-query "user" "sweep" "sweep_path_module" (buffer-file-name))
-  (let ((sol (sweeprolog-next-solution)))
-    (sweeprolog-close-query)
-    (setq sweeprolog-buffer-module
-          (if (sweeprolog-true-p sol)
-              (cdr sol)
-            "user"))))
-
-;;;###autoload
-(defun sweeprolog-find-module (mod)
-  "Jump to the source file of the Prolog module MOD."
-  (interactive (list (sweeprolog-read-module-name)))
-  (find-file (sweeprolog-module-path mod)))
+;;;; Packages
 
 (defun sweeprolog-packs-collection ()
   (sweeprolog--open-query "user" "sweep" "sweep_packs_collection" "")
@@ -815,6 +1032,8 @@ module name, F is a functor name and N is its arity."
         (message "Package install successful.")
       (user-error "Pacakge installation failed!"))))
 
+
+;;;; Faces
 
 (defgroup sweeprolog-faces nil
   "Faces used to highlight Prolog code."
@@ -893,7 +1112,8 @@ module name, F is a functor name and N is its arity."
   (:weight bold)
   "Necks.")
 
-(sweeprolog-defface goal
+(sweeprolog-defface
+  goal
   (:inherit font-lock-function-name-face)
   (:inherit font-lock-function-name-face)
   (:inherit font-lock-function-name-face)
@@ -1417,24 +1637,8 @@ module name, F is a functor name and N is its arity."
   (:inherit font-lock-doc-face :foreground "green")
   "Structured comments.")
 
-(defvar-local sweeprolog--module-term nil)
-(defvar-local sweeprolog--variable-at-point nil)
-(defvar-local sweeprolog--diagnostics nil)
-(defvar-local sweeprolog--diagnostics-report-fn nil)
-(defvar-local sweeprolog--diagnostics-changes-beg nil)
-(defvar-local sweeprolog--diagnostics-changes-end nil)
-(defvar-local sweeprolog--exportable-predicates nil)
 
-(defun sweeprolog-read-exportable-predicate ()
-  "Read a predicate name that can be exported in the current buffer."
-  (completing-read sweeprolog-read-exportable-predicate-prompt
-                   sweeprolog--exportable-predicates))
-
-(defun sweeprolog-diagnostic-function (report-fn &rest rest)
-  (setq sweeprolog--diagnostics nil
-        sweeprolog--diagnostics-report-fn report-fn
-        sweeprolog--diagnostics-changes-beg (plist-get rest :changes-start)
-        sweeprolog--diagnostics-changes-end (plist-get rest :changes-end)))
+;;;; Font-lock
 
 (defun sweeprolog--colour-term-to-faces (beg end arg)
   (pcase arg
@@ -1757,6 +1961,76 @@ module name, F is a functor name and N is its arity."
       (when (sweeprolog-true-p sol)
         `(jit-lock-bounds ,beg . ,end)))))
 
+(defun sweeprolog-syntax-propertize (start end)
+  (goto-char start)
+  (let ((case-fold-search nil))
+    (funcall
+     (syntax-propertize-rules
+      ((rx bow (group-n 1 "0'" anychar))
+       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+            (string-to-syntax "w"))))
+      ((rx (group-n 1 "!"))
+       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+            (string-to-syntax "w")))))
+     start end)))
+
+(defun sweeprolog-highlight-variable (point &optional var)
+  "Highlight occurences of the variable VAR in the clause at POINT.
+
+If VAR is nil, clear variable highlighting in the current clause
+instead.
+
+Interactively, operate on the clause at point.  If a prefix
+argument is specificed, clear variable highlighting in the
+current clause.  Otherwise prompt for VAR, defaulting to the
+variable at point, if any."
+  (interactive (list (point)
+                     (unless current-prefix-arg
+                       (let ((v (symbol-at-point)))
+                         (read-string "Highlight variable: "
+                                      nil nil
+                                      (and v
+                                           (save-match-data
+                                             (let ((case-fold-search nil))
+                                               (string-match
+                                                (rx bos upper)
+                                                (symbol-name v))))
+                                           (symbol-name v))))))
+               sweeprolog-mode sweeprolog-top-level-mode)
+  (let ((sweeprolog--variable-at-point var))
+    (font-lock-fontify-region point point)))
+
+(defun sweeprolog-cursor-sensor-functions (var)
+  (list
+   (lambda (_win old dir)
+     (if (eq dir 'entered)
+         (sweeprolog-highlight-variable (point) var)
+       (sweeprolog-highlight-variable old)))))
+
+
+;;;; Flymake
+
+(defun sweeprolog-diagnostic-function (report-fn &rest rest)
+  (setq sweeprolog--diagnostics nil
+        sweeprolog--diagnostics-report-fn report-fn
+        sweeprolog--diagnostics-changes-beg (plist-get rest :changes-start)
+        sweeprolog--diagnostics-changes-end (plist-get rest :changes-end)))
+
+(defun sweeprolog-show-diagnostics (&optional proj)
+  "Show diagnostics for the current project, or buffer if PROJ is nil.
+
+Interactively, PROJ is the prefix argument."
+  (interactive "P" sweeprolog-mode)
+  (if (and sweeprolog-enable-flymake
+           flymake-mode)
+      (if proj
+          (flymake-show-project-diagnostics)
+        (flymake-show-buffer-diagnostics))
+    (user-error "Flymake is not active in the current buffer")))
+
+
+;;;; Top-level
+
 (defun sweeprolog-colourise-query (buffer)
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
@@ -1766,45 +2040,12 @@ module name, F is a functor name and N is its arity."
         (with-silent-modifications
           (font-lock-unfontify-region beg end))
         (sweeprolog--open-query "user"
-                          "sweep"
-                          "sweep_colourise_query"
-                          (cons query (marker-position beg)))
+                                "sweep"
+                                "sweep_colourise_query"
+                                (cons query (marker-position beg)))
         (let ((sol (sweeprolog-next-solution)))
           (sweeprolog-close-query)
           sol)))))
-
-(defun sweeprolog-load-buffer (buffer)
-  "Load the Prolog buffer BUFFER into the embedded SWI-Prolog runtime.
-
-Interactively, if the major mode of the current buffer is
-`sweeprolog-mode' and the command is called without a prefix argument,
-load the current buffer.  Otherwise, prompt for a `sweeprolog-mode'
-buffer to load."
-  (interactive (list
-                (if (and (not current-prefix-arg)
-                         (eq major-mode 'sweeprolog-mode))
-                    (current-buffer)
-                  (read-buffer "Load buffer: "
-                               (when (eq major-mode 'sweeprolog-mode)
-                                 (buffer-name))
-                               t
-                               (lambda (b)
-                                 (let ((n (or (and (consp b) (car b)) b)))
-                                   (with-current-buffer n
-                                     (eq major-mode 'sweeprolog-mode))))))))
-  (with-current-buffer buffer
-    (let* ((beg (point-min))
-           (end (point-max))
-           (contents (buffer-substring-no-properties beg end)))
-      (sweeprolog--open-query "user"
-                             "sweep"
-                             "sweep_load_buffer"
-                             (cons contents (buffer-file-name)))
-      (let ((sol (sweeprolog-next-solution)))
-        (sweeprolog-close-query)
-        (if (sweeprolog-true-p sol)
-            (message "Loaded %s." (buffer-name))
-          (user-error "Loading %s failed!" (buffer-name)))))))
 
 ;;;###autoload
 (defun sweeprolog-top-level (&optional buffer)
@@ -1858,10 +2099,6 @@ Interactively, a prefix arg means to prompt for BUFFER."
                  (not (string= "|    " prompt)))
         (comint-send-input)))))
 
-(defvar-local sweeprolog-top-level-timer nil "Buffer-local timer.")
-(defvar-local sweeprolog-top-level-thread-id nil
-  "Prolog top-level thread ID corresponding to this buffer.")
-
 (defun sweeprolog-top-level--populate-thread-id ()
   (sweeprolog--open-query "user"
                          "sweep"
@@ -1902,12 +2139,6 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (interactive "MSignal goal: ?- " sweeprolog-top-level-mode)
   (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
 
-(defvar sweeprolog-top-level-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
-    map)
-  "Keymap for `sweeprolog-top-level-mode'.")
-
 ;;;###autoload
 (define-derived-mode sweeprolog-top-level-mode comint-mode "sweep Top-level"
   "Major mode for interacting with an inferior Prolog interpreter."
@@ -1935,29 +2166,41 @@ Interactively, a prefix arg means to prompt for BUFFER."
                 (cancel-timer sweeprolog-top-level-timer)))
             nil t))
 
-;;;###autoload
-(defvar sweeprolog-help-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "m" #'sweeprolog-describe-module)
-    (define-key map "p" #'sweeprolog-describe-predicate)
-    map)
-  "Keymap for `sweeprolog' help commands.")
+(defun sweeprolog-load-buffer (buffer)
+  "Load the Prolog buffer BUFFER into the embedded SWI-Prolog runtime.
 
-;;;###autoload
-(defvar sweeprolog-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "F" #'sweeprolog-set-prolog-flag)
-    (define-key map "P" #'sweeprolog-pack-install)
-    (define-key map "R" #'sweeprolog-restart)
-    (define-key map "T" #'sweeprolog-list-top-levels)
-    (define-key map "e" #'sweeprolog-view-messages)
-    (define-key map "h" sweeprolog-help-prefix-map)
-    (define-key map "l" #'sweeprolog-load-buffer)
-    (define-key map "m" #'sweeprolog-find-module)
-    (define-key map "p" #'sweeprolog-find-predicate)
-    (define-key map "t" #'sweeprolog-top-level)
-    map)
-  "Keymap for `sweeprolog' global commands.")
+Interactively, if the major mode of the current buffer is
+`sweeprolog-mode' and the command is called without a prefix argument,
+load the current buffer.  Otherwise, prompt for a `sweeprolog-mode'
+buffer to load."
+  (interactive (list
+                (if (and (not current-prefix-arg)
+                         (eq major-mode 'sweeprolog-mode))
+                    (current-buffer)
+                  (read-buffer "Load buffer: "
+                               (when (eq major-mode 'sweeprolog-mode)
+                                 (buffer-name))
+                               t
+                               (lambda (b)
+                                 (let ((n (or (and (consp b) (car b)) b)))
+                                   (with-current-buffer n
+                                     (eq major-mode 'sweeprolog-mode))))))))
+  (with-current-buffer buffer
+    (let* ((beg (point-min))
+           (end (point-max))
+           (contents (buffer-substring-no-properties beg end)))
+      (sweeprolog--open-query "user"
+                             "sweep"
+                             "sweep_load_buffer"
+                             (cons contents (buffer-file-name)))
+      (let ((sol (sweeprolog-next-solution)))
+        (sweeprolog-close-query)
+        (if (sweeprolog-true-p sol)
+            (message "Loaded %s." (buffer-name))
+          (user-error "Loading %s failed!" (buffer-name)))))))
+
+
+;;;; Prolog file specifications
 
 ;;;###autoload
 (defun sweeprolog-file-name-handler (operation &rest args)
@@ -1988,6 +2231,41 @@ Interactively, a prefix arg means to prompt for BUFFER."
 (add-to-list 'file-name-handler-alist
              (cons (rx bol (one-or-more lower) "(")
                    #'sweeprolog-file-name-handler))
+
+(defun sweeprolog-file-at-point (&optional point)
+  (let* ((p (or point (point)))
+         (beg (save-mark-and-excursion
+                (goto-char p)
+                (unless (sweeprolog-at-beginning-of-top-term-p)
+                  (sweeprolog-beginning-of-top-term))
+                (max (1- (point)) (point-min))))
+         (end (save-mark-and-excursion
+                (goto-char p)
+                (sweeprolog-end-of-top-term)
+                (point)))
+         (contents (buffer-substring-no-properties beg end)))
+    (sweeprolog--open-query "user"
+                      "sweep"
+                      "sweep_file_at_point"
+                      (list contents
+                            (buffer-file-name)
+                            (- p beg)))
+    (let ((sol (sweeprolog-next-solution)))
+      (sweeprolog-close-query)
+      (when (sweeprolog-true-p sol)
+        (cdr sol)))))
+
+(defun sweeprolog-find-file-at-point (point)
+  "Find file specificed by the Prolog file spec at POINT.
+
+Interactively, POINT is set to the current point."
+  (interactive "d" sweeprolog-mode)
+  (if-let ((file (sweeprolog-file-at-point point)))
+      (find-file file)
+    (user-error "No file specification found at point!")))
+
+
+;;;; Moving and editing
 
 (defun sweeprolog-beginning-of-top-term (&optional arg)
   (let ((times (or arg 1)))
@@ -2044,18 +2322,6 @@ Interactively, a prefix arg means to prompt for BUFFER."
         (forward-char))
       (or (re-search-forward (rx "." (or white "\n")) nil t)
           (goto-char (point-max))))))
-
-(defun sweeprolog-show-diagnostics (&optional proj)
-  "Show diagnostics for the current project, or buffer if PROJ is nil.
-
-Interactively, PROJ is the prefix argument."
-  (interactive "P" sweeprolog-mode)
-  (if (and sweeprolog-enable-flymake
-           flymake-mode)
-      (if proj
-          (flymake-show-project-diagnostics)
-        (flymake-show-buffer-diagnostics))
-    (user-error "Flymake is not active in the current buffer")))
 
 (defun sweeprolog--forward-hole ()
   (if-let ((prop (text-property-search-forward 'sweeprolog-hole)))
@@ -2123,17 +2389,6 @@ instead."
                                   (cdr functor-arity)))
       t)))
 
-(defvar sweeprolog-insert-term-functions
-  '(sweeprolog-maybe-insert-next-clause
-    sweeprolog-maybe-define-predicate)
-  "Hook of functions that insert a Prolog term in a certain context.
-
-Each hook function is called with four arguments describing the
-current context.  The first argument, POINT, is the buffer
-position in which insertion should take place.  The rest of the
-arguments, KIND, BEG and END, describe the previous non-comment
-Prolog token as returned from `sweeprolog-last-token-boundaries'.")
-
 (defun sweeprolog-insert-term-dwim (&optional point)
   "Insert an appropriate Prolog term at POINT.
 
@@ -2151,85 +2406,113 @@ of them signal success by returning non-nil."
              point kind beg end)
       (user-error "No term insertion function applies here"))))
 
-(defvar sweeprolog-mode-syntax-table
-  (let ((table (make-syntax-table)))
-    (modify-syntax-entry ?# "." table)
-    (modify-syntax-entry ?$ "." table)
-    (modify-syntax-entry ?& "." table)
-    (modify-syntax-entry ?+ "." table)
-    (modify-syntax-entry ?- "." table)
-    (modify-syntax-entry ?. "." table)
-    (modify-syntax-entry ?: "." table)
-    (modify-syntax-entry ?< "." table)
-    (modify-syntax-entry ?= "." table)
-    (modify-syntax-entry ?> "." table)
-    (modify-syntax-entry ?? "." table)
-    (modify-syntax-entry ?@ "." table)
-    (modify-syntax-entry ?^ "." table)
-    (modify-syntax-entry ?~ "." table)
-    (modify-syntax-entry ?_ "_" table)
-    (modify-syntax-entry ?| "." table)
-    (modify-syntax-entry ?\' "\"" table)
-    (modify-syntax-entry ?` "\"" table)
-    (modify-syntax-entry ?% "<" table)
-    (modify-syntax-entry ?\n ">" table)
-    (modify-syntax-entry ?* ". 23b" table)
-    (modify-syntax-entry ?/ ". 14" table)
-    table))
+(defun sweeprolog-at-beginning-of-top-term-p ()
+  (and (looking-at-p (rx bol graph))
+       (not (nth 8 (syntax-ppss)))))
 
-(defvar sweeprolog-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
-    (define-key map (kbd "C-c C-c") #'sweeprolog-colourise-buffer)
-    (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
-    (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
-    (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
-    (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
-    (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
-    (define-key map (kbd "C-c C-`")
-                (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
-                    #'sweeprolog-show-diagnostics
-                  #'flymake-show-diagnostics-buffer))
-    (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
-    (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
-    map)
-  "Keymap for `sweeprolog-mode'.")
+(defun sweeprolog-definition-at-point (&optional point)
+  (let* ((p (or point (point)))
+         (beg (save-mark-and-excursion
+                (goto-char p)
+                (unless (sweeprolog-at-beginning-of-top-term-p)
+                  (sweeprolog-beginning-of-top-term))
+                (max (1- (point)) (point-min))))
+         (end (save-mark-and-excursion
+                (goto-char p)
+                (sweeprolog-end-of-top-term)
+                (point)))
+         (contents (buffer-substring-no-properties beg end)))
+    (sweeprolog--open-query "user"
+                           "sweep"
+                           "sweep_definition_at_point"
+                           (cons contents
+                                 (buffer-file-name)))
+    (let ((sol (sweeprolog-next-solution)))
+      (sweeprolog-close-query)
+      (when (sweeprolog-true-p sol)
+        (cons (+ beg (cadr sol)) (cddr sol))))))
 
-(easy-menu-define sweeprolog-menu (list sweeprolog-mode-map
-                                        sweeprolog-top-level-mode-map)
-  "`sweep' menu."
-  '("Sweep"
-    [ "Set Prolog flag"        sweeprolog-set-prolog-flag t ]
-    [ "Install Prolog package" sweeprolog-pack-install    t ]
-    [ "Load Prolog buffer"     sweeprolog-load-buffer     t ]
-    [ "Find Prolog module"     sweeprolog-find-module     t ]
-    [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
-    [ "Export predicate"
-      sweeprolog-export-predicate
-      sweeprolog--exportable-predicates ]
-    [ "Insert module template"
-      auto-insert
-      (eq major-mode 'sweeprolog-mode) ]
-    [ "Document current predicate"
-      sweeprolog-document-predicate-at-point
-      (and (eq major-mode 'sweeprolog-mode)
-           (sweeprolog-definition-at-point)) ]
-    "--"
-    [ "Open top-level"         sweeprolog-top-level       t ]
-    [ "Signal top-level"
-      sweeprolog-top-level-signal
-      (seq-filter (lambda (b)
-                    (with-current-buffer b
-                      (and (derived-mode-p 'sweeprolog-top-level-mode)
-                           sweeprolog-top-level-thread-id)))
-                  (buffer-list)) ]
-    [ "Open Top-level Menu"    sweeprolog-list-top-levels t ]
-    "--"
-    [ "Describe Predicate"  sweeprolog-describe-predicate t ]
-    [ "Describe Prolog module" sweeprolog-describe-module t ]
-    "--"
-    [ "Reset sweep"            sweeprolog-restart         t ]
-    [ "View sweep messages"    sweeprolog-view-messages   t ]))
+(defun sweeprolog-insert-pldoc-for-predicate (functor arguments det summary)
+  (insert "\n\n")
+  (forward-char -2)
+  (insert (format "%%!  %s%s is %s.\n%%\n%%   %s"
+                  functor
+                  (if arguments
+                      (concat "(" (mapconcat #'identity arguments ", ") ")")
+                    "")
+                  det
+                  summary))
+  (fill-paragraph))
+
+(defun sweeprolog-end-of-predicate-definition ()
+  "Move to the end of the predicate definition at point."
+  (when-let* ((def (sweeprolog-definition-at-point)))
+    (let ((point (point))
+          (fun (cadr def))
+          (ari (caddr def)))
+      (while (and point (not (eobp)))
+        (sweeprolog-end-of-top-term)
+        (if-let* ((ndef (sweeprolog-definition-at-point (point)))
+                  (nfun (cadr ndef))
+                  (nari (caddr ndef))
+                  (same (and (string= fun nfun)
+                             (=       ari nari))))
+            (setq point (point))
+          (goto-char point)
+          (setq point nil))))))
+
+(defun sweeprolog-beginning-of-predicate-at-point (&optional point)
+  "Find the beginning of the predicate definition at or above POINT.
+
+Return a cons cell (FUN . ARI) where FUN is the functor name of
+the defined predicate and ARI is its arity, or nil if there is no
+predicate definition at or directly above POINT."
+  (when-let* ((def (sweeprolog-definition-at-point point)))
+    (unless (sweeprolog-at-beginning-of-top-term-p)
+      (sweeprolog-beginning-of-top-term)
+      (backward-char 1))
+    (let ((point (point))
+          (fun (cadr def))
+          (ari (caddr def)))
+      (while (and point (not (bobp)))
+        (sweeprolog-beginning-of-top-term)
+        (backward-char 1)
+        (if-let* ((ndef (sweeprolog-definition-at-point (point)))
+                  (nfun (cadr ndef))
+                  (nari (caddr ndef))
+                  (same (and (string= fun nfun)
+                             (=       ari nari))))
+            (setq point (point))
+          (goto-char point)
+          (setq point nil)))
+      (cons fun ari))))
+
+(defun sweeprolog-document-predicate-at-point (point)
+  "Insert PlDoc documentation for the predicate at or above POINT."
+  (interactive "d" sweeprolog-mode)
+  (when-let* ((pred (sweeprolog-beginning-of-predicate-at-point point))
+              (fun  (car pred))
+              (ari  (cdr pred)))
+    (let ((cur 1)
+          (arguments nil))
+      (while (<= cur ari)
+        (let ((num (pcase cur
+                     (1 "First")
+                     (2 "Second")
+                     (3 "Third")
+                     (_ (concat (number-to-string cur) "th")))))
+          (push (read-string (concat num " argument: ")) arguments))
+        (setq cur (1+ cur)))
+      (setq arguments (reverse arguments))
+      (let ((det (cadr (read-multiple-choice "Determinism: "
+                                             '((?d "det"       "Succeeds exactly once")
+                                               (?s "semidet"   "Succeeds at most once")
+                                               (?f "failure"   "Always fails")
+                                               (?n "nondet"    "Succeeds any number of times")
+                                               (?m "multi"     "Succeeds at least once")
+                                               (?u "undefined" "Undefined")))))
+            (summary (read-string "Summary: ")))
+        (sweeprolog-insert-pldoc-for-predicate fun arguments det summary)))))
 
 (defun sweeprolog-token-boundaries (&optional pos)
   (let ((point (or pos (point))))
@@ -2484,8 +2767,6 @@ of them signal success by returning non-nil."
       (sweeprolog--backward-term pre)
     (scan-error nil)))
 
-(defvar-local sweeprolog--forward-sexp-first-call t)
-
 (defun sweeprolog--backward-sexp ()
   (let ((point (point))
         (prec (pcase (sweeprolog-last-token-boundaries)
@@ -2580,382 +2861,6 @@ of them signal success by returning non-nil."
     (sweeprolog-close-query)
     res))
 
-(defun sweeprolog-indent-line-after-functor (fbeg _fend)
-  (save-excursion
-    (goto-char fbeg)
-    (+ (current-column) sweeprolog-indent-offset)))
-
-(defun sweeprolog-indent-line-after-open (fbeg _fend)
-  (save-excursion
-    (goto-char fbeg)
-    (+ (current-column) sweeprolog-indent-offset)))
-
-(defun sweeprolog-indent-line-after-prefix (fbeg _fend _pre)
-  (save-excursion
-    (goto-char fbeg)
-    (+ (current-column) 4)))
-
-(defun sweeprolog-indent-line-after-term ()
-  (if-let ((open (nth 1 (syntax-ppss))))
-      (save-excursion
-        (goto-char open)
-        (current-column))
-    'noindent))
-
-(defun sweeprolog-indent-line-after-neck (fbeg _fend)
-  (save-excursion
-    (goto-char fbeg)
-    (sweeprolog-backward-term 1200)
-    (+ (current-column) sweeprolog-indent-offset)))
-
-(defun sweeprolog-indent-line-after-infix (fbeg _fend pre)
-  (save-excursion
-    (goto-char fbeg)
-    (let ((lim (or (nth 1 (syntax-ppss)) (point-min)))
-          (cur (point))
-          (go t))
-      (while go
-        (setq cur (point))
-        (sweeprolog-backward-term pre)
-        (when (< (point) lim)
-          (goto-char cur))
-        (when (= (point) cur)
-          (setq go nil))))
-    (current-column)))
-
-(defun sweeprolog-indent-line ()
-  "Indent the current line in a `sweeprolog-mode' buffer."
-  (interactive)
-  (let ((pos (- (point-max) (point))))
-    (back-to-indentation)
-    (let ((indent (if (nth 8 (syntax-ppss))
-                      'noindent
-                    (if-let ((open (and (not (eobp))
-                                        (= (char-syntax (char-after)) ?\))
-                                        (nth 1 (syntax-ppss)))))
-                        (save-excursion
-                          (goto-char open)
-                          (when (or (= (char-syntax (char-before)) ?w)
-                                    (= (char-syntax (char-before)) ?_))
-                            (when (save-excursion
-                                    (forward-char)
-                                    (skip-syntax-forward " " (line-end-position))
-                                    (eolp))
-                              (skip-syntax-backward "w_")))
-                          (current-column))
-                      (pcase (sweeprolog-last-token-boundaries)
-                        ('nil 'noindent)
-                        (`(functor ,lbeg ,lend)
-                         (sweeprolog-indent-line-after-functor lbeg lend))
-                        (`(open ,lbeg ,lend)
-                         (sweeprolog-indent-line-after-open lbeg lend))
-                        (`(symbol ,lbeg ,lend)
-                         (let ((sym (buffer-substring-no-properties lbeg lend)))
-                           (cond
-                            ((pcase (sweeprolog-op-prefix-precedence sym)
-                               ('nil (sweeprolog-indent-line-after-term))
-                               (pre  (sweeprolog-indent-line-after-prefix lbeg lend pre)))))))
-                        (`(operator ,lbeg ,lend)
-                         (let ((op (buffer-substring-no-properties lbeg lend)))
-                           (cond
-                            ((string= op ".") 'noindent)
-                            ((pcase (sweeprolog-op-infix-precedence op)
-                               ('nil nil)
-                               (1200 (sweeprolog-indent-line-after-neck lbeg lend))
-                               (pre  (sweeprolog-indent-line-after-infix lbeg lend pre))))
-                            ((pcase (sweeprolog-op-prefix-precedence op)
-                               ('nil nil)
-                               (pre  (sweeprolog-indent-line-after-prefix lbeg lend pre)))))))
-                        (`(,_ltyp ,_lbeg ,_lend)
-                         (sweeprolog-indent-line-after-term)))))))
-      (when (numberp indent)
-        (unless (= indent (current-column))
-          (combine-after-change-calls
-            (delete-horizontal-space)
-            (insert (make-string indent ? )))))
-      (when (> (- (point-max) pos) (point))
-        (goto-char (- (point-max) pos)))
-      indent)))
-
-(defun sweeprolog-syntax-propertize (start end)
-  (goto-char start)
-  (let ((case-fold-search nil))
-    (funcall
-     (syntax-propertize-rules
-      ((rx bow (group-n 1 "0'" anychar))
-       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-            (string-to-syntax "w"))))
-      ((rx (group-n 1 "!"))
-       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-            (string-to-syntax "w")))))
-     start end)))
-
-(defun sweeprolog-at-beginning-of-top-term-p ()
-  (and (looking-at-p (rx bol graph))
-       (not (nth 8 (syntax-ppss)))))
-
-(defun sweeprolog-definition-at-point (&optional point)
-  (let* ((p (or point (point)))
-         (beg (save-mark-and-excursion
-                (goto-char p)
-                (unless (sweeprolog-at-beginning-of-top-term-p)
-                  (sweeprolog-beginning-of-top-term))
-                (max (1- (point)) (point-min))))
-         (end (save-mark-and-excursion
-                (goto-char p)
-                (sweeprolog-end-of-top-term)
-                (point)))
-         (contents (buffer-substring-no-properties beg end)))
-    (sweeprolog--open-query "user"
-                           "sweep"
-                           "sweep_definition_at_point"
-                           (cons contents
-                                 (buffer-file-name)))
-    (let ((sol (sweeprolog-next-solution)))
-      (sweeprolog-close-query)
-      (when (sweeprolog-true-p sol)
-        (cons (+ beg (cadr sol)) (cddr sol))))))
-
-(defun sweeprolog-insert-pldoc-for-predicate (functor arguments det summary)
-  (insert "\n\n")
-  (forward-char -2)
-  (insert (format "%%!  %s%s is %s.\n%%\n%%   %s"
-                  functor
-                  (if arguments
-                      (concat "(" (mapconcat #'identity arguments ", ") ")")
-                    "")
-                  det
-                  summary))
-  (fill-paragraph))
-
-(defun sweeprolog-end-of-predicate-definition ()
-  "Move to the end of the predicate definition at point."
-  (when-let* ((def (sweeprolog-definition-at-point)))
-    (let ((point (point))
-          (fun (cadr def))
-          (ari (caddr def)))
-      (while (and point (not (eobp)))
-        (sweeprolog-end-of-top-term)
-        (if-let* ((ndef (sweeprolog-definition-at-point (point)))
-                  (nfun (cadr ndef))
-                  (nari (caddr ndef))
-                  (same (and (string= fun nfun)
-                             (=       ari nari))))
-            (setq point (point))
-          (goto-char point)
-          (setq point nil))))))
-
-(defun sweeprolog-beginning-of-predicate-at-point (&optional point)
-  "Find the beginning of the predicate definition at or above POINT.
-
-Return a cons cell (FUN . ARI) where FUN is the functor name of
-the defined predicate and ARI is its arity, or nil if there is no
-predicate definition at or directly above POINT."
-  (when-let* ((def (sweeprolog-definition-at-point point)))
-    (unless (sweeprolog-at-beginning-of-top-term-p)
-      (sweeprolog-beginning-of-top-term)
-      (backward-char 1))
-    (let ((point (point))
-          (fun (cadr def))
-          (ari (caddr def)))
-      (while (and point (not (bobp)))
-        (sweeprolog-beginning-of-top-term)
-        (backward-char 1)
-        (if-let* ((ndef (sweeprolog-definition-at-point (point)))
-                  (nfun (cadr ndef))
-                  (nari (caddr ndef))
-                  (same (and (string= fun nfun)
-                             (=       ari nari))))
-            (setq point (point))
-          (goto-char point)
-          (setq point nil)))
-      (cons fun ari))))
-
-(defun sweeprolog-document-predicate-at-point (point)
-  "Insert PlDoc documentation for the predicate at or above POINT."
-  (interactive "d" sweeprolog-mode)
-  (when-let* ((pred (sweeprolog-beginning-of-predicate-at-point point))
-              (fun  (car pred))
-              (ari  (cdr pred)))
-    (let ((cur 1)
-          (arguments nil))
-      (while (<= cur ari)
-        (let ((num (pcase cur
-                     (1 "First")
-                     (2 "Second")
-                     (3 "Third")
-                     (_ (concat (number-to-string cur) "th")))))
-          (push (read-string (concat num " argument: ")) arguments))
-        (setq cur (1+ cur)))
-      (setq arguments (reverse arguments))
-      (let ((det (cadr (read-multiple-choice "Determinism: "
-                                             '((?d "det"       "Succeeds exactly once")
-                                               (?s "semidet"   "Succeeds at most once")
-                                               (?f "failure"   "Always fails")
-                                               (?n "nondet"    "Succeeds any number of times")
-                                               (?m "multi"     "Succeeds at least once")
-                                               (?u "undefined" "Undefined")))))
-            (summary (read-string "Summary: ")))
-        (sweeprolog-insert-pldoc-for-predicate fun arguments det summary)))))
-
-(defun sweeprolog-file-at-point (&optional point)
-  (let* ((p (or point (point)))
-         (beg (save-mark-and-excursion
-                (goto-char p)
-                (unless (sweeprolog-at-beginning-of-top-term-p)
-                  (sweeprolog-beginning-of-top-term))
-                (max (1- (point)) (point-min))))
-         (end (save-mark-and-excursion
-                (goto-char p)
-                (sweeprolog-end-of-top-term)
-                (point)))
-         (contents (buffer-substring-no-properties beg end)))
-    (sweeprolog--open-query "user"
-                      "sweep"
-                      "sweep_file_at_point"
-                      (list contents
-                            (buffer-file-name)
-                            (- p beg)))
-    (let ((sol (sweeprolog-next-solution)))
-      (sweeprolog-close-query)
-      (when (sweeprolog-true-p sol)
-        (cdr sol)))))
-
-(defun sweeprolog-find-file-at-point (point)
-  "Find file specificed by the Prolog file spec at POINT.
-
-Interactively, POINT is set to the current point."
-  (interactive "d" sweeprolog-mode)
-  (if-let ((file (sweeprolog-file-at-point point)))
-      (find-file file)
-    (user-error "No file specification found at point!")))
-
-(defun sweeprolog-identifier-at-point (&optional point)
-  (let* ((p (or point (point)))
-         (beg (save-mark-and-excursion
-                (goto-char p)
-                (unless (sweeprolog-at-beginning-of-top-term-p)
-                  (sweeprolog-beginning-of-top-term))
-                (max (1- (point)) (point-min))))
-         (end (save-mark-and-excursion
-                (goto-char p)
-                (sweeprolog-end-of-top-term)
-                (point)))
-         (contents (buffer-substring-no-properties beg end)))
-    (sweeprolog--open-query "user"
-                           "sweep"
-                           "sweep_identifier_at_point"
-                           (list contents
-                                 (buffer-file-name)
-                                 (- p beg)))
-    (let ((sol (sweeprolog-next-solution)))
-      (sweeprolog-close-query)
-      (when (sweeprolog-true-p sol)
-        (cdr sol)))))
-
-(defun sweeprolog--xref-backend ()
-  "Hook for `xref-backend-functions'."
-  'sweeprolog)
-
-(cl-defmethod xref-backend-identifier-at-point ((_backend (eql sweeprolog)))
-  (sweeprolog-identifier-at-point))
-
-(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql sweeprolog)))
-  (completion-table-with-cache #'sweeprolog-predicates-collection))
-
-(cl-defmethod xref-backend-identifier-completion-ignore-case ((_backend (eql sweeprolog)))
-  "Case is always significant for Prolog identifiers, so return nil."
-  nil)
-
-(cl-defmethod xref-backend-definitions ((_backend (eql sweeprolog)) mfn)
-  (when-let ((loc (sweeprolog-predicate-location mfn))
-             (path (car loc))
-             (line (or (cdr loc) 1)))
-    (list (xref-make (concat path ":" (number-to-string line)) (xref-make-file-location path line 0)))))
-
-(cl-defmethod xref-backend-references ((_backend (eql sweeprolog)) mfn)
-  (let ((refs (sweeprolog-predicate-references mfn)))
-    (seq-map (lambda (loc)
-               (let ((by (car loc))
-                     (path (cadr loc))
-                     (line (or (cddr loc) 1)))
-                 (xref-make by (xref-make-file-location path line 0))))
-             refs)))
-
-(cl-defmethod xref-backend-apropos ((_backend (eql sweeprolog)) pattern)
-  (let ((matches (sweeprolog-predicate-apropos pattern)))
-    (seq-map (lambda (match)
-               (let ((mfn (car match))
-                     (path (cadr match))
-                     (line (or (cddr match) 1)))
-                 (xref-make mfn
-                            (xref-make-file-location path line 0))))
-             matches)))
-
-(defun sweeprolog-create-index-function ()
-  (sweeprolog--open-query "user"
-                    "sweep"
-                    "sweep_imenu_index"
-                    (buffer-file-name))
-  (let ((sol (sweeprolog-next-solution)))
-    (sweeprolog-close-query)
-    (when (sweeprolog-true-p sol)
-      (seq-map (lambda (entry)
-                 (let ((car (car entry))
-                       (line (cdr entry)))
-                   (goto-char (point-min))
-                   (forward-line (1- line))
-                   (cons car (line-beginning-position))))
-               (cdr sol)))))
-
-(defun sweeprolog-highlight-variable (point &optional var)
-  "Highlight occurences of the variable VAR in the clause at POINT.
-
-If VAR is nil, clear variable highlighting in the current clause
-instead.
-
-Interactively, operate on the clause at point.  If a prefix
-argument is specificed, clear variable highlighting in the
-current clause.  Otherwise prompt for VAR, defaulting to the
-variable at point, if any."
-  (interactive (list (point)
-                     (unless current-prefix-arg
-                       (let ((v (symbol-at-point)))
-                         (read-string "Highlight variable: "
-                                      nil nil
-                                      (and v
-                                           (save-match-data
-                                             (let ((case-fold-search nil))
-                                               (string-match
-                                                (rx bos upper)
-                                                (symbol-name v))))
-                                           (symbol-name v))))))
-               sweeprolog-mode sweeprolog-top-level-mode)
-  (let ((sweeprolog--variable-at-point var))
-    (font-lock-fontify-region point point)))
-
-(defun sweeprolog-cursor-sensor-functions (var)
-  (list
-   (lambda (_win old dir)
-     (if (eq dir 'entered)
-         (sweeprolog-highlight-variable (point) var)
-       (sweeprolog-highlight-variable old)))))
-
-
-(defun sweeprolog-predicate-modes-doc (cb)
-  (when-let ((pi (sweeprolog-identifier-at-point)))
-    (sweeprolog--open-query "user"
-                           "sweep"
-                           "sweep_documentation"
-                           pi)
-    (let ((sol (sweeprolog-next-solution)))
-      (sweeprolog-close-query)
-      (when (sweeprolog-true-p sol)
-        (funcall cb (cadr sol) :thing pi :face font-lock-function-name-face)))))
-
-(defvar-local sweeprolog--timer nil)
-(defvar-local sweeprolog--colourise-buffer-duration 0.2)
-
 (defun sweeprolog-local-predicate-export-comment (fun ari)
   (sweeprolog--open-query "user"
                          "sweep"
@@ -2965,6 +2870,11 @@ variable at point, if any."
     (sweeprolog-close-query)
     (when (sweeprolog-true-p sol)
       (cdr sol))))
+
+(defun sweeprolog-read-exportable-predicate ()
+  "Read a predicate name that can be exported in the current buffer."
+  (completing-read sweeprolog-read-exportable-predicate-prompt
+                   sweeprolog--exportable-predicates))
 
 (defun sweeprolog-export-predicate (pred &optional comm)
   "Add PRED to the export list of the current module.
@@ -3126,6 +3036,184 @@ if-then-else constructs in SWI-Prolog."
                str
                "\n\n*/\n\n"))
 
+
+;;;; Indentation
+
+(defun sweeprolog-indent-line-after-functor (fbeg _fend)
+  (save-excursion
+    (goto-char fbeg)
+    (+ (current-column) sweeprolog-indent-offset)))
+
+(defun sweeprolog-indent-line-after-open (fbeg _fend)
+  (save-excursion
+    (goto-char fbeg)
+    (+ (current-column) sweeprolog-indent-offset)))
+
+(defun sweeprolog-indent-line-after-prefix (fbeg _fend _pre)
+  (save-excursion
+    (goto-char fbeg)
+    (+ (current-column) 4)))
+
+(defun sweeprolog-indent-line-after-term ()
+  (if-let ((open (nth 1 (syntax-ppss))))
+      (save-excursion
+        (goto-char open)
+        (current-column))
+    'noindent))
+
+(defun sweeprolog-indent-line-after-neck (fbeg _fend)
+  (save-excursion
+    (goto-char fbeg)
+    (sweeprolog-backward-term 1200)
+    (+ (current-column) sweeprolog-indent-offset)))
+
+(defun sweeprolog-indent-line-after-infix (fbeg _fend pre)
+  (save-excursion
+    (goto-char fbeg)
+    (let ((lim (or (nth 1 (syntax-ppss)) (point-min)))
+          (cur (point))
+          (go t))
+      (while go
+        (setq cur (point))
+        (sweeprolog-backward-term pre)
+        (when (< (point) lim)
+          (goto-char cur))
+        (when (= (point) cur)
+          (setq go nil))))
+    (current-column)))
+
+(defun sweeprolog-indent-line ()
+  "Indent the current line in a `sweeprolog-mode' buffer."
+  (interactive)
+  (let ((pos (- (point-max) (point))))
+    (back-to-indentation)
+    (let ((indent (if (nth 8 (syntax-ppss))
+                      'noindent
+                    (if-let ((open (and (not (eobp))
+                                        (= (char-syntax (char-after)) ?\))
+                                        (nth 1 (syntax-ppss)))))
+                        (save-excursion
+                          (goto-char open)
+                          (when (or (= (char-syntax (char-before)) ?w)
+                                    (= (char-syntax (char-before)) ?_))
+                            (when (save-excursion
+                                    (forward-char)
+                                    (skip-syntax-forward " " (line-end-position))
+                                    (eolp))
+                              (skip-syntax-backward "w_")))
+                          (current-column))
+                      (pcase (sweeprolog-last-token-boundaries)
+                        ('nil 'noindent)
+                        (`(functor ,lbeg ,lend)
+                         (sweeprolog-indent-line-after-functor lbeg lend))
+                        (`(open ,lbeg ,lend)
+                         (sweeprolog-indent-line-after-open lbeg lend))
+                        (`(symbol ,lbeg ,lend)
+                         (let ((sym (buffer-substring-no-properties lbeg lend)))
+                           (cond
+                            ((pcase (sweeprolog-op-prefix-precedence sym)
+                               ('nil (sweeprolog-indent-line-after-term))
+                               (pre  (sweeprolog-indent-line-after-prefix lbeg lend pre)))))))
+                        (`(operator ,lbeg ,lend)
+                         (let ((op (buffer-substring-no-properties lbeg lend)))
+                           (cond
+                            ((string= op ".") 'noindent)
+                            ((pcase (sweeprolog-op-infix-precedence op)
+                               ('nil nil)
+                               (1200 (sweeprolog-indent-line-after-neck lbeg lend))
+                               (pre  (sweeprolog-indent-line-after-infix lbeg lend pre))))
+                            ((pcase (sweeprolog-op-prefix-precedence op)
+                               ('nil nil)
+                               (pre  (sweeprolog-indent-line-after-prefix lbeg lend pre)))))))
+                        (`(,_ltyp ,_lbeg ,_lend)
+                         (sweeprolog-indent-line-after-term)))))))
+      (when (numberp indent)
+        (unless (= indent (current-column))
+          (combine-after-change-calls
+            (delete-horizontal-space)
+            (insert (make-string indent ? )))))
+      (when (> (- (point-max) pos) (point))
+        (goto-char (- (point-max) pos)))
+      indent)))
+
+
+;;;; Xref
+
+(defun sweeprolog--xref-backend ()
+  "Hook for `xref-backend-functions'."
+  'sweeprolog)
+
+(cl-defmethod xref-backend-identifier-at-point ((_backend (eql sweeprolog)))
+  (sweeprolog-identifier-at-point))
+
+(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql sweeprolog)))
+  (completion-table-with-cache #'sweeprolog-predicates-collection))
+
+(cl-defmethod xref-backend-identifier-completion-ignore-case ((_backend (eql sweeprolog)))
+  "Case is always significant for Prolog identifiers, so return nil."
+  nil)
+
+(cl-defmethod xref-backend-definitions ((_backend (eql sweeprolog)) mfn)
+  (when-let ((loc (sweeprolog-predicate-location mfn))
+             (path (car loc))
+             (line (or (cdr loc) 1)))
+    (list (xref-make (concat path ":" (number-to-string line)) (xref-make-file-location path line 0)))))
+
+(cl-defmethod xref-backend-references ((_backend (eql sweeprolog)) mfn)
+  (let ((refs (sweeprolog-predicate-references mfn)))
+    (seq-map (lambda (loc)
+               (let ((by (car loc))
+                     (path (cadr loc))
+                     (line (or (cddr loc) 1)))
+                 (xref-make by (xref-make-file-location path line 0))))
+             refs)))
+
+(cl-defmethod xref-backend-apropos ((_backend (eql sweeprolog)) pattern)
+  (let ((matches (sweeprolog-predicate-apropos pattern)))
+    (seq-map (lambda (match)
+               (let ((mfn (car match))
+                     (path (cadr match))
+                     (line (or (cddr match) 1)))
+                 (xref-make mfn
+                            (xref-make-file-location path line 0))))
+             matches)))
+
+
+;;;; Imenu
+
+(defun sweeprolog-create-index-function ()
+  (sweeprolog--open-query "user"
+                    "sweep"
+                    "sweep_imenu_index"
+                    (buffer-file-name))
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (seq-map (lambda (entry)
+                 (let ((car (car entry))
+                       (line (cdr entry)))
+                   (goto-char (point-min))
+                   (forward-line (1- line))
+                   (cons car (line-beginning-position))))
+               (cdr sol)))))
+
+
+;;;; ElDoc
+
+(defun sweeprolog-predicate-modes-doc (cb)
+  (when-let ((pi (sweeprolog-identifier-at-point)))
+    (sweeprolog--open-query "user"
+                           "sweep"
+                           "sweep_documentation"
+                           pi)
+    (let ((sol (sweeprolog-next-solution)))
+      (sweeprolog-close-query)
+      (when (sweeprolog-true-p sol)
+        (funcall cb (cadr sol) :thing pi :face font-lock-function-name-face)))))
+
+
+;;;; Top-level Menu
+
 (defun sweeprolog-top-level-menu--entries ()
   (sweeprolog--open-query "user"
                          "sweep"
@@ -3184,15 +3272,6 @@ if-then-else constructs in SWI-Prolog."
           (message "Buffer %s is no longer availabe." bn)))
     (user-error "No top-level menu entry here")))
 
-(defvar sweeprolog-top-level-menu-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET") #'sweeprolog-top-level-menu-go-to)
-    (define-key map (kbd "k")   #'sweeprolog-top-level-menu-kill)
-    (define-key map (kbd "t")   #'sweeprolog-top-level-menu-new)
-    (define-key map (kbd "s")   #'sweeprolog-top-level-menu-signal)
-    map)
-  "Local keymap for `sweeprolog-top-level-menu-mode' buffers.")
-
 (define-derived-mode sweeprolog-top-level-menu-mode
   tabulated-list-mode "sweep Top-level Menu"
   "Major mode for browsing a list of active `sweep' top-levels."
@@ -3215,6 +3294,9 @@ if-then-else constructs in SWI-Prolog."
       (sweeprolog-top-level-menu--refresh)
       (tabulated-list-print))
     (pop-to-buffer-same-window buf)))
+
+
+;;;; Help
 
 (defun sweeprolog--buttonize (string callback data)
   (if (fboundp 'buttonize)
@@ -3244,8 +3326,6 @@ if-then-else constructs in SWI-Prolog."
                                'keymap button-map
                                'action callback))
     (add-face-text-property start end 'button t)))
-
-(defvar-local sweeprolog--html-footnotes nil)
 
 (defun sweeprolog-render-html-span (dom)
   (if (string= "fn-text" (dom-attr dom 'class))
@@ -3436,10 +3516,6 @@ if-then-else constructs in SWI-Prolog."
                               ": "))))
   (sweeprolog--describe-predicate pred))
 
-(defvar sweeprolog-module-documentation-regexp (rx bol  (zero-or-more whitespace)
-                                                   ":-" (zero-or-more whitespace)
-                                                   "module("))
-
 (defun sweeprolog--find-predicate-from-symbol (sym)
   (sweeprolog-find-predicate (symbol-name sym)))
 
@@ -3450,6 +3526,9 @@ if-then-else constructs in SWI-Prolog."
 (add-to-list 'find-function-regexp-alist
              (cons 'swi-prolog-predicate
                    'sweeprolog--find-predicate-from-symbol))
+
+
+;;;; Footer
 
 (provide 'sweeprolog)
 
