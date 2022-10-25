@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.8.0
+;; Package-Version: 0.8.1
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -696,9 +696,21 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
       (cdr sol))))
 
 (defun sweeprolog--mfn-to-functor-arity (mfn)
-  (let ((functor-arity (split-string (car (reverse (split-string mfn ":"))) "/")))
-    (cons (car functor-arity)
-          (string-to-number (cadr functor-arity)))))
+  (sweeprolog--open-query "user" "system" "term_string" mfn t)
+  (let ((sol (sweeprolog-next-solution)))
+    (sweeprolog-close-query)
+    (when (sweeprolog-true-p sol)
+      (pcase (cdr sol)
+        (`(compound ":"
+                    (atom . ,_)
+                    (compound "/"
+                              (atom . ,functor)
+                              ,arity))
+         (cons functor arity))
+        (`(compound "/"
+                    (atom . ,functor)
+                    ,arity)
+         (cons functor arity))))))
 
 (defun sweeprolog--swipl-source-directory ()
   (when sweeprolog-swipl-sources
