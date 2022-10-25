@@ -895,6 +895,32 @@ the non-exported predicates defined in the current buffer.  To force
 prompting for a predicate, invoke ~sweeprolog-export-predicate~ with a
 prefix argument (~C-u C-c C-e~).
 
+
+** Code Completion
+:PROPERTIES:
+:CUSTOM_ID: code-completion
+:DESCRIPTION: Auto-completion commands for Prolog code
+:END:
+
+#+CINDEX: code completion
+#+CINDEX: completion-at-point
+#+KINDEX: C-M-i
+#+KINDEX: M-TAB
+~sweeprolog-mode~ empowers Emacs's standard ~completion-at-point~ command,
+bound by default to ~C-M-i~ and ~M-TAB~, with context-aware completion for
+Prolog terms.  For background about completion-at-point in Emacs, see [[info:emacs#Symbol
+Completion][Symbol Completion in the Emacs manual]].
+
+In ~sweeprolog-mode~ buffers, the following enhancements are provided:
+
+- Variable name completion :: If the text before point can be
+  completed to one or more variable names that appear elsewhere in the
+  current clause, ~completion-at-point~ suggests matching variable names
+  as completion candidates.
+- Predicate completion :: If the text before point can be completed to
+  a predicate call, ~completion-at-point~ suggests matching predicates
+  as completion candidates.
+
 ** Context-Based Term Insertion
 :PROPERTIES:
 :CUSTOM_ID: insert-term-at-point
