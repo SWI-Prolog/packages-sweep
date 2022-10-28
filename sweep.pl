@@ -96,7 +96,7 @@
 
 :- multifile prolog:xref_source_time/2,
              prolog:xref_open_source/2,
-             prolog:xref_open_source/2,
+             prolog:xref_close_source/2,
              prolog:quasi_quotation_syntax/2.
 
 prolog:quasi_quotation_syntax(graphql, library(http/graphql)).
@@ -305,7 +305,10 @@ sweep_handle_identifier_at_point_goal(_Path, _M0, Extern, Goal) :-
     sweep_is_extern(Extern, M),
     !,
     pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(M:PI)).
+    (   var(M)
+    ->  asserta(sweep_current_identifier_at_point(PI))
+    ;   asserta(sweep_current_identifier_at_point(M:PI))
+    ).
 sweep_handle_identifier_at_point_goal(_Path, _M0, autoload(Path), Goal) :-
     !,
     pi_head(PI, Goal),
@@ -385,7 +388,7 @@ sweep_documentation(PI0, Docs) :-
     term_string(PI1, PI0),
     (   PI1 = M:PI
     ->  true
-    ;   M=user, PI=PI1
+    ;   PI=PI1
     ),
     findall(Doc, sweep_documentation_(M, PI, Doc), Docs).
 
