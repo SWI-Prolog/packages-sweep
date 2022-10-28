@@ -1686,7 +1686,7 @@ When non-nil, only predicates whose name contains PREFIX are returned."
      (list (list beg end (sweeprolog-head-imported-face))))
     (`("head" ,(rx "extern(") . ,_)
      (list (list beg end (sweeprolog-head-extern-face))))
-    (`("head" ,(rx "public(") . ,_)
+    (`("head" ,(rx "public ") . ,_)
      (list (list beg end (sweeprolog-head-public-face))))
     (`("head",(rx "dynamic ") ,f ,a)
      (add-to-list 'sweeprolog--exportable-predicates (concat f "/" (number-to-string a)))
