@@ -52,6 +52,71 @@
   (should (equal (sweeprolog-next-solution) nil))
   (should (equal (sweeprolog-cut-query) t)))
 
+(ert-deftest font-lock ()
+  "Test semantic highlighting of Prolog code."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              ":- module(foo, [foo/1]).
+
+foo(Foo) :- bar.
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (should (equal (get-text-property (+ (point-min) 1)
+                                      'font-lock-face)
+                   '(sweeprolog-neck-default-face
+                     sweeprolog-directive-default-face)))
+    (should (equal (get-text-property (+ (point-min) 2)
+                                      'font-lock-face)
+                   '(sweeprolog-directive-default-face)))
+    (should (equal (get-text-property (+ (point-min) 3)
+                                      'font-lock-face)
+                   '(sweeprolog-built-in-default-face
+                     sweeprolog-directive-default-face)))
+    (should (equal (get-text-property (+ (point-min) 9)
+                                      'font-lock-face)
+                   '(sweeprolog-directive-default-face)))
+    (should (equal (get-text-property (+ (point-min) 10)
+                                      'font-lock-face)
+                   '(sweeprolog-identifier-default-face
+                     sweeprolog-directive-default-face)))
+    (should (equal (get-text-property (+ (point-min) 13)
+                                      'font-lock-face)
+                   '(sweeprolog-directive-default-face)))
+    (should (equal (get-text-property (+ (point-min) 16)
+                                      'font-lock-face)
+                   '(sweeprolog-local-default-face
+                     sweeprolog-predicate-indicator-default-face
+                     sweeprolog-directive-default-face)))
+    (should (equal (get-text-property (+ (point-min) 23)
+                                      'font-lock-face)
+                   '(sweeprolog-fullstop-default-face)))
+    (should (equal (get-text-property (+ (point-min) 26)
+                                      'font-lock-face)
+                   '(sweeprolog-head-exported-default-face
+                     sweeprolog-clause-default-face)))
+    (should (equal (get-text-property (+ (point-min) 31)
+                                      'font-lock-face)
+                   '(sweeprolog-singleton-default-face
+                     sweeprolog-clause-default-face)))
+    (should (equal (get-text-property (+ (point-min) 39)
+                                      'font-lock-face)
+                   '(sweeprolog-undefined-default-face
+                     sweeprolog-clause-default-face)))))
+
+(ert-deftest dwim-next-clause ()
+  "Tests inserting a new clause with `sweeprolog-insert-term-dwim'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo :- bar.")
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+foo :- bar.
+foo :- _.
+"))))
 
 (ert-deftest dwim-define-predicate ()
   "Tests defining a new predicate with `sweeprolog-insert-term-dwim'."
