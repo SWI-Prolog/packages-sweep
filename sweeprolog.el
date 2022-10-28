@@ -234,7 +234,11 @@ the value of this option is used as its path."
 (defcustom sweeprolog-top-level-display-action nil
   "Display action used for displaying the `sweeprolog-top-level' buffer."
   :package-version '((sweeprolog . "0.1.0"))
-  :type 'function
+  :type '(choice (const :tag "Default" nil)
+                 (cons  :tag "Action"
+                        (choice (function :tag "Display Function")
+                                (repeat :tag "Display Functions" function))
+                        alist))
   :group 'sweeprolog)
 
 (defcustom sweeprolog-top-level-min-history-length 3
