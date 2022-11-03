@@ -31,8 +31,8 @@
 */
 
 :- module(sweep_link,
-          [ write_sweep_module_location/0
-          ]).
+	  [ write_sweep_module_location/0
+	  ]).
 
 /** <module> Information for dynamically linking to GNU Emacs
 */
@@ -40,14 +40,25 @@
 sweep_link_version(1).
 
 write_sweep_module_location :-
+    sweep_module(Path),
     sweep_link_version(V),
     format('V ~w~n', [V]),
-    absolute_file_name(foreign('sweep-module'),
-                       Path,
-                       [file_type(executable), access(read)]),
     (   current_prolog_flag(executable_format, elf)
     ->  current_prolog_flag(libswipl, Libpath),
-        format('L ~w~n', [Libpath])
+	format('L ~w~n', [Libpath])
     ;   true
     ),
     format('M ~w~n', [Path]).
+
+sweep_module(Path) :-
+    current_prolog_flag(windows, true),
+    current_prolog_flag(executable, Exe),
+    prolog_to_os_filename(PlExe, Exe),
+    file_directory_name(PlExe, BinDir),
+    atomic_concat(BinDir, '/sweep-module.dll', Path),
+    exists_file(Path),
+    !.
+sweep_module(Path) :-
+    absolute_file_name(foreign('sweep-module'),
+		       Path,
+		       [file_type(executable), access(read)]).
