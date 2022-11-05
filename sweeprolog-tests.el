@@ -7,8 +7,8 @@
 
 (defun sweeprolog-tests-greet ()
   (sweeprolog--open-query "user" "user"
-                         "sweep_funcall"
-                         "sweeprolog-tests-greet-1")
+                          "sweep_funcall"
+                          "sweeprolog-tests-greet-1")
   (let ((sol (sweeprolog-next-solution)))
     (sweeprolog-cut-query)
     (cdr sol)))
@@ -104,6 +104,73 @@ foo(Foo) :- bar.
                                       'font-lock-face)
                    '(sweeprolog-undefined-default-face
                      sweeprolog-clause-default-face)))))
+
+(ert-deftest export-predicate ()
+  "Test exporting a predicate."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+:- module(sweeprolog_test_export_predicate, []).
+
+%!  foo(+Bar) is det
+
+foo(Bar) :- bar(Bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (call-interactively #'sweeprolog-export-predicate)
+    (should (equal (buffer-string)
+                   "
+:- module(sweeprolog_test_export_predicate, [foo/1  % +Bar
+                                            ]).
+
+%!  foo(+Bar) is det
+
+foo(Bar) :- bar(Bar).
+"))))
+
+(ert-deftest identifier-at-point ()
+  "Test recognizing predicate invocations."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "foo(Bar) :- bar(Bar).")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (should (equal (sweeprolog-identifier-at-point)
+                   "user:bar/1"))))
+
+(ert-deftest definition-at-point ()
+  "Test recognizing predicate defintions."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "foo(Bar) :- bar(Bar).")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (should (equal (sweeprolog-definition-at-point)
+                   '(1 "foo" 1)))))
+
+(ert-deftest file-at-point ()
+  "Test recognizing file specifications."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              ":- use_module(library(lists)).")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (let ((fsap (sweeprolog-file-at-point)))
+      (should fsap)
+      (should (string= "lists" (file-name-base fsap))))))
 
 (ert-deftest dwim-next-clause ()
   "Tests inserting a new clause with `sweeprolog-insert-term-dwim'."

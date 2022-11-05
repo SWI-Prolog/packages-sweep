@@ -31,15 +31,10 @@
 */
 
 :- module(sweep,
-          [ sweep_colourise_buffer/2,
-            sweep_colourise_some_terms/2,
-            sweep_setup_message_hook/2,
+          [ sweep_setup_message_hook/2,
             sweep_current_prolog_flags/2,
             sweep_set_prolog_flag/2,
             sweep_documentation/2,
-            sweep_definition_at_point/2,
-            sweep_file_at_point/2,
-            sweep_identifier_at_point/2,
             sweep_expand_file_name/2,
             sweep_path_module/2,
             sweep_load_buffer/2,
@@ -49,10 +44,10 @@
             sweep_predicate_apropos/2,
             sweep_predicates_collection/2,
             sweep_local_predicate_completion/2,
+            sweep_functor_arity_pi/2,
             sweep_modules_collection/2,
             sweep_packs_collection/2,
             sweep_pack_install/2,
-            sweep_prefix_ops/2,
             sweep_op_info/2,
             sweep_imenu_index/2,
             sweep_module_path/2,
@@ -64,7 +59,9 @@
             write_sweep_module_location/0,
             sweep_module_html_documentation/2,
             sweep_predicate_html_documentation/2,
-            sweep_predicate_properties/2
+            sweep_predicate_properties/2,
+            sweep_analyze_region/2,
+            sweep_xref_source/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -88,10 +85,8 @@
 
 :- meta_predicate with_buffer_stream(-, +, 0).
 
-:- dynamic sweep_current_color/3,
-           sweep_open/2,
-           sweep_top_level_thread_buffer/2,
-           sweep_source_time/2,
+:- dynamic sweep_top_level_thread_buffer/2,
+           sweep_open_buffer/3,
            sweep_current_comment/3.
 
 :- multifile prolog:xref_source_time/2,
@@ -99,16 +94,34 @@
              prolog:xref_close_source/2,
              prolog:quasi_quotation_syntax/2.
 
+:- thread_local sweep_main_thread/0.
+
 prolog:quasi_quotation_syntax(graphql, library(http/graphql)).
 
-prolog:xref_source_time(Source, Time) :-
-    sweep_source_time(Source, Time).
+prolog:xref_source_time(Source0, Time) :-
+    sweep_main_thread,
+    atom_string(Source0, Source),
+    user:sweep_funcall("sweeprolog--buffer-last-modified-time",
+                       Source, Time),
+    Time \== [].
 
-prolog:xref_open_source(Source, Stream) :-
-    sweep_open(Source, Stream).
+prolog:xref_open_source(Source0, Stream) :-
+    sweep_main_thread,
+    atom_string(Source0, Source),
+    user:sweep_funcall("sweeprolog--buffer-string",
+                       Source, String),
+    String \== [],
+    new_memory_file(H),
+    insert_memory_file(H, 0, String),
+    open_memory_file(H, read, Stream, [encoding(utf8)]),
+    set_stream(Stream, encoding(utf8)),
+    set_stream(Stream, file_name(Source)),
+    asserta(sweep_open_buffer(Source0, Stream, H)).
 
 prolog:xref_close_source(Source, Stream) :-
-    sweep_open(Source, Stream).
+    retract(sweep_open_buffer(Source, Stream, H)),
+    close(Stream),
+    free_memory_file(H).
 
 sweep_top_level_threads(_, Ts) :-
     findall([Id, Buffer, Status, Stack, CPUTime],
@@ -133,256 +146,41 @@ sweep_set_prolog_flag([Flag0|Value0], []) :-
     term_string(Value, Value0),
     set_prolog_flag(Flag, Value).
 
-sweep_colourise_buffer([String|Path], Colors) :-
-    setup_call_cleanup(( new_memory_file(H),
-                         insert_memory_file(H, 0, String),
-                         open_memory_file(H, read, Contents, [encoding(utf8)])
-                       ),
-                       sweep_colourise_buffer_(Path, Contents, Colors),
-                       ( close(Contents),
-                         free_memory_file(H)
-                       )).
-
-sweep_colourise_buffer_(Path0, Contents, []) :-
+sweep_xref_source(Path0, _) :-
     atom_string(Path, Path0),
-    set_stream(Contents, encoding(utf8)),
-    set_stream(Contents, file_name(Path)),
-    get_time(Time),
-    asserta(sweep_source_time(Path, Time), Ref1),
-    asserta(sweep_open(Path, Contents), Ref0),
-    xref_source(Path, [comments(store)]),
-    seek(Contents, 0, bof, _),
-    retractall(sweep_current_comment(_, _, _)),
-    prolog_colourise_stream(Contents,
-                            Path,
-                            sweep_handle_color(1)),
-    forall(sweep_current_comment(Kind, Start, Len),
-           ( atom_string(Kind, String),
-             user:sweep_funcall("sweeprolog--colourise", [Start,Len,"comment"|String], _)
-           )),
-    erase(Ref0),
-    erase(Ref1).
+    xref_source(Path, [comments(store)]).
 
-sweep_definition_at_point([Contents|Path0], Result) :-
+sweep_analyze_region([OneTerm,Offset,Contents,Path0], Result) :-
     atom_string(Path, Path0),
     with_buffer_stream(Stream,
                        Contents,
-                       sweep_definition_at_point_(Stream, Path, Result)).
+                       sweep_analyze_region_(OneTerm, Offset, Stream, Path, Result)).
 
-:- dynamic sweep_current_defintion_at_point/1.
-
-sweep_definition_at_point_(Stream, Path, [Beg,F,N]) :-
+sweep_analyze_region_(OneTerm, Offset, Stream, Path, _) :-
     set_stream(Stream, file_name(Path)),
-    retractall(sweep_current_defintion_at_point(_)),
-    prolog_colourise_term(Stream, Path,
-                          sweep_handle_definition_at_point,
-                          []),
-    sweep_current_defintion_at_point(Beg-Def),
-    (   Def = M:F0/N
-    ->  term_string(M:F0, F)
-    ;   Def = F0/N,
-        term_string(F0, F)
-    ).
-
-sweep_handle_definition_at_point(head_term(_Kind, Goal), Beg, _Len) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_defintion_at_point(Beg-PI)).
-sweep_handle_definition_at_point(_, _, _).
-
-
-sweep_file_at_point([Contents,Path0,Point], Result) :-
-    atom_string(Path, Path0),
-    with_buffer_stream(Stream,
-                       Contents,
-                       sweep_file_at_point_(Stream, Path, Point, Result)).
-
-:- dynamic sweep_current_file_at_point/1.
-
-sweep_file_at_point_(Stream, Path, Point, File) :-
-    set_stream(Stream, file_name(Path)),
-    retractall(sweep_current_file_at_point(_)),
-    prolog_colourise_term(Stream, Path,
-                          sweep_handle_file_at_point(Point),
-                          []),
-    sweep_current_file_at_point(File0),
-    atom_string(File0, File).
-
-sweep_handle_file_at_point(Point, file_no_depend(File), Beg, Len) :-
-    Beg =< Point,
-    Point =< Beg + Len,
-    !,
-    asserta(sweep_current_file_at_point(File)).
-sweep_handle_file_at_point(Point, file(File), Beg, Len) :-
-    Beg =< Point,
-    Point =< Beg + Len,
-    !,
-    asserta(sweep_current_file_at_point(File)).
-sweep_handle_file_at_point(_, _, _, _).
-
-
-sweep_identifier_at_point([Contents0, Path, Point], Identifier) :-
-    setup_call_cleanup(( new_memory_file(H),
-                         insert_memory_file(H, 0, Contents0),
-                         open_memory_file(H, read, Contents, [encoding(utf8)])
-                       ),
-                       sweep_identifier_at_point_(Path, Point, Contents, Identifier),
-                       ( close(Contents),
-                         free_memory_file(H)
-                       )).
-
-:- dynamic sweep_current_identifier_at_point/1.
-
-sweep_identifier_at_point_(Path0, Point, Contents, Identifier) :-
-    atom_string(Path, Path0),
-    (   xref_module(Path, M)
-    ->  true
-    ;   M = user
-    ),
-    set_stream(Contents, encoding(utf8)),
-    set_stream(Contents, file_name(Path)),
-    seek(Contents, 0, bof, _),
-    retractall(sweep_current_identifier_at_point(_)),
-    prolog_colourise_term(Contents, Path,
-                          sweep_handle_identifier_at_point(Path, M, Point),
-                          []),
-    !,
-    sweep_current_identifier_at_point(Identifier0),
-    term_string(Identifier0, Identifier).
-
-
-sweep_handle_identifier_at_point(Path, M, Point, Col, Beg, Len) :-
-    Beg =< Point,
-    Point =< Beg + Len,
-    !,
-    sweep_handle_identifier_at_point_(Path, M, Col).
-sweep_handle_identifier_at_point(_, _, _, _, _, _).
-
-sweep_handle_identifier_at_point_(Path, M0, goal_term(Kind, Goal)) :-
-    !,
-    sweep_handle_identifier_at_point_goal(Path, M0, Kind, Goal).
-sweep_handle_identifier_at_point_(Path, M0, goal(Kind, Goal)) :-
-    !,
-    sweep_handle_identifier_at_point_goal(Path, M0, Kind, Goal).
-sweep_handle_identifier_at_point_(_Path, M0, head_term(_Kind, Goal)) :-
-    !,
-    sweep_handle_identifier_at_point_head(M0, Goal).
-sweep_handle_identifier_at_point_(_, _, _).
-
-
-sweep_handle_identifier_at_point_head(_, M:Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_head(M, Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-
-sweep_handle_identifier_at_point_goal(_Path, M, local(_), Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M, recursion, M:Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_goal(_Path, M, recursion, Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, built_in, Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, imported(Path), Goal) :-
-    !,
-    pi_head(PI, Goal),
-    xref_source(Path, [comments(store)]),
-    xref_module(Path, M),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, Extern, Goal) :-
-    sweep_is_extern(Extern, M),
-    !,
-    pi_head(PI, Goal),
-    (   var(M)
-    ->  asserta(sweep_current_identifier_at_point(PI))
-    ;   asserta(sweep_current_identifier_at_point(M:PI))
-    ).
-sweep_handle_identifier_at_point_goal(_Path, _M0, autoload(Path), Goal) :-
-    !,
-    pi_head(PI, Goal),
-    (   '$autoload':library_index(Goal, M, Path)
-    ->  true
-    ;   file_name_extension(Base, _, Path), '$autoload':library_index(Goal, M, Base)
-    ),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, Global, Goal) :-
-    sweep_is_global(Global),
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(user:PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, undefined, M:Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, undefined, Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, meta, _:Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(meta:PI)).
-sweep_handle_identifier_at_point_goal(_Path, _M0, meta, Goal) :-
-    !,
-    pi_head(PI, Goal),
-    asserta(sweep_current_identifier_at_point(meta:PI)).
-sweep_handle_identifier_at_point_goal(Path, M0, _Kind, Goal) :-
-    pi_head(PI0, Goal),
-    (   PI0 = M:PI
-    ->  true
-    ;   xref_defined(Path, Goal, imported(Other)), xref_module(Other, M)
-    ->  PI = PI0
-    ;   predicate_property(M0:Goal, imported_from(M))
-    ->  PI = PI0
-    ;   '$autoload':library_index(Goal, M, _)
-    ->  PI = PI0
-    ;   M = M0, PI = PI0
-    ),
-    asserta(sweep_current_identifier_at_point(M:PI)).
-
-sweep_is_global(global).
-sweep_is_global(global(_,_)).
-
-sweep_is_extern(extern(M),   M).
-sweep_is_extern(extern(M,_), M).
-
-sweep_colourise_some_terms([String,Path,Offset], Colors) :-
-    setup_call_cleanup(( new_memory_file(H),
-                         insert_memory_file(H, 0, String),
-                         open_memory_file(H, read, Contents, [encoding(utf8)])
-                       ),
-                       sweep_colourise_some_terms_(Path, Offset, Contents, Colors),
-                       ( close(Contents),
-                         free_memory_file(H)
-                       )).
-
-sweep_colourise_some_terms_(Path0, Offset, Contents, []) :-
-    atom_string(Path, Path0),
-    set_stream(Contents, encoding(utf8)),
-    set_stream(Contents, file_name(Path)),
-    seek(Contents, 0, bof, _),
-    findall(Op, xref_op(Path, Op), Ops),
     retractall(sweep_current_comment(_, _, _)),
-    prolog_colourise_stream(Contents,
-                            Path,
-                            sweep_handle_color(Offset),
-                            [operators(Ops)]),
+    (   OneTerm == []
+    ->  prolog_colourise_stream(Stream, Path,
+                                sweep_handle_fragment(Offset))
+    ;   prolog_colourise_term(Stream, Path,
+                              sweep_handle_fragment(Offset), [])),
     forall(sweep_current_comment(Kind, Start, Len),
            ( atom_string(Kind, String),
-             user:sweep_funcall("sweeprolog--colourise", [Start,Len,"comment"|String], _)
+             user:sweep_funcall("sweeprolog-analyze-fragment",
+                                [Start,Len,"comment"|String], _)
            )).
+
+sweep_handle_fragment(Offset, comment(Kind), Beg, Len) :-
+    !,
+    Start is Beg + Offset,
+    asserta(sweep_current_comment(Kind, Start, Len)).
+sweep_handle_fragment(Offset, Col, Beg, Len) :-
+    sweep_handle_fragment_(Offset, Col, Beg, Len).
+
+sweep_handle_fragment_(Offset, Col, Beg, Len) :-
+    sweep_color_normalized(Offset, Col, Nom),
+    Start is Beg + Offset,
+    user:sweep_funcall("sweeprolog-analyze-fragment", [Start,Len|Nom], _).
 
 sweep_documentation(PI0, Docs) :-
     term_string(PI1, PI0),
@@ -442,7 +240,7 @@ sweep_module_path_(Module, Path) :-
 sweep_module_path_(Module, Path) :-
     xref_module(Path, Module), !.
 sweep_module_path_(Module, Path) :-
-    '$autoload':library_index(_, Module, Path0), !, string_concat(Path0, ".pl", Path).
+    '$autoload':library_index(_, Module, Path0), atom_concat(Path0, '.pl', Path).
 
 sweep_predicate_properties(P0, Props) :-
     term_string(P, P0),
@@ -569,8 +367,8 @@ sweep_predicate_location_(M, H, Path, Line) :-
     ;   Line = []
     ).
 
-sweep_local_predicate_completion([Mod|Sub], Preds) :-
-    atom_string(M, Mod),
+sweep_local_predicate_completion(Sub, Preds) :-
+    sweep_current_module(M),
     findall(F/N,
             @(current_predicate(F/N), M),
             Preds0,
@@ -694,20 +492,8 @@ sweep_pack_info(pack(Name0, _, Desc0, Version0, URLS0), [Name, Desc, Version, UR
 sweep_pack_install(PackName, []) :-
     atom_string(Pack, PackName), pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
 
-sweep_handle_color(Offset, comment(Kind), Beg, Len) :-
-    !,
-    Start is Beg + Offset,
-    asserta(sweep_current_comment(Kind, Start, Len)).
-sweep_handle_color(Offset, Col, Beg, Len) :-
-    sweep_handle_query_color(Offset, Col, Beg, Len).
-
 sweep_colourise_query([String|Offset], _) :-
-    prolog_colourise_query(String, module(sweep), sweep_handle_query_color(Offset)).
-
-sweep_handle_query_color(Offset, Col, Beg, Len) :-
-    sweep_color_normalized(Offset, Col, Nom),
-    Start is Beg + Offset,
-    user:sweep_funcall("sweeprolog--colourise", [Start,Len|Nom], _).
+    prolog_colourise_query(String, module(sweep), sweep_handle_fragment_(Offset)).
 
 sweep_color_normalized(Offset, Col, Nom) :-
     Col =.. [Nom0|Rest],
@@ -718,8 +504,11 @@ sweep_color_normalized_(_, Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
     !,
     atom_string(Goal0, Goal),
     term_string(Kind0, Kind),
-    pi_head(F0/N, Head),
-    atom_string(F0, F).
+    (   var(Head)
+    ->  F = Head, N = 0
+    ;   pi_head(F0/N, Head),
+        atom_string(F0, F)
+    ).
 sweep_color_normalized_(Offset, syntax_error, [Message0,Start0-End0|_], ["syntax_error", Message, Start, End]) :-
     !,
     Start is Start0 + Offset,
@@ -731,6 +520,12 @@ sweep_color_normalized_(_, comment, [Kind0|_], ["comment"|Kind]) :-
 sweep_color_normalized_(_, qq_content, [Type0|_], ["qq_content"|Type]) :-
     !,
     atom_string(Type0, Type).
+sweep_color_normalized_(_, file, [File0|_], ["file"|File]) :-
+    !,
+    atom_string(File0, File).
+sweep_color_normalized_(_, file_no_depend, [File0|_], ["file_no_depend"|File]) :-
+    !,
+    atom_string(File0, File).
 sweep_color_normalized_(_, Nom0, _, Nom) :-
     atom_string(Nom0, Nom).
 
@@ -767,6 +562,7 @@ sweep_path_module(Path0, Module) :-
 
 
 sweep_setup_message_hook(_, _) :-
+    asserta(sweep_main_thread),
     asserta((
              user:thread_message_hook(Term, Kind, Lines) :-
                  sweep_message_hook(Term, Kind, Lines)
@@ -784,15 +580,6 @@ should_handle_message_kind(error, "error").
 should_handle_message_kind(warning, "warning").
 should_handle_message_kind(informational, "informational").
 should_handle_message_kind(debug(Topic0), ["debug"|Topic]) :- atom_string(Topic0, Topic).
-
-sweep_prefix_ops(Path0, Ops) :-
-    atom_string(Path, Path0),
-    findall(Op, current_op(_, fx, Op),        Ops0, Tail0),
-    findall(Op, current_op(_, fy, Op),        Tail0, Tail1),
-    findall(Op, xref_op(Path, op(_, fx, Op)), Tail1, Tail),
-    findall(Op, xref_op(Path, op(_, fy, Op)), Tail),
-    maplist(atom_string, Ops0, Ops1),
-    list_to_set(Ops1, Ops).
 
 sweep_op_info([Op0|Path0], Info) :-
     atom_string(Path, Path0),
@@ -812,7 +599,7 @@ sweep_load_buffer([String|Path0], Result) :-
                        String,
                        sweep_load_buffer_(Stream, Path, Result)).
 
-sweep_load_buffer_(Stream, Path, []) :-
+sweep_load_buffer_(Stream, Path, true) :-
     set_stream(Stream, file_name(Path)),
     @(load_files(Path, [stream(Stream)]), user).
 
@@ -941,3 +728,27 @@ sweep_local_predicate_export_comment([Path0,F0,A],Comm) :-
 strip_det(Mode is _, Mode) :- !.
 strip_det(//(Mode), Mode) :- !.
 strip_det(Mode, Mode).
+
+sweep_functor_arity_pi([F0,A], PI)   :-
+    !,
+    atom_string(F, F0),
+    pi_head(F/A, Head),
+    sweep_current_module(M0),
+    (   @(predicate_property(M:Head, visible), M0),
+        \+ @(predicate_property(M:Head, imported_from(_)), M0)
+    ->  true
+    ;   xref_defined(_, Head, imported(Other)), xref_module(Other, M)
+    ->  true
+    ;   M = M0
+    ),
+    term_string(M:F/A, PI).
+sweep_functor_arity_pi([M,F0,A], PI) :-
+    atom_string(F, F0), term_string(M:F/A, PI).
+
+sweep_current_module(Module) :-
+    sweep_main_thread,
+    user:sweep_funcall("buffer-file-name", String),
+    string(String),
+    atom_string(Path, String),
+    sweep_module_path_(Module, Path).
+sweep_current_module(user).

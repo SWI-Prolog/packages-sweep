@@ -448,25 +448,25 @@ invoked to updated the semantic highlighting in response to changes in
 the buffer.
 
 #+KINDEX: C-c C-c (sweeprolog-mode)
-#+FINDEX: sweeprolog-colourise-buffer
+#+FINDEX: sweeprolog-analyze-buffer
 At any point in a =sweeprolog-mode= buffer, the command =C-c C-c= (or =M-x
-sweeprolog-colourise-buffer=) can be used to update the cross reference
+sweeprolog-analyze-buffer=) can be used to update the cross reference
 cache and highlight the buffer accordingly.  When ~flymake~ integration
 is enabled, this command also updates the diagnostics for the current
 buffer (see [[*Examining diagnostics][Examining diagnostics]]).  This may be useful e.g. after
 defining a new predicate.
 
-#+VINDEX: sweeprolog-colourise-buffer-on-idle
-#+VINDEX: sweeprolog-colourise-buffer-max-size
-#+VINDEX: sweeprolog-colourise-buffer-min-interval
-If the user option =sweeprolog-colourise-buffer-on-idle= is set to non-nil
+#+VINDEX: sweeprolog-analyze-buffer-on-idle
+#+VINDEX: sweeprolog-analyze-buffer-max-size
+#+VINDEX: sweeprolog-analyze-buffer-min-interval
+If the user option =sweeprolog-analyze-buffer-on-idle= is set to non-nil
 (as it is by default), =sweeprolog-mode= also updates semantic highlighting
 in the buffer whenever Emacs is idle for a reasonable amount of time,
 unless the buffer is larger than the value of the
-=sweeprolog-colourise-buffer-max-size= user option ( 100,000 by default).
+=sweeprolog-analyze-buffer-max-size= user option ( 100,000 by default).
 The minimum idle time to wait before automatically updating semantic
 highlighting can be set via the user option
-=sweeprolog-colourise-buffer-min-interval=.
+=sweeprolog-analyze-buffer-min-interval=.
 
 #+CINDEX: sweeprolog-faces
 =sweep= defines three highlighting /styles/, each containing more than 60

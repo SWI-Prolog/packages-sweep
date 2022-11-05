@@ -11,6 +11,20 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.2 on 2022-11-07
+
+** Renamed ~sweeprolog-colourise-*~ to ~sweeprolog-analyze-*~
+
+The following user options and commands have been renamed to better
+convey their meaning:
+
+| Old symbol name                          | New symbol name                        |
+|------------------------------------------+----------------------------------------|
+| ~sweeprolog-colourise-buffer~              | ~sweeprolog-analyze-buffer~              |
+| ~sweeprolog-colourise-buffer-on-idle~      | ~sweeprolog-analyze-buffer-on-idle~      |
+| ~sweeprolog-colourise-buffer-max-size~     | ~sweeprolog-analyze-buffer-max-size~     |
+| ~sweeprolog-colourise-buffer-min-interval~ | ~sweeprolog-analyze-buffer-min-interval~ |
+
 * Version 0.8.1 on 2022-10-25
 
 ** Added completion-at-point for variable names
