@@ -421,6 +421,10 @@ clause."
 
 (defvar-local sweeprolog--variable-at-point nil)
 
+(defvar-local sweeprolog--variable-at-point-point nil)
+
+(defvar-local sweeprolog--variable-at-point-occurrences nil)
+
 (defvar-local sweeprolog--diagnostics nil)
 
 (defvar-local sweeprolog--diagnostics-report-fn nil)
@@ -1871,18 +1875,29 @@ When non-nil, only predicates whose name contains PREFIX are returned."
      (setq sweeprolog--module-term (cons beg end)))))
 
 (defun sweeprolog-analyze-fragment-variable (beg end arg)
-  (when (member arg (list "var"
-                          (list "goal_term" "meta" 'variable 0)))
+  (cond
+   ((member arg (list "var"
+                      (list "goal_term" "meta" 'variable 0)))
     (let ((var (buffer-substring-no-properties beg end)))
       (with-silent-modifications
         (put-text-property beg end 'cursor-sensor-functions
                            (sweeprolog-cursor-sensor-functions var))
         (when (and sweeprolog--variable-at-point
                    (string= sweeprolog--variable-at-point var))
-          (font-lock--add-text-property beg end
-                                        'font-lock-face
-                                        (sweeprolog-variable-at-point-face)
-                                        (current-buffer) nil))))))
+          (push (cons beg end) sweeprolog--variable-at-point-occurrences)))))
+   ((and (stringp arg)
+         (string= arg "fullstop")
+         sweeprolog--variable-at-point-point
+         (< end sweeprolog--variable-at-point-point))
+    (setq sweeprolog--variable-at-point-occurrences nil))))
+
+(defun sweeprolog-analyze-end-variable (&rest _)
+  (dolist (occurence sweeprolog--variable-at-point-occurrences)
+    (font-lock--add-text-property (car occurence)
+                                  (cdr occurence)
+                                  'font-lock-face
+                                  (sweeprolog-variable-at-point-face)
+                                  (current-buffer) nil)))
 
 (defvar sweeprolog-analyze-region-start-hook
   '(sweeprolog-analyze-start-font-lock))
@@ -2009,7 +2024,8 @@ variable at point, if any."
                                                 (symbol-name v))))
                                            (symbol-name v))))))
                sweeprolog-mode sweeprolog-top-level-mode)
-  (let ((sweeprolog--variable-at-point var))
+  (let ((sweeprolog--variable-at-point-point (point))
+        (sweeprolog--variable-at-point var))
     (font-lock-fontify-region point point)))
 
 (defun sweeprolog-cursor-sensor-functions (var)
@@ -3066,6 +3082,8 @@ if-then-else constructs in SWI-Prolog."
   (when sweeprolog-enable-cursor-sensor
     (add-hook 'sweeprolog-analyze-region-fragment-hook
               #'sweeprolog-analyze-fragment-variable nil t)
+    (add-hook 'sweeprolog-analyze-region-end-hook
+              #'sweeprolog-analyze-end-variable nil t)
     (cursor-sensor-mode 1)))
 
 (add-to-list 'auto-insert-alist
