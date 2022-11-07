@@ -895,6 +895,13 @@ resulting list even when found in the current clause."
                 (push (match-string-no-properties 0) vars)))))))
     vars))
 
+(defun sweeprolog--char-uppercase-p (char)
+  (if (fboundp 'char-uppercase-p)
+      (char-uppercase-p char)
+    (cond ((unicode-property-table-internal 'lowercase)
+           (characterp (get-char-code-property char 'lowercase)))
+          ((and (>= char ?A) (<= char ?Z))))))
+
 (defun sweeprolog-variable-completion-at-point ()
   "Prolog variable name completion backend for `completion-at-point'."
   (when-let ((bounds (bounds-of-thing-at-point 'symbol))
@@ -902,7 +909,7 @@ resulting list even when found in the current clause."
              (end (cdr bounds)))
     (when (and (<= beg (point) end)
                (let ((first (char-after beg)))
-                 (or (char-uppercase-p first)
+                 (or (sweeprolog--char-uppercase-p first)
                      (= first ?_))))
       (when-let ((col (sweeprolog-local-variables-collection
                        (buffer-substring-no-properties beg end))))

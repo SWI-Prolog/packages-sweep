@@ -106,6 +106,27 @@ foo(Foo) :- bar.
                      sweeprolog-clause-default-face)))))
 
 
+(ert-deftest complete-variable ()
+  "Test marking completing variable names."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+baz(Baz) :- bar(B).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (forward-word)
+    (call-interactively #'complete-symbol)
+    (should (string= (buffer-string)
+                     "
+baz(Baz) :- bar(Baz).
+"
+                     ))))
+
 (ert-deftest mark-predicate ()
   "Test marking predicate definition."
   (let ((temp (make-temp-file "sweeprolog-test"
