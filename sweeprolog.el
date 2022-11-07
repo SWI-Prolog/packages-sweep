@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.8.2
+;; Package-Version: 0.8.3
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -326,6 +326,9 @@ clause."
                   #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
+    (define-key map (kbd "M-p")     #'sweeprolog-backward-predicate)
+    (define-key map (kbd "M-n")     #'sweeprolog-forward-predicate)
+    (define-key map (kbd "M-h")     #'sweeprolog-mark-predicate)
     map)
   "Keymap for `sweeprolog-mode'.")
 
@@ -2247,16 +2250,25 @@ Interactively, POINT is set to the current point."
           (not (= p (point))))
       (sweeprolog-beginning-of-next-top-term (- times)))))
 
-(defun sweeprolog-beginning-of-next-top-term (times)
+(defun sweeprolog-beginning-of-next-top-term (&optional times)
+  (setq times (or times 1))
   (let ((p (point)))
+    (when (sweeprolog-at-beginning-of-top-term-p)
+      (forward-char)
+      (re-search-forward (rx bol graph) nil t)
+      (while (and (or (nth 8 (syntax-ppss))
+                      (nth 8 (syntax-ppss (1+ (point)))))
+                  (not (eobp)))
+        (re-search-forward (rx bol graph) nil t))
+      (setq times (1- times)))
     (while (and (< 0 times) (not (eobp)))
       (setq times (1- times))
-      (unless (eobp)
-        (forward-char)
-        (re-search-forward (rx bol graph) nil t))
-      (while (and (nth 8 (syntax-ppss)) (not (eobp)))
-        (forward-char)
+      (re-search-forward (rx bol graph) nil t)
+      (while (and (or (nth 8 (syntax-ppss))
+                      (nth 8 (syntax-ppss (1+ (point)))))
+                  (not (eobp)))
         (re-search-forward (rx bol graph) nil t)))
+    (beginning-of-line)
     (not (= p (point)))))
 
 (defun sweeprolog-end-of-top-term ()
@@ -2341,7 +2353,7 @@ instead."
   (when-let ((pred (sweeprolog-identifier-at-point point)))
     (unless (sweeprolog-predicate-properties pred)
       (push-mark)
-      (sweeprolog-end-of-predicate-definition)
+      (sweeprolog-end-of-predicate-at-point)
       (let ((functor-arity (sweeprolog--mfn-to-functor-arity pred)))
         (sweeprolog-insert-clause (car functor-arity)
                                   (cdr functor-arity)))
@@ -2381,7 +2393,12 @@ of them signal success by returning non-nil."
                                           (pcase arg
                                             (`("head_term" ,_ ,f ,a)
                                              (setq def-at-point
-                                                   (list beg f a))))))
+                                                   (list beg f a)))
+                                            ("fullstop"
+                                             (when def-at-point
+                                               (setq def-at-point
+                                                     (append def-at-point
+                                                             (list beg))))))))
       def-at-point)))
 
 (defun sweeprolog-insert-pldoc-for-predicate (functor arguments det summary)
@@ -2396,7 +2413,7 @@ of them signal success by returning non-nil."
                   summary))
   (fill-paragraph))
 
-(defun sweeprolog-end-of-predicate-definition ()
+(defun sweeprolog-end-of-predicate-at-point ()
   "Move to the end of the predicate definition at point."
   (when-let* ((def (sweeprolog-definition-at-point)))
     (let ((point (point))
@@ -2412,6 +2429,66 @@ of them signal success by returning non-nil."
             (setq point (point))
           (goto-char point)
           (setq point nil))))))
+
+(defun sweeprolog-forward-predicate (&optional arg)
+  "Move forward over the ARGth next predicate defintion from point."
+  (interactive "p" sweeprolog-mode)
+  (setq arg (or arg 1))
+  (while (< 0 arg)
+    (setq arg (1- arg))
+    (if-let ((line
+              (sweeprolog--query-once "sweep" "sweep_beginning_of_next_predicate"
+                                      (line-number-at-pos))))
+        (progn
+          (goto-char (point-min))
+          (forward-line (1- line)))
+      (setq arg 0)
+      (user-error "No next predicate"))))
+
+(defun sweeprolog-backward-predicate (&optional arg)
+  "Move backward over the ARGth next predicate defintion from point."
+  (interactive "p" sweeprolog-mode)
+  (setq arg (or arg 1))
+  (while (< 0 arg)
+    (setq arg (1- arg))
+    (if-let ((line
+              (sweeprolog--query-once "sweep" "sweep_beginning_of_last_predicate"
+                                      (line-number-at-pos))))
+        (progn
+          (goto-char (point-min))
+          (forward-line (1- line)))
+      (setq arg 0)
+      (user-error "No previous predicate"))))
+
+(defun sweeprolog-end-of-next-predicate ()
+  (let ((def-at-point (sweeprolog-definition-at-point)))
+    (when (or (and def-at-point (<= (point) (nth 3 def-at-point)))
+              (condition-case _
+                  (progn (sweeprolog-forward-predicate)
+                         t)))
+      (sweeprolog-end-of-predicate-at-point)
+      (point))))
+
+(defun sweeprolog-mark-predicate (&optional allow-extend)
+  "Put point at beginning of this predicate, mark at end.
+
+Interactively (or if ALLOW-EXTEND is non-nil), if this command is
+repeated or (in Transient Mark mode) if the mark is active, it
+marks the next predicate after the ones already marked."
+  (interactive "p" sweeprolog-mode)
+  (if (and allow-extend
+           (or (and (eq last-command this-command) (mark t))
+               (and transient-mark-mode mark-active)))
+      (set-mark
+       (save-excursion
+         (goto-char (mark))
+         (sweeprolog-end-of-next-predicate)))
+    (when (sweeprolog-end-of-next-predicate)
+      (push-mark nil t t)
+      (sweeprolog-backward-predicate)
+      (let ((last (or (caddr (sweeprolog-last-token-boundaries))
+                      (point-min))))
+        (while (re-search-backward (rx bol "%" (or "%" "!")) last t))))))
 
 (defun sweeprolog-beginning-of-predicate-at-point (&optional point)
   "Find the beginning of the predicate definition at or above POINT.
@@ -2535,7 +2612,8 @@ predicate definition at or directly above POINT."
       (while (and (not (bobp)) go)
         (skip-chars-backward " \t\n")
         (unless (bobp)
-          (forward-char -1)
+          (unless (nth 4 (syntax-ppss))
+            (forward-char -1))
           (if (nth 4 (syntax-ppss))
               (goto-char (nth 8 (syntax-ppss)))
             (setq go nil))))

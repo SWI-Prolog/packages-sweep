@@ -11,6 +11,16 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.3 on 2022-11-07
+
+** New commands that operate on entire predicate definitions
+
+~sweeprolog-mode~ now includes dedicated function for acting on
+predicate definitions that span multiple clauses.  The new commands
+are ~sweeprolog-forward-predicate~ and ~sweeprolog-backward-predicate~
+bound to ~M-n~ and ~M-p~ respectively, and ~sweeprolog-mark-predicate~ bound
+to ~M-h~.
+
 * Version 0.8.2 on 2022-11-07
 
 ** Renamed ~sweeprolog-colourise-*~ to ~sweeprolog-analyze-*~

@@ -680,6 +680,28 @@ buffer.  To jump to a definition in the current buffer, type =M-x imenu=
 (bound by default to =M-g i= in Emacs version 29).  For information
 about customizing =imenu=, see [[info:emacs#Imenu][Imenu in the Emacs manual]].
 
+** Predicate definition boundaries
+:PROPERTIES:
+:CUSTOM_ID: predicate-boundaries
+:DESCRIPTION: Commands operating on a Prolog predicate definition as a single unit
+:END:
+
+#+CINDEX: predicate-based motion
+#+FINDEX: sweeprolog-forward-predicate
+#+FINDEX: sweeprolog-backward-predicate
+#+KINDEX: M-n
+#+KINDEX: M-p
+In ~sweeprolog-mode~, the commands ~M-n~ (~sweeprolog-forward-predicate~)
+and ~M-p~ (~sweeprolog-backward-predicate~) are available for quickly
+jumping to the first line of the next or previous predicate
+definition in the current buffer.
+
+#+KINDEX: M-h
+The command ~M-h~ (~sweeprolog-mark-predicate~) marks the entire predicate
+definition at point, along with its =PlDoc= comments if there are any.
+This can be followed, for example, with killing the marked region to
+relocate the defined predicate by typing ~M-h C-w~.
+
 ** Following file specifications
 :PROPERTIES:
 :CUSTOM_ID: following-file-specs
@@ -1447,14 +1469,6 @@ there some further improvements that we want to pursue:
   should provide a command for interactively inserting a new predicate
   definition, ideally with optional =PlDoc= comments (see [[#sweeprolog-pldoc][Documenting
   predicates]]).
-
-- Add commands for narrowing and moving by predicate definitions :: ~sweeprolog-mode~
-  should include commands for moving point to the next/previous
-  predicate definition.  We already have commands for clause-based
-  motion (~C-M-a~, ~C-M-e~) but it would be useful to have predicate-based
-  variants as well.  These commands could then be bound to ~C-c C-n~ for
-  moving to the next predicate definition and ~C-c C-p~ for moving to
-  the previous.
 
 - Improve the information provided for predicate completion candidates :: predicate
   completion with ~C-M-i~ should annotate each completion candidate with

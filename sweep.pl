@@ -61,7 +61,9 @@
             sweep_predicate_html_documentation/2,
             sweep_predicate_properties/2,
             sweep_analyze_region/2,
-            sweep_xref_source/2
+            sweep_xref_source/2,
+            sweep_beginning_of_next_predicate/2,
+            sweep_beginning_of_last_predicate/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -752,3 +754,26 @@ sweep_current_module(Module) :-
     atom_string(Path, String),
     sweep_module_path_(Module, Path).
 sweep_current_module(user).
+
+sweep_beginning_of_last_predicate(Start, Next) :-
+    sweep_source_id(Path),
+    xref_source(Path, [comments(store)]),
+    findall(L,
+            (   xref_defined(Path, _, H),
+                xref_definition_line(H, L),
+                L < Start
+            ),
+            Ls),
+    reverse(Ls, [Next|_]).
+
+sweep_beginning_of_next_predicate(Start, Next) :-
+    sweep_source_id(Path),
+    xref_source(Path, [comments(store)]),
+    xref_defined(Path, _, H), xref_definition_line(H, Next),
+    Start < Next.
+
+
+sweep_source_id(Path) :-
+    sweep_main_thread,
+    user:sweep_funcall("buffer-file-name", Path),
+    string(Path).

@@ -105,6 +105,36 @@ foo(Foo) :- bar.
                    '(sweeprolog-undefined-default-face
                      sweeprolog-clause-default-face)))))
 
+
+(ert-deftest mark-predicate ()
+  "Test marking predicate definition."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+:- module(baz, []).
+
+
+%!  baz(-Baz) is semidet.
+%
+%   Foobar.
+
+baz(Baz) :- bar(Baz).
+baz(_) :- false.
+
+%!  bar(-Bar) is semidet.
+%
+%   Spam.
+
+bar(Bar) :- baz(Bar).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (call-interactively #'sweeprolog-mark-predicate)
+    (should (= (point) 24))
+    (should (= (mark) 104))))
+
 (ert-deftest export-predicate ()
   "Test exporting a predicate."
   (let ((temp (make-temp-file "sweeprolog-test"
@@ -156,7 +186,7 @@ foo(Bar) :- bar(Bar).
     (goto-char (point-max))
     (backward-word)
     (should (equal (sweeprolog-definition-at-point)
-                   '(1 "foo" 1)))))
+                   '(1 "foo" 1 21)))))
 
 (ert-deftest file-at-point ()
   "Test recognizing file specifications."
