@@ -73,22 +73,22 @@ foo(Foo) :- bar.
     (should (equal (get-text-property (+ (point-min) 3)
                                       'font-lock-face)
                    '(sweeprolog-built-in-default-face
-                     sweeprolog-directive-default-face)))
+                     sweeprolog-body-default-face)))
     (should (equal (get-text-property (+ (point-min) 9)
                                       'font-lock-face)
-                   '(sweeprolog-directive-default-face)))
+                   '(sweeprolog-body-default-face)))
     (should (equal (get-text-property (+ (point-min) 10)
                                       'font-lock-face)
                    '(sweeprolog-identifier-default-face
-                     sweeprolog-directive-default-face)))
+                     sweeprolog-body-default-face)))
     (should (equal (get-text-property (+ (point-min) 13)
                                       'font-lock-face)
-                   '(sweeprolog-directive-default-face)))
+                   '(sweeprolog-body-default-face)))
     (should (equal (get-text-property (+ (point-min) 16)
                                       'font-lock-face)
                    '(sweeprolog-local-default-face
                      sweeprolog-predicate-indicator-default-face
-                     sweeprolog-directive-default-face)))
+                     sweeprolog-body-default-face)))
     (should (equal (get-text-property (+ (point-min) 23)
                                       'font-lock-face)
                    '(sweeprolog-fullstop-default-face)))
@@ -103,7 +103,7 @@ foo(Foo) :- bar.
     (should (equal (get-text-property (+ (point-min) 39)
                                       'font-lock-face)
                    '(sweeprolog-undefined-default-face
-                     sweeprolog-clause-default-face)))))
+                     sweeprolog-body-default-face)))))
 
 
 (ert-deftest complete-variable ()
