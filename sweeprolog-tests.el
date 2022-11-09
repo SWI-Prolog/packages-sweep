@@ -209,6 +209,46 @@ foo(Bar) :- bar(Bar).
     (should (equal (sweeprolog-definition-at-point)
                    '(1 "foo" 1 21)))))
 
+(ert-deftest syntax-errors ()
+  "Test clearing syntax error face after errors are fixed."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(baz, []).
+
+
+%!  baz(-Baz) is semidet.
+%
+%   Foobar.
+
+baz(Baz) :- bar(Baz).
+baz(Baz) :- Bar, Baz.
+
+%!  bar(-Bar) is semidet.
+%
+%   Spam.
+
+bar(Bar) :- baz(Bar).
+
+% comment before eob...
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-min))
+    (search-forward ".\n" nil t)
+    (replace-match ",,\n" nil t)
+    (delete-char -3)
+    (redisplay)
+    (insert ".")
+    (redisplay)
+    (should (= (point-max)
+               (prop-match-end
+                (text-property-search-forward
+                 'font-lock-face
+                 '(sweeprolog-syntax-error-default-face
+                   sweeprolog-around-syntax-error-default-face)))))))
+
 (ert-deftest file-at-point ()
   "Test recognizing file specifications."
   (let ((temp (make-temp-file "sweeprolog-test"
