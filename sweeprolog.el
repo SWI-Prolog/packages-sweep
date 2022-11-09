@@ -1721,13 +1721,19 @@ When non-nil, only predicates whose name contains PREFIX are returned."
     ("var"
      (list (list beg end (sweeprolog-variable-face))))
     ("fullstop"
-     (list (list beg
-                 (save-excursion
-                   (goto-char (min (1+ end) (point-max)))
-                   (skip-chars-forward " \t\n")
-                   (point))
-                 nil)
-           (list beg end (sweeprolog-fullstop-face))))
+     (save-excursion
+       (goto-char (min end (point-max)))
+       (let ((ws nil)
+             (cur (point)))
+         (while (and (forward-comment 1)
+                     (forward-comment -1))
+           (push (list cur (point) nil) ws)
+           (forward-comment 1)
+           (setq cur (point)))
+         (skip-chars-forward " \t\n")
+         (push (list cur (point) nil) ws)
+         (cons (list beg end (sweeprolog-fullstop-face))
+               ws))))
     ("functor"
      (list (list beg end (sweeprolog-functor-face))))
     ("arity"
@@ -1974,6 +1980,9 @@ modified."
         (setq cur (point))
         (sweeprolog-end-of-top-term)
         (sweeprolog-analyze-term cur (point)))
+      (setq cur (point))
+      (sweeprolog-end-of-top-term)
+      (sweeprolog-analyze-term cur (point))
       `(jit-lock-bounds ,start . ,(point)))))
 
 (defun sweeprolog-syntax-propertize (start end)
