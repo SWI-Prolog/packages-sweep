@@ -1587,6 +1587,13 @@ When non-nil, only predicates whose name contains PREFIX are returned."
   "Top terms.")
 
 (sweeprolog-defface
+  body
+  (:inherit default)
+  (:inherit default)
+  (:inherit default)
+  "Clause and query bodies.")
+
+(sweeprolog-defface
   directive
   (:inherit default)
   (:inherit default)
@@ -1779,6 +1786,8 @@ When non-nil, only predicates whose name contains PREFIX are returned."
      (list (list beg end (sweeprolog-op-type-face))))
     ("directive"
      (list (list beg end nil) (list beg end (sweeprolog-directive-face))))
+    ("body"
+     (list (list beg end nil) (list beg end (sweeprolog-body-face))))
     ("clause"
      (list (list beg end nil) (list beg end (sweeprolog-clause-face))))
     ("term"
