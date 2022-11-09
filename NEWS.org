@@ -11,6 +11,18 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.4 on 2022-11-09
+
+** Various bug fixes
+
+- Fixed regression in variable highlighting where occurrences of the
+  highlighted variable in adjacent clauses might have been
+  highlighted.
+- Fixed regression and added a test for clearing the syntax error face
+  immediately when the error is fixed (e.g. a fullstop is inserted at
+  the end of a clause).
+
+
 * Version 0.8.3 on 2022-11-07
 
 ** New commands that operate on entire predicate definitions
