@@ -1188,6 +1188,13 @@ When non-nil, only predicates whose name contains PREFIX are returned."
   "External predicate definitions.")
 
 (sweeprolog-defface
+  head-test
+  (:inherit font-lock-preprocessor-face)
+  (:foreground "#01bdbd" :weight bold)
+  (:foreground "#01bdbd" :weight bold)
+  "Unreferenced predicate definitions.")
+
+(sweeprolog-defface
   head-unreferenced
   (:inherit font-lock-warning-face)
   (:foreground "red" :weight bold)
@@ -1652,6 +1659,8 @@ When non-nil, only predicates whose name contains PREFIX are returned."
            (list beg end (sweeprolog-comment-face))))
     (`("head" "unreferenced" . ,_)
      (list (list beg end (sweeprolog-head-unreferenced-face))))
+    (`("head" "test" . ,_)
+     (list (list beg end (sweeprolog-head-test-face))))
     (`("head" "meta" . ,_)
      (list (list beg end (sweeprolog-head-meta-face))))
     (`("head" "iso" . ,_)
