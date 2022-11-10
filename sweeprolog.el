@@ -2175,8 +2175,10 @@ Interactively, a prefix arg means to prompt for BUFFER."
   (setq sweeprolog-top-level-timer (run-with-idle-timer 0.2 t #'sweeprolog-colourise-query (current-buffer)))
   (add-hook 'kill-buffer-hook
             (lambda ()
-              (sweeprolog-top-level-signal (current-buffer)
-                                           "thread_exit(0)"))
+              (condition-case _
+                  (sweeprolog-top-level-signal (current-buffer)
+                                               "thread_exit(0)")
+                (prolog-exception nil)))
             nil t)
   (add-hook 'kill-buffer-hook
             (lambda ()
