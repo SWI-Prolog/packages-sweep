@@ -665,7 +665,9 @@ directly:
 :DESCRIPTION: Commands for finding cross-references for Prolog predicates
 :END:
 
+#+CINDEX: cross reference
 #+CINDEX: xref
+#+KINDEX: M-.
 =sweeprolog-mode= integrates with the Emacs =xref= API to facilitate quick
 access to predicate definitions and references in Prolog code buffers.
 This enables the many commands that the =xref= interface provides, like
@@ -674,11 +676,22 @@ This enables the many commands that the =xref= interface provides, like
 commands.
 
 #+CINDEX: imenu
+#+KINDEX: M-g i
 =sweeprolog-mode= also integrates with Emacs's =imenu=, which provides a simple
 facility for looking up and jumping to definitions in the current
 buffer.  To jump to a definition in the current buffer, type =M-x imenu=
 (bound by default to =M-g i= in Emacs version 29).  For information
 about customizing =imenu=, see [[info:emacs#Imenu][Imenu in the Emacs manual]].
+
+#+FINDEX: sweeprolog-xref-project-source-files
+#+KINDEX: M-?
+The command ~M-x sweeprolog-xref-project-source-files~ can be used to
+update ~sweep~'s cross reference data for all Prolog source files in the
+current project, as determined by the function ~project-current~ (see
+[[info:emacs#Projects][Projects in the Emacs manual]]).  When searching for references to
+Prolog predicates with ~M-?~ (~xref-find-references~), this command is
+invoked implicitly to ensure up to date references are found
+throughout the current project.
 
 ** Predicate definition boundaries
 :PROPERTIES:
@@ -1283,6 +1296,23 @@ to a prefix key, e.g. =C-c p=, use:
 As an example, with the above binding the =sweep= top-level can be
 accessed from anywhere with =C-c p t=, which invokes the command
 =sweeprolog-top-level=.
+
+The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
+
+| Key | Command                              | Documentation                     |
+|-----+--------------------------------------+-----------------------------------|
+| ~F~   | ~sweeprolog-set-prolog-flag~           | [[*Setting Prolog flags][Setting Prolog Flags]]              |
+| ~P~   | ~sweeprolog-pack-install~              | [[*Installing Prolog packages][Installing Prolog packages]]        |
+| ~R~   | ~sweeprolog-restart~                   | [[*Prolog initialization and cleanup][Prolog Initialization and Cleanup]] |
+| ~T~   | ~sweeprolog-list-top-levels~           | [[#top-level-menu][The Top-level Menu Buffer]]         |
+| ~X~   | ~sweeprolog-xref-project-source-files~ | [[#sweeprolog-xref][Definitions and References]]        |
+| ~e~   | ~sweeprolog-view-messages~             | [[#prolog-messages][Examining Prolog Messages]]         |
+| ~h p~ | ~sweeprolog-describe-predicate~        | [[#prolog-help][Prolog Help]]                       |
+| ~h m~ | ~sweeprolog-describe-module~           | [[*Prolog Help][Prolog Help]]                       |
+| ~l~   | ~sweeprolog-load-buffer~               | [[#loading-buffers][Loading Buffers]]                   |
+| ~m~   | ~sweeprolog-find-module~               | [[#finding-prolog-code][Finding Prolog Code]]               |
+| ~p~   | ~sweeprolog-find-predicate~            | [[*Finding Prolog code][Finding Prolog Code]]               |
+| ~t~   | ~sweeprolog-top-level~                 | [[#prolog-top-level][The Prolog Top-level]]              |
 
 * Examining Prolog messages
 :PROPERTIES:

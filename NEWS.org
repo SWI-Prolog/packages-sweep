@@ -11,6 +11,22 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.5 on 2022-11-10
+
+** New command ~sweeprolog-xref-project-source-files~
+
+This command updates ~sweep~'s cross reference data for all Prolog
+source files in the current project.  Bound to ~X~ in
+~sweeprolog-prefix-map~.
+
+** Minor bug fixed
+
+- Fixed issue where ~sweeprolog-predicate-location~ sometimes returned a
+  file importing the predicate in question, rather than actually
+  defining it.
+- Fixed issue where the ~kill-buffer-hook~ of top-level buffers would
+  throw an error when the corresponding top-level thread already died.
+
 * Version 0.8.4 on 2022-11-09
 
 ** Various bug fixes
@@ -21,7 +37,6 @@ For further details, please consult the manual:
 - Fixed regression and added a test for clearing the syntax error face
   immediately when the error is fixed (e.g. a fullstop is inserted at
   the end of a clause).
-
 
 * Version 0.8.3 on 2022-11-07
 

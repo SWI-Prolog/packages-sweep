@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.8.4
+;; Package-Version: 0.8.5
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -704,8 +704,9 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 If PROJECT is nil, update data for the current project.
 
 If called interactively with a prefix argument, prompt for
-PROJECT."
+PROJECT (only on Emacs 28 or later)."
   (interactive (list (or (and current-prefix-arg
+                              (fboundp 'project-prompt-project-dir)
                               (let ((default-directory
                                      (project-prompt-project-dir)))
                                 (project-current)))
