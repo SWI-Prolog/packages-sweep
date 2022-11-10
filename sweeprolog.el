@@ -3584,12 +3584,14 @@ if-then-else constructs in SWI-Prolog."
                                (concat " is a SWI-Prolog predicate.\n\n"
                                        page)
                              " is an undocumented SWI-Prolog predicate.")
-                           (when props
-                             (sweeprolog--render-predicate-properties props))))
+                           (if props
+                               (sweeprolog--render-predicate-properties props)
+                             "")))
           (if page
               (insert pred " is a SWI-Prolog predicate.\n\n" page
-                      (when props
-                        (sweeprolog--render-predicate-properties props)))
+                      (if props
+                          (sweeprolog--render-predicate-properties props)
+                        ""))
             (insert pred " is not documented as a SWI-Prolog predicate.")))))))
 
 ;;;###autoload
