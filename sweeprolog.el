@@ -367,6 +367,7 @@ clause."
     (define-key map "P" #'sweeprolog-pack-install)
     (define-key map "R" #'sweeprolog-restart)
     (define-key map "T" #'sweeprolog-list-top-levels)
+    (define-key map "X" #'sweeprolog-xref-project-source-files)
     (define-key map "e" #'sweeprolog-view-messages)
     (define-key map "h" sweeprolog-help-prefix-map)
     (define-key map "l" #'sweeprolog-load-buffer)
@@ -411,6 +412,10 @@ clause."
     "--"
     [ "Describe Predicate"  sweeprolog-describe-predicate t ]
     [ "Describe Prolog module" sweeprolog-describe-module t ]
+    "--"
+    [ "Xref files in current project"
+      sweeprolog-xref-project-source-files
+      (project-current) ]
     "--"
     [ "Reset sweep"            sweeprolog-restart         t ]
     [ "View sweep messages"    sweeprolog-view-messages   t ]))
@@ -692,8 +697,30 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
   "Return a list of prediacte completion candidates matchitng PREFIX."
   (sweeprolog--query-once "sweep" "sweep_predicates_collection" prefix))
 
+;;;###autoload
+(defun sweeprolog-xref-project-source-files (&optional project)
+  "Update cross reference data for all Prolog files in PROJECT.
+
+If PROJECT is nil, update data for the current project.
+
+If called interactively with a prefix argument, prompt for
+PROJECT."
+  (interactive (list (or (and current-prefix-arg
+                              (let ((default-directory
+                                     (project-prompt-project-dir)))
+                                (project-current)))
+                         (or (project-current)
+                             (user-error "No current project")))))
+  (when-let ((proj (or project (project-current))))
+    (mapc (lambda (path)
+            (sweeprolog--query-once "sweep" "sweep_xref_source" path))
+          (seq-filter (lambda (path)
+                        (string= "pl" (file-name-extension path)))
+                      (project-files proj)))))
+
 (defun sweeprolog-predicate-references (mfn)
   "Find source locations where the predicate MFN is called."
+  (sweeprolog-xref-project-source-files)
   (sweeprolog--query-once "sweep" "sweep_predicate_references" mfn))
 
 (defun sweeprolog--mfn-to-functor-arity (mfn)
