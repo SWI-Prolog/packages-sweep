@@ -349,12 +349,12 @@ sweep_predicate_location_(H, Path, Line) :-
     !,
     atom_string(Path0, Path).
 sweep_predicate_location_(H, Path, Line) :-
-    xref_defined(Path0, H, How),
-    atom_string(Path0, Path),
-    (   xref_definition_line(How, Line)
+    (   xref_defined(Path0, H, How),
+        xref_definition_line(How, Line)
     ->  true
-    ;   Line = []
-    ).
+    ;   xref_defined(Path0, H, _), Line = []
+    ),
+    atom_string(Path0, Path).
 
 sweep_predicate_location_(M, H, Path, Line) :-
     predicate_property(M:H, file(Path0)),
@@ -362,12 +362,16 @@ sweep_predicate_location_(M, H, Path, Line) :-
     !,
     atom_string(Path0, Path).
 sweep_predicate_location_(M, H, Path, Line) :-
-    xref_defined(Path0, M:H, How),
-    atom_string(Path0, Path),
-    (   xref_definition_line(How, Line)
+    (   xref_defined(Path0, M:H, How),
+        xref_definition_line(How, Line)
     ->  true
-    ;   Line = []
-    ).
+    ;   xref_defined(Path0, H, How),
+        xref_definition_line(How, Line),
+        xref_module(Path0, M)
+    ->  true
+    ;   xref_defined(Path0, M:H, _), Line = []
+    ),
+    atom_string(Path0, Path).
 
 sweep_local_predicate_completion(Sub, Preds) :-
     sweep_current_module(M),
