@@ -984,12 +984,16 @@ functions, in order:
 
 #+FINDEX: sweeprolog-maybe-insert-next-clause
 #+FINDEX: sweeprolog-maybe-define-predicate
+#+VINDEX: sweeprolog-new-predicate-location-function
 - ~sweeprolog-maybe-insert-next-clause~ :: If the last token before
   point is a fullstop ending a predicate clause, insert a new clause
   below it.
 - ~sweeprolog-maybe-define-predicate~ :: If point is over a call to an
-  undefined predicate, insert a definition for that predicate below
-  the last clause of the current predicate definition.
+  undefined predicate, insert a definition for that predicate.  By
+  default, the new predicate definition is inserted right below the
+  last clause of the current predicate definition.  The user option
+  ~sweeprolog-new-predicate-location-function~ can be customized to
+  control where this function inserts new predicate definitions.
 
 *** Filling Holes
 :PROPERTIES:

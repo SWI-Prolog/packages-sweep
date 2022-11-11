@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.8.5
+;; Package-Version: 0.8.6
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -308,6 +308,21 @@ clause."
   :package-version '((sweeprolog "0.4.2"))
   :type 'boolean
   :group 'sweeprolog)
+
+(defcustom sweeprolog-new-predicate-location-function
+  #'sweeprolog-default-new-predicate-location
+  "Function used to choose a location for a new predicate definition.
+It should take one argument, the name of the new predicate given
+as a string, and move point to a suitable position in the current
+buffer where the new predicate defintion should be inserted."
+  :package-version '((sweeprolog "0.8.6"))
+  :type '(choice (const    :tag "Below Current Predicate"
+                        sweeprolog-default-new-predicate-location)
+                 (const    :tag "Above Current Predicate"
+                        sweeprolog-new-predicate-location-above-current)
+                 (function :tag "Custom Function"))
+  :group 'sweeprolog)
+
 
 
 ;;;; Keymaps
@@ -2423,11 +2438,19 @@ instead."
     (sweeprolog-insert-clause functor arity)
     t))
 
+(defun sweeprolog-default-new-predicate-location (_pred)
+  (sweeprolog-end-of-predicate-at-point))
+
+(defun sweeprolog-new-predicate-location-above-current (_pred)
+  (sweeprolog-beginning-of-predicate-at-point)
+  (let ((last (or (caddr (sweeprolog-last-token-boundaries))
+                  (point-min))))
+    (while (re-search-backward (rx bol "%" (or "%" "!")) last t))))
+
 (defun sweeprolog-maybe-define-predicate (point _kind _beg _end)
   (when-let ((pred (sweeprolog-identifier-at-point point)))
     (unless (sweeprolog-predicate-properties pred)
-      (push-mark)
-      (sweeprolog-end-of-predicate-at-point)
+      (funcall sweeprolog-new-predicate-location-function pred)
       (let ((functor-arity (sweeprolog--mfn-to-functor-arity pred)))
         (sweeprolog-insert-clause (car functor-arity)
                                   (cdr functor-arity)))

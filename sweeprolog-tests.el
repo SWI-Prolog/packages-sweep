@@ -294,6 +294,31 @@ foo :- bar.
 bar :- foo.
 "))))
 
+
+(ert-deftest dwim-define-predicate-above ()
+  "Tests adherence to `sweeprolog-new-predicate-location-function'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+%!  foo is det.
+
+foo :- bar.
+")
+    (backward-word)
+    (let ((sweeprolog-new-predicate-location-function
+           #'sweeprolog-new-predicate-location-above-current))
+      (sweeprolog-insert-term-dwim))
+    (call-interactively #'kill-region)
+    (insert "foo")
+    (should (string= (buffer-string)
+                     "
+bar :- foo.
+
+%!  foo is det.
+
+foo :- bar.
+"))))
+
 (ert-deftest end-of-top-term-with-univ ()
   "Tests detecting the fullstop in presence of `=..'."
   (with-temp-buffer

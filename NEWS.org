@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.6 on 2022-11-11
+
+** New user option ~sweeprolog-new-predicate-location-function~
+
+This user option specifies a function to be called from
+~sweeprolog-insert-term-dwim~ when defining a new predicate to choose
+the location of the new predicate definition.  The default value of
+the option is a function ~sweeprolog-default-new-predicate-location~
+which preserves the current behavior of placing the new predicate
+right below the current predicate.  Other options include the new
+function ~sweeprolog-new-predicate-location-above-current~ which places
+the new predicate above the current one.
+
+** Fixes
+
+- Fixed issue where ~sweeprolog-describe-predicate~ would throw an error
+  when describing predicates that were cross referenced but not loaded.
+
 * Version 0.8.5 on 2022-11-10
 
 ** New command ~sweeprolog-xref-project-source-files~
@@ -19,7 +37,7 @@ This command updates ~sweep~'s cross reference data for all Prolog
 source files in the current project.  Bound to ~X~ in
 ~sweeprolog-prefix-map~.
 
-** Minor bug fixed
+** Minor bug fixes
 
 - Fixed issue where ~sweeprolog-predicate-location~ sometimes returned a
   file importing the predicate in question, rather than actually
