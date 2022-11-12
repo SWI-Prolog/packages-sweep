@@ -43,7 +43,6 @@
             sweep_predicate_location/2,
             sweep_predicate_apropos/2,
             sweep_predicates_collection/2,
-            sweep_local_predicate_completion/2,
             sweep_functor_arity_pi/2,
             sweep_modules_collection/2,
             sweep_packs_collection/2,
@@ -63,7 +62,10 @@
             sweep_analyze_region/2,
             sweep_xref_source/2,
             sweep_beginning_of_next_predicate/2,
-            sweep_beginning_of_last_predicate/2
+            sweep_beginning_of_last_predicate/2,
+            sweep_atom_collection/2,
+            sweep_context_callable/2,
+            sweep_predicate_completion_candidates/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -373,55 +375,6 @@ sweep_predicate_location_(M, H, Path, Line) :-
     ),
     atom_string(Path0, Path).
 
-sweep_local_predicate_completion(Sub, Preds) :-
-    sweep_current_module(M),
-    findall(F/N,
-            @(current_predicate(F/N), M),
-            Preds0,
-            Tail),
-    findall(XF/XN,
-            (   xref_module(SourceId, M),
-                xref_defined(SourceId, H, _),
-                H \= _:_,
-                pi_head(XF/XN, H)
-            ),
-            Tail),
-    list_to_set(Preds0, Preds1),
-    convlist(sweep_predicate_completion_annotated(Sub, M), Preds1, Preds).
-
-sweep_predicate_completion_annotated(Sub, M, F/N, [S|A]) :-
-    format(string(S), '~W', [F/N, [quoted(true), character_escapes(true)]]),
-    sub_string(S, _, _, _, Sub),
-    \+ sub_string(S, 0, _, _, "'$"),
-    pi_head(F/N, Head),
-    findall(P, @(predicate_property(Head, P), M), Ps0),
-    sweep_predicate_completion_op_annotation(F, Ps0, Ps),
-    phrase(sweep_head_annotation(Ps), A).
-
-sweep_predicate_completion_op_annotation(F, Ps, [op(Pri,Fix)|Ps]) :-
-    current_op(Pri, Fix, F),
-    !.
-sweep_predicate_completion_op_annotation(_, Ps, Ps).
-
-sweep_head_annotation([H|T]) -->
-    sweep_head_annotation_(H),
-    sweep_head_annotation(T).
-sweep_head_annotation([]) --> [].
-
-sweep_head_annotation_(built_in)          --> !, ["built-in"].
-sweep_head_annotation_(det)               --> !, ["!"].
-sweep_head_annotation_(dynamic)           --> !, ["dynamic"].
-sweep_head_annotation_(foreign)           --> !, ["C"].
-sweep_head_annotation_(iso)               --> !, ["iso"].
-sweep_head_annotation_(multifile)         --> !, ["multifile"].
-sweep_head_annotation_(meta_predicate(_)) --> !, [":"].
-sweep_head_annotation_(non_terminal)      --> !, ["//"].
-sweep_head_annotation_(ssu)               --> !, ["=>"].
-sweep_head_annotation_(tabled)            --> !, ["table"].
-sweep_head_annotation_(tabled(_))         --> !, ["table"].
-sweep_head_annotation_(thread_local)      --> !, ["thread-local"].
-sweep_head_annotation_(op(_,_))           --> !, ["op"].
-sweep_head_annotation_(_)                 --> [].
 
 sweep_predicates_collection(Sub, Preds) :-
     findall(M:F/N,
@@ -776,8 +729,63 @@ sweep_beginning_of_next_predicate(Start, Next) :-
     xref_defined(Path, _, H), xref_definition_line(H, Next),
     Start < Next.
 
-
 sweep_source_id(Path) :-
     sweep_main_thread,
     user:sweep_funcall("buffer-file-name", Path),
     string(Path).
+
+sweep_atom_collection(Sub, Col) :-
+    findall(S,
+            (   current_atom(A),
+                atom_string(A, S),
+                sub_string(S, _, _, _, Sub)
+            ),
+            Col).
+
+sweep_predicate_completion_candidates(_, Ps) :-
+    findall(H,
+            (   sweep_current_module(M),
+                @(predicate_property(H, visible), M)
+            ),
+            Hs),
+    maplist(sweep_format_predicate, Hs, Ps).
+
+sweep_format_predicate(H, S) :-
+    term_variables(H, Vs),
+    maplist(=('$VAR'('_')), Vs),
+    term_string(H, S, [quoted(true),
+                       character_escapes(true),
+                       spacing(next_argument),
+                       numbervars(true)]).
+
+sweep_context_callable([], true) :- !.
+sweep_context_callable([[":"|2]], true) :- !.
+sweep_context_callable([H|T], R) :-
+    H = [F0|N],
+    atom_string(F, F0),
+    (   sweep_context_callable_(F, N)
+    ->  sweep_context_callable(T, R)
+    ;   R = []
+    ).
+
+sweep_context_callable_(Neck, _) :-
+    (   xref_op(_, op(1200, _, Neck))
+    ->  true
+    ;   current_op(1200, _, Neck)
+    ).
+sweep_context_callable_(F, N) :-
+    (   current_predicate(F/M), pi_head(F/M,Head)
+    ;   xref_defined(_, Head, _), pi_head(F/M,Head)
+    ),
+    M >= N,
+    catch(infer_meta_predicate(Head, Spec),
+          error(permission_error(access, private_procedure, _),
+                context(system:clause/2, _)),
+          false),
+    arg(N, Spec, A),
+    callable_arg(A).
+
+callable_arg(N) :- integer(N), !.
+callable_arg(^) :- !.
+callable_arg(//) :- !.
+callable_arg(:) :- !.

@@ -45,8 +45,6 @@
 
 (defvar sweeprolog-prolog-server-port nil)
 
-(defvar sweeprolog-predicate-completion-collection nil)
-
 (defvar sweeprolog-read-predicate-history nil)
 
 (defvar sweeprolog-read-module-history nil)
@@ -87,8 +85,10 @@ Prolog token as returned from `sweeprolog-last-token-boundaries'.")
     (modify-syntax-entry ?\n ">" table)
     (modify-syntax-entry ?* ". 23b" table)
     (modify-syntax-entry ?/ ". 14" table)
+    (modify-syntax-entry ?! "w" table)
     table))
 
+(defvar sweeprolog-top-level-mode-syntax-table sweeprolog-mode-syntax-table)
 
 ;;;; User options
 
@@ -342,6 +342,7 @@ buffer where the new predicate defintion should be inserted."
                   #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
+    (define-key map (kbd "C-M-i")   #'sweeprolog-completion-at-point)
     (define-key map (kbd "M-p")     #'sweeprolog-backward-predicate)
     (define-key map (kbd "M-n")     #'sweeprolog-forward-predicate)
     (define-key map (kbd "M-h")     #'sweeprolog-mark-predicate)
@@ -350,6 +351,7 @@ buffer where the new predicate defintion should be inserted."
 
 (defvar sweeprolog-top-level-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-M-i")   #'sweeprolog-completion-at-point)
     (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
     map)
   "Keymap for `sweeprolog-top-level-mode'.")
@@ -911,6 +913,20 @@ module name, F is a functor name and N is its arity."
 
 ;;;; Completion at point
 
+(defvar sweeprolog-completion-at-point-functions
+  '((sweeprolog-predicate-completion-at-point
+     ?p "predicate" "Predicate name")
+    (sweeprolog-atom-completion-at-point
+     ?a "atom"      "Atom")
+    (sweeprolog-module-completion-at-point
+     ?m "module"    "Module name")
+    (sweeprolog-variable-completion-at-point
+     ?v "variable"  "Variable name")))
+
+(defun sweeprolog-atoms-collection (&optional sub)
+  "Return a list of atom completion candidates matchitng SUB."
+  (sweeprolog--query-once "sweep" "sweep_atom_collection" sub))
+
 (defun sweeprolog-local-variables-collection (&rest exclude)
   "Return a list of variable names that occur in the current clause.
 
@@ -960,51 +976,127 @@ resulting list even when found in the current clause."
               :annotation-function
               (lambda (_) " Var"))))))
 
-(defun sweeprolog-local-predicates-collection (&optional prefix)
-  "Return a list of prediactes accessible in the current buffer.
+(defun sweeprolog-module-completion-at-point ()
+  "Prolog module name completion backend for `completion-at-point'."
+  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
+             (beg (car bounds))
+             (end (cdr bounds)))
+    (when (and (<= beg (point) end)
+               (let ((first (char-after beg)))
+                 (not (or (sweeprolog--char-uppercase-p first)
+                          (= first ?_)))))
+      (when-let ((col (sweeprolog-modules-collection)))
+        (list beg end (mapcar #'car col)
+              :exclusive 'no
+              :annotation-function
+              (lambda (_) " module"))))))
 
-When non-nil, only predicates whose name contains PREFIX are returned."
-  (setq sweeprolog-predicate-completion-collection
-        (sweeprolog--query-once "sweep" "sweep_local_predicate_completion"
-                                prefix)))
+(defun sweeprolog-atom-completion-at-point ()
+  "Prolog atom name completion backend for `completion-at-point'."
+  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
+             (beg (car bounds))
+             (end (cdr bounds)))
+    (when (and (<= beg (point) end)
+               (let ((first (char-after beg)))
+                 (not (or (sweeprolog--char-uppercase-p first)
+                          (= first ?_)))))
+      (when-let ((col (sweeprolog-atoms-collection
+                       (buffer-substring-no-properties beg end))))
+        (list beg end col
+              :exclusive 'no
+              :annotation-function
+              (lambda (_) " atom"))))))
 
-(defun sweeprolog-completion-at-point-function ()
-  (when-let ((bounds (sweeprolog-predicate-prefix-boundaries)))
-    (let ((start (car bounds))
-          (end   (cdr bounds)))
-      (list start end
-            (completion-table-with-cache #'sweeprolog-local-predicates-collection)
-            :exclusive 'no
-            :annotation-function
-            (lambda (key)
-              (when-let ((ann (cdr (assoc-string key sweeprolog-predicate-completion-collection))))
-                (concat " " (mapconcat #'identity ann ","))))
-            :exit-function
-            (lambda (key sts)
-              (when (eq sts 'finished)
-                (let ((opoint (point)))
-                  (save-match-data
-                    (combine-after-change-calls
-                      (skip-chars-backward "1234567890")
-                      (when (= ?/ (preceding-char))
-                        (backward-char)
-                        (let ((arity (string-to-number (buffer-substring-no-properties (1+ (point)) opoint))))
-                          (delete-region (point) opoint)
-                          (when (and
-                                 (< 0 arity)
-                                 (not
-                                  (string=
-                                   "op"
-                                   (cadr
-                                    (assoc-string
-                                     key
-                                     sweeprolog-predicate-completion-collection)))))
-                            (insert "(")
-                            (dotimes (_ (1- arity))
-                              (insert "_, "))
-                            (insert "_)")
-                            (goto-char (1- opoint))))))))))))))
+(defun sweeprolog--parse-context (&optional point)
+  (save-excursion
+    (sweeprolog-backward-term 0)
+    (let ((pos (or point (point)))
+          (commas 0)
+          (context nil))
+      (while
+          (pcase (sweeprolog-last-token-boundaries pos)
+            ('nil nil)
+            (`(open ,obeg ,oend)
+             (push (cons (buffer-substring-no-properties obeg oend)
+                         (1+ commas))
+                   context)
+             (setq pos obeg)
+             (setq commas 0))
+            (`(functor ,obeg ,oend)
+             (push (cons (buffer-substring-no-properties obeg (1- oend))
+                         (1+ commas))
+                   context)
+             (setq pos obeg)
+             (setq commas 0))
+            ((or `(operator ,obeg ,oend)
+                 `(symbol ,obeg ,oend))
+             (let* ((op (buffer-substring-no-properties obeg oend))
+                    (ipre (sweeprolog-op-infix-precedence op))
+                    (ppre (sweeprolog-op-prefix-precedence op)))
+               (cond
+                ((and (string= "." op)
+                      (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+                 nil)
+                ((string= "," op)
+                 (setq pos
+                       (save-excursion
+                         (goto-char obeg)
+                         (setq commas (1+ commas))
+                         (sweeprolog-backward-term 999)
+                         (point))))
+                (ipre
+                 (push (cons op 2) context)
+                 (setq pos
+                       (save-excursion
+                         (goto-char obeg)
+                         (sweeprolog-backward-term (1- ipre))
+                         (point)))
+                 (setq commas 0))
+                (ppre
+                 (push (cons op 1) context)
+                 (setq pos obeg)
+                 (setq commas 0)))))))
+      context)))
 
+(defun sweeprolog-predicate-completion-at-point ()
+  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
+             (beg (car bounds))
+             (end (cdr bounds)))
+    (when (and (<= beg (point) end)
+               (let ((first (char-after beg)))
+                 (not (or (sweeprolog--char-uppercase-p first)
+                          (= first ?_))))
+               (sweeprolog--query-once "sweep"
+                                       "sweep_context_callable"
+                                       (sweeprolog--parse-context)))
+      (when-let
+          ((col (sweeprolog--query-once "sweep" "sweep_predicate_completion_candidates"
+                                        nil)))
+        (list beg end col
+              :exclusive 'no
+              :annotation-function
+              (lambda (_) " Predicate"))))))
+
+(defun sweeprolog-completion-at-point (&optional funs)
+  (interactive
+   (list
+    (and current-prefix-arg
+         (list
+          (let ((choice (read-multiple-choice
+                         "Completion kind: "
+                         (mapcar
+                          #'cdr
+                          sweeprolog-completion-at-point-functions))))
+            (caar (seq-filter
+                   (lambda (capf)
+                     (equal (cdr capf) choice))
+                   sweeprolog-completion-at-point-functions)))))))
+  (let ((completion-at-point-functions
+         (or funs
+             (append (mapcar #'car
+                             sweeprolog-completion-at-point-functions)
+                     completion-at-point-functions))))
+    (completion-at-point)))
 
 ;;;; Packages
 
@@ -1025,10 +1117,6 @@ When non-nil, only predicates whose name contains PREFIX are returned."
                                 (concat ver (make-string (max 0 (- 16 (length ver))) ? ) des)
                               ver)))))))
     (completing-read sweeprolog-read-pack-prompt col)))
-
-(defun sweeprolog-true-p (sol)
-  (or (eq (car sol) '!)
-      (eq (car sol) t)))
 
 ;;;###autoload
 (defun sweeprolog-pack-install (pack)
@@ -1692,9 +1780,9 @@ When non-nil, only predicates whose name contains PREFIX are returned."
      (list (list beg end (sweeprolog-head-extern-face))))
     (`("head" ,(rx "public ") . ,_)
      (list (list beg end (sweeprolog-head-public-face))))
-    (`("head",(rx "dynamic ") . ,_)
+    (`("head" ,(rx "dynamic ") . ,_)
      (list (list beg end (sweeprolog-head-dynamic-face))))
-    (`("head",(rx "multifile ") . ,_)
+    (`("head" ,(rx "multifile ") . ,_)
      (list (list beg end (sweeprolog-head-multifile-face))))
     (`("head" ,(rx "local(") . ,_)
      (list (list beg end (sweeprolog-head-local-face))))
@@ -1708,21 +1796,21 @@ When non-nil, only predicates whose name contains PREFIX are returned."
      (list (list beg end (sweeprolog-undefined-face))))
     (`("goal" "global" . ,_)
      (list (list beg end (sweeprolog-global-face))))
-    (`("goal",(rx "dynamic ") . ,_)
+    (`("goal" ,(rx "dynamic ") . ,_)
      (list (list beg end (sweeprolog-dynamic-face))))
-    (`("goal",(rx "multifile ") . ,_)
+    (`("goal" ,(rx "multifile ") . ,_)
      (list (list beg end (sweeprolog-multifile-face))))
-    (`("goal",(rx "thread_local ") . ,_)
+    (`("goal" ,(rx "thread_local ") . ,_)
      (list (list beg end (sweeprolog-thread-local-face))))
-    (`("goal",(rx "extern(") . ,_)
+    (`("goal" ,(rx "extern(") . ,_)
      (list (list beg end (sweeprolog-extern-face))))
-    (`("goal",(rx "autoload(") . ,_)
+    (`("goal" ,(rx "autoload(") . ,_)
      (list (list beg end (sweeprolog-autoload-face))))
-    (`("goal",(rx "imported(") . ,_)
+    (`("goal" ,(rx "imported(") . ,_)
      (list (list beg end (sweeprolog-imported-face))))
-    (`("goal",(rx "global(") . ,_)
+    (`("goal" ,(rx "global(") . ,_)
      (list (list beg end (sweeprolog-global-face))))
-    (`("goal",(rx "local(") . ,_)
+    (`("goal" ,(rx "local(") . ,_)
      (list (list beg end (sweeprolog-local-face))))
     ("instantiation_error"
      (list (list beg end (sweeprolog-instantiation-error-face))))
@@ -1784,8 +1872,9 @@ When non-nil, only predicates whose name contains PREFIX are returned."
            (setq cur (point)))
          (skip-chars-forward " \t\n")
          (push (list cur (point) nil) ws)
-         (cons (list beg end (sweeprolog-fullstop-face))
-               ws))))
+         (cons  (list beg end nil)
+                (cons (list beg end (sweeprolog-fullstop-face))
+                      ws)))))
     ("functor"
      (list (list beg end (sweeprolog-functor-face))))
     ("arity"
@@ -2047,9 +2136,6 @@ modified."
             (string-to-syntax "."))))
       ((rx bow (group-n 1 "0'" anychar))
        (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-            (string-to-syntax "w"))))
-      ((rx bow (group-n 1 "!") eow)
-       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
             (string-to-syntax "w")))))
      start end)))
 
@@ -2223,7 +2309,6 @@ Interactively, a prefix arg means to prompt for BUFFER."
               comint-delimiter-argument-list '(?,)
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
-  (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point-function nil t)
   (setq sweeprolog-top-level-timer (run-with-idle-timer 0.2 t #'sweeprolog-colourise-query (current-buffer)))
   (add-hook 'kill-buffer-hook
             (lambda ()
@@ -2817,29 +2902,48 @@ predicate definition at or directly above POINT."
     (scan-error nil)))
 
 (defun sweeprolog--backward-term (pre)
-  (pcase (sweeprolog-last-token-boundaries)
-    ('nil
-     (signal 'scan-error
-             (list "Cannot scan backwards beyond beginning of buffer."
-                   (point-min)
-                   (point-min))))
-    (`(open ,obeg ,oend)
-     (signal 'scan-error
-             (list "Cannot scan backwards beyond opening parenthesis or bracket."
-                   obeg
-                   oend)))
-    (`(functor ,obeg ,oend)
-     (signal 'scan-error
-             (list "Cannot scan backwards beyond functor."
-                   obeg
-                   oend)))
-    (`(operator ,obeg ,oend)
-     (if (and (string= "." (buffer-substring-no-properties obeg oend))
-              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
-         (signal 'scan-error
-                 (list "Cannot scan backwards beyond fullstop."
-                       obeg
-                       (1+ obeg)))
+  (while t
+    (pcase (sweeprolog-last-token-boundaries)
+      ('nil
+       (signal 'scan-error
+               (list "Cannot scan backwards beyond beginning of buffer."
+                     (point-min)
+                     (point-min))))
+      (`(open ,obeg ,oend)
+       (signal 'scan-error
+               (list "Cannot scan backwards beyond opening parenthesis or bracket."
+                     obeg
+                     oend)))
+      (`(functor ,obeg ,oend)
+       (signal 'scan-error
+               (list "Cannot scan backwards beyond functor."
+                     obeg
+                     oend)))
+      (`(operator ,obeg ,oend)
+       (if (and (string= "." (buffer-substring-no-properties obeg oend))
+                (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+           (signal 'scan-error
+                   (list "Cannot scan backwards beyond fullstop."
+                         obeg
+                         (1+ obeg)))
+         (if-let ((opre (sweeprolog-op-infix-precedence
+                         (buffer-substring-no-properties obeg oend))))
+             (if (> opre pre)
+                 (signal 'scan-error
+                         (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
+                               obeg
+                               oend))
+               (goto-char obeg))
+           (if-let ((ppre (sweeprolog-op-prefix-precedence
+                           (buffer-substring-no-properties obeg oend))))
+               (if (> ppre pre)
+                   (signal 'scan-error
+                           (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
+                                 obeg
+                                 oend))
+                 (goto-char obeg))
+             (goto-char obeg)))))
+      (`(symbol ,obeg ,oend)
        (if-let ((opre (sweeprolog-op-infix-precedence
                        (buffer-substring-no-properties obeg oend))))
            (if (> opre pre)
@@ -2847,8 +2951,7 @@ predicate definition at or directly above POINT."
                        (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
                              obeg
                              oend))
-             (goto-char obeg)
-             (sweeprolog--backward-term pre))
+             (goto-char obeg))
          (if-let ((ppre (sweeprolog-op-prefix-precedence
                          (buffer-substring-no-properties obeg oend))))
              (if (> ppre pre)
@@ -2856,40 +2959,15 @@ predicate definition at or directly above POINT."
                          (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
                                obeg
                                oend))
-               (goto-char obeg)
-               (sweeprolog--backward-term pre))
-           (goto-char obeg)
-           (sweeprolog--backward-term pre)))))
-    (`(symbol ,obeg ,oend)
-     (if-let ((opre (sweeprolog-op-infix-precedence
-                     (buffer-substring-no-properties obeg oend))))
-         (if (> opre pre)
-             (signal 'scan-error
-                     (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
-                           obeg
-                           oend))
-           (goto-char obeg)
-           (sweeprolog--backward-term pre))
-       (if-let ((ppre (sweeprolog-op-prefix-precedence
-                       (buffer-substring-no-properties obeg oend))))
-           (if (> ppre pre)
-               (signal 'scan-error
-                       (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
-                             obeg
-                             oend))
-             (goto-char obeg)
-             (sweeprolog--backward-term pre))
-         (goto-char obeg)
-         (sweeprolog--backward-term pre))))
-    (`(close ,lbeg ,_lend)
-     (goto-char (nth 1 (syntax-ppss lbeg)))
-     (when (or (= (char-syntax (char-before)) ?w)
-               (= (char-syntax (char-before)) ?_))
-       (skip-syntax-backward "w_"))
-     (sweeprolog--backward-term pre))
-    (`(,_ ,lbeg ,_)
-     (goto-char lbeg)
-     (sweeprolog--backward-term pre))))
+               (goto-char obeg))
+           (goto-char obeg))))
+      (`(close ,lbeg ,_lend)
+       (goto-char (nth 1 (syntax-ppss lbeg)))
+       (when (or (= (char-syntax (char-before)) ?w)
+                 (= (char-syntax (char-before)) ?_))
+         (skip-syntax-backward "w_")))
+      (`(,_ ,lbeg ,_)
+       (goto-char lbeg)))))
 
 (defun sweeprolog-backward-term (pre)
   (condition-case _
@@ -3135,8 +3213,6 @@ if-then-else constructs in SWI-Prolog."
     (setq sweeprolog--analyze-buffer-duration (float-time (time-since time))))
   (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
   (add-hook 'file-name-at-point-functions #'sweeprolog-file-at-point nil t)
-  (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point-function nil t)
-  (add-hook 'completion-at-point-functions #'sweeprolog-variable-completion-at-point nil t)
   (when sweeprolog-analyze-buffer-on-idle
     (setq sweeprolog--timer
           (run-with-idle-timer
