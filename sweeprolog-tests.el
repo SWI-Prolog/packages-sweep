@@ -105,6 +105,25 @@ foo(Foo) :- bar.
                    '(sweeprolog-undefined-default-face
                      sweeprolog-body-default-face)))))
 
+(ert-deftest complete-atom ()
+  "Tests completing atoms."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+baz(Baz) :- Baz = emacsc
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-char)
+    (call-interactively #'completion-at-point)
+    (should (string= (buffer-string)
+                     "
+baz(Baz) :- Baz = emacsclient
+"
+                     ))))
 
 (ert-deftest complete-predicate ()
   "Tests completing predicate calls."
@@ -119,7 +138,7 @@ baz(Baz) :- findall(X, b_g
     (sweeprolog-mode)
     (goto-char (point-max))
     (backward-char)
-    (call-interactively #'sweeprolog-completion-at-point)
+    (call-interactively #'completion-at-point)
     (should (string= (buffer-string)
                      "
 baz(Baz) :- findall(X, b_getval(_, _)
@@ -140,7 +159,7 @@ baz(Baz) :- bar(B).
     (goto-char (point-max))
     (backward-word)
     (forward-word)
-    (call-interactively #'sweeprolog-completion-at-point)
+    (call-interactively #'completion-at-point)
     (should (string= (buffer-string)
                      "
 baz(Baz) :- bar(Baz).

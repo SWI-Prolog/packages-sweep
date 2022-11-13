@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.8.6
+;; Package-Version: 0.8.7
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -342,7 +342,6 @@ buffer where the new predicate defintion should be inserted."
                   #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
-    (define-key map (kbd "C-M-i")   #'sweeprolog-completion-at-point)
     (define-key map (kbd "M-p")     #'sweeprolog-backward-predicate)
     (define-key map (kbd "M-n")     #'sweeprolog-forward-predicate)
     (define-key map (kbd "M-h")     #'sweeprolog-mark-predicate)
@@ -351,7 +350,6 @@ buffer where the new predicate defintion should be inserted."
 
 (defvar sweeprolog-top-level-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-M-i")   #'sweeprolog-completion-at-point)
     (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
     map)
   "Keymap for `sweeprolog-top-level-mode'.")
@@ -914,14 +912,9 @@ module name, F is a functor name and N is its arity."
 ;;;; Completion at point
 
 (defvar sweeprolog-completion-at-point-functions
-  '((sweeprolog-predicate-completion-at-point
-     ?p "predicate" "Predicate name")
-    (sweeprolog-atom-completion-at-point
-     ?a "atom"      "Atom")
-    (sweeprolog-module-completion-at-point
-     ?m "module"    "Module name")
-    (sweeprolog-variable-completion-at-point
-     ?v "variable"  "Variable name")))
+  '(sweeprolog-atom-completion-at-point
+    sweeprolog-predicate-completion-at-point
+    sweeprolog-variable-completion-at-point))
 
 (defun sweeprolog-atoms-collection (&optional sub)
   "Return a list of atom completion candidates matchitng SUB."
@@ -976,21 +969,6 @@ resulting list even when found in the current clause."
               :annotation-function
               (lambda (_) " Var"))))))
 
-(defun sweeprolog-module-completion-at-point ()
-  "Prolog module name completion backend for `completion-at-point'."
-  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
-             (beg (car bounds))
-             (end (cdr bounds)))
-    (when (and (<= beg (point) end)
-               (let ((first (char-after beg)))
-                 (not (or (sweeprolog--char-uppercase-p first)
-                          (= first ?_)))))
-      (when-let ((col (sweeprolog-modules-collection)))
-        (list beg end (mapcar #'car col)
-              :exclusive 'no
-              :annotation-function
-              (lambda (_) " module"))))))
-
 (defun sweeprolog-atom-completion-at-point ()
   "Prolog atom name completion backend for `completion-at-point'."
   (when-let ((bounds (bounds-of-thing-at-point 'symbol))
@@ -1000,8 +978,10 @@ resulting list even when found in the current clause."
                (let ((first (char-after beg)))
                  (not (or (sweeprolog--char-uppercase-p first)
                           (= first ?_)))))
-      (when-let ((col (sweeprolog-atoms-collection
-                       (buffer-substring-no-properties beg end))))
+      (when-let ((sub (buffer-substring-no-properties beg end))
+                 (col (seq-filter (lambda (atom)
+                                    (not (string= atom sub)))
+                                  (sweeprolog-atoms-collection sub))))
         (list beg end col
               :exclusive 'no
               :annotation-function
@@ -1059,6 +1039,7 @@ resulting list even when found in the current clause."
       context)))
 
 (defun sweeprolog-predicate-completion-at-point ()
+  "Prolog predicate completion backend for `completion-at-point'."
   (when-let ((bounds (bounds-of-thing-at-point 'symbol))
              (beg (car bounds))
              (end (cdr bounds)))
@@ -1077,26 +1058,6 @@ resulting list even when found in the current clause."
               :annotation-function
               (lambda (_) " Predicate"))))))
 
-(defun sweeprolog-completion-at-point (&optional funs)
-  (interactive
-   (list
-    (and current-prefix-arg
-         (list
-          (let ((choice (read-multiple-choice
-                         "Completion kind: "
-                         (mapcar
-                          #'cdr
-                          sweeprolog-completion-at-point-functions))))
-            (caar (seq-filter
-                   (lambda (capf)
-                     (equal (cdr capf) choice))
-                   sweeprolog-completion-at-point-functions)))))))
-  (let ((completion-at-point-functions
-         (or funs
-             (append (mapcar #'car
-                             sweeprolog-completion-at-point-functions)
-                     completion-at-point-functions))))
-    (completion-at-point)))
 
 ;;;; Packages
 
@@ -2309,6 +2270,8 @@ Interactively, a prefix arg means to prompt for BUFFER."
               comint-delimiter-argument-list '(?,)
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
+  (dolist (capf sweeprolog-completion-at-point-functions)
+    (add-hook 'completion-at-point-functions capf nil t))
   (setq sweeprolog-top-level-timer (run-with-idle-timer 0.2 t #'sweeprolog-colourise-query (current-buffer)))
   (add-hook 'kill-buffer-hook
             (lambda ()
@@ -3213,6 +3176,8 @@ if-then-else constructs in SWI-Prolog."
     (setq sweeprolog--analyze-buffer-duration (float-time (time-since time))))
   (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
   (add-hook 'file-name-at-point-functions #'sweeprolog-file-at-point nil t)
+  (dolist (capf sweeprolog-completion-at-point-functions)
+    (add-hook 'completion-at-point-functions capf nil t))
   (when sweeprolog-analyze-buffer-on-idle
     (setq sweeprolog--timer
           (run-with-idle-timer

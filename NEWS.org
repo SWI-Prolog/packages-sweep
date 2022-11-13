@@ -11,6 +11,14 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.7 on 2022-11-12
+
+** Revised predicate completion-at-point and added atom completion
+
+~sweep~'s completion at point now detects when predicate completion is
+appropriate based on the context of point.  If point is at a
+non-callable position, atom completion is provided instead.
+
 * Version 0.8.6 on 2022-11-11
 
 ** New user option ~sweeprolog-new-predicate-location-function~
