@@ -1015,7 +1015,9 @@ resulting list even when found in the current clause."
                     (ppre (sweeprolog-op-prefix-precedence op)))
                (cond
                 ((and (string= "." op)
-                      (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+                      (or (not (char-after (1+ obeg)))
+                          (member (char-syntax (char-after (1+ obeg)))
+                                  '(?> ? ))))
                  nil)
                 ((string= "," op)
                  (setq pos
@@ -1038,6 +1040,10 @@ resulting list even when found in the current clause."
                  (setq commas 0)))))))
       context)))
 
+(defun sweeprolog-context-callable-p ()
+  (sweeprolog--query-once "sweep" "sweep_context_callable"
+                          (sweeprolog--parse-context)))
+
 (defun sweeprolog-predicate-completion-at-point ()
   "Prolog predicate completion backend for `completion-at-point'."
   (when-let ((bounds (bounds-of-thing-at-point 'symbol))
@@ -1047,9 +1053,7 @@ resulting list even when found in the current clause."
                (let ((first (char-after beg)))
                  (not (or (sweeprolog--char-uppercase-p first)
                           (= first ?_))))
-               (sweeprolog--query-once "sweep"
-                                       "sweep_context_callable"
-                                       (sweeprolog--parse-context)))
+               (sweeprolog-context-callable-p))
       (when-let
           ((col (sweeprolog--query-once "sweep" "sweep_predicate_completion_candidates"
                                         nil)))
@@ -1833,8 +1837,8 @@ resulting list even when found in the current clause."
            (setq cur (point)))
          (skip-chars-forward " \t\n")
          (push (list cur (point) nil) ws)
-         (cons  (list beg end nil)
-                (cons (list beg end (sweeprolog-fullstop-face))
+         (cons (list beg (point) nil)
+               (cons (list beg end (sweeprolog-fullstop-face))
                       ws)))))
     ("functor"
      (list (list beg end (sweeprolog-functor-face))))
@@ -2884,7 +2888,9 @@ predicate definition at or directly above POINT."
                      oend)))
       (`(operator ,obeg ,oend)
        (if (and (string= "." (buffer-substring-no-properties obeg oend))
-                (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+                (or (not (char-after (1+ obeg)))
+                    (member (char-syntax (char-after (1+ obeg)))
+                            '(?> ? ))))
            (signal 'scan-error
                    (list "Cannot scan backwards beyond fullstop."
                          obeg
@@ -3121,6 +3127,34 @@ if-then-else constructs in SWI-Prolog."
              (combine-after-change-calls
                (delete-horizontal-space)
                (insert (make-string num ? ))))))))))
+
+(defun sweeprolog-electric-layout-post-self-insert-function ()
+  (if (nth 8 (syntax-ppss))
+      (when (member (buffer-substring-no-properties (line-beginning-position)
+                                                    (point))
+                    '("%%" "%!"))
+        (insert "  "))
+    (when (member (char-before) (string-to-list "(;>"))
+     (pcase (sweeprolog-last-token-boundaries)
+       ((or `(open     ,beg ,end)
+            `(operator ,beg ,end))
+        (when (and (member (buffer-substring-no-properties beg end)
+                           '("(" ";" "->" "*->"))
+                   (sweeprolog-context-callable-p))
+          (insert (make-string (+ 4 beg (- end)) ? ))))))))
+
+;;;###autoload
+(define-minor-mode sweeprolog-electric-layout-mode
+  "Automatically insert whitespace in `sweeprolog-mode' buffers."
+  :group 'sweeprolog
+  (if sweeprolog-electric-layout-mode
+      (progn
+        (add-hook 'post-self-insert-hook
+                  #'sweeprolog-electric-layout-post-self-insert-function
+                  nil t))
+    (remove-hook 'post-self-insert-hook
+                 #'sweeprolog-electric-layout-post-self-insert-function
+                 t)))
 
 (defun sweeprolog--update-buffer-last-modified-time (&rest _)
   (setq sweeprolog--buffer-last-modified-time (float-time)

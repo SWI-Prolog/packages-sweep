@@ -758,22 +758,36 @@ sweep_format_predicate(H, S) :-
                        spacing(next_argument),
                        numbervars(true)]).
 
-sweep_context_callable([], true) :- !.
-sweep_context_callable([[":"|2]], true) :- !.
 sweep_context_callable([H|T], R) :-
+    H = [F0|_],
+    atom_string(F, F0),
+    (   xref_op(_, op(1200, _, F))
+    ->  true
+    ;   current_op(1200, _, F)
+    ),
+    !,
+    sweep_context_callable_(T, R).
+sweep_context_callable([_|T], R) :-
+    sweep_context_callable(T, R).
+
+sweep_context_callable_([], true) :- !.
+sweep_context_callable_([[":"|2]], true) :- !.
+sweep_context_callable_([["("|_]|T], R) :-
+    sweep_context_callable_(T, R).
+sweep_context_callable_([H|T], R) :-
     H = [F0|N],
     atom_string(F, F0),
-    (   sweep_context_callable_(F, N)
-    ->  sweep_context_callable(T, R)
+    (   sweep_context_callable_arg(F, N)
+    ->  sweep_context_callable_(T, R)
     ;   R = []
     ).
 
-sweep_context_callable_(Neck, _) :-
+sweep_context_callable_arg(Neck, _) :-
     (   xref_op(_, op(1200, _, Neck))
     ->  true
     ;   current_op(1200, _, Neck)
     ).
-sweep_context_callable_(F, N) :-
+sweep_context_callable_arg(F, N) :-
     (   current_predicate(F/M), pi_head(F/M,Head)
     ;   xref_defined(_, Head, _), pi_head(F/M,Head)
     ),

@@ -111,7 +111,7 @@ foo(Foo) :- bar.
                               nil
                               ".pl"
                               "
-baz(Baz) :- Baz = emacsc
+baz(Baz) :- Baz = opa
 "
                               )))
     (find-file-literally temp)
@@ -121,7 +121,7 @@ baz(Baz) :- Baz = emacsc
     (call-interactively #'completion-at-point)
     (should (string= (buffer-string)
                      "
-baz(Baz) :- Baz = emacsclient
+baz(Baz) :- Baz = opaque
 "
                      ))))
 
