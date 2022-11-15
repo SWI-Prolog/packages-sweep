@@ -1783,9 +1783,22 @@ resulting list even when found in the current clause."
     ("type_error"
      (list (list beg end (sweeprolog-type-error-face))))
     (`("syntax_error" ,_ ,eb ,ee)
-     (list (list eb ee nil)
-           (list eb ee (sweeprolog-around-syntax-error-face))
-           (list beg end (sweeprolog-syntax-error-face))))
+     (save-excursion
+       (goto-char (min ee (point-max)))
+       (let ((ws nil)
+             (cur (point)))
+         (while (and (forward-comment 1)
+                     (forward-comment -1))
+           (push (list cur (point) nil) ws)
+           (forward-comment 1)
+           (setq cur (point)))
+         (skip-chars-forward " \t\n")
+         (push (list cur (point) nil) ws)
+         (cons (list beg (point) nil)
+               (append (list (list eb ee nil)
+                             (list eb ee (sweeprolog-around-syntax-error-face))
+                             (list beg end (sweeprolog-syntax-error-face)))
+                       ws)))))
     ("unused_import"
      (list (list beg end (sweeprolog-unused-import-face))))
     ("undefined_import"
@@ -1840,7 +1853,7 @@ resulting list even when found in the current clause."
          (push (list cur (point) nil) ws)
          (cons (list beg (point) nil)
                (cons (list beg end (sweeprolog-fullstop-face))
-                      ws)))))
+                     ws)))))
     ("functor"
      (list (list beg end (sweeprolog-functor-face))))
     ("arity"
@@ -2073,24 +2086,26 @@ modified."
         (sweeprolog-analyze-region start (point) "true")))))
 
 (defun sweeprolog-analyze-some-terms (beg end &optional _verbose)
-  (save-mark-and-excursion
-    (goto-char beg)
-    (sweeprolog-beginning-of-top-term)
-    (unless (bobp)
-      (forward-char -1)
+  (save-match-data
+    (save-mark-and-excursion
+      (goto-char beg)
       (sweeprolog-beginning-of-top-term)
-      (unless (bobp) (forward-char -1)))
-    (let ((start (point))
-          (cur (point)))
-      (while (and (not (eobp))
-                  (< (point) end))
+      (unless (bobp)
+        (forward-char -1)
+        (sweeprolog-beginning-of-top-term)
+        (unless (bobp) (forward-char -1)))
+      (let ((start (point))
+            (cur (point)))
+        (while (and (not (eobp))
+                    (< (point) end))
+          (setq cur (point))
+          (sweeprolog-end-of-top-term)
+          (sweeprolog-analyze-term cur (point)))
         (setq cur (point))
         (sweeprolog-end-of-top-term)
-        (sweeprolog-analyze-term cur (point)))
-      (setq cur (point))
-      (sweeprolog-end-of-top-term)
-      (sweeprolog-analyze-term cur (point))
-      `(jit-lock-bounds ,start . ,(point)))))
+        (skip-chars-forward " \t\n")
+        (sweeprolog-analyze-term cur (point))
+        `(jit-lock-bounds ,start . ,(point))))))
 
 (defun sweeprolog-syntax-propertize (start end)
   (goto-char start)
@@ -3192,7 +3207,9 @@ certain contexts to maintain conventional Prolog layout."
                 nil
                 (font-lock-fontify-region-function . sweeprolog-analyze-some-terms)))
   (add-hook 'after-change-functions
-            #'sweeprolog--update-buffer-last-modified-time)
+            #'sweeprolog--update-buffer-last-modified-time nil t)
+  (add-hook 'after-change-functions
+            #'sweeprolog-analyze-some-terms nil t)
   (when sweeprolog-enable-eldoc
     (when (fboundp 'eldoc-documentation-default)
       (setq-local eldoc-documentation-strategy #'eldoc-documentation-default))

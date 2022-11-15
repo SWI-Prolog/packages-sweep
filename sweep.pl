@@ -463,7 +463,10 @@ sweep_color_normalized_(_, Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
     !,
     atom_string(Goal0, Goal),
     term_string(Kind0, Kind),
-    (   var(Head)
+    (   (   var(Head)
+        ->  true
+        ;   Head == []
+        )
     ->  F = Head, N = 0
     ;   pi_head(F0/N, Head),
         atom_string(F0, F)
