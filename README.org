@@ -71,9 +71,10 @@ The different parts of =sweep= are structured as follows:
 :DESCRIPTION: Intructions for installing sweep
 :END:
 
-The dynamic Emacs module =sweep-module= is included in the SWI-Prolog
-distribution from version 8.5.18.  For instructions on how to build
-and install SWI-Prolog, see [[https://www.swi-prolog.org/build/]].
+#+CINDEX: install
+The dynamic Emacs module =sweep-module= is included with SWI-Prolog
+versions 8.5.18 and later.  For instructions on how to build and
+install SWI-Prolog, see [[https://www.swi-prolog.org/build/]].
 
 The =sweeprolog= Elisp package is available on NonGNU ELPA, to install
 =sweeprolog= simply type =M-x package-install RET sweeprolog RET=.
@@ -103,10 +104,24 @@ from the =sweep= Git repository:
 :DESCRIPTION: First steps with sweep
 :END:
 
+#+CINDEX: configuration
 After installing the =sweeprolog= Elisp library, load it into Emacs:
 
 #+begin_src emacs-lisp
   (require 'sweeprolog)
+#+end_src
+
+#+VINDEX: sweeprolog-swipl-path
+~sweep~ tries to find SWI-Prolog by looking for the =swipl= executable in
+the directories listed in the Emacs variable ~exec-path~.  When Emacs is
+started from a shell, ~exec-path~ is initialized from the shell's ~PATH~
+environment variable which normally includes the location of =swipl= in
+common SWI-Prolog installations.  If the =swipl= executable cannot be
+found via ~exec-path~, you can tell ~sweep~ where to find it by setting
+the variable ~sweeprolog-swipl-path~ to point to it:
+
+#+begin_src emacs-lisp
+  (setq sweeprolog-swipl-path "/path/to/swipl")
 #+end_src
 
 All set!  =sweeprolog= automatically loads =sweep-module= and initializes
@@ -791,16 +806,17 @@ For more information about file specifications in SWI-Prolog, see
 #+KINDEX: C-u C-c C-l
 #+CINDEX: loading
 #+FINDEX: sweeprolog-load-buffer
-The command =M-x sweeprolog-load-buffer= can be used to load the contents of
-a =sweeprolog-mode= buffer into the embedded SWI-Prolog runtime.  After a
-buffer is loaded, the predicates it defines can be queried from Elisp
-(see [[Querying Prolog]]) and from the =sweep= top-level (see [[The Prolog
-top-level]]).  In =sweeprolog-mode= buffers, =sweeprolog-load-buffer= is bound by
-default to =C-c C-l=.  By default this command loads the current buffer
-if its major mode is =sweeprolog-mode=, and prompts for an appropriate buffer
-otherwise.  To choose a different buffer to load while visiting a
-=sweeprolog-mode= buffer, invoke =sweeprolog-load-buffer= with a prefix argument
-(=C-u C-c C-l=).
+The command =M-x sweeprolog-load-buffer= can be used to load the
+contents of a =sweeprolog-mode= buffer into the embedded SWI-Prolog
+runtime.  After a buffer is loaded, the predicates it defines can be
+queried from Elisp (see [[Querying Prolog]]) and from the =sweep= top-level
+(see [[The Prolog Top-Level]]).  In =sweeprolog-mode= buffers,
+=sweeprolog-load-buffer= is bound by default to =C-c C-l=.  By default
+this command loads the current buffer if its major mode is
+=sweeprolog-mode=, and prompts for an appropriate buffer otherwise.  To
+choose a different buffer to load while visiting a =sweeprolog-mode=
+buffer, invoke =sweeprolog-load-buffer= with a prefix argument (=C-u C-c
+C-l=).
 
 More relevant information about loading code in SWI-Prolog can be
 found in [[https://www.swi-prolog.org/pldoc/man?section=consulting][Loading Prolog source files]] in the SWI-Prolog manual.
