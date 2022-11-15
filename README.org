@@ -1107,7 +1107,7 @@ definition or invocation in a ~sweeprolog-mode~, that predicate is set
 as the default selection and can be described by simply typing ~RET~ in
 response to the prompt.
 
-* The Prolog top-level
+* The Prolog Top-Level
 :PROPERTIES:
 :CUSTOM_ID: prolog-top-level
 :DESCRIPTION: Executing Prolog queries in a REPL-like interface
@@ -1127,6 +1127,19 @@ The top-level buffer uses a major mode named
 common mode used in Emacs REPL interfaces.  As a result, the top-level
 buffer inherits the features present in other =comint-mode= derivatives,
 most of which are described in [[info:emacs#Shell Mode][the Emacs manual]].
+
+Each top-level buffer is connected to distinct Prolog thread running
+in the same process as Emacs and the main Prolog runtime.  In the
+current implementation, top-level buffers communicate with their
+corresponding threads via local TCP connections.  On the first
+invocation of ~sweeprolog-top-level~, ~sweep~ creates a TCP server socket
+bound to a random port to accept incoming connections from top-level
+buffers.  The TCP server only accepts connections from the local
+machine, but note that _other users on the same host_ may be able to
+connect to the TCP server socket and _get a Prolog top-level_.  This may
+pose a security problem when sharing a host with entrusted users,
+hence ~sweeprolog-top-level~ _should not be used on shared machines_.
+This is the only ~sweep~ feature that should be avoided in such cases.
 
 ** Multiple top-levels
 :PROPERTIES:

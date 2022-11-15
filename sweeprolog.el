@@ -524,8 +524,7 @@ extra initialization arguments."
            (cons (or sweeprolog-swipl-path (executable-find "swipl"))
                  (append sweeprolog-init-args args)))
     (setq sweeprolog--initialized t)
-    (sweeprolog-setup-message-hook)
-    (sweeprolog-start-prolog-server)))
+    (sweeprolog-setup-message-hook)))
 
 (defun sweeprolog-restart (&rest args)
   "Restart the embedded Prolog runtime.
@@ -2222,6 +2221,8 @@ Interactively, a prefix arg means to prompt for BUFFER."
     (with-current-buffer buf
       (unless (eq major-mode 'sweeprolog-top-level-mode)
         (sweeprolog-top-level-mode)))
+    (unless sweeprolog-prolog-server-port
+      (sweeprolog-start-prolog-server))
     (unless (sweeprolog--query-once "sweep" "sweep_accept_top_level_client"
                                     (buffer-name buf))
       (error "Failed to create new top-level!"))

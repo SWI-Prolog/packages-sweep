@@ -607,7 +607,8 @@ sweep_top_level_server(_, Port) :-
     tcp_setopt(ServerSocket, reuseaddr),
     tcp_bind(ServerSocket, Port),
     tcp_listen(ServerSocket, 5),
-    thread_create(sweep_top_level_server_loop(ServerSocket), T,
+    thread_self(Self),
+    thread_create(sweep_top_level_server_start(Self, ServerSocket), T,
                   [ alias(sweep_top_level_server)
                   ]),
     at_halt((   is_thread(T),
@@ -615,7 +616,12 @@ sweep_top_level_server(_, Port) :-
             ->  thread_signal(T, thread_exit(0)),
                 thread_join(T, _)
             ;   true
-            )).
+            )),
+    thread_get_message(sweep_top_level_server_started).
+
+sweep_top_level_server_start(Caller, ServerSocket) :-
+    thread_send_message(Caller, sweep_top_level_server_started),
+    sweep_top_level_server_loop(ServerSocket).
 
 sweep_top_level_server_loop(ServerSocket) :-
     thread_get_message(Message),
