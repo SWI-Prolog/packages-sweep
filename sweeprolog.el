@@ -465,6 +465,8 @@ buffer where the new predicate defintion should be inserted."
 
 (defvar-local sweeprolog--buffer-modified nil)
 
+(defvar-local sweeprolog--analyze-point nil)
+
 
 ;;;; Declarations for functions defined in `sweep-module'
 
@@ -1793,11 +1795,18 @@ resulting list even when found in the current clause."
            (setq cur (point)))
          (skip-chars-forward " \t\n")
          (push (list cur (point) nil) ws)
-         (cons (list beg (point) nil)
-               (append (list (list eb ee nil)
-                             (list eb ee (sweeprolog-around-syntax-error-face))
-                             (list beg end (sweeprolog-syntax-error-face)))
-                       ws)))))
+         (let ((face (or (and (or (and sweeprolog--analyze-point
+                                       (<= end sweeprolog--analyze-point))
+                                  (< (save-excursion
+                                       (sweeprolog-end-of-top-term) (point))
+                                     (point-max)))
+                              (sweeprolog-syntax-error-face))
+                         (sweeprolog-around-syntax-error-face))))
+           (cons (list beg (point) nil)
+                 (append (list (list eb ee nil)
+                               (list eb ee (sweeprolog-around-syntax-error-face))
+                               (list beg end face))
+                         ws))))))
     ("unused_import"
      (list (list beg end (sweeprolog-unused-import-face))))
     ("undefined_import"
@@ -2054,7 +2063,8 @@ modified."
     (sweeprolog-xref-buffer)
     (save-restriction
       (widen)
-      (sweeprolog-analyze-region (point-min) (point-max)))
+      (let  ((sweeprolog--analyze-point (point)))
+        (sweeprolog-analyze-region (point-min) (point-max))))
     (setq sweeprolog--buffer-modified nil)))
 
 (defun sweeprolog--buffer-string (filename)
@@ -2085,26 +2095,27 @@ modified."
         (sweeprolog-analyze-region start (point) "true")))))
 
 (defun sweeprolog-analyze-some-terms (beg end &optional _verbose)
-  (save-match-data
-    (save-mark-and-excursion
-      (goto-char beg)
-      (sweeprolog-beginning-of-top-term)
-      (unless (bobp)
-        (forward-char -1)
-        (sweeprolog-beginning-of-top-term)
-        (unless (bobp) (forward-char -1)))
-      (let ((start (point))
-            (cur (point)))
-        (while (and (not (eobp))
-                    (< (point) end))
-          (setq cur (point))
-          (sweeprolog-end-of-top-term)
-          (sweeprolog-analyze-term cur (point)))
-        (setq cur (point))
-        (sweeprolog-end-of-top-term)
-        (skip-chars-forward " \t\n")
-        (sweeprolog-analyze-term cur (point))
-        `(jit-lock-bounds ,start . ,(point))))))
+  (let ((sweeprolog--analyze-point (point)))
+   (save-match-data
+     (save-mark-and-excursion
+       (goto-char beg)
+       (sweeprolog-beginning-of-top-term)
+       (unless (bobp)
+         (forward-char -1)
+         (sweeprolog-beginning-of-top-term)
+         (unless (bobp) (forward-char -1)))
+       (let ((start (point))
+             (cur (point)))
+         (while (and (not (eobp))
+                     (< (point) end))
+           (setq cur (point))
+           (sweeprolog-end-of-top-term)
+           (sweeprolog-analyze-term cur (point)))
+         (setq cur (point))
+         (sweeprolog-end-of-top-term)
+         (skip-chars-forward " \t\n")
+         (sweeprolog-analyze-term cur (point))
+         `(jit-lock-bounds ,start . ,(point)))))))
 
 (defun sweeprolog-syntax-propertize (start end)
   (goto-char start)
