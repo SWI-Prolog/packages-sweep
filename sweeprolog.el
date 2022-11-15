@@ -1041,6 +1041,7 @@ resulting list even when found in the current clause."
       context)))
 
 (defun sweeprolog-context-callable-p ()
+  "Check if point is in a position where a goal should appear."
   (sweeprolog--query-once "sweep" "sweep_context_callable"
                           (sweeprolog--parse-context)))
 
@@ -3129,29 +3130,39 @@ if-then-else constructs in SWI-Prolog."
                (insert (make-string num ? ))))))))))
 
 (defun sweeprolog-electric-layout-post-self-insert-function ()
+  "Adjust whitespace around point according to Prolog conventions.
+
+This function is added to ‘post-self-insert-hook’ by
+`sweeprolog-electric-layout-mode'."
   (if (nth 8 (syntax-ppss))
       (when (member (buffer-substring-no-properties (line-beginning-position)
                                                     (point))
                     '("%%" "%!"))
         (insert "  "))
-    (when (member (char-before) (string-to-list "(;>"))
-     (pcase (sweeprolog-last-token-boundaries)
-       ((or `(open     ,beg ,end)
-            `(operator ,beg ,end))
-        (when (and (member (buffer-substring-no-properties beg end)
-                           '("(" ";" "->" "*->"))
-                   (sweeprolog-context-callable-p))
-          (insert (make-string (+ 4 beg (- end)) ? ))))))))
+    (let ((inserted (char-before)))
+      (cond
+       ((member inserted (string-to-list "(;>"))
+        (pcase (sweeprolog-last-token-boundaries)
+          ((or `(open     ,beg ,end)
+               `(operator ,beg ,end))
+           (when (and (member (buffer-substring-no-properties beg end)
+                              '("(" ";" "->" "*->"))
+                      (sweeprolog-context-callable-p))
+             (insert (make-string (+ 4 beg (- end)) ? ))))))
+       ((= (char-syntax inserted) ?\))
+        (sweeprolog-indent-line))))))
 
 ;;;###autoload
 (define-minor-mode sweeprolog-electric-layout-mode
-  "Automatically insert whitespace in `sweeprolog-mode' buffers."
+  "Automatically adjust whitespace in `sweeprolog-mode' buffers.
+
+When enabled, spaces are automatically inserted as you type in
+certain contexts to maintain conventional Prolog layout."
   :group 'sweeprolog
   (if sweeprolog-electric-layout-mode
-      (progn
-        (add-hook 'post-self-insert-hook
-                  #'sweeprolog-electric-layout-post-self-insert-function
-                  nil t))
+      (add-hook 'post-self-insert-hook
+                #'sweeprolog-electric-layout-post-self-insert-function
+                nil t)
     (remove-hook 'post-self-insert-hook
                  #'sweeprolog-electric-layout-post-self-insert-function
                  t)))

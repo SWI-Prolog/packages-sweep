@@ -402,6 +402,31 @@ scasp_and_show(Q, Model, Tree) :-
     (sweeprolog-end-of-top-term)
     (should (= (point) 252))))
 
+(ert-deftest electric-layout ()
+  "Test `sweeprolog-electric-layout-mode'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (sweeprolog-electric-layout-mode)
+    (seq-do (lambda (c)
+              (let ((last-command-event c))
+                (call-interactively #'self-insert-command)))
+            "
+foobar :-
+(bar
+;baz
+->spam
+).
+")
+    (should (string= (buffer-string)
+                     "
+foobar :-
+    (   bar
+    ;   baz
+    ->  spam
+    ).
+"
+                     ))))
+
 (ert-deftest end-of-top-term-with-other-symbols ()
   "Tests detecting the fullstop in presence of `.=.'."
   (with-temp-buffer
@@ -430,6 +455,31 @@ loop_term(I, Arity, Goal1, Goal2) :-
     (indent-region-line-by-line (point-min) (point-max))
     (should (string= (buffer-substring-no-properties (point-min) (point-max))
                      expected))))
+
+(defun sweeprolog-test-context-callable-p (given expected)
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert given)
+    (let ((callable (sweeprolog-context-callable-p)))
+      (should (if expected
+                  callable
+                (not callable))))))
+
+(ert-deftest context-callable ()
+  "Test recognizing callable contexts."
+  (sweeprolog-test-context-callable-p "foo" nil)
+  (sweeprolog-test-context-callable-p "foo(" nil)
+  (sweeprolog-test-context-callable-p "foo(bar)" nil)
+  (sweeprolog-test-context-callable-p "foo(bar) :- " t)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(" nil)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar" nil)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), " t)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(" nil)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X" nil)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X," t)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X, false" t)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X, false," nil)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X, false, Xs). " nil))
 
 (ert-deftest indentation ()
   "Tests indentation rules."

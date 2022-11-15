@@ -548,16 +548,18 @@ used to determine a default face for quoted content.
 For more information about quasi-quotations in SWI-Prolog, see
 [[https://www.swi-prolog.org/pldoc/man?section=quasiquotations][library(quasi_quotations) in the SWI-Prolog manual]].
 
-** Aligning with multiple spaces
+** Maintaining Code Layout
 :PROPERTIES:
 :CUSTOM_ID: whitespace
 :DESCRIPTION: Commands for aligning Prolog code without having to count spaces
 :END:
 
 #+CINDEX: whitespace
-By convention, if-then-else constructs are aligned such that each goal
-starts at the fourth column after the /start/ of the opening parenthesis
-or operator, as follows:
+#+CINDEX: alignment
+#+CINDEX: layout
+Some Prolog constructs, such as if-then-else constructs, have a
+conventional /layout/, where each goal starts at the fourth column after
+the /start/ of the opening parenthesis or operator, as follows:
 
   #+begin_src prolog
     (   if
@@ -569,10 +571,18 @@ or operator, as follows:
   #+end_src
 
 To simplify maintaining the desired layout without manually counting
-spaces, ~sweep~ provides a command that updates the whitespace around
-point such that the next token is aligned to a (multiple of) four
-columns from the start of the previous token.
+spaces, ~sweep~ provides a command ~sweeprolog-align-spaces~ that updates
+the whitespace around point such that the next token is aligned to a
+(multiple of) four columns from the start of the previous token, as
+well as a dedicated minor mode ~sweeprolog-electric-layout-mode~ that
+adjusts whitespace around point automatically as you type ([[*Electric Layout mode][Electric
+Layout mode]]).
 
+*** Inserting the Right Number of Spaces
+:PROPERTIES:
+:CUSTOM_ID: cycle-spacing
+:DESCRIPTION: Commands for adjusting whitespace according to Prolog conventions
+:END:
 #+FINDEX: sweeprolog-align-spaces
 #+FINDEX: cycle-spacing
 To insert or update whitespace around point, use the command ~M-x
@@ -597,12 +607,11 @@ the expected layout:
           ^
 #+end_src
 
-In Emacs 29, the command ~M-x cycle-spacing~ is extensible through a
-list of callback functions stored in the variable
-~cycle-spacing-actions~.  ~sweep~ leverages this facility and adds
-~sweeprolog-align-spaces~ as the first action of ~cycle-spacing~.  To
-inhibit ~sweeprolog-mode~ from doing so, set the user option
-~sweeprolog-enable-cycle-spacing~ to nil.
+In Emacs 29, the command ~M-x cycle-spacing~ is extensible via a list of
+callback functions stored in the variable ~cycle-spacing-actions~.
+~sweep~ leverages this facility and adds ~sweeprolog-align-spaces~ as the
+first action of ~cycle-spacing~.  To inhibit ~sweeprolog-mode~ from doing
+so, set the user option ~sweeprolog-enable-cycle-spacing~ to nil.
 
 Moreover, in Emacs 29 ~cycle-spacing~ is bound by default to ~M-SPC~, thus
 aligning if-then-else and similar constructs only requires typing
@@ -616,6 +625,40 @@ lines to Emacs's initialization file (see [[info:emacs#Init File][The Emacs Init
   (eval-after-load 'sweeprolog
     '(define-key sweeprolog-mode-map (kbd "M-SPC") #'sweeprolog-align-spaces))
 #+end_src
+
+*** Electric Layout mode
+:PROPERTIES:
+:CUSTOM_ID: electric-layout-mode
+:DESCRIPTION: Minor mode for automatically adjusting whitespace
+:END:
+
+#+CINDEX: electric layout
+#+FINDEX: sweeprolog-electric-layout-mode
+#+VINDEX: sweeprolog-mode-hook
+The minor mode ~sweeprolog-electric-layout-mode~ adjusts whitespace
+around point automatically as you type.  It works by examining the
+context of point whenever a character is inserted in the current
+buffer, and applying the following layout rules:
+
+- =PlDoc= Comments :: Insert two consecutive spaces after the ~%!~ or ~%%~
+  starting a =PlDoc= predicate documentation structured comment.
+- If-Then-Else :: Insert spaces after a part of an if-then-else
+  constructs such that point is positioned four columns after its
+  beginning.  The specific tokens that trigger this rule are the
+  opening parenthesis ~(~ and the operators ~;~, ~->~ and ~*->~, and only if
+  they are inserted in a callable context, where an if-then-else
+  construct would normally appear.
+
+To enable this mode in a ~sweeprolog-mode~ buffer, type ~M-x
+sweeprolog-electric-layout-mode~.  This step can be automated by adding
+~sweeprolog-electric-layout-mode~ to ~sweeprolog-mode-hook~[fn:2]:
+
+#+begin_src emacs-lisp
+  (add-hook 'sweeprolog-mode-hook #'sweeprolog-electric-layout-mode)
+#+end_src
+
+[fn:2] For more information about major mode hooks in Emacs, which
+~sweeprolog-mode-hook~ is one of, see [[info:emacs#Hooks][Hooks]].
 
 ** Term-based editing and motion commands
 :PROPERTIES:
