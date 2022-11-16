@@ -11,6 +11,25 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.8 on 2022-11-16
+
+** Added electric layout minor mode
+
+This version includes a new minor mode ~sweeprolog-electric-layout-mode~
+that adjusts whitespace around point as you type to adhere to Prolog
+layout conventions.
+
+** The top-level server in now started on-demand
+
+The TCP server that accepts connections from top-level buffers is now
+only started on the first invocation of ~sweeprolog-top-level~, instead
+of being started already in ~sweeprolog-init~.
+
+** Fixed issue with syntax error highlighting at the end of the buffer
+
+Syntax error highlighting is now removed more reliably when the syntax
+error is resolved.
+
 * Version 0.8.7 on 2022-11-12
 
 ** Revised predicate completion-at-point and added atom completion
