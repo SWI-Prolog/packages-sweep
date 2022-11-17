@@ -105,6 +105,20 @@ foo(Foo) :- bar.
                    '(sweeprolog-undefined-default-face
                      sweeprolog-body-default-face)))))
 
+(ert-deftest auto-insert-module-header ()
+  "Tests inserting Prolog module header with `auto-insert'."
+  (find-file-literally (expand-file-name "sweeprolog_test_auto_insert.pl"
+                                         temporary-file-directory))
+  (sweeprolog-mode)
+  (let ((auto-insert-query nil))
+    (call-interactively #'auto-insert))
+  (let ((end (point)))
+    (beginning-of-line -1)
+    (should (string= (buffer-substring-no-properties (point) end)
+                     ":- module(sweeprolog_test_auto_insert, []).
+
+/** <module> "))))
+
 (ert-deftest complete-atom ()
   "Tests completing atoms."
   (let ((temp (make-temp-file "sweeprolog-test"

@@ -853,7 +853,7 @@ As an example, after inserting the module skeleton, a new Prolog file
 
   :- module(foo, []).
 
-  /** <module> foo
+  /** <module>
 
   ,*/
 
