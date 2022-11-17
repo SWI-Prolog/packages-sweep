@@ -1719,6 +1719,23 @@ resulting list even when found in the current clause."
   (with-silent-modifications
     (font-lock-unfontify-region beg end)))
 
+(defun sweeprolog-maybe-syntax-error-face (end)
+  (or (and (or (and sweeprolog--analyze-point
+                    (<= (save-excursion
+                          (goto-char sweeprolog--analyze-point)
+                          (sweeprolog-beginning-of-top-term)
+                          (1- (point)))
+                        (1+ end) sweeprolog--analyze-point))
+               (< (save-excursion
+                    (goto-char sweeprolog--analyze-point)
+                    (sweeprolog-end-of-top-term) (point))
+                  (save-excursion
+                    (goto-char sweeprolog--analyze-point)
+                    (sweeprolog-beginning-of-next-top-term) (point))
+                  (point-max)))
+           (sweeprolog-syntax-error-face))
+      (sweeprolog-around-syntax-error-face)))
+
 (defun sweeprolog-analyze-fragment-to-faces (beg end arg)
   (pcase arg
     (`("comment" . "structured")
@@ -1795,13 +1812,7 @@ resulting list even when found in the current clause."
            (setq cur (point)))
          (skip-chars-forward " \t\n")
          (push (list cur (point) nil) ws)
-         (let ((face (or (and (or (and sweeprolog--analyze-point
-                                       (<= end sweeprolog--analyze-point))
-                                  (< (save-excursion
-                                       (sweeprolog-end-of-top-term) (point))
-                                     (point-max)))
-                              (sweeprolog-syntax-error-face))
-                         (sweeprolog-around-syntax-error-face))))
+         (let ((face (sweeprolog-maybe-syntax-error-face end)))
            (cons (list beg (point) nil)
                  (append (list (list eb ee nil)
                                (list eb ee (sweeprolog-around-syntax-error-face))
