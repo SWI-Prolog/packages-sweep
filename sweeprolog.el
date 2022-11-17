@@ -3302,7 +3302,7 @@ certain contexts to maintain conventional Prolog layout."
                str
                ", [])."
                "\n\n/** <module> "
-               str
+               -
                "\n\n*/\n\n"))
 
 
