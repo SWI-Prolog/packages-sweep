@@ -2473,18 +2473,80 @@ Interactively, POINT is set to the current point."
       (or (re-search-forward (rx "." (or white "\n")) nil t)
           (goto-char (point-max))))))
 
-(defun sweeprolog--forward-hole ()
-  (if-let ((prop (text-property-search-forward 'sweeprolog-hole)))
-      (progn
-        (push-mark (prop-match-beginning prop) t t))
-    (user-error "No holes following point")))
+(defun sweeprolog--next-hole (&optional wrap)
+  "Return the bounds of the next hole in the current buffer.
 
-(defun sweeprolog--backward-hole ()
-  (if-let ((prop (text-property-search-backward 'sweeprolog-hole))
-           (end (prop-match-end prop)))
+When WRAP in non-nil, wrap around if no holes are found between
+point and the end of the buffer."
+  (let ((current-hole-beg
+         (save-excursion
+           (while (and (get-text-property (point) 'sweeprolog-hole)
+                       (not (bobp)))
+             (forward-char -1))
+           (point))))
+    (while (and (get-text-property (point) 'sweeprolog-hole)
+                (not (eobp)))
+      (forward-char))
+    (while (not (or (get-text-property (point) 'sweeprolog-hole)
+                    (eobp)))
+      (forward-char))
+    (if (eobp)
+        (when wrap
+          (save-restriction
+            (goto-char (point-min))
+            (narrow-to-region (point) current-hole-beg)
+            (sweeprolog--next-hole)))
+      (let ((beg (point)))
+        (while (and (get-text-property (point) 'sweeprolog-hole)
+                    (not (eobp)))
+          (forward-char))
+        (cons beg (point))))))
+
+(defun sweeprolog--previous-hole (&optional wrap)
+  "Return the bounds of the previous hole in the current buffer.
+
+When WRAP in non-nil, wrap around if no holes are found between
+point and the beginning of the buffer."
+  (let ((current-hole-end
+         (save-excursion
+           (while (and (get-text-property (point) 'sweeprolog-hole)
+                       (not (eobp)))
+             (forward-char))
+           (point))))
+    (while (and (get-text-property (point) 'sweeprolog-hole)
+                (not (bobp)))
+      (forward-char -1))
+    (while (not (or (get-text-property (point) 'sweeprolog-hole)
+                    (bobp)))
+      (forward-char -1))
+    (if (bobp)
+        (when wrap
+          (save-restriction
+            (goto-char (point-max))
+            (narrow-to-region current-hole-end (point))
+            (sweeprolog--previous-hole)))
+      (let ((end (point)))
+        (while (and (get-text-property (point) 'sweeprolog-hole)
+                    (not (bobp)))
+          (forward-char -1))
+        (cons (point) end)))))
+
+(defun sweeprolog--forward-hole (&optional wrap)
+  (if-let ((hole (sweeprolog--next-hole wrap))
+           (beg  (car hole))
+           (end  (cdr hole)))
       (progn
         (goto-char end)
-        (push-mark (1- end) t t))
+        (push-mark beg t t))
+    (user-error "No holes following point")))
+
+(defun sweeprolog--backward-hole (&optional wrap)
+  (if-let ((hole (sweeprolog--previous-hole wrap))
+           (beg  (car hole))
+           (end  (cdr hole)))
+      (progn
+        (goto-char end)
+        (push-mark beg t t))
     (user-error "No holes before point")))
 
 (defun sweeprolog-forward-hole (&optional arg)
@@ -2496,11 +2558,11 @@ instead."
   (setq arg (or arg 1)
         deactivate-mark nil)
   (if (> 0 arg)
-      (sweeprolog--backward-hole)
-    (sweeprolog--forward-hole)))
+      (sweeprolog--backward-hole t)
+    (sweeprolog--forward-hole t)))
 
-(defun sweeprolog--hole ()
-  (propertize "_"
+(defun sweeprolog--hole (&optional string)
+  (propertize (or string "_")
               'sweeprolog-hole t
               'rear-sticky     '(sweeprolog-hole)))
 
