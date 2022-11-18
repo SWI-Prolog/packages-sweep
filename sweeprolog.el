@@ -3348,24 +3348,32 @@ certain contexts to maintain conventional Prolog layout."
               #'sweeprolog-analyze-fragment-variable nil t)
     (cursor-sensor-mode 1)))
 
-(add-to-list 'auto-insert-alist
-             '((sweeprolog-mode . "SWI-Prolog module header")
-               (or (and (buffer-file-name)
-                        (file-name-sans-extension (file-name-base (buffer-file-name))))
-                   (read-string "Module name: "))
-               "/*"
-               "\n    Author:        "
-               (progn user-full-name)
-               "\n    Email:         "
-               (progn user-mail-address)
-               (progn sweeprolog-module-header-comment-skeleton)
-               "\n*/"
-               "\n\n:- module("
-               str
-               ", [])."
-               "\n\n/** <module> "
-               -
-               "\n\n*/\n\n"))
+
+;;;; Auto-insert Prolog module header
+
+(defconst sweeprolog-module-header-skeleton
+  '((or (and (buffer-file-name)
+             (file-name-sans-extension
+              (file-name-base (buffer-file-name))))
+        (read-string "Module name: "))
+    "/*"
+    "\n    Author:        "
+    (progn user-full-name)
+    "\n    Email:         "
+    (progn user-mail-address)
+    (progn sweeprolog-module-header-comment-skeleton)
+    "\n*/"
+    "\n\n:- module("
+    str
+    ", [])."
+    "\n\n/** <module> "
+    -
+    "\n\n*/\n\n")
+  "Prolog module header skeleton inserted by \\[auto-insert].")
+
+(define-auto-insert
+  '(sweeprolog-mode . "SWI-Prolog module header")
+  sweeprolog-module-header-skeleton)
 
 
 ;;;; Indentation
