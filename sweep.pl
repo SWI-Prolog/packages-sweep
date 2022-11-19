@@ -706,12 +706,12 @@ sweep_functor_arity_pi([F0,A], PI)   :-
     sweep_current_module(M0),
     (   @(predicate_property(M:Head, visible), M0),
         \+ @(predicate_property(M:Head, imported_from(_)), M0)
-    ->  true
+    ->  T = M:F/A
     ;   xref_defined(_, Head, imported(Other)), xref_module(Other, M)
-    ->  true
-    ;   M = M0
+    ->  T = M:F/A
+    ;   T = F/A
     ),
-    term_string(M:F/A, PI).
+    term_string(T, PI).
 sweep_functor_arity_pi([M,F0,A], PI) :-
     atom_string(F, F0), term_string(M:F/A, PI).
 

@@ -313,7 +313,7 @@ foo(Bar).
     (goto-char (point-max))
     (backward-word)
     (should (equal (sweeprolog-identifier-at-point)
-                   "user:bar/1"))))
+                   "bar/1"))))
 
 (ert-deftest definition-at-point ()
   "Test recognizing predicate defintions."
