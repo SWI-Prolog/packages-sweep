@@ -399,6 +399,7 @@ sweep_predicates_collection(Sub, Preds) :-
               ->  true
               ;   M = user
               ),
+              \+ (predicate_property(M:H, imported_from(M1)), M \= M1),
               pi_head(F/N, H)
             ),
             Tail1,
