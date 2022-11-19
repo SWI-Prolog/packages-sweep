@@ -2629,7 +2629,8 @@ of them signal success by returning non-nil."
 
 (defun sweeprolog-at-beginning-of-top-term-p ()
   (and (looking-at-p (rx bol graph))
-       (not (nth 8 (syntax-ppss)))))
+       (not (nth 8 (syntax-ppss)))
+       (not (looking-at-p (rx bol (or "%" "/*"))))))
 
 (defun sweeprolog-analyze-term-at-point (cb)
   (add-hook 'sweeprolog-analyze-region-fragment-hook cb nil t)
