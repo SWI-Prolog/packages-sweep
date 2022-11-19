@@ -11,6 +11,26 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.9 on 2022-11-19
+
+** Predicate completions now use holes for arguments
+
+When completing a predicate with ~completion-at-point~ (~C-M-i~) and
+choosing a predicate that takes arguments, holes are inserted is place
+of each required argument.
+
+** Syntax errors are now less intrusive
+
+Syntax errors that occur due to incomplete terms are no longer
+immediately highlighted as such.
+
+** ~auto-insert~ now leaves point at start of module summary
+
+** Fixes
+
+- Fixed error in ~sweeprolog-export-predicate~ (~C-c C-e~) in presence of
+  exported predicates.  Reported by Jan Wielemaker.
+
 * Version 0.8.8 on 2022-11-16
 
 ** Added electric layout minor mode

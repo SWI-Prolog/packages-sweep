@@ -1012,7 +1012,9 @@ In ~sweeprolog-mode~ buffers, the following enhancements are provided:
   as completion candidates.
 - Predicate completion :: If point is at a callable position,
   ~completion-at-point~ suggests matching predicates as completion
-  candidates.
+  candidates.  Predicate calls are inserted as complete term.  If the
+  chosen predicate takes arguments, holes are inserted in their places
+  (see [[#filling-holes][Filling Holes]]).
 - Atom completion :: If point is at a non-callable,
   ~completion-at-point~ suggests matching atoms as completion
   candidates.
