@@ -872,8 +872,9 @@ module name, F is a functor name and N is its arity."
                     `("head" ,_ ,f ,a)
                     `("goal" ,_ ,f ,a))
                 (setq id-at-point (list f a)))))))
-        (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
-                                id-at-point)))))
+        (when id-at-point
+          (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
+                                  id-at-point))))))
 
 
 ;;;; Modules
@@ -2633,9 +2634,10 @@ of them signal success by returning non-nil."
        (not (looking-at-p (rx bol (or "%" "/*"))))))
 
 (defun sweeprolog-analyze-term-at-point (cb)
-  (add-hook 'sweeprolog-analyze-region-fragment-hook cb nil t)
-  (sweeprolog-analyze-term (point))
-  (remove-hook 'sweeprolog-analyze-region-fragment-hook cb t))
+  (let ((sweeprolog--analyze-point (point)))
+    (add-hook 'sweeprolog-analyze-region-fragment-hook cb nil t)
+    (sweeprolog-analyze-term (point))
+    (remove-hook 'sweeprolog-analyze-region-fragment-hook cb t)))
 
 (defun sweeprolog-definition-at-point (&optional point)
   (save-excursion
