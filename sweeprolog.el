@@ -862,21 +862,22 @@ module name, F is a functor name and N is its arity."
     (user-error "Unable to locate predicate %s" mfn)))
 
 (defun sweeprolog-identifier-at-point (&optional point)
-  (setq point (or point (point)))
-  (save-excursion
-    (goto-char point)
-    (let ((id-at-point nil))
-      (sweeprolog-analyze-term-at-point
-       (lambda (beg end arg)
-         (when (<= beg point end)
-           (pcase arg
-             ((or `("head_term" ,_ ,f ,a)
-                  `("goal_term" ,_ ,f ,a)
-                  `("head" ,_ ,f ,a)
-                  `("goal" ,_ ,f ,a))
-              (setq id-at-point (list f a)))))))
-      (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
-                              id-at-point))))
+  (when (derived-mode-p 'sweeprolog-mode 'sweeprolog-top-level-mode)
+    (setq point (or point (point)))
+    (save-excursion
+      (goto-char point)
+      (let ((id-at-point nil))
+        (sweeprolog-analyze-term-at-point
+         (lambda (beg end arg)
+           (when (<= beg point end)
+             (pcase arg
+               ((or `("head_term" ,_ ,f ,a)
+                    `("goal_term" ,_ ,f ,a)
+                    `("head" ,_ ,f ,a)
+                    `("goal" ,_ ,f ,a))
+                (setq id-at-point (list f a)))))))
+        (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
+                                id-at-point)))))
 
 
 ;;;; Modules
