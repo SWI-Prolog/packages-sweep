@@ -761,13 +761,14 @@ sweep_predicate_completion_candidates(_, Ps) :-
             Hs),
     maplist(sweep_format_predicate, Hs, Ps).
 
-sweep_format_predicate(H, S) :-
+sweep_format_predicate(H, [S|SP]) :-
     term_variables(H, Vs),
     maplist(=('$VAR'('_')), Vs),
     term_string(H, S, [quoted(true),
                        character_escapes(true),
                        spacing(next_argument),
-                       numbervars(true)]).
+                       numbervars(true)]),
+    term_string(_, S, [subterm_positions(SP)]).
 
 sweep_context_callable([H|T], R) :-
     H = [F0|_],

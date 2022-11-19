@@ -1059,7 +1059,25 @@ resulting list even when found in the current clause."
         (list beg end col
               :exclusive 'no
               :annotation-function
-              (lambda (_) " Predicate"))))))
+              (lambda (_) " Predicate")
+              :exit-function
+              (lambda (string status)
+                (pcase status
+                  ('finished (pcase (cdr (assoc-string string col))
+                               (`(compound
+                                  "term_position"
+                                  0 ,length
+                                  fbeg fend
+                                  ,holes)
+                                (with-silent-modifications
+                                  (dolist (hole holes)
+                                    (pcase hole
+                                      (`(compound "-" ,hbeg ,hend)
+                                       (put-text-property (- (point) length (- hbeg))
+                                                          (- (point) length (- hend))
+                                                          'sweeprolog-hole t)))))
+                                (backward-char length)
+                                (sweeprolog-forward-hole)))))))))))
 
 
 ;;;; Packages
