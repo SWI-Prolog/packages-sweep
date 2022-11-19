@@ -1887,7 +1887,7 @@ resulting list even when found in the current clause."
            (setq cur (point)))
          (skip-chars-forward " \t\n")
          (push (list cur (point) nil) ws)
-         (cons (list beg (point) nil)
+         (cons (list beg end nil)
                (cons (list beg end (sweeprolog-fullstop-face))
                      ws)))))
     ("functor"
