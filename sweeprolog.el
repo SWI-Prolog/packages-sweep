@@ -1068,7 +1068,7 @@ resulting list even when found in the current clause."
                                (`(compound
                                   "term_position"
                                   0 ,length
-                                  fbeg fend
+                                  ,_fbeg ,_fend
                                   ,holes)
                                 (with-silent-modifications
                                   (dolist (hole holes)
