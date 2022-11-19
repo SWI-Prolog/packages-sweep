@@ -1994,7 +1994,22 @@ resulting list even when found in the current clause."
                 ("type_error"
                  (cons :warning "Type error"))
                 (`("syntax_error" ,message . ,_)
-                 (cons :error message))
+                 (and (or (and sweeprolog--analyze-point
+                               (<= (save-excursion
+                                     (goto-char sweeprolog--analyze-point)
+                                     (sweeprolog-beginning-of-top-term)
+                                     (1- (point)))
+                                   (1+ end) sweeprolog--analyze-point))
+                          (< (save-excursion
+                               (goto-char sweeprolog--analyze-point)
+                               (sweeprolog-end-of-top-term)
+                               (point))
+                             (save-excursion
+                               (goto-char sweeprolog--analyze-point)
+                               (sweeprolog-beginning-of-next-top-term)
+                               (point))
+                             (point-max)))
+                      (cons :error message)))
                 ("unused_import"
                  (cons :note "Unused import"))
                 ("undefined_import"
