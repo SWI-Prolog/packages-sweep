@@ -438,8 +438,6 @@ buffer where the new predicate defintion should be inserted."
 
 ;;;; Local variables
 
-(defvar-local sweeprolog--module-term nil)
-
 (defvar-local sweeprolog--diagnostics nil)
 
 (defvar-local sweeprolog--diagnostics-report-fn nil)
@@ -447,8 +445,6 @@ buffer where the new predicate defintion should be inserted."
 (defvar-local sweeprolog--diagnostics-changes-beg nil)
 
 (defvar-local sweeprolog--diagnostics-changes-end nil)
-
-(defvar-local sweeprolog--exportable-predicates nil)
 
 (defvar-local sweeprolog--timer nil)
 
@@ -2009,21 +2005,6 @@ resulting list even when found in the current clause."
              :region (cons beg end))
     (setq sweeprolog--diagnostics-report-fn nil)))
 
-(defun sweeprolog-analyze-start-exportable (&rest _)
-  (setq sweeprolog--exportable-predicates nil
-        sweeprolog--module-term           nil))
-
-(defun sweeprolog-analyze-fragment-exportable (beg end arg)
-  (pcase arg
-    (`("head" ,(rx (or "dynamic "
-                       "unreferenced"
-                       "local("))
-       ,f ,a)
-     (add-to-list 'sweeprolog--exportable-predicates
-                  (concat f "/" (number-to-string a))))
-    (`("goal_term" "built_in" "module" 2)
-     (setq sweeprolog--module-term (cons beg end)))))
-
 (defun sweeprolog-analyze-fragment-variable (beg end arg)
   (pcase arg
     ((or "var"
@@ -3144,10 +3125,16 @@ predicate definition at or directly above POINT."
   (sweeprolog--query-once "sweep" "sweep_local_predicate_export_comment"
                           (list (buffer-file-name) fun ari)))
 
+(defun sweeprolog-exportable-predicates ()
+  "Return a list of exportable predicates from the current buffer."
+  (sweeprolog-xref-buffer)
+  (sweeprolog--query-once "sweep" "sweep_exportable_predicates"
+                          (buffer-file-name)))
+
 (defun sweeprolog-read-exportable-predicate ()
   "Read a predicate name that can be exported in the current buffer."
   (completing-read sweeprolog-read-exportable-predicate-prompt
-                   sweeprolog--exportable-predicates))
+                   (sweeprolog-exportable-predicates)))
 
 (defun sweeprolog-export-predicate (pred &optional comm)
   "Add PRED to the export list of the current module.
@@ -3169,48 +3156,74 @@ non-exported predicates defined in the current buffer."
                     (sweeprolog-read-exportable-predicate)
                     (read-string "Export comment: ")))
                sweeprolog-mode)
-  (add-hook 'sweeprolog-analyze-region-start-hook
-            #'sweeprolog-analyze-start-exportable nil t)
-  (add-hook 'sweeprolog-analyze-region-fragment-hook
-            #'sweeprolog-analyze-fragment-exportable nil t)
-  (sweeprolog-analyze-buffer t)
-  (remove-hook 'sweeprolog-analyze-region-fragment-hook
-               #'sweeprolog-analyze-fragment-exportable t)
-  (remove-hook 'sweeprolog-analyze-region-start-hook
-               #'sweeprolog-analyze-start-exportable t)
-  (unless (member pred sweeprolog--exportable-predicates)
-    (user-error "Cannot add %s to export list" pred))
-  (if-let ((mbeg (car sweeprolog--module-term))
-           (mend (cdr sweeprolog--module-term)))
-      (save-excursion
-        (goto-char mend)
-        (let ((pos (- (point-max) (point))))
-          (unless (search-backward "]" (car sweeprolog--module-term) t)
-            (user-error "Cannot find export list"))
-          (combine-after-change-calls
-            (pcase (sweeprolog-last-token-boundaries)
-              (`(open ,_ ,_)
-               (insert pred)
-               (when (and comm (not (string-empty-p comm)))
-                 (insert "  % " comm))
-               (insert "\n")
-               (indent-region mbeg (1+ (point))))
-              (`(symbol ,_ ,oend)
-               (let ((point (point)))
-                 (goto-char oend)
-                 (insert ",")
-                 (goto-char (1+ point))
-                 (insert "\n")
-                 (backward-char)
-                 (insert pred)
-                 (when (and comm (not (string-empty-p comm)))
-                   (insert "  % " comm))
-                 (indent-region mbeg (- (point-max) pos))
-                 (align-regexp mbeg (- (point-max) pos) (rx (group (zero-or-more blank)) "%"))))
-              (_ (user-error "Unexpected token while looking for export list")))))
-        (sweeprolog-analyze-buffer t)
-        (message "Exported %s" pred))
-    (user-error "Buffer is not a module")))
+  (save-restriction
+    (widen)
+    (save-excursion
+      (goto-char (point-min))
+      (unless (or (sweeprolog-at-beginning-of-top-term-p)
+                  (sweeprolog-beginning-of-next-top-term))
+        (user-error "No module declaration found"))
+      (let* ((indent-tabs-mode nil)
+             (target-position nil)
+             (module-term-beg nil)
+             (module-term-end nil)
+             (exported-operator nil)
+             (func (lambda (beg end arg)
+                     (pcase arg
+                       (`("goal_term" "built_in" "module" 2)
+                        (setq module-term-beg beg
+                              module-term-end end))
+                       ((or "list"
+                            "empty_list")
+                        (when (and (not target-position)
+                                   (< module-term-beg beg)
+                                   (< end module-term-end))
+                          (setq target-position (1- end))))
+                       ("exported_operator"
+                        (unless exported-operator
+                          (setq exported-operator t
+                                target-position beg)))))))
+        (sweeprolog-analyze-term-at-point func)
+        (unless (member pred (sweeprolog-exportable-predicates))
+          (user-error "Cannot add %s to export list" pred))
+        (if target-position
+            (save-excursion
+              (goto-char target-position)
+              (let ((pos (- (point-max) (line-end-position))))
+                (combine-after-change-calls
+                  (if exported-operator
+                      (progn
+                        (insert pred ",\n")
+                        (backward-char)
+                        (when (and comm (not (string-empty-p comm)))
+                          (insert "  % " comm))
+                        (indent-region module-term-beg (- (point-max) pos))
+                        (align-regexp module-term-beg (- (point-max) pos)
+                                      (rx (group (zero-or-more blank)) "%")))
+                    (pcase (sweeprolog-last-token-boundaries)
+                      (`(open ,_ ,_)
+                       (insert pred)
+                       (when (and comm (not (string-empty-p comm)))
+                         (insert "  % " comm))
+                       (insert "\n")
+                       (indent-region module-term-beg (1+ (point))))
+                      (`(symbol ,_ ,oend)
+                       (let ((point (point)))
+                         (goto-char oend)
+                         (insert ",")
+                         (goto-char (1+ point))
+                         (insert "\n")
+                         (backward-char)
+                         (insert pred)
+                         (when (and comm (not (string-empty-p comm)))
+                           (insert "  % " comm))
+                         (indent-region module-term-beg (- (point-max) pos))
+                         (align-regexp module-term-beg (- (point-max) pos)
+                                       (rx (group (zero-or-more blank)) "%"))))
+                      (tok (user-error "Unexpected token %s while looking for export list" tok))))))
+              (sweeprolog-analyze-buffer t)
+              (message "Exported %s" pred))
+          (user-error "No export list found"))))))
 
 (defun sweeprolog-align-spaces (&optional _)
   "Adjust in-line whitespace between the previous next Prolog tokens.

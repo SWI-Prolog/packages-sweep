@@ -217,7 +217,7 @@ bar(Bar) :- baz(Bar).
                               "
 :- module(sweeprolog_test_export_predicate, []).
 
-%!  foo(+Bar) is det
+%!  foo(+Bar) is det.
 
 foo(Bar) :- bar(Bar).
 ")))
@@ -231,10 +231,76 @@ foo(Bar) :- bar(Bar).
 :- module(sweeprolog_test_export_predicate, [foo/1  % +Bar
                                             ]).
 
-%!  foo(+Bar) is det
+%!  foo(+Bar) is det.
 
 foo(Bar) :- bar(Bar).
 "))))
+
+(ert-deftest export-predicate-with-op ()
+  "Test exporting a predicate in presence of an exported operator."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+:- module(tester,
+          [ instantiate_test_template/4,  % +In,+Replacement,-Dict,-Map
+            op(200, fy, @)		  % @name
+          ]).
+
+%!  foo(+Bar) is det.
+
+foo(Bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (call-interactively #'sweeprolog-export-predicate)
+    (should (equal (buffer-string)
+                  "
+:- module(tester,
+          [ instantiate_test_template/4, % +In,+Replacement,-Dict,-Map
+            foo/1,                       % +Bar
+            op(200, fy, @)		 % @name
+          ]).
+
+%!  foo(+Bar) is det.
+
+foo(Bar).
+"
+                  ))))
+
+(ert-deftest export-predicate-with-only-op ()
+  "Test exporting a predicate in presence of only exported operators."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+:- module(tester,
+          [ op(200, fy, @)		  % @name
+          ]).
+
+%!  foo(+Bar) is det.
+
+foo(Bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (call-interactively #'sweeprolog-export-predicate)
+    (should (equal (buffer-string)
+                  "
+:- module(tester,
+          [ foo/1,         % +Bar
+            op(200, fy, @) % @name
+          ]).
+
+%!  foo(+Bar) is det.
+
+foo(Bar).
+"
+                  ))))
 
 (ert-deftest identifier-at-point ()
   "Test recognizing predicate invocations."

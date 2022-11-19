@@ -65,7 +65,8 @@
             sweep_beginning_of_last_predicate/2,
             sweep_atom_collection/2,
             sweep_context_callable/2,
-            sweep_predicate_completion_candidates/2
+            sweep_predicate_completion_candidates/2,
+            sweep_exportable_predicates/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -813,3 +814,13 @@ callable_arg(N) :- integer(N), !.
 callable_arg(^) :- !.
 callable_arg(//) :- !.
 callable_arg(:) :- !.
+
+sweep_exportable_predicates(Path0, Preds) :-
+    atom_string(Path, Path0),
+    findall(D,
+            (   xref_defined(Path, D0, _),
+                \+ xref_exported(Path, D0),
+                pi_head(D1, D0),
+                term_string(D1, D)
+            ),
+            Preds).
