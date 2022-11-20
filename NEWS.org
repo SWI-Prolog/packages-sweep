@@ -11,6 +11,25 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.10 on 2022-11-21
+
+** ~sweeprolog-top-level-signal-current~ now calls ~trace/0~ by default
+
+Calling ~sweeprolog-top-level-signal-current~ (e.g. with ~C-c C-c~) now
+signals the top-level thread with the goal specified by the user
+option ~sweeprolog-top-level-signal-default-goal~, instead of prompting
+for a goal.  By default this user option is set to ~"trace"~, causing
+the top-level thread to enter trace mode.  To have
+~sweeprolog-top-level-signal-current~ prompt for a different goal on
+invocation, call it with a prefix argument, i.e. ~C-u C-c C-c~.
+
+** Fixes
+
+- Fixed insertion of new clauses with ~sweeprolog-insert-term-dwim~ when
+  the predicate at point is a DCG non-terminal or a predicate defined
+  with SSU rules.  ~sweeprolog-insert-term-dwim~ now detects and inserts
+  the correct neck (~:-~, ~-->~ or ~=>~) based on the previous clauses.
+
 * Version 0.8.9 on 2022-11-19
 
 ** Predicate completions now use holes for arguments
