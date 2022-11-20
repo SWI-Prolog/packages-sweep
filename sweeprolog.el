@@ -872,7 +872,8 @@ module name, F is a functor name and N is its arity."
                     `("head" ,_ ,f ,a)
                     `("goal" ,_ ,f ,a))
                 (setq id-at-point (list f a)))))))
-        (when id-at-point
+        (when (and id-at-point
+                   (not (eq (car id-at-point) 'variable)))
           (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
                                   id-at-point))))))
 
@@ -2583,8 +2584,9 @@ instead."
               'sweeprolog-hole t
               'rear-sticky     '(sweeprolog-hole)))
 
-(defun sweeprolog-insert-clause (functor arity)
-  (let ((point nil))
+(defun sweeprolog-insert-clause (functor arity &optional neck)
+  (let ((point nil)
+        (neck (or neck ":-")))
     (combine-after-change-calls
       (insert "\n" functor)
       (setq point (point))
@@ -2593,19 +2595,22 @@ instead."
         (dotimes (_ (1- arity))
           (insert (sweeprolog--hole) ", "))
         (insert (sweeprolog--hole) ")"))
-      (insert " :- " (sweeprolog--hole) ".\n"))
+      (insert " " neck " " (sweeprolog--hole "Body") ".\n"))
     (goto-char point)
     (sweeprolog-forward-hole)))
 
 (defun sweeprolog-maybe-insert-next-clause (point kind beg end)
   (when-let ((current-predicate (and (eq kind 'operator)
                                      (string= "." (buffer-substring-no-properties beg end))
-                                     (cdr (sweeprolog-definition-at-point point))))
-             (functor (car current-predicate))
-             (arity (cadr current-predicate)))
+                                     (sweeprolog-definition-at-point point)))
+             (functor (nth 1 current-predicate))
+             (arity   (nth 2 current-predicate))
+             (neck    (nth 4 current-predicate)))
     (goto-char end)
     (end-of-line)
-    (sweeprolog-insert-clause functor arity)
+    (sweeprolog-insert-clause functor
+                              (- arity (if (string= neck "-->") 2 0))
+                              neck)
     t))
 
 (defun sweeprolog-default-new-predicate-location (_pred)
@@ -2657,18 +2662,23 @@ of them signal success by returning non-nil."
 (defun sweeprolog-definition-at-point (&optional point)
   (save-excursion
     (when point (goto-char point))
-    (let ((def-at-point nil))
-      (sweeprolog-analyze-term-at-point (lambda (beg _end arg)
+    (let ((def-at-point nil)
+          (neck ":-"))
+      (sweeprolog-analyze-term-at-point (lambda (beg end arg)
                                           (pcase arg
                                             (`("head_term" ,_ ,f ,a)
                                              (setq def-at-point
                                                    (list beg f a)))
+                                            ("neck"
+                                             (setq neck
+                                                   (buffer-substring-no-properties beg end)))
                                             ("fullstop"
                                              (when def-at-point
                                                (setq def-at-point
                                                      (append def-at-point
                                                              (list beg))))))))
-      def-at-point)))
+      (when def-at-point
+        (append def-at-point (list neck))))))
 
 (defun sweeprolog-insert-pldoc-for-predicate (functor arguments det summary)
   (insert "\n\n")

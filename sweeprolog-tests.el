@@ -326,7 +326,7 @@ foo(Bar).
     (goto-char (point-max))
     (backward-word)
     (should (equal (sweeprolog-definition-at-point)
-                   '(1 "foo" 1 21)))))
+                   '(1 "foo" 1 21 ":-")))))
 
 (ert-deftest syntax-errors ()
   "Test clearing syntax error face after errors are fixed."
@@ -382,6 +382,45 @@ bar(Bar) :- baz(Bar).
       (should fsap)
       (should (string= "lists" (file-name-base fsap))))))
 
+(ert-deftest dwim-next-clause-fact ()
+  "Tests inserting a new clause after a fact."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo.")
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+foo.
+foo :- Body.
+"))))
+
+(ert-deftest dwim-next-clause-dcg ()
+  "Tests inserting a non-terminal with `sweeprolog-insert-term-dwim'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo --> bar.")
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+foo --> bar.
+foo --> Body.
+"))))
+
+(ert-deftest dwim-next-clause-ssu ()
+  "Tests inserting an SSU rule with `sweeprolog-insert-term-dwim'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo => bar.")
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+foo => bar.
+foo => Body.
+"))))
+
 (ert-deftest dwim-next-clause ()
   "Tests inserting a new clause with `sweeprolog-insert-term-dwim'."
   (with-temp-buffer
@@ -392,7 +431,7 @@ foo :- bar.")
     (should (string= (buffer-string)
                      "
 foo :- bar.
-foo :- _.
+foo :- Body.
 "))))
 
 (ert-deftest dwim-define-predicate ()
