@@ -49,6 +49,8 @@
 
 (defvar sweeprolog-read-module-history nil)
 
+(defvar sweeprolog-top-level-signal-goal-history nil)
+
 (defvar sweeprolog-insert-term-functions
   '(sweeprolog-maybe-insert-next-clause
     sweeprolog-maybe-define-predicate)
@@ -323,7 +325,11 @@ buffer where the new predicate defintion should be inserted."
                  (function :tag "Custom Function"))
   :group 'sweeprolog)
 
-
+(defcustom sweeprolog-top-level-signal-default-goal "trace"
+  "Prolog goal used by default for signaling top-level threads."
+  :package-version '((sweeprolog "0.8.10"))
+  :type 'string
+  :group 'sweeprolog-top-level)
 
 ;;;; Keymaps
 
@@ -2314,8 +2320,15 @@ Interactively, a prefix arg means to prompt for BUFFER."
                             goal))
 
 (defun sweeprolog-top-level-signal-current (goal)
-  "Signal the current top-level thread to run GOAL."
-  (interactive "MSignal goal: ?- " sweeprolog-top-level-mode)
+  "Signal the current top-level thread to run GOAL.
+
+Interactively, when called with a prefix argument, prompt for
+GOAL.  Otherwise, GOAL is set to a default value specified by
+`sweeprolog-top-level-signal-default-goal'."
+  (interactive (list (if current-prefix-arg
+                         (read-string "Signal goal: ?- " nil
+                                      sweeprolog-top-level-signal-goal-history)
+                       sweeprolog-top-level-signal-default-goal)))
   (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
 
 ;;;###autoload
