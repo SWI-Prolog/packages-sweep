@@ -16,3 +16,5 @@
 /#sweep.pl#
 /sweeprolog-tests.elc
 /sweeprolog.elc
+/.dir-locals.el
+/NEWS.md

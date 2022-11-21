@@ -11,17 +11,35 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.11 on 2022-11-21
+
+** ~sweeprolog-new-predicate-location-function~ signature changed
+
+The function specified by ~sweeprolog-new-predicate-location-function~
+should now take three arguments, namely the functor, arity and neck of
+the new predicate, instead of taking only the predicate indicator as a
+sole argument.
+
+** ~sweeprolog-insert-term-dwim~ now supports defining undefined DCG non-terminals
+
+Defining a previously undefined predicate with
+~sweeprolog-insert-term-dwim~ now analyzes the context of the undefined
+predicate invocation to determine if it is expected to be a DCG
+non-terminal, in which case an appropriate non-terminal definition is
+inserted instead of a regular predicate.
+
 * Version 0.8.10 on 2022-11-21
 
 ** ~sweeprolog-top-level-signal-current~ now calls ~trace/0~ by default
 
-Calling ~sweeprolog-top-level-signal-current~ (e.g. with ~C-c C-c~) now
-signals the top-level thread with the goal specified by the user
-option ~sweeprolog-top-level-signal-default-goal~, instead of prompting
-for a goal.  By default this user option is set to ~"trace"~, causing
-the top-level thread to enter trace mode.  To have
-~sweeprolog-top-level-signal-current~ prompt for a different goal on
-invocation, call it with a prefix argument, i.e. ~C-u C-c C-c~.
+Calling ~sweeprolog-top-level-signal-current~ (~C-c C-c~ in
+~sweeprolog-top-level~ buffers) now signals the top-level thread with
+the goal specified by the user option
+~sweeprolog-top-level-signal-default-goal~, instead of prompting for a
+goal.  By default this user option is set to ~"trace"~, causing the
+top-level thread to enter trace mode.  To have
+~sweeprolog-top-level-signal-current~ prompt for a different goal
+instead, call it with a prefix argument, i.e. ~C-u C-c C-c~.
 
 ** Fixes
 
@@ -32,7 +50,7 @@ invocation, call it with a prefix argument, i.e. ~C-u C-c C-c~.
 
 * Version 0.8.9 on 2022-11-19
 
-** Predicate completions now use holes for arguments
+** Predicate completions now uses holes for arguments
 
 When completing a predicate with ~completion-at-point~ (~C-M-i~) and
 choosing a predicate that takes arguments, holes are inserted is place

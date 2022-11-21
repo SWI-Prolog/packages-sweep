@@ -314,10 +314,17 @@ clause."
 (defcustom sweeprolog-new-predicate-location-function
   #'sweeprolog-default-new-predicate-location
   "Function used to choose a location for a new predicate definition.
-It should take one argument, the name of the new predicate given
-as a string, and move point to a suitable position in the current
-buffer where the new predicate defintion should be inserted."
-  :package-version '((sweeprolog "0.8.6"))
+
+It should take three arguments describing the new predicate,
+FUNCTOR, ARITY and NECK, and move point to a suitable position in
+the current buffer where the new predicate defintion should be
+inserted.
+
+FUNCTOR is the predicate name given as a string, ARITY is its
+arity given as an integer, and NECK is the neck operator of the
+predicate (e.g. \":-\" for regular clauses and \"-->\" for DCG
+non-terminals)."
+  :package-version '((sweeprolog "0.8.11"))
   :type '(choice (const    :tag "Below Current Predicate"
                         sweeprolog-default-new-predicate-location)
                  (const    :tag "Above Current Predicate"
@@ -2626,22 +2633,44 @@ instead."
                               neck)
     t))
 
-(defun sweeprolog-default-new-predicate-location (_pred)
+(defun sweeprolog-default-new-predicate-location (&rest _)
   (sweeprolog-end-of-predicate-at-point))
 
-(defun sweeprolog-new-predicate-location-above-current (_pred)
+(defun sweeprolog-new-predicate-location-above-current (&rest _)
   (sweeprolog-beginning-of-predicate-at-point)
   (let ((last (or (caddr (sweeprolog-last-token-boundaries))
                   (point-min))))
     (while (re-search-backward (rx bol "%" (or "%" "!")) last t))))
 
 (defun sweeprolog-maybe-define-predicate (point _kind _beg _end)
-  (when-let ((pred (sweeprolog-identifier-at-point point)))
-    (unless (sweeprolog-predicate-properties pred)
-      (funcall sweeprolog-new-predicate-location-function pred)
-      (let ((functor-arity (sweeprolog--mfn-to-functor-arity pred)))
-        (sweeprolog-insert-clause (car functor-arity)
-                                  (cdr functor-arity)))
+  (let ((functor nil)
+        (arity nil)
+        (neck ":-"))
+    (sweeprolog-analyze-term-at-point
+     (lambda (beg end arg)
+       (pcase arg
+         (`("goal_term" "undefined" ,f ,a)
+          (when (<= beg point end)
+            (setq functor f
+                  arity   a)))
+         ("neck"
+          (setq neck
+                (buffer-substring-no-properties beg end)))
+         (`("goal_term" "built_in" "phrase" ,a)
+          (when (and (<= beg point end)
+                     (member a '(2 3))
+                     (string= neck ":-"))
+            (setq neck "-->")))
+         (`("dcg" . "plain")
+          (when (and (<= beg point end)
+                     (string= neck "-->"))
+            (setq neck ":-"))))))
+    (when functor
+      (funcall sweeprolog-new-predicate-location-function
+               functor arity neck)
+      (sweeprolog-insert-clause functor
+                                (- arity (if (string= neck "-->") 2 0))
+                                neck)
       t)))
 
 (defun sweeprolog-insert-term-dwim (&optional point)

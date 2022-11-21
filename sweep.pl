@@ -481,6 +481,9 @@ sweep_color_normalized_(Offset, syntax_error, [Message0,Start0-End0|_], ["syntax
 sweep_color_normalized_(_, comment, [Kind0|_], ["comment"|Kind]) :-
     !,
     atom_string(Kind0, Kind).
+sweep_color_normalized_(_, dcg, [Kind0|_], ["dcg"|Kind]) :-
+    !,
+    atom_string(Kind0, Kind).
 sweep_color_normalized_(_, qq_content, [Type0|_], ["qq_content"|Type]) :-
     !,
     atom_string(Type0, Type).

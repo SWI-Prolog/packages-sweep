@@ -434,6 +434,92 @@ foo :- bar.
 foo :- Body.
 "))))
 
+(ert-deftest dwim-define-nested-phrase- ()
+  "Tests complex undefined predicate scenario"
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+foo --> {baz, phrase(bar, Baz)}.
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word 2)
+    (sweeprolog-insert-term-dwim)
+    (call-interactively #'kill-region)
+    (insert "foo")
+    (should (string= (buffer-string)
+                     "
+foo --> {baz, phrase(bar, Baz)}.
+
+bar --> foo.
+"
+                     ))))
+
+(ert-deftest dwim-define-phrase-non-terminal ()
+  "Tests defining an undefined DCG non-terminal from a clause."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+foo :- phrase(bar, Baz).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word 2)
+    (sweeprolog-insert-term-dwim)
+    (call-interactively #'kill-region)
+    (insert "foo")
+    (should (string= (buffer-string)
+                     "
+foo :- phrase(bar, Baz).
+
+bar --> foo.
+"
+                     ))))
+
+(ert-deftest dwim-define-braces-predicate ()
+  "Tests defining an undefined predicate from a DCG non-terminal."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo --> {bar}.
+")
+    (backward-word)
+    (sweeprolog-insert-term-dwim)
+    (call-interactively #'kill-region)
+    (insert "foo")
+    (should (string= (buffer-string)
+                     "
+foo --> {bar}.
+
+bar :- foo.
+"
+                     ))))
+
+(ert-deftest dwim-define-non-terminal ()
+  "Tests defining an undefined DCG non-terminal."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo --> bar.
+")
+    (backward-word)
+    (sweeprolog-insert-term-dwim)
+    (call-interactively #'kill-region)
+    (insert "foo")
+    (should (string= (buffer-string)
+                     "
+foo --> bar.
+
+bar --> foo.
+"
+                     ))))
+
 (ert-deftest dwim-define-predicate ()
   "Tests defining a new predicate with `sweeprolog-insert-term-dwim'."
   (with-temp-buffer
@@ -450,7 +536,8 @@ foo :- bar.
 foo :- bar.
 
 bar :- foo.
-"))))
+"
+                     ))))
 
 
 (ert-deftest dwim-define-predicate-above ()
@@ -475,7 +562,8 @@ bar :- foo.
 %!  foo is det.
 
 foo :- bar.
-"))))
+"
+                     ))))
 
 (ert-deftest end-of-top-term-with-univ ()
   "Tests detecting the fullstop in presence of `=..'."
