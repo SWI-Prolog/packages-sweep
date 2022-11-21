@@ -2,6 +2,9 @@
 
 (require 'sweeprolog)
 
+(remove-hook 'flymake-diagnostic-functions
+             #'flymake-proc-legacy-flymake)
+
 (defconst sweeprolog-tests-greeting
   "Hello from Elisp from Prolog from Elisp from Prolog from Elisp!")
 
