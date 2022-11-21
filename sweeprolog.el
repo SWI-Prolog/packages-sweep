@@ -332,9 +332,9 @@ non-terminals)."
                  (function :tag "Custom Function"))
   :group 'sweeprolog)
 
-(defcustom sweeprolog-top-level-signal-default-goal "trace"
+(defcustom sweeprolog-top-level-signal-default-goal "sweep_interrupt"
   "Prolog goal used by default for signaling top-level threads."
-  :package-version '((sweeprolog "0.8.10"))
+  :package-version '((sweeprolog "0.8.12"))
   :type 'string
   :group 'sweeprolog-top-level)
 

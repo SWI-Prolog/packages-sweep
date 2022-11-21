@@ -66,7 +66,8 @@
             sweep_atom_collection/2,
             sweep_context_callable/2,
             sweep_predicate_completion_candidates/2,
-            sweep_exportable_predicates/2
+            sweep_exportable_predicates/2,
+            sweep_interrupt/0
           ]).
 
 :- use_module(library(pldoc)).
@@ -828,3 +829,9 @@ sweep_exportable_predicates(Path0, Preds) :-
                 term_string(D1, D)
             ),
             Preds).
+
+:- if(current_predicate(prolog_interrupt/0)).
+sweep_interrupt :- prolog_interrupt.
+:- else.
+sweep_interrupt :- trace.
+:- endif.

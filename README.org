@@ -1248,11 +1248,10 @@ In ~sweeprolog-top-level-mode~ buffers, the command
 ~sweeprolog-top-level-signal-current~ is available for signaling the
 current top-level.  It is bound by default to ~C-c C-c~.  Normally, this
 command signals the goal specified by the user option
-~sweeprolog-top-level-signal-default-goal~, which is set by default to
-~trace~, causing the top-level thread to enter trace mode (see [[https://www.swi-prolog.org/pldoc/man?section=trace-summary-trace-mode][Trace
-Mode in the SWI-Prolog manual]]).  When called with a prefix argument
-(~C-u C-c C-c~), ~sweeprolog-top-level-signal-current~ instead prompts for
-a goal similarly to ~sweeprolog-top-level-signal~.
+~sweeprolog-top-level-signal-default-goal~, which is set by default to a
+predicate that interrupts the top-level thread returns control of the
+top-level to the user.  When ~sweeprolog-top-level-signal-current~ is
+called with a prefix argument (~C-u C-c C-c~), it prompts for the goal.
 
 It is also possible to signal top-levels from the =sweep= Top-level Menu
 buffer with the command ~sweeprolog-top-level-menu-signal~ with point at
