@@ -1069,12 +1069,20 @@ functions, in order:
 The default term insertion functions used by
 ~sweeprolog-insert-term-dwim~ create a new clause in the buffer, with
 placeholders for the arguments of the head term (if any) and for the
-clause's body.  These placeholders are simply anonymous variables (~_~),
-but they are annotated by the insertion functions with a special text
-property[fn:1] that allows ~sweeprolog-mode~ to recognize them as
-"holes" needed to be filled.  After a term is inserted with
-~sweeprolog-insert-term-dwim~, the region is set to the first hole and
-the cursor left at the its end.
+clause's body.  These placeholders, called simply "holes", represent
+the Prolog terms that remain to be given by the user.  Holes are
+written in the buffer as regular Prolog variables, but they are
+annotated with a special text property[fn:1] that allows
+~sweeprolog-mode~ to recognize them as holes needed to be filled.  After
+a term is inserted with ~sweeprolog-insert-term-dwim~, the region is set
+to the first hole and the cursor left at the its end.
+
+#+VINDEX: sweeprolog-highlight-holes
+When the user option ~sweeprolog-highlight-holes~ is set to non-nil,
+holes in Prolog buffers are highlighted with a dedicated face, making
+them easily distinguishable from regular Prolog variables.  Hole
+highlighting is enabled by default, to disable it customize
+~sweeprolog-highlight-holes~ to nil.
 
 #+FINDEX: sweeprolog-forward-hole
 #+KINDEX: C-c C-i

@@ -11,6 +11,41 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.12 on 2022-11-22
+
+** ~sweeprolog-top-level-signal-current~ uses the classic top-level interrupt interface
+
+~sweeprolog-top-level-signal-default-goal~ is now set to call the new
+SWI-Prolog built-in predicate ~prolog_interrupt/0~.  This predicate
+invokes the classic SWI-Prolog top-level interrupt interface similarly
+to pressing ~C-c~ in a terminal-bound top-level.
+
+** New user option ~sweeprolog-highlight-holes~
+
+When non-nil (the default), holes in Prolog buffers are highlighted
+with a dedicated face to help visually distinguishing them from
+regular Prolog variables.
+
+** ~sweeprolog-forward-hole~ is now bound in ~sweeprolog-top-level~ buffers
+
+Previously this command was only bound in ~sweeprolog-mode~.  It is now
+bound to ~C-c C-i~ in both major modes.
+
+** Fixes
+
+*** Inserting a new clause for a module-qualified predicate now works as expected
+
+Using ~sweeprolog-insert-term-dwim~ to insert the next clause of a
+module-qualified predicate definition would previously not work
+correctly.  This use case is now works as expected.
+
+*** Fixed possible non-termination finding the next term, causing Emacs to hang
+
+This version fixes an issue where the function
+~sweeprolog-beginning-of-next-top-term~, used by in the ~flymake~
+integration of ~sweeprolog-mode~, could hang when called near the end of
+the buffer.
+
 * Version 0.8.11 on 2022-11-21
 
 ** ~sweeprolog-new-predicate-location-function~ signature changed
