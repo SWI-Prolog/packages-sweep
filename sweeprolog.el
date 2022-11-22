@@ -338,6 +338,13 @@ non-terminals)."
   :type 'string
   :group 'sweeprolog-top-level)
 
+(defcustom sweeprolog-highlight-holes t
+  "If non-nil, highlight holes in a dedicated faces."
+  :package-version '((sweeprolog "0.8.12"))
+  :type 'boolean
+  :group 'sweeprolog)
+
+
 ;;;; Keymaps
 
 (defvar sweeprolog-mode-map
@@ -1812,7 +1819,8 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-recursion-face))))
     (`("goal" "meta"      . ,_)
      (cons (list beg end (sweeprolog-meta-face))
-           (when (get-text-property beg 'sweeprolog-hole)
+           (when (and sweeprolog-highlight-holes
+                      (get-text-property beg 'sweeprolog-hole))
              (list (list beg end (sweeprolog-hole-face))))))
     (`("goal" "built_in"  . ,_)
      (list (list beg end (sweeprolog-built-in-face))))
@@ -1889,7 +1897,11 @@ resulting list even when found in the current clause."
     ("int"
      (list (list beg end (sweeprolog-int-face))))
     ("singleton"
-     (list (list beg end (sweeprolog-singleton-face))))
+     (if (get-text-property beg 'sweeprolog-hole)
+         (cons (list beg end (sweeprolog-variable-face))
+               (when sweeprolog-highlight-holes
+                 (list (list beg end (sweeprolog-hole-face)))))
+       (list (list beg end (sweeprolog-singleton-face)))))
     ("option_name"
      (list (list beg end (sweeprolog-option-name-face))))
     ("no_option_name"
@@ -1898,7 +1910,8 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-control-face))))
     ("var"
      (cons (list beg end (sweeprolog-variable-face))
-           (when (get-text-property beg 'sweeprolog-hole)
+           (when (and sweeprolog-highlight-holes
+                      (get-text-property beg 'sweeprolog-hole))
              (list (list beg end (sweeprolog-hole-face))))))
     ("fullstop"
      (save-excursion
