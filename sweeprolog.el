@@ -2485,9 +2485,9 @@ Interactively, POINT is set to the current point."
       (re-search-forward (rx bol graph) nil t)
       (while (and (or (nth 8 (syntax-ppss))
                       (looking-at-p (rx bol (or "%" "/*"))))
-                  (not (eobp)))
-        (re-search-forward (rx bol graph) nil t)))
-    (beginning-of-line)
+                  (not (eobp))
+                  (re-search-forward (rx bol graph) nil t))))
+    (unless (= p (point)) (beginning-of-line))
     (not (= p (point)))))
 
 (defun sweeprolog-end-of-top-term ()

@@ -657,6 +657,24 @@ loop_term(I, Arity, Goal1, Goal2) :-
     (sweeprolog-end-of-top-term)
     (should (= (point) 232))))
 
+(ert-deftest beginning-of-next-top-term-at-last-clause ()
+  "Test finding the beginning of next top term when there isn't one."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+test_bindings(Name-Value) -->
+    ['    '~w = ~p'-[Name-Value] ]..
+")
+    (goto-char 43)
+    (backward-delete-char 1)
+    (end-of-line)
+    (backward-delete-char 1)
+    (should (string= (buffer-string) "
+test_bindings(Name-Value) -->
+    ['    ~w = ~p'-[Name-Value] ].
+"
+                     ))))
+
 
 (defun sweeprolog-test-indentation (given expected)
   (with-temp-buffer
