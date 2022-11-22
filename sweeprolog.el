@@ -1923,10 +1923,12 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-predicate-indicator-face))))
     ("string"
      (list (list beg end (sweeprolog-string-face))))
-    ("module"
+    (`("module" . ,_)
      (list (list beg end (sweeprolog-module-face))))
     ("neck"
      (list (list beg end (sweeprolog-neck-face))))
+    (`("hook" . ,_)
+     (list (list beg end (sweeprolog-hook-face))))
     ("hook"
      (list (list beg end (sweeprolog-hook-face))))
     (`("qq_content" . ,type)
@@ -2615,11 +2617,15 @@ instead."
               'sweeprolog-hole t
               'rear-sticky     '(sweeprolog-hole)))
 
-(defun sweeprolog-insert-clause (functor arity &optional neck)
+(defun sweeprolog-insert-clause (functor arity &optional neck module)
   (let ((point nil)
         (neck (or neck ":-")))
     (combine-after-change-calls
-      (insert "\n" functor)
+      (insert "\n"
+              (if module
+                  (concat module ":")
+                "")
+              functor)
       (setq point (point))
       (when (< 0 arity)
         (insert "(")
@@ -2633,16 +2639,18 @@ instead."
 (defun sweeprolog-maybe-insert-next-clause (point kind beg end)
   (when-let ((current-predicate (and (eq kind 'operator)
                                      (string= "." (buffer-substring-no-properties beg end))
-                                     (sweeprolog-definition-at-point point)))
-             (functor (nth 1 current-predicate))
-             (arity   (nth 2 current-predicate))
-             (neck    (nth 4 current-predicate)))
-    (goto-char end)
-    (end-of-line)
-    (sweeprolog-insert-clause functor
-                              (- arity (if (string= neck "-->") 2 0))
-                              neck)
-    t))
+                                     (sweeprolog-definition-at-point point))))
+    (let ((functor (nth 1 current-predicate))
+          (arity   (nth 2 current-predicate))
+          (neck    (nth 4 current-predicate))
+          (module  (nth 5 current-predicate)))
+      (goto-char end)
+      (end-of-line)
+      (sweeprolog-insert-clause functor
+                                (- arity (if (string= neck "-->") 2 0))
+                                neck
+                                module)
+      t)))
 
 (defun sweeprolog-default-new-predicate-location (&rest _)
   (sweeprolog-end-of-predicate-at-point))
@@ -2715,23 +2723,37 @@ of them signal success by returning non-nil."
 (defun sweeprolog-definition-at-point (&optional point)
   (save-excursion
     (when point (goto-char point))
-    (let ((def-at-point nil)
-          (neck ":-"))
+    (let ((functor nil)
+          (arity nil)
+          (neck ":-")
+          (module nil)
+          (start nil)
+          (stop nil))
       (sweeprolog-analyze-term-at-point (lambda (beg end arg)
                                           (pcase arg
-                                            (`("head_term" ,_ ,f ,a)
-                                             (setq def-at-point
-                                                   (list beg f a)))
+                                            ("range"
+                                             (setq start beg))
+                                            (`("head" "meta" ":" 2)
+                                             (setq module t))
+                                            ("expanded"
+                                             (setq module "prolog"))
+                                            (`("hook" . "message")
+                                             (when (string= module "prolog")
+                                               (setq functor (buffer-substring-no-properties beg end)
+                                                     arity 3)))
+                                            (`("module" . ,mod)
+                                             (when (eq module t)
+                                               (setq module mod)))
+                                            (`("head" ,_ ,f ,a)
+                                             (setq functor f
+                                                   arity a))
                                             ("neck"
                                              (setq neck
                                                    (buffer-substring-no-properties beg end)))
                                             ("fullstop"
-                                             (when def-at-point
-                                               (setq def-at-point
-                                                     (append def-at-point
-                                                             (list beg))))))))
-      (when def-at-point
-        (append def-at-point (list neck))))))
+                                             (setq stop beg)))))
+      (when functor
+        (list start functor arity stop neck module)))))
 
 (defun sweeprolog-insert-pldoc-for-predicate (functor arguments det summary)
   (insert "\n\n")

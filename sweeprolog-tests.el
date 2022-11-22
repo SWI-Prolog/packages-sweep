@@ -329,7 +329,7 @@ foo(Bar).
     (goto-char (point-max))
     (backward-word)
     (should (equal (sweeprolog-definition-at-point)
-                   '(1 "foo" 1 21 ":-")))))
+                   '(1 "foo" 1 21 ":-" nil)))))
 
 (ert-deftest syntax-errors ()
   "Test clearing syntax error face after errors are fixed."
@@ -397,6 +397,71 @@ foo.")
 foo.
 foo :- Body.
 "))))
+
+(ert-deftest dwim-next-clause-module-qualified-cdg ()
+  "Tests inserting new module-qualified DCG non-terminal."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+spam:foo --> bar.
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+spam:foo --> bar.
+spam:foo --> Body.
+
+"
+                     ))))
+
+(ert-deftest dwim-next-clause-module-qualified ()
+  "Tests inserting new module-qualified clause."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+spam:foo :- bar.
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+spam:foo :- bar.
+spam:foo :- Body.
+
+"
+                     ))))
+
+(ert-deftest dwim-next-clause-prolog-message ()
+  "Tests inserting new `prolog:message/1' clause."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+prolog:message(foo(bar, Baz, Spam)) -->
+    [ 'baz: ~D spam: ~w'-[Baz, Spam] ].
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+prolog:message(foo(bar, Baz, Spam)) -->
+    [ 'baz: ~D spam: ~w'-[Baz, Spam] ].
+prolog:message(_) --> Body.
+
+"
+                     ))))
 
 (ert-deftest dwim-next-clause-dcg ()
   "Tests inserting a non-terminal with `sweeprolog-insert-term-dwim'."
