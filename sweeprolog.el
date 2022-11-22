@@ -364,6 +364,7 @@ non-terminals)."
 (defvar sweeprolog-top-level-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
+    (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
     map)
   "Keymap for `sweeprolog-top-level-mode'.")
 
