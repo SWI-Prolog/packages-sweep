@@ -1743,6 +1743,12 @@ resulting list even when found in the current clause."
   (:inherit font-lock-doc-face :foreground "green")
   "Structured comments.")
 
+(sweeprolog-defface
+  hole
+  (:box t)
+  (:box t)
+  (:box t)
+  "Holes.")
 
 ;;;; Font-lock
 
@@ -1805,7 +1811,9 @@ resulting list even when found in the current clause."
     (`("goal" "recursion" . ,_)
      (list (list beg end (sweeprolog-recursion-face))))
     (`("goal" "meta"      . ,_)
-     (list (list beg end (sweeprolog-meta-face))))
+     (cons (list beg end (sweeprolog-meta-face))
+           (when (get-text-property beg 'sweeprolog-hole)
+             (list (list beg end (sweeprolog-hole-face))))))
     (`("goal" "built_in"  . ,_)
      (list (list beg end (sweeprolog-built-in-face))))
     (`("goal" "undefined" . ,_)
@@ -1889,7 +1897,9 @@ resulting list even when found in the current clause."
     ("control"
      (list (list beg end (sweeprolog-control-face))))
     ("var"
-     (list (list beg end (sweeprolog-variable-face))))
+     (cons (list beg end (sweeprolog-variable-face))
+           (when (get-text-property beg 'sweeprolog-hole)
+             (list (list beg end (sweeprolog-hole-face))))))
     ("fullstop"
      (save-excursion
        (goto-char (min end (point-max)))
