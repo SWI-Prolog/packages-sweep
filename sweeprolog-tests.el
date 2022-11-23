@@ -55,6 +55,75 @@
   (should (equal (sweeprolog-next-solution) nil))
   (should (equal (sweeprolog-cut-query) t)))
 
+(ert-deftest beginning-of-next-top-term ()
+  "Test finding the beginning of the next top term."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+foo(Bar) :- bar.
+foo(Baz) :- baz.
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-min))
+    (should (sweeprolog-beginning-of-next-top-term))
+    (should (= (point) 2))
+    (should (sweeprolog-beginning-of-next-top-term))
+    (should (= (point) 19))
+    (should (not (sweeprolog-beginning-of-next-top-term)))
+    (should (= (point) 19))))
+
+(ert-deftest beginning-of-next-top-term-header ()
+  "Test finding the beginning of the first top term."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "/*
+    Author:        Eshel Yaron
+    E-mail:        eshel@swi-prolog.org
+    Copyright (c)  2022, SWI-Prolog Solutions b.v.
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/*
+foobar :- baz.
+*/
+
+:- module(mod")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-min))
+    (should (sweeprolog-beginning-of-next-top-term))
+    (should (= (point) 1509))
+    (should (not (sweeprolog-beginning-of-next-top-term)))
+    (should (= (point) 1509))))
+
 (ert-deftest font-lock ()
   "Test semantic highlighting of Prolog code."
   (let ((temp (make-temp-file "sweeprolog-test"
@@ -211,6 +280,43 @@ bar(Bar) :- baz(Bar).
     (call-interactively #'sweeprolog-mark-predicate)
     (should (= (point) 24))
     (should (= (mark) 104))))
+
+(ert-deftest export-predicate-with-comment-header ()
+  "Test exporting a predicate after a comment header."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "/*
+Sed id ligula quis est convallis tempor.  Nam vestibulum accumsan
+nisl.  Sed diam.  Pellentesque tristique imperdiet tortor.  Fusce
+sagittis, libero non molestie mollis, magna orci ultrices dolor,
+at vulputate neque nulla lacinia eros.
+*/
+:- module(sweeprolog_test_export_predicate, []).
+
+%!  foo(+Bar) is det.
+
+foo(Bar) :- bar(Bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-word)
+    (call-interactively #'sweeprolog-export-predicate)
+    (should (equal (buffer-string)
+                              "/*
+Sed id ligula quis est convallis tempor.  Nam vestibulum accumsan
+nisl.  Sed diam.  Pellentesque tristique imperdiet tortor.  Fusce
+sagittis, libero non molestie mollis, magna orci ultrices dolor,
+at vulputate neque nulla lacinia eros.
+*/
+:- module(sweeprolog_test_export_predicate, [foo/1  % +Bar
+                                            ]).
+
+%!  foo(+Bar) is det.
+
+foo(Bar) :- bar(Bar).
+"))))
 
 (ert-deftest export-predicate ()
   "Test exporting a predicate."
