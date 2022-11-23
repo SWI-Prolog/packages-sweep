@@ -11,6 +11,20 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.9.0 on 2022-11-23
+
+** New command for creating =PlUnit= test blocks
+
+The new command ~sweeprolog-plunit-testset-skeleton~, accessible from
+the =Sweep= menu-bar entry, inserts a template for a block of unit tests
+at the location of the cursor.
+
+** Fixes
+
+- Fixed and added regression tests for an issue where
+  ~sweeprolog-beginning-of-next-top-term~ would get confused by
+  multi-line comments starting at the beginning of a line.
+
 * Version 0.8.13 on 2022-11-23
 
 This is a bug-fix release, solving an issue introduced in version
