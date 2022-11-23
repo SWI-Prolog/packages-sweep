@@ -11,6 +11,12 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.8.13 on 2022-11-23
+
+This is a bug-fix release, solving an issue introduced in version
+0.8.12 where highlighting goals qualified with a variable module would
+throw an error.
+
 * Version 0.8.12 on 2022-11-22
 
 ** ~sweeprolog-top-level-signal-current~ uses the classic top-level interrupt interface
