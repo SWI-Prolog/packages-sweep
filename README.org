@@ -821,9 +821,9 @@ C-l=).
 More relevant information about loading code in SWI-Prolog can be
 found in [[https://www.swi-prolog.org/pldoc/man?section=consulting][Loading Prolog source files]] in the SWI-Prolog manual.
 
-** Using templates for creating new modules
+** Creating New Modules
 :PROPERTIES:
-:CUSTOM_ID: auto-insert
+:CUSTOM_ID: creating-new-modules
 :DESCRIPTION: Commands for populating new Prolog modules with predefined contents
 :END:
 
@@ -1104,6 +1104,41 @@ a character while the region is active (see also [[info:emacs#Using Region][Usin
 Emacs manual]]).
 
 [fn:1] see [[info:elisp#Text Properties][Text Properties in the Elisp manual]]
+
+** Writing Tests
+:PROPERTIES:
+:CUSTOM_ID: writing-tests
+:DESCRIPTION: Commands that facilitate writing Prolog unit tests
+:END:
+
+#+FINDEX: sweeprolog-plunit-testset-skeleton~
+#+CINDEX: plunit
+#+CINDEX: testing
+
+SWI-Prolog includes the =PlUnit= unit testing framework[fn:3], in which
+unit tests are written in special blocks of Prolog code enclosed
+within the directives ~begin_tests/1~ and ~end_tests/1~.  To insert a new
+block of unit tests (also known as a /test-set/) in a Prolog buffer, use
+the command ~M-x sweeprolog-plunit-testset-skeleton~.  This command
+prompts for a name to give the new test-set and inserts a template
+such as the following:
+
+#+begin_src prolog
+:- begin_tests(foo_regression_tests).
+
+test() :- TestBody.
+
+:- end_tests(foo_regression_tests).
+#+end_src
+
+The cursor is left between the parentheses in ~test()~ head term and the
+~TestBody~ variable is marked as a hole (see [[#filling-holes][Filling Holes]]).  To insert
+another unit test, place point after a complete test case and type
+~C-M-m~ or ~M-RET~ to invoke ~sweeprolog-insert-term-dwim~ (see
+[[#insert-term-at-point][Context-Based Term Insertion]]).
+
+[fn:3] See [[https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/plunit.html%27)][Prolog Unit Tests in the SWI-Prolog manual]].
+
 
 * Prolog Help
 :PROPERTIES:

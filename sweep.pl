@@ -67,7 +67,8 @@
             sweep_context_callable/2,
             sweep_predicate_completion_candidates/2,
             sweep_exportable_predicates/2,
-            sweep_interrupt/0
+            sweep_interrupt/0,
+            sweep_string_to_atom/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -841,3 +842,9 @@ sweep_interrupt :- prolog_interrupt.
 :- else.
 sweep_interrupt :- trace.
 :- endif.
+
+sweep_string_to_atom(String, AtomString) :-
+    atom_string(Atom, String),
+    format(string(AtomString),
+           "~W",
+           [Atom, [quoted(true), character_escapes(true)]]).

@@ -427,7 +427,11 @@ non-terminals)."
     [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
     [ "Export predicate"
       sweeprolog-export-predicate
-      sweeprolog--exportable-predicates ]
+      (and (eq major-mode 'sweeprolog-mode)
+           (sweeprolog-definition-at-point)) ]
+    [ "Insert test-set template"
+      sweeprolog-plunit-testset-skeleton
+      (eq major-mode 'sweeprolog-mode) ]
     [ "Insert module template"
       auto-insert
       (eq major-mode 'sweeprolog-mode) ]
@@ -3494,31 +3498,46 @@ certain contexts to maintain conventional Prolog layout."
     (cursor-sensor-mode 1)))
 
 
-;;;; Auto-insert Prolog module header
+;;;; Skeletons and auto-insert
 
-(defconst sweeprolog-module-header-skeleton
-  '((or (and (buffer-file-name)
-             (file-name-sans-extension
-              (file-name-base (buffer-file-name))))
-        (read-string "Module name: "))
-    "/*"
-    "\n    Author:        "
-    (progn user-full-name)
-    "\n    Email:         "
-    (progn user-mail-address)
-    (progn sweeprolog-module-header-comment-skeleton)
-    "\n*/"
-    "\n\n:- module("
-    str
-    ", [])."
-    "\n\n/** <module> "
-    -
-    "\n\n*/\n\n")
-  "Prolog module header skeleton inserted by \\[auto-insert].")
+(defun sweeprolog-format-string-as-atom (string)
+  "Return STRING formatted as a Prolog atom.
+
+Notably, the returned string is quoted if required to make it a
+valid Prolog atom."
+  (sweeprolog--query-once "sweep" "sweep_string_to_atom" string))
+
+(define-skeleton sweeprolog-plunit-testset-skeleton
+  "Insert PlUnit test-set skeleton."
+  (let* ((fn (buffer-file-name))
+         (def (when fn (file-name-base fn))))
+    (sweeprolog-format-string-as-atom
+     (read-string (concat "Test set name"
+                          (when def (concat " (default " def ")"))
+                          ": ")
+                  nil nil def)))
+  ":- begin_tests(" str ").\n\n"
+  "test(" _ ") :- " (sweeprolog--hole "TestBody") ".\n\n"
+  ":- end_tests(" str ").\n")
+
+(define-skeleton sweeprolog-module-header-skeleton
+  "Insert SWI-Prolog module header skeleton."
+  (sweeprolog-format-string-as-atom
+   (or (and (buffer-file-name)
+            (file-name-sans-extension
+             (file-name-base (buffer-file-name))))
+       (read-string "Module name: ")))
+  "/*"
+  "\n    Author:        " (progn user-full-name)
+  "\n    Email:         " (progn user-mail-address)
+  (progn sweeprolog-module-header-comment-skeleton)
+  "\n*/\n\n:- module(" str ", []).\n\n/** <module> "
+  -
+  "\n\n*/\n\n")
 
 (define-auto-insert
   '(sweeprolog-mode . "SWI-Prolog module header")
-  sweeprolog-module-header-skeleton)
+  #'sweeprolog-module-header-skeleton)
 
 
 ;;;; Indentation
