@@ -1762,6 +1762,13 @@ resulting list even when found in the current clause."
   "Directives.")
 
 (sweeprolog-defface
+  string-comment
+  (:inherit font-lock-doc-face)
+  (:inherit font-lock-doc-face :foreground "darkgreen")
+  (:inherit font-lock-doc-face :foreground "green")
+  "String comments.")
+
+(sweeprolog-defface
   structured-comment
   (:inherit font-lock-doc-face)
   (:inherit font-lock-doc-face :foreground "darkgreen")
@@ -1804,6 +1811,9 @@ resulting list even when found in the current clause."
     (`("comment" . "structured")
      (list (list beg end nil)
            (list beg end (sweeprolog-structured-comment-face))))
+    (`("comment" . "string")
+     (list (list beg end nil)
+           (list beg end (sweeprolog-string-comment-face))))
     (`("comment" . ,_)
      (list (list beg end nil)
            (list beg end (sweeprolog-comment-face))))
@@ -2019,7 +2029,7 @@ resulting list even when found in the current clause."
     ("grammar_rule"
      (list (list beg end nil) (list beg end (sweeprolog-grammar-rule-face))))
     ("method"
-     (list (list beg end (sweeprolog-method-face))))
+     (list (list beg end nil) (list beg end (sweeprolog-method-face))))
     ("class"
      (list (list beg end (sweeprolog-class-face))))))
 
