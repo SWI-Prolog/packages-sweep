@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.9.1 on 2022-11-25
+
+** Predicate completion adjusts candidates arity according to the context
+
+Completing predicate invocations with ~completion-at-point~ now takes
+into account the number of arguments that will be implicitly added to
+the created predicate call by the context, and adjusts the completion
+candidates appropriately.  This applies both to DCG non-terminal
+bodies (where two implicit arguments are normally added to all
+predicate invocations), and to meta-calls such as ~include(foo, L0, L)~
+where the sole argument of ~foo/1~ is implicitly passed by ~include/3~.
+
+** Variable highlighting now excludes anonymous variables
+
+Unlike other variables, occurrences of anonymous variables (~_~) are no
+longer highlighted when the cursor enters one, since being anonymous
+they are semantically unrelated to each other.
+
 * Version 0.9.0 on 2022-11-23
 
 ** New command for creating =PlUnit= test blocks
