@@ -2089,9 +2089,11 @@ resulting list even when found in the current clause."
     ((or "var"
          `("goal_term" "meta" variable 0))
      (let ((var (buffer-substring-no-properties beg end)))
-       (with-silent-modifications
-         (put-text-property beg end 'cursor-sensor-functions
-                            (sweeprolog-cursor-sensor-functions var)))))))
+       (unless (string= var "_")
+         (with-silent-modifications
+           (put-text-property beg end 'cursor-sensor-functions
+                              (sweeprolog-cursor-sensor-functions
+                               var))))))))
 
 (defvar sweeprolog-analyze-region-start-hook
   '(sweeprolog-analyze-start-font-lock))
