@@ -1335,6 +1335,20 @@ resulting list even when found in the current clause."
   "ISO specified predicate definitions.")
 
 (sweeprolog-defface
+  head-def-iso
+  (:inherit font-lock-builtin-face)
+  (:foreground "blue" :weight bold)
+  (:foreground "cyan" :weight bold)
+  "Built-in ISO specified predicate definitions.")
+
+(sweeprolog-defface
+  head-def-swi
+  (:inherit font-lock-builtin-face)
+  (:foreground "blue" :weight bold)
+  (:foreground "cyan" :weight bold)
+  "Built-in SWI-Prolog predicate definitions.")
+
+(sweeprolog-defface
   head-imported
   (:inherit font-lock-function-name-face)
   (:foreground "darkgoldenrod4" :weight bold)
@@ -1799,6 +1813,10 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-head-test-face))))
     (`("head" "meta" . ,_)
      (list (list beg end (sweeprolog-head-meta-face))))
+    (`("head" "def_iso" . ,_)
+     (list (list beg end (sweeprolog-head-def-iso-face))))
+    (`("head" "def_swi" . ,_)
+     (list (list beg end (sweeprolog-head-def-swi-face))))
     (`("head" "iso" . ,_)
      (list (list beg end (sweeprolog-head-iso-face))))
     (`("head" "exported" . ,_)
