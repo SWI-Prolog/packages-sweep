@@ -1078,11 +1078,10 @@ resulting list even when found in the current clause."
     (when (and (<= beg (point) end)
                (let ((first (char-after beg)))
                  (not (or (sweeprolog--char-uppercase-p first)
-                          (= first ?_))))
-               (sweeprolog-context-callable-p))
+                          (= first ?_)))))
       (when-let
           ((col (sweeprolog--query-once "sweep" "sweep_predicate_completion_candidates"
-                                        nil)))
+                                        (sweeprolog-context-callable-p))))
         (list beg end col
               :exclusive 'no
               :annotation-function

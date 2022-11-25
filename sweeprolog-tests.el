@@ -229,6 +229,39 @@ baz(Baz) :- Baz = opaque
 "
                      ))))
 
+(ert-deftest complete-non-terminal ()
+  "Tests completing DCG non-terminals."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+barbaz --> foo.
+
+foo --> barb"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (call-interactively #'completion-at-point)
+    (should (string= (buffer-string)
+                     "
+barbaz --> foo.
+
+foo --> barbaz"
+
+                     ))
+    (insert ".\n\nfoo => barb")
+    (call-interactively #'completion-at-point)
+    (should (string= (buffer-string)
+                     "
+barbaz --> foo.
+
+foo --> barbaz.
+
+foo => barbaz(_, _)"
+
+                     ))))
+
 (ert-deftest complete-predicate ()
   "Tests completing predicate calls."
   (let ((temp (make-temp-file "sweeprolog-test"
@@ -877,24 +910,25 @@ test_bindings(Name-Value) -->
   (with-temp-buffer
     (sweeprolog-mode)
     (insert given)
-    (let ((callable (sweeprolog-context-callable-p)))
-      (should (if expected
-                  callable
-                (not callable))))))
+    (should (equal expected (sweeprolog-context-callable-p)))))
 
 (ert-deftest context-callable ()
   "Test recognizing callable contexts."
+  (sweeprolog-test-context-callable-p "foo(Bar) :- include( " 1)
+  (sweeprolog-test-context-callable-p "foo(Bar) --> " 2)
+  (sweeprolog-test-context-callable-p "foo(Bar) --> {include(" 1)
+  (sweeprolog-test-context-callable-p "foo(Bar) --> {include(phrase(" 2)
   (sweeprolog-test-context-callable-p "foo" nil)
   (sweeprolog-test-context-callable-p "foo(" nil)
   (sweeprolog-test-context-callable-p "foo(bar)" nil)
-  (sweeprolog-test-context-callable-p "foo(bar) :- " t)
+  (sweeprolog-test-context-callable-p "foo(bar) :- " 0)
   (sweeprolog-test-context-callable-p "foo(bar) :- baz(" nil)
   (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar" nil)
-  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), " t)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), " 0)
   (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(" nil)
   (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X" nil)
-  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X," t)
-  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X, false" t)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X," 0)
+  (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X, false" 0)
   (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X, false," nil)
   (sweeprolog-test-context-callable-p "foo(bar) :- baz(bar), findall(X, false, Xs). " nil))
 

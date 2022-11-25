@@ -764,13 +764,21 @@ sweep_atom_collection(Sub, Col) :-
             ),
             Col).
 
-sweep_predicate_completion_candidates(_, Ps) :-
+sweep_predicate_completion_candidates(D, Ps) :-
+    integer(D),
     findall(H,
             (   sweep_current_module(M),
-                @(predicate_property(H, visible), M)
+                (   @(predicate_property(H0, visible), M)
+                ;   xref_defined(_, H0, _)
+                ),
+                adjust_arity(D, H0, H)
             ),
             Hs),
     maplist(sweep_format_predicate, Hs, Ps).
+
+adjust_arity(0, H, H) :- !.
+adjust_arity(D, H0, H) :- pi_head(F/N0, H0), !, N is N0 - D, N >= 0, pi_head(F/N, H).
+adjust_arity(D, H0, H) :- pi_head(M:F/N0, H0), N is N0 - D, N >= 0, pi_head(M:F/N, H).
 
 sweep_format_predicate(H, [S|SP]) :-
     term_variables(H, Vs),
@@ -789,43 +797,55 @@ sweep_context_callable([H|T], R) :-
     ;   current_op(1200, _, F)
     ),
     !,
-    sweep_context_callable_(T, R).
+    (   F == (-->)
+    ->  R0 = 2
+    ;   R0 = 0
+    ),
+    sweep_context_callable_(T, R0, 0, R).
 sweep_context_callable([_|T], R) :-
     sweep_context_callable(T, R).
 
-sweep_context_callable_([], true) :- !.
-sweep_context_callable_([[":"|2]], true) :- !.
-sweep_context_callable_([["("|_]|T], R) :-
-    sweep_context_callable_(T, R).
-sweep_context_callable_([H|T], R) :-
+sweep_context_callable_([], R0, R1, R) :- R is R0 + R1, !.
+sweep_context_callable_([[":"|2]], R0, R1, R) :- R is R0 + R1, !.
+sweep_context_callable_([["("|_]|T], R0, R1, R) :-
+    !,
+    sweep_context_callable_(T, R0, R1, R).
+sweep_context_callable_([["{"|_]|T], 2, R1, R) :-
+    !,
+    sweep_context_callable_(T, 0, R1, R).
+sweep_context_callable_([H|T], R0, _, R) :-
     H = [F0|N],
     atom_string(F, F0),
-    (   sweep_context_callable_arg(F, N)
-    ->  sweep_context_callable_(T, R)
-    ;   R = []
-    ).
+    sweep_context_callable_arg(F, N, R1),
+    sweep_context_callable_(T, R0, R1, R).
 
-sweep_context_callable_arg(Neck, _) :-
+sweep_context_callable_arg((-->), _, 2) :- !.
+sweep_context_callable_arg(Neck, _, 0) :-
     (   xref_op(_, op(1200, _, Neck))
     ->  true
     ;   current_op(1200, _, Neck)
-    ).
-sweep_context_callable_arg(F, N) :-
-    (   current_predicate(F/M), pi_head(F/M,Head)
-    ;   xref_defined(_, Head, _), pi_head(F/M,Head)
     ),
+    !.
+sweep_context_callable_arg(F, N, R) :-
+    sweep_current_module(Mod),
+    (   @(predicate_property(Head, visible), Mod)
+    ;   xref_defined(_, Head, _)
+    ),
+    pi_head(F/M,Head),
     M >= N,
-    catch(infer_meta_predicate(Head, Spec),
-          error(permission_error(access, private_procedure, _),
-                context(system:clause/2, _)),
-          false),
+    (   @(predicate_property(Head, meta_predicate(Spec)), Mod)
+    ;   catch(infer_meta_predicate(Head, Spec),
+              error(permission_error(access, private_procedure, _),
+                    context(system:clause/2, _)),
+              false)
+    ),
     arg(N, Spec, A),
-    callable_arg(A).
+    callable_arg(A, R).
 
-callable_arg(N) :- integer(N), !.
-callable_arg(^) :- !.
-callable_arg(//) :- !.
-callable_arg(:) :- !.
+callable_arg(N,    N) :- integer(N), !.
+callable_arg((^),  0) :- !.
+callable_arg((//), 2) :- !.
+callable_arg((:),  0) :- !.
 
 sweep_exportable_predicates(Path0, Preds) :-
     atom_string(Path, Path0),
