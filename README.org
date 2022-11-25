@@ -1131,10 +1131,10 @@ test() :- TestBody.
 :- end_tests(foo_regression_tests).
 #+end_src
 
-The cursor is left between the parentheses in ~test()~ head term and the
-~TestBody~ variable is marked as a hole (see [[#filling-holes][Filling Holes]]).  To insert
-another unit test, place point after a complete test case and type
-~C-M-m~ or ~M-RET~ to invoke ~sweeprolog-insert-term-dwim~ (see
+The cursor is left between the parentheses of the ~test()~ head term,
+and the ~TestBody~ variable is marked as a hole (see [[#filling-holes][Filling Holes]]).  To
+insert another unit test, place point after a complete test case and
+type ~C-M-m~ or ~M-RET~ to invoke ~sweeprolog-insert-term-dwim~ (see
 [[#insert-term-at-point][Context-Based Term Insertion]]).
 
 [fn:3] See [[https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/plunit.html%27)][Prolog Unit Tests in the SWI-Prolog manual]].
