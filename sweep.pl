@@ -68,7 +68,8 @@
             sweep_predicate_completion_candidates/2,
             sweep_exportable_predicates/2,
             sweep_interrupt/0,
-            sweep_string_to_atom/2
+            sweep_string_to_atom/2,
+            sweep_file_path_in_library/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -84,6 +85,7 @@
 :- use_module(library(lynx/html_text)).
 :- use_module(library(http/html_write)).
 :- use_module(library(prolog_pack)).
+:- use_module(library(prolog_deps)).
 
 :- if(exists_source(library(help))).
 :- use_module(library(help)).
@@ -466,7 +468,7 @@ sweep_color_normalized_(_, Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
     sweep_color_goal(Goal0),
     !,
     atom_string(Goal0, Goal),
-    term_string(Kind0, Kind),
+    sweeprolog_goal_kind_normalized(Kind0, Kind),
     (   (   var(Head)
         ->  true
         ;   Head == []
@@ -503,6 +505,13 @@ sweep_color_normalized_(_, file_no_depend, [File0|_], ["file_no_depend"|File]) :
     atom_string(File0, File).
 sweep_color_normalized_(_, Nom0, _, Nom) :-
     atom_string(Nom0, Nom).
+
+sweeprolog_goal_kind_normalized(autoload(Path0), ["autoload"|Path]) :-
+    !,
+    absolute_file_name(Path0, Path1, [extensions([pl])]),
+    atom_string(Path1, Path).
+sweeprolog_goal_kind_normalized(Kind0, Kind) :-
+    term_string(Kind0, Kind).
 
 sweep_color_goal(goal).
 sweep_color_goal(goal_term).
@@ -868,3 +877,8 @@ sweep_string_to_atom(String, AtomString) :-
     format(string(AtomString),
            "~W",
            [Atom, [quoted(true), character_escapes(true)]]).
+
+sweep_file_path_in_library(Path, Spec) :-
+    file_name_on_path(Path, Spec0),
+    prolog_deps:segments(Spec0, Spec1),
+    term_string(Spec1, Spec).

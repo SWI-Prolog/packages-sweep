@@ -659,8 +659,98 @@ foo :- bar.
 foo :- Body.
 "))))
 
-(ert-deftest dwim-define-nested-phrase- ()
-  "Tests complex undefined predicate scenario"
+(ert-deftest append-dependencies ()
+  "Tests making implicit autoloads explicit with existing directive."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- use_module(library(lists), [ member/2
+                              ]).
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- permutation(X, [1,2,3]).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (call-interactively #'sweeprolog-update-dependencies)
+    (should (string= (buffer-string)
+                     "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- use_module(library(lists), [ member/2,
+                                permutation/2
+                              ]).
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- permutation(X, [1,2,3]).
+"
+                     ))))
+
+(ert-deftest update-dependencies ()
+  "Tests making implicit autoloads explicit."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+bar(X) :- member(X, [1,2,3]).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (call-interactively #'sweeprolog-update-dependencies)
+    (should (string= (buffer-string)
+                     "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- autoload(library(lists), [ member/2
+                            ]).
+
+bar(X) :- member(X, [1,2,3]).
+"
+
+                     ))
+    (goto-char (point-max))
+    (insert "bar(X) :- permutation(X, [1,2,3]).")
+    (call-interactively #'sweeprolog-update-dependencies)
+    (should (string= (buffer-string)
+                     "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- autoload(library(lists), [ member/2,
+                              permutation/2
+                            ]).
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- permutation(X, [1,2,3])."))))
+
+(ert-deftest dwim-define-nested-phrase ()
+  "Tests complex undefined predicate scenario."
   (let ((temp (make-temp-file "sweeprolog-test"
                               nil
                               "pl"

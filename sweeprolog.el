@@ -356,6 +356,7 @@ non-terminals)."
     (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
     (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
     (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
+    (define-key map (kbd "C-c C-u") #'sweeprolog-update-dependencies)
     (define-key map (kbd "C-c C-`")
                 (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
                     #'sweeprolog-show-diagnostics
@@ -439,6 +440,7 @@ non-terminals)."
       sweeprolog-document-predicate-at-point
       (and (eq major-mode 'sweeprolog-mode)
            (sweeprolog-definition-at-point)) ]
+    [ "Update autoload directives" sweeprolog-update-dependencies t ]
     "--"
     [ "Open top-level"         sweeprolog-top-level       t ]
     [ "Signal top-level"
@@ -1834,6 +1836,8 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-head-hook-face))))
     (`("head" "built_in" . ,_)
      (list (list beg end (sweeprolog-head-built-in-face))))
+    (`("goal" ("autoload" . ,_) . ,_)
+     (list (list beg end (sweeprolog-autoload-face))))
     (`("head" ,(rx "imported(") . ,_)
      (list (list beg end (sweeprolog-head-imported-face))))
     (`("head" ,(rx "extern(") . ,_)
@@ -1867,8 +1871,6 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-thread-local-face))))
     (`("goal" ,(rx "extern(") . ,_)
      (list (list beg end (sweeprolog-extern-face))))
-    (`("goal" ,(rx "autoload(") . ,_)
-     (list (list beg end (sweeprolog-autoload-face))))
     (`("goal" ,(rx "imported(") . ,_)
      (list (list beg end (sweeprolog-imported-face))))
     (`("goal" ,(rx "global(") . ,_)
@@ -2755,6 +2757,11 @@ of them signal success by returning non-nil."
   (and (looking-at-p (rx bol graph))
        (not (nth 8 (syntax-ppss)))
        (not (looking-at-p (rx bol (or "%" "/*"))))))
+
+(defun sweeprolog-analyze-buffer-with (cb)
+  (add-hook 'sweeprolog-analyze-region-fragment-hook cb nil t)
+  (sweeprolog-analyze-buffer t)
+  (remove-hook 'sweeprolog-analyze-region-fragment-hook cb t))
 
 (defun sweeprolog-analyze-term-at-point (cb)
   (let ((sweeprolog--analyze-point (point)))
@@ -4027,6 +4034,93 @@ valid Prolog atom."
              (cons 'swi-prolog-predicate
                    'sweeprolog--find-predicate-from-symbol))
 
+
+;;;; Dependency Managagement
+
+(defun sweeprolog-update-dependencies ()
+  "Add explicit dependencies for implicitly autoaloaded predicates."
+  (interactive "" sweeprolog-mode)
+  (let ((existing nil)
+        (missing nil)
+        (current-directive-beg nil)
+        (current-directive-end nil)
+        (current-directive-file nil))
+    (sweeprolog-analyze-buffer-with
+     (lambda (beg end arg)
+       (pcase arg
+         (`("goal_term" "built_in" "autoload" 2)
+          (setq current-directive-beg beg
+                current-directive-end end))
+         (`("goal_term" "built_in" "use_module" 2)
+          (setq current-directive-beg beg
+                current-directive-end end))
+         ((or `("file"           . ,file)
+              `("file_no_depend" . ,file))
+          (when (and current-directive-beg
+                     (<= current-directive-beg
+                         beg end
+                         current-directive-end))
+            (setq current-directive-file file)))
+         ((or "list" "empty_list")
+          (when (and current-directive-beg
+                     (<= current-directive-beg
+                         beg end
+                         current-directive-end))
+            (push
+             (cons current-directive-file (copy-marker (1- end) t))
+             existing)))
+         (`("goal" ("autoload" . ,file) ,functor ,arity)
+          (let ((autoloaded (list file functor arity)))
+            (unless (member autoloaded missing)
+              (push autoloaded missing)))))))
+    (if missing
+        (progn
+          (dolist (autoloaded missing)
+            (let* ((file    (nth 0 autoloaded))
+                   (functor (nth 1 autoloaded))
+                   (arity   (nth 2 autoloaded))
+                   (pred    (concat (sweeprolog-format-string-as-atom functor)
+                                    "/" (number-to-string arity))))
+              (message "Adding explicit dependency on %s from %s."
+                       pred file)
+              (if-let ((marker (cdr (assoc-string file existing))))
+                  (save-mark-and-excursion
+                    (goto-char marker)
+                    (pcase (sweeprolog-last-token-boundaries)
+                      (`(open ,_ ,oend)
+                       (goto-char oend)
+                       (insert " " pred "\n"))
+                      (`(symbol ,_ ,oend)
+                       (let ((point (point)))
+                         (goto-char oend)
+                         (insert ",")
+                         (goto-char (1+ point))
+                         (insert pred "\n")))
+                      (tok
+                       (user-error "Unexpected token %s while looking for import list"
+                                   tok)))
+                    (indent-region-line-by-line  (save-excursion
+                                                   (sweeprolog-beginning-of-top-term)
+                                                   (point))
+                                                 (save-excursion
+                                                   (sweeprolog-end-of-top-term)
+                                                   (point))))
+                (save-mark-and-excursion
+                  (goto-char (point-min))
+                  (sweeprolog-end-of-top-term)
+                  (while (forward-comment 1))
+                  (insert ":- autoload("
+                          (sweeprolog--query-once "sweep"
+                                                  "sweep_file_path_in_library"
+                                                  file)
+                          ", [ " pred "\n]).\n\n")
+                  (indent-region-line-by-line (save-excursion
+                                                (sweeprolog-beginning-of-top-term)
+                                                (point))
+                                              (point))
+                  (push (cons file (copy-marker (- (point) 5) t)) existing)))))
+          (sweeprolog-analyze-buffer t))
+      (message "No implicit autoloads found."))))
 
 ;;;; Footer
 
