@@ -11,6 +11,20 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.9.2 on 2022-11-26
+
+** New command ~sweeprolog-update-dependencies~
+
+Bound to ~C-c C-u~ in ~sweeprolog-mode~ buffers, this command analyzes the
+current buffer looking for calls to implicitly autoloaded predicates,
+and adds or updates ~autoload/2~ and ~use_module/2~ directives to make the
+dependencies on these predicates explicit.
+
+** New user option ~sweeprolog-note-implicit-autoloads~
+
+Boolean flag, when non-nil ~flymake~ also reports implicitly autoloaded
+predicates in ~sweeprolog-mode~ buffers.  Enabled by default.
+
 * Version 0.9.1 on 2022-11-25
 
 ** Predicate completion adjusts candidates arity according to the context

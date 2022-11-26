@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.9.1
+;; Package-Version: 0.9.2
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -2067,7 +2067,9 @@ resulting list even when found in the current clause."
                                f a)))
                 (`("goal" "undefined" ,f ,a)
                  (cons :warning
-                       (format "Undefined predicate %s/%s" f a)))
+                       (substitute-command-keys
+                        (format "Undefined predicate %s/%s, use \\[sweeprolog-insert-term-dwim] to define it"
+                                f a))))
                 (`("goal" ("autoload" . ,file) . ,_)
                  (when sweeprolog-note-implicit-autoloads
                    (cons :note
