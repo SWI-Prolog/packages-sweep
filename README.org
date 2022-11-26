@@ -1111,10 +1111,9 @@ Emacs manual]]).
 :DESCRIPTION: Commands that facilitate writing Prolog unit tests
 :END:
 
-#+FINDEX: sweeprolog-plunit-testset-skeleton~
+#+FINDEX: sweeprolog-plunit-testset-skeleton
 #+CINDEX: plunit
 #+CINDEX: testing
-
 SWI-Prolog includes the =PlUnit= unit testing framework[fn:3], in which
 unit tests are written in special blocks of Prolog code enclosed
 within the directives ~begin_tests/1~ and ~end_tests/1~.  To insert a new
@@ -1139,6 +1138,24 @@ type ~C-M-m~ or ~M-RET~ to invoke ~sweeprolog-insert-term-dwim~ (see
 
 [fn:3] See [[https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/plunit.html%27)][Prolog Unit Tests in the SWI-Prolog manual]].
 
+** Managing Dependencies
+:PROPERTIES:
+:CUSTOM_ID: managing-dependencies
+:DESCRIPTION: Commands for managing dependencies of Prolog source files on each other
+:END:
+
+#+FINDEX: sweeprolog-update-dependencies
+#+KINDEX: C-c C-u
+#+CINDEX: dependencies
+#+CINDEX: autoload
+It is considered good practice for SWI-Prolog source files to
+explicitly list their dependencies on predicates defined in other
+files by using ~autoload/2~ and ~use_module/2~ directives.  To find all
+implicitly autoloaded predicates in the current ~sweeprolog-mode~ buffer
+and make the dependencies on them explicit, use the command ~M-x
+sweeprolog-update-dependencies~ bound to ~C-c C-u~.  This command
+analyzes the current buffer and adds or updates ~autoload/2~ and
+~use_module/2~ as needed.
 
 * Prolog Help
 :PROPERTIES:
