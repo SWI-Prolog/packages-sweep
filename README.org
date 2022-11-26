@@ -1157,6 +1157,13 @@ sweeprolog-update-dependencies~ bound to ~C-c C-u~.  This command
 analyzes the current buffer and adds or updates ~autoload/2~ and
 ~use_module/2~ as needed.
 
+#+VINDEX: sweeprolog-note-implicit-autoloads
+By default, when ~flymake~ integration is enabled (see [[#diagnostics][Examining
+diagnostics]]), calls to implicitly autoloaded predicates are detected
+and marked as note-level diagnostics.  To inhibit ~flymake~ from
+diagnosing implicit autoloads, customize the user option
+~sweeprolog-note-implicit-autoloads~ to nil.
+
 * Prolog Help
 :PROPERTIES:
 :CUSTOM_ID: prolog-help

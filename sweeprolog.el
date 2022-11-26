@@ -295,6 +295,12 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
   :type 'boolean
   :group 'sweeprolog)
 
+(defcustom sweeprolog-note-implicit-autoloads t
+  "If non-nil, `flymake' notes implicitly autoload predicates."
+  :package-version '((sweeprolog "0.9.2"))
+  :type 'boolean
+  :group 'sweeprolog)
+
 (defcustom sweeprolog-enable-eldoc t
   "If non-nil, enable `eldoc' suport in `sweeprolog-mode' buffers."
   :package-version '((sweeprolog "0.4.7"))
@@ -2062,6 +2068,12 @@ resulting list even when found in the current clause."
                 (`("goal" "undefined" ,f ,a)
                  (cons :warning
                        (format "Undefined predicate %s/%s" f a)))
+                (`("goal" ("autoload" . ,file) . ,_)
+                 (when sweeprolog-note-implicit-autoloads
+                   (cons :note
+                         (substitute-command-keys
+                          (format "Implicit autoload from %s, use \\[sweeprolog-update-dependencies] to add dependecy directive"
+                                  file)))))
                 ("instantiation_error"
                  (cons :warning "Instantiation error"))
                 ("type_error"
