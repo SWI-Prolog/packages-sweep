@@ -375,6 +375,14 @@ non-terminals)."
     map)
   "Keymap for `sweeprolog-mode'.")
 
+(defvar sweeprolog-forward-hole-repeat-mode
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-i") #'sweeprolog-forward-hole)
+    (define-key map (kbd "p") #'sweeprolog-backward-hole)
+    (define-key map (kbd "n") #'sweeprolog-forward-hole)
+    map)
+  "Repeat map for \\[sweeprolog-forward-hole].")
+
 (defvar sweeprolog-top-level-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
@@ -2622,6 +2630,7 @@ point and the beginning of the buffer."
                        (not (eobp)))
              (forward-char))
            (point))))
+    (forward-char -1)
     (while (and (get-text-property (point) 'sweeprolog-hole)
                 (not (bobp)))
       (forward-char -1))
@@ -2638,7 +2647,7 @@ point and the beginning of the buffer."
         (while (and (get-text-property (point) 'sweeprolog-hole)
                     (not (bobp)))
           (forward-char -1))
-        (cons (point) end)))))
+        (cons (1+ (point)) (1+ end))))))
 
 (defun sweeprolog--forward-hole (&optional wrap)
   (if-let ((hole (sweeprolog--next-hole wrap))
@@ -2658,6 +2667,15 @@ point and the beginning of the buffer."
         (push-mark beg t t))
     (user-error "No holes before point")))
 
+(defun sweeprolog-backward-hole (&optional arg)
+  "Move point to the previous hole in a `sweeprolog-mode' buffer.
+
+With negative prefix argument ARG, move to the next hole
+instead."
+  (interactive "p" sweeprolog-mode)
+  (setq arg (or arg 1))
+  (sweeprolog-forward-hole (- arg)))
+
 (defun sweeprolog-forward-hole (&optional arg)
   "Move point to the next hole in a `sweeprolog-mode' buffer.
 
@@ -2669,6 +2687,14 @@ instead."
   (if (> 0 arg)
       (sweeprolog--backward-hole t)
     (sweeprolog--forward-hole t)))
+
+(put 'sweeprolog-backward-hole
+     'repeat-map
+     'sweeprolog-forward-hole-repeat-mode)
+
+(put 'sweeprolog-forward-hole
+     'repeat-map
+     'sweeprolog-forward-hole-repeat-mode)
 
 (defun sweeprolog--hole (&optional string)
   (propertize (or string "_")
