@@ -11,6 +11,18 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.9.3 on 2022-11-27
+
+** Added repeat keymap for ~sweeprolog-forward-hole~ (Emacs 28+)
+
+This allows repeating the command after the first invocation with ~TAB~.
+
+** Predicate completion now names inserted holes based on the predicate's documentation
+
+Completing predicate invocations with ~C-M-i~ (~completion-at-point~) now
+infers specific names for the holes inserted as argument placeholders
+based on the predicate's ~PlDoc~ specification, when present.
+
 * Version 0.9.2 on 2022-11-26
 
 ** New command ~sweeprolog-update-dependencies~
