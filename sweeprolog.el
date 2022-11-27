@@ -2082,7 +2082,7 @@ resulting list even when found in the current clause."
                  (when sweeprolog-note-implicit-autoloads
                    (cons :note
                          (substitute-command-keys
-                          (format "Implicit autoload from %s, use \\[sweeprolog-update-dependencies] to add dependecy directive"
+                          (format "Implicit autoload from %s, use \\[sweeprolog-update-dependencies] to add dependency directive"
                                   file)))))
                 ("instantiation_error"
                  (cons :warning "Instantiation error"))
