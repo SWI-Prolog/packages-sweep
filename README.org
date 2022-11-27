@@ -1648,11 +1648,6 @@ there some further improvements that we want to pursue:
   definition, ideally with optional =PlDoc= comments (see [[#sweeprolog-pldoc][Documenting
   predicates]]).
 
-- Improve the information provided for predicate completion candidates :: predicate
-  completion with ~C-M-i~ should annotate each completion candidate with
-  the names and modes of its arguments, when available.  E.g. say
-  ~foo(+Bar, -Baz)~ instead of ~foo/2~.
-
 - Make predicate completion aware of module-qualification :: predicate
   completion should detect when the prefix it's trying to complete
   starts with a module-qualification ~foo:ba<|>~ and restrict completion

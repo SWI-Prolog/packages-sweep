@@ -262,6 +262,38 @@ foo => barbaz(_, _)"
 
                      ))))
 
+(ert-deftest complete-predicate-with-args ()
+  "Tests completing predicate calls."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+:- module(foobarbaz, []).
+
+%!  foobarbaz(:Bar, ?Baz:integer) is det.
+
+foobarbaz(_, 5) :- spam.
+
+spam :- foobarb
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (backward-char)
+    (call-interactively #'completion-at-point)
+    (should (string= (buffer-string)
+                     "
+:- module(foobarbaz, []).
+
+%!  foobarbaz(:Bar, ?Baz:integer) is det.
+
+foobarbaz(_, 5) :- spam.
+
+spam :- foobarbaz(Bar, Baz)
+"
+                     ))))
+
 (ert-deftest complete-predicate ()
   "Tests completing predicate calls."
   (let ((temp (make-temp-file "sweeprolog-test"
