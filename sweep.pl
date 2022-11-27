@@ -775,28 +775,36 @@ sweep_atom_collection(Sub, Col) :-
 
 sweep_predicate_completion_candidates(D, Ps) :-
     integer(D),
+    sweep_current_module(M),
     findall(H,
-            (   sweep_current_module(M),
-                (   @(predicate_property(H0, visible), M)
-                ;   xref_defined(_, H0, _)
+            (   (   @(predicate_property(H, visible), M)
+                ;   xref_defined(_, H, _)
                 ),
-                adjust_arity(D, H0, H)
+                pi_head(_/N, H),
+                N - D >= 0
             ),
             Hs),
-    maplist(sweep_format_predicate, Hs, Ps).
+    maplist(sweep_format_predicate(M, D), Hs, Ps).
 
-adjust_arity(0, H, H) :- !.
-adjust_arity(D, H0, H) :- pi_head(F/N0, H0), !, N is N0 - D, N >= 0, pi_head(F/N, H).
-adjust_arity(D, H0, H) :- pi_head(M:F/N0, H0), N is N0 - D, N >= 0, pi_head(M:F/N, H).
-
-sweep_format_predicate(H, [S|SP]) :-
-    term_variables(H, Vs),
-    maplist(=('$VAR'('_')), Vs),
+sweep_format_predicate(M0, D, H0, [S|SP]) :-
+    pi_head(F/N0, H0),
+    N is N0 - D,
+    length(NamedArgs, N),
+    append(NamedArgs, _, OpenNamedArgs),
+    (   @(predicate_property(H0, implementation_module(M)), M0),
+        predicate_argument_names(M:F/N0, As)
+    ->  maplist(name_variable, As, Vs), OpenNamedArgs = Vs
+    ;   maplist(=('$VAR'('_')), NamedArgs)
+    ),
+    !,
+    H =.. [F|NamedArgs],
     term_string(H, S, [quoted(true),
                        character_escapes(true),
                        spacing(next_argument),
                        numbervars(true)]),
     term_string(_, S, [subterm_positions(SP)]).
+
+name_variable(N, V) :- V = '$VAR'(N).
 
 sweep_context_callable([H|T], R) :-
     H = [F0|_],
@@ -882,3 +890,18 @@ sweep_file_path_in_library(Path, Spec) :-
     file_name_on_path(Path, Spec0),
     prolog_deps:segments(Spec0, Spec1),
     term_string(Spec1, Spec).
+
+predicate_argument_names(M:F/A, Args) :-
+    doc_comment(M:F/A, _, _, C),
+    comment_modes(C, ModeAndDets),
+    member(ModeAndDet, ModeAndDets),
+    strip_det(ModeAndDet, Head),
+    Head =.. [_|Args0],
+    length(Args0, A),
+    maplist(strip_mode_and_type, Args0, Args).
+
+strip_mode_and_type(S, N), compound(S) => arg(1, S, N0), strip_type(N0, N).
+strip_mode_and_type(S, N) => strip_type(S, N).
+
+strip_type(N:_, N) :- !.
+strip_type(N, N).
