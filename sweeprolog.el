@@ -916,7 +916,7 @@ module name, F is a functor name and N is its arity."
         (when (and id-at-point
                    (not (eq (car id-at-point) 'variable)))
           (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
-                                  id-at-point))))))
+                                  (append id-at-point (buffer-file-name))))))))
 
 
 ;;;; Modules

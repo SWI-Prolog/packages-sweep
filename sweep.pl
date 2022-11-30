@@ -719,8 +719,9 @@ strip_det(Mode is _, Mode) :- !.
 strip_det(//(Mode), Mode) :- !.
 strip_det(Mode, Mode).
 
-sweep_functor_arity_pi([F0,A], PI)   :-
-    !,
+sweep_functor_arity_pi([M,F0,A|_], PI) :-
+    !, atom_string(F, F0), term_string(M:F/A, PI).
+sweep_functor_arity_pi([F0,A|Path0], PI) :-
     atom_string(F, F0),
     pi_head(F/A, Head),
     sweep_current_module(M0),
@@ -729,11 +730,13 @@ sweep_functor_arity_pi([F0,A], PI)   :-
     ->  T = M:F/A
     ;   xref_defined(_, Head, imported(Other)), xref_module(Other, M)
     ->  T = M:F/A
+    ;   string(Path0),
+        atom_string(Path, Path0),
+        xref_defined(Path, Head, _)
+    ->  T = M0:F/A
     ;   T = F/A
     ),
     term_string(T, PI).
-sweep_functor_arity_pi([M,F0,A], PI) :-
-    atom_string(F, F0), term_string(M:F/A, PI).
 
 sweep_current_module(Module) :-
     sweep_main_thread,
