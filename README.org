@@ -666,13 +666,13 @@ buffer, and applying the following layout rules:
 
 To enable this mode in a ~sweeprolog-mode~ buffer, type ~M-x
 sweeprolog-electric-layout-mode~.  This step can be automated by adding
-~sweeprolog-electric-layout-mode~ to ~sweeprolog-mode-hook~[fn:2]:
+~sweeprolog-electric-layout-mode~ to ~sweeprolog-mode-hook~[fn:1]:
 
 #+begin_src emacs-lisp
   (add-hook 'sweeprolog-mode-hook #'sweeprolog-electric-layout-mode)
 #+end_src
 
-[fn:2] For more information about major mode hooks in Emacs, which
+[fn:1] For more information about major mode hooks in Emacs, which
 ~sweeprolog-mode-hook~ is one of, see [[info:emacs#Hooks][Hooks]].
 
 ** Term-based editing and motion commands
@@ -1072,7 +1072,7 @@ placeholders for the arguments of the head term (if any) and for the
 clause's body.  These placeholders, called simply "holes", represent
 the Prolog terms that remain to be given by the user.  Holes are
 written in the buffer as regular Prolog variables, but they are
-annotated with a special text property[fn:1] that allows
+annotated with a special text property[fn:2] that allows
 ~sweeprolog-mode~ to recognize them as holes needed to be filled.  After
 a term is inserted with ~sweeprolog-insert-term-dwim~, the region is set
 to the first hole and the cursor left at the its end.
@@ -1084,16 +1084,31 @@ them easily distinguishable from regular Prolog variables.  Hole
 highlighting is enabled by default, to disable it customize
 ~sweeprolog-highlight-holes~ to nil.
 
+#+FINDEX: sweeprolog-backward-hole
 #+FINDEX: sweeprolog-forward-hole
 #+KINDEX: C-c C-i
 #+KINDEX: C-c TAB
 #+KINDEX: C-- C-c C-i
 #+KINDEX: C-- C-c TAB
 To jump to the next hole in a ~sweeprolog-mode~ buffer, use the command
-~C-c C-i~ (~M-x sweeprolog-forward-hole~).  This command sets up the
-region to cover the next hole after point leaving the cursor at right
-after the hole.  To jump to the previous hole instead, call
-~sweeprolog-forward-hole~ with a negative prefix argument (~C-- C-c C-i~).
+~M-x sweeprolog-forward-hole~, bound by default to ~C-c TAB~ (or ~C-c C-i~).
+This command sets up the region to cover the next hole after point
+leaving the cursor at right after the hole.  To jump to the previous
+hole instead, use ~sweeprolog-backward-hole~ or call
+~sweeprolog-forward-hole~ with a negative prefix argument (~C-- C-c TAB~).
+
+When the minor mode ~sweeprolog-forward-hole-on-tab-mode~ is enabled,
+the ~TAB~ key is bound to a command moves to the next hole when called
+in a properly indented line (otherwise it indents the line).  This
+makes moving between holes in the buffer easier since ~TAB~ can be used
+instead of ~C-c TAB~ in most cases.  To enable this mode in a Prolog
+buffer, type ~M-x sweeprolog-forward-hole-on-tab-mode-map~.  This step
+can be automated by adding ~sweeprolog-forward-hole-on-tab-mode~ to
+~sweeprolog-mode-hook~:
+
+#+begin_src emacs-lisp
+  (add-hook 'sweeprolog-mode-hook #'sweeprolog-forward-hole-on-tab-mode)
+#+end_src
 
 To "fill" a hole marked by one of the aforementioned commands, type
 ~C-w~ (~M-x kill-region~) to kill the region and remove the placeholder
@@ -1103,7 +1118,7 @@ enabled the placeholder is automatically deleted when the user inserts
 a character while the region is active (see also [[info:emacs#Using Region][Using Region in the
 Emacs manual]]).
 
-[fn:1] see [[info:elisp#Text Properties][Text Properties in the Elisp manual]]
+[fn:2] see [[info:elisp#Text Properties][Text Properties in the Elisp manual]]
 
 ** Writing Tests
 :PROPERTIES:
@@ -1357,7 +1372,7 @@ backtracking.
 The =sweeprolog-top-level-mode=, enabled in the =sweep= top-level buffer,
 integrates with the standard Emacs symbol completion mechanism to
 provide completion for predicate names.  To complete a partial
-predicate name in the top-level prompt, use =C-M-i= (or =M-<TAB>=).  For
+predicate name in the top-level prompt, use =C-M-i= (or =M-TAB=).  For
 more information see [[info:emacs#Symbol Completion][Symbol Completion in the Emacs manual]].
 
 * Finding Prolog code

@@ -92,6 +92,9 @@ Prolog token as returned from `sweeprolog-last-token-boundaries'.")
 
 (defvar sweeprolog-top-level-mode-syntax-table sweeprolog-mode-syntax-table)
 
+(defvar sweeprolog-module-documentation-regexp (rx bol (zero-or-more whitespace)
+                                                   ":-" (zero-or-more whitespace)
+                                                   "module("))
 ;;;; User options
 
 (defgroup sweeprolog nil
@@ -399,10 +402,6 @@ non-terminals)."
     map)
   "Local keymap for `sweeprolog-top-level-menu-mode' buffers.")
 
-(defvar sweeprolog-module-documentation-regexp (rx bol (zero-or-more whitespace)
-                                                   ":-" (zero-or-more whitespace)
-                                                   "module("))
-
 ;;;###autoload
 (defvar sweeprolog-help-prefix-map
   (let ((map (make-sparse-keymap)))
@@ -428,6 +427,11 @@ non-terminals)."
     map)
   "Keymap for `sweeprolog' global commands.")
 
+(defvar sweeprolog-forward-hole-on-tab-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "TAB") #'sweeprolog-indent-or-forward-hole)
+    map)
+  "Keymap for moving to next hole with TAB.")
 
 ;;;; Menu bar
 
@@ -4178,6 +4182,41 @@ valid Prolog atom."
                   (push (cons file (copy-marker (- (point) 5) t)) existing)))))
           (sweeprolog-analyze-buffer t))
       (message "No implicit autoloads found."))))
+
+
+;;;; Minor mode for moving to the next hole with TAB
+
+(defun sweeprolog-indent-or-forward-hole (&optional arg)
+  "Indent the current line or region, or go to the next hole.
+
+If the region is active, indent it by calling `indent-region'.
+Otherwise, indent the current line or, if already indented, move
+to the ARGth next hole in the buffer."
+  (interactive "p" sweeprolog-mode)
+  (if (use-region-p)
+      (indent-region (region-beginning) (region-end))
+    (let ((point (point))
+          (tab-always-indent 'complete)
+          (completion-at-point-functions nil))
+      (unless (save-excursion
+                (beginning-of-line)
+                (or (sweeprolog-at-beginning-of-top-term-p)
+                    (looking-at-p "[ \t]*$")
+                    (looking-at-p (rx (or "%" "/*")))))
+        (indent-for-tab-command))
+      (when (= point (point))
+        (sweeprolog-forward-hole arg)))))
+
+;;;###autoload
+(define-minor-mode sweeprolog-forward-hole-on-tab-mode
+  "Make TAB do the Right Thing in `sweeprolog-mode'.
+
+When enabled, this minor mode binds TAB to the command
+`sweeprolog-indent-or-forward-hole', which moves to the next hole
+in the buffer when the called in a line that's already indented
+propely."
+  :group 'sweeprolog)
+
 
 ;;;; Footer
 
