@@ -1019,6 +1019,22 @@ test_bindings(Name-Value) -->
 "
                      ))))
 
+(ert-deftest custom-indentation ()
+  "Test forcefully setting custom indentation levels."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo :-
+    repeat,
+      bar,
+      baz")
+    (call-interactively #'indent-for-tab-command)
+    (should (string= (buffer-substring-no-properties (point-min) (point-max))
+                     "
+foo :-
+    repeat,
+      bar,
+      baz"))))
 
 (defun sweeprolog-test-indentation (given expected)
   (with-temp-buffer
@@ -1056,6 +1072,15 @@ test_bindings(Name-Value) -->
 
 (ert-deftest indentation ()
   "Tests indentation rules."
+  (sweeprolog-test-indentation
+   "
+colourise_declaration(Module:Goal, table, TB,
+                      term_position(_,_,QF,QT,
+"
+   "
+colourise_declaration(Module:Goal, table, TB,
+                      term_position(_,_,QF,QT,
+")
   (sweeprolog-test-indentation
    "
 some_functor(
@@ -1289,6 +1314,28 @@ foo"
    "
 functor(
     foo")
-  )
+  (sweeprolog-test-indentation
+   "
+replace_key_value(Replacement, Key - AtVar, Out, Used0, Used1),
+atom_concat(@, Var, AtVar) =>
+foo.
+"
+   "
+replace_key_value(Replacement, Key - AtVar, Out, Used0, Used1),
+  atom_concat(@, Var, AtVar) =>
+    foo.
+"
+   )
+  (sweeprolog-test-indentation
+   "
+head,
+right_hand_context -->
+body.
+"
+   "
+head,
+  right_hand_context -->
+    body.
+"))
 
 ;;; sweeprolog-tests.el ends here

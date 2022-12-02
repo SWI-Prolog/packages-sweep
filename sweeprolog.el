@@ -3163,74 +3163,82 @@ predicate definition at or directly above POINT."
     (scan-error nil)))
 
 (defun sweeprolog--backward-term (pre)
-  (while t
-    (pcase (sweeprolog-last-token-boundaries)
-      ('nil
-       (signal 'scan-error
-               (list "Cannot scan backwards beyond beginning of buffer."
-                     (point-min)
-                     (point-min))))
-      (`(open ,obeg ,oend)
-       (signal 'scan-error
-               (list "Cannot scan backwards beyond opening parenthesis or bracket."
-                     obeg
-                     oend)))
-      (`(functor ,obeg ,oend)
-       (signal 'scan-error
-               (list "Cannot scan backwards beyond functor."
-                     obeg
-                     oend)))
-      (`(operator ,obeg ,oend)
-       (if (and (string= "." (buffer-substring-no-properties obeg oend))
-                (or (not (char-after (1+ obeg)))
-                    (member (char-syntax (char-after (1+ obeg)))
-                            '(?> ? ))))
-           (signal 'scan-error
-                   (list "Cannot scan backwards beyond fullstop."
-                         obeg
-                         (1+ obeg)))
-         (if-let ((opre (sweeprolog-op-infix-precedence
-                         (buffer-substring-no-properties obeg oend))))
+  (let ((infix-flag t))
+    (while t
+      (pcase (sweeprolog-last-token-boundaries)
+        ('nil
+         (signal 'scan-error
+                 (list "Cannot scan backwards beyond beginning of buffer."
+                       (point-min)
+                       (point-min))))
+        (`(open ,obeg ,oend)
+         (signal 'scan-error
+                 (list "Cannot scan backwards beyond opening parenthesis or bracket."
+                       obeg
+                       oend)))
+        (`(functor ,obeg ,oend)
+         (signal 'scan-error
+                 (list "Cannot scan backwards beyond functor."
+                       obeg
+                       oend)))
+        (`(operator ,obeg ,oend)
+         (if (and (string= "." (buffer-substring-no-properties obeg oend))
+                  (or (not (char-after (1+ obeg)))
+                      (member (char-syntax (char-after (1+ obeg)))
+                              '(?> ? ))))
+             (signal 'scan-error
+                     (list "Cannot scan backwards beyond fullstop."
+                           obeg
+                           (1+ obeg)))
+           (if-let ((opre (sweeprolog-op-infix-precedence
+                           (buffer-substring-no-properties obeg oend))))
+               (if (> opre pre)
+                   (signal 'scan-error
+                           (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
+                                 obeg
+                                 oend))
+                 (goto-char obeg)
+                 (setq infix-flag t))
+             (if-let ((ppre (sweeprolog-op-prefix-precedence
+                             (buffer-substring-no-properties obeg oend))))
+                 (if (> ppre pre)
+                     (signal 'scan-error
+                             (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
+                                   obeg
+                                   oend))
+                   (goto-char obeg)
+                   (setq infix-flag nil))
+               (goto-char obeg)
+               (setq infix-flag nil)))))
+        (`(symbol ,obeg ,oend)
+         (if-let ((opre (sweeprolog-op-infix-precedence (buffer-substring-no-properties obeg oend))))
              (if (> opre pre)
                  (signal 'scan-error
                          (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
                                obeg
                                oend))
-               (goto-char obeg))
-           (if-let ((ppre (sweeprolog-op-prefix-precedence
-                           (buffer-substring-no-properties obeg oend))))
+               (goto-char obeg)
+               (setq infix-flag t))
+           (if-let ((ppre (and (not infix-flag)
+                               (sweeprolog-op-prefix-precedence (buffer-substring-no-properties obeg oend)))))
                (if (> ppre pre)
                    (signal 'scan-error
                            (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
                                  obeg
                                  oend))
-                 (goto-char obeg))
-             (goto-char obeg)))))
-      (`(symbol ,obeg ,oend)
-       (if-let ((opre (sweeprolog-op-infix-precedence
-                       (buffer-substring-no-properties obeg oend))))
-           (if (> opre pre)
-               (signal 'scan-error
-                       (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
-                             obeg
-                             oend))
-             (goto-char obeg))
-         (if-let ((ppre (sweeprolog-op-prefix-precedence
-                         (buffer-substring-no-properties obeg oend))))
-             (if (> ppre pre)
-                 (signal 'scan-error
-                         (list (format "Cannot scan backwards beyond prefix operator of higher precedence %s." opre)
-                               obeg
-                               oend))
-               (goto-char obeg))
-           (goto-char obeg))))
-      (`(close ,lbeg ,_lend)
-       (goto-char (nth 1 (syntax-ppss lbeg)))
-       (when (or (= (char-syntax (char-before)) ?w)
-                 (= (char-syntax (char-before)) ?_))
-         (skip-syntax-backward "w_")))
-      (`(,_ ,lbeg ,_)
-       (goto-char lbeg)))))
+                 (goto-char obeg)
+                 (setq infix-flag nil))
+             (goto-char obeg)
+             (setq infix-flag nil))))
+        (`(close ,lbeg ,_lend)
+         (goto-char (nth 1 (syntax-ppss lbeg)))
+         (when (or (= (char-syntax (char-before)) ?w)
+                   (= (char-syntax (char-before)) ?_))
+           (skip-syntax-backward "w_"))
+         (setq infix-flag nil))
+        (`(,_ ,lbeg ,_)
+         (goto-char lbeg)
+         (setq infix-flag nil))))))
 
 (defun sweeprolog-backward-term (pre)
   (condition-case _
@@ -3649,17 +3657,26 @@ valid Prolog atom."
 (defun sweeprolog-indent-line-after-infix (fbeg _fend pre)
   (save-excursion
     (goto-char fbeg)
-    (let ((lim (or (nth 1 (syntax-ppss)) (point-min)))
-          (cur (point))
-          (go t))
+    (sweeprolog-backward-term (1- pre))
+    (let ((go t)
+          (line-beg (line-beginning-position)))
       (while go
-        (setq cur (point))
-        (sweeprolog-backward-term pre)
-        (when (< (point) lim)
-          (goto-char cur))
-        (when (= (point) cur)
-          (setq go nil))))
-    (current-column)))
+        (pcase (sweeprolog-last-token-boundaries)
+          ((or `(operator ,lbeg ,lend)
+               `(symbol ,lbeg ,lend))
+           (if-let ((sym  (buffer-substring-no-properties lbeg lend))
+                    (ppre (sweeprolog-op-infix-precedence sym))
+                    (res (= ppre pre)))
+               (if (< lbeg line-beg)
+                   (setq go nil)
+                 (goto-char lbeg)
+                 (sweeprolog-backward-term (1- pre)))
+             (setq go nil)))
+          (_ (setq go nil))))
+      (let ((col (current-column)))
+        (if (= col 0)
+             (/ sweeprolog-indent-offset 2)
+          col)))))
 
 (defun sweeprolog-indent-line ()
   "Indent the current line in a `sweeprolog-mode' buffer."
