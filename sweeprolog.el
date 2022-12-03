@@ -538,23 +538,26 @@ non-terminals)."
 (defun sweeprolog--ensure-module ()
   "Locate and load `sweep-module', unless already loaded."
   (unless (featurep 'sweep-module)
-    (if-let ((lines (save-match-data
-                      (split-string
-                       (with-output-to-string
-                         (with-current-buffer standard-output
-                           (call-process
-                            (or sweeprolog-swipl-path "swipl")
-                            nil '(t nil) nil
-                            "-q" "-g" "write_sweep_module_location"
-                            "-t" "halt"
-                            (expand-file-name
-                             "sweep.pl"
-                             sweeprolog--directory))))
-                       "\n" t))))
-        (mapc #'sweeprolog--load-module lines)
-      (error (concat "Failed to locate `sweep-module'. "
-                     "Make sure SWI-Prolog is installed "
-                     "and up to date")))))
+    (let ((sweep-pl (expand-file-name
+                     "sweep.pl"
+                     sweeprolog--directory)))
+      (unless (file-readable-p sweep-pl)
+        (error "Missing file `sweep.pl' in `sweeprolog' directory"))
+      (if-let ((lines (save-match-data
+                        (split-string
+                         (with-output-to-string
+                           (with-current-buffer standard-output
+                             (call-process
+                              (or sweeprolog-swipl-path "swipl")
+                              nil '(t nil) nil
+                              "-q" "-g" "write_sweep_module_location"
+                              "-t" "halt"
+                              sweep-pl)))
+                         "\n" t))))
+          (mapc #'sweeprolog--load-module lines)
+        (error (concat "Failed to locate `sweep-module'. "
+                       "Make sure SWI-Prolog is installed "
+                       "and up to date"))))))
 
 (defun sweeprolog-ensure-initialized ()
   (sweeprolog--ensure-module)
