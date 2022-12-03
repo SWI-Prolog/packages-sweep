@@ -51,6 +51,8 @@
 
 (defvar sweeprolog-top-level-signal-goal-history nil)
 
+(defvar sweeprolog--extra-init-args nil)
+
 (defvar sweeprolog-insert-term-functions
   '(sweeprolog-maybe-insert-next-clause
     sweeprolog-maybe-define-predicate)
@@ -284,6 +286,7 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
                                       "--no-signals"
                                       "-g"
                                       "create_prolog_flag(sweep,true,[access(read_only),type(boolean)])"
+                                      "-l"
                                       (expand-file-name
                                        "sweep.pl"
                                        sweeprolog--directory))
@@ -565,7 +568,9 @@ extra initialization arguments."
   (unless sweeprolog--initialized
     (apply #'sweeprolog-initialize
            (cons (or sweeprolog-swipl-path (executable-find "swipl"))
-                 (append sweeprolog-init-args args)))
+                 (append sweeprolog-init-args
+                         (append sweeprolog--extra-init-args
+                                 args))))
     (setq sweeprolog--initialized t)
     (sweeprolog-setup-message-hook)))
 
@@ -4217,6 +4222,26 @@ in the buffer when the called in a line that's already indented
 propely."
   :group 'sweeprolog)
 
+
+;;;; Command line argument handling
+
+(defun sweeprolog-command-line-function ()
+  (when (string= argi "--swipl-args")
+    (let ((current-arg nil)
+          (swipl-args nil)
+          (go t))
+      (while (and go command-line-args-left)
+        (setq current-arg (car command-line-args-left))
+        (setq command-line-args-left (cdr command-line-args-left))
+        (if (string= current-arg ";")
+            (setq go nil)
+          (push current-arg swipl-args)))
+      (setq sweeprolog--extra-init-args (reverse swipl-args)))))
+
+;;;###autoload
+(defun sweeprolog-handle-command-line-args ()
+  (add-to-list 'command-line-functions
+               #'sweeprolog-command-line-function))
 
 ;;;; Footer
 
