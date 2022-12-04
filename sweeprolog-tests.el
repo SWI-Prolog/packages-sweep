@@ -691,6 +691,38 @@ foo :- bar.
 foo :- Body.
 "))))
 
+(ert-deftest update-dependencies-no-autoload ()
+  "Tests making adding a use_module/1 directive."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+bar(X) :- arithmetic_function(X).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (call-interactively #'sweeprolog-update-dependencies)
+    (should (string= (buffer-string)
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- use_module(library(arithmetic), [ arithmetic_function/1
+                                   ]).
+
+bar(X) :- arithmetic_function(X).
+"))))
+
 (ert-deftest append-dependencies ()
   "Tests making implicit autoloads explicit with existing directive."
   (let ((temp (make-temp-file "sweeprolog-test"

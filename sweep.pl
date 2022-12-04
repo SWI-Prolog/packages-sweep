@@ -69,7 +69,8 @@
             sweep_exportable_predicates/2,
             sweep_interrupt/0,
             sweep_string_to_atom/2,
-            sweep_file_path_in_library/2
+            sweep_file_path_in_library/2,
+            sweep_file_missing_dependencies/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -86,6 +87,7 @@
 :- use_module(library(http/html_write)).
 :- use_module(library(prolog_pack)).
 :- use_module(library(prolog_deps)).
+:- use_module(library(dcg/high_order)).
 
 :- if(exists_source(library(help))).
 :- use_module(library(help)).
@@ -908,3 +910,35 @@ strip_mode_and_type(S, N) => strip_type(S, N).
 
 strip_type(N:_, N) :- !.
 strip_type(N, N).
+
+sweep_file_missing_dependencies(File0, Deps) :-
+    atom_string(File, File0),
+    file_autoload_directives(File, Directives, [missing(true)]),
+    phrase(dep_directives(Directives), Deps).
+
+dep_directives(Directives) --> sequence(dep_directive, Directives).
+
+dep_directive(:- use_module(Spec)) -->
+    !,
+    {      absolute_file_name(Spec, Path0,
+                           [ file_type(prolog),
+                             access(read)
+                           ]),
+           atom_string(Path0, Path)
+    },
+    [[Path, [], "use_module"]].
+dep_directive(:- Directive) -->
+    {   compound_name_arguments(Directive, Kind0, [Spec, ImportList]),
+        atom_string(Kind0, Kind),
+        absolute_file_name(Spec, Path0,
+                           [ file_type(prolog),
+                             access(read)
+                           ]),
+        atom_string(Path0, Path)
+    },
+    sequence(dep_import(Path, Kind), ImportList).
+
+dep_import(Path, Kind, PI0) -->
+    {   term_string(PI0, PI)
+    },
+    [[Path, PI, Kind]].
