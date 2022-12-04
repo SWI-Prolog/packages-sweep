@@ -1097,6 +1097,9 @@ leaving the cursor at right after the hole.  To jump to the previous
 hole instead, use ~sweeprolog-backward-hole~ or call
 ~sweeprolog-forward-hole~ with a negative prefix argument (~C-- C-c TAB~).
 
+#+FINDEX: sweeprolog-forward-hole-on-tab-mode
+#+KINDEX: TAB (sweeprolog-forward-hole-on-tab-mode)
+#+KINDEX: C-i (sweeprolog-forward-hole-on-tab-mode)
 When the minor mode ~sweeprolog-forward-hole-on-tab-mode~ is enabled,
 the ~TAB~ key is bound to a command moves to the next hole when called
 in a properly indented line (otherwise it indents the line).  This
