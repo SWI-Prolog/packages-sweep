@@ -762,6 +762,38 @@ bar(X) :- permutation(X, [1,2,3]).
 "
                      ))))
 
+(ert-deftest update-dependencies-autoload-from-package ()
+  "Tests making implicit autoloads from a package explicit."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+bar(X) :- http_open(X, X, X).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (call-interactively #'sweeprolog-update-dependencies)
+    (should (string= (buffer-string)
+                     "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- autoload(library(http/http_open), [ http_open/3
+                                     ]).
+
+bar(X) :- http_open(X, X, X).
+"))))
+
 (ert-deftest update-dependencies ()
   "Tests making implicit autoloads explicit."
   (let ((temp (make-temp-file "sweeprolog-test"

@@ -11,6 +11,23 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.9.4 on 2022-12-06
+
+** New minor mode for moving to holes with ~TAB~
+
+This version introduces a new minor mode
+~sweeprolog-forward-hole-on-tab-mode~, which binds ~TAB~ to a command that
+moves either indents the current line or moves to the next hole in the
+buffer, in a DWIM fashion.
+
+** Fixes and minor improvements
+
+- Automatic indentation is improved to accommodate for DCG RHS
+  contexts and SSU guards.
+- ~sweeprolog-identifier-at-point~ now qualifies head terms with
+  according to the current module (e.g. ~foo:bar/2~ is returned when
+  point is over ~bar(_, _)~ in module ~foo~).
+
 * Version 0.9.3 on 2022-11-27
 
 ** Added repeat keymap for ~sweeprolog-forward-hole~ (Emacs 28+)

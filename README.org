@@ -158,9 +158,8 @@ corresponds to =argv[0]=.
 #+VINDEX: sweeprolog-init-args
 ~sweep~ loads and initializes Prolog on-demand at the first invocation
 of a command that requires the embedded Prolog.  The arguments used to
-initialize Prolog in case are determined by the value of the
-user-option ~sweeprolog-init-args~ which the user is free to extend with
-e.g.:
+initialize Prolog are then determined by the value of the user-option
+~sweeprolog-init-args~ which the user is free to extend with e.g.:
 
 #+begin_src emacs-lisp
   (add-to-list 'sweeprolog-init-args "--stack-limit=512m")
@@ -170,6 +169,31 @@ e.g.:
 The default value of ~sweeprolog-init-args~ is set to load the Prolog
 helper library =sweep.pl= and to create a boolean Prolog flag ~sweep~, set
 to ~true~, which indicates to SWI-Prolog that it is running under ~sweep~.
+
+#+CINDEX: command line arguments
+#+FINDEX: sweeprolog-handle-command-line-args
+It is also possible to specify initialization arguments to SWI-Prolog
+by passing them as command line arguments to Emacs, which can be
+convenient when using Emacs and =sweep= as an alternative for the common
+shell-based interaction with SWI-Prolog.  This is achieved by adding
+the flag ~--swipl-args~ followed by any number of arguments intended for
+SWI-Prolog, with a single semicolon (";") argument marking the end of
+the SWI-Prolog arguments, after which further arguments are processed
+by Emacs as usual (see [[info:emacs#Emacs Invocation][Emacs Invocation]] for more information about
+Emacs's command line options), for example:
+
+#+begin_src sh
+  emacs --some-emacs-option --swipl-args -l foobar.pl \; --more-emacs-options
+#+end_src
+
+In order for =sweep= to be able to handle Emacs's command line
+arguments, the function ~sweeprolog-handle-command-line-args~ must be
+called before Emacs processes the ~--swipl-args~ argument.  This can be
+ensured by calling it from the command line as well:
+
+#+begin_src sh
+  emacs -f sweeprolog-handle-command-line-args --swipl-args -l foobar.pl \;
+#+end_src
 
 #+FINDEX: sweeprolog-restart
 The embedded Prolog runtime can be reset using the command
@@ -1711,12 +1735,6 @@ there some further improvements that we want to pursue:
   would be nice if ~sweep~ would "teach" =project.el= to detect
   directories containing SWI-Prolog =pack.pl= package definitions as
   root project directories.
-
-- Add command line arguments handling for Prolog flags :: ~sweep~ should
-  make it easy to specify Prolog initialization arguments (see [[#prolog-init][Prolog
-  initialization and cleanup]]) already in the Emacs command line
-  invocation.  One way to achieve that would be to extend
-  ~command-line-functions~ with a custom command line arguments handler.
 
 - Extend the provided Elisp-Prolog interface :: Currently, the Elisp
   interface that ~sweep~ provides for querying Prolog only allows
