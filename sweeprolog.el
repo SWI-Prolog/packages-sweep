@@ -853,6 +853,7 @@ PROJECT (only on Emacs 28 or later)."
 For native built-in predicates, the behavior of this function
 depends on the value of the user option
 `sweeprolog-swipl-sources', which see."
+  (sweeprolog-analyze-buffer)
   (or (sweeprolog--query-once "sweep" "sweep_predicate_location" mfn)
       (sweeprolog-native-predicate-location mfn)))
 

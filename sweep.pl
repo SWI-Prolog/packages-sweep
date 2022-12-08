@@ -353,23 +353,15 @@ sweep_predicate_apropos(Query0, Matches) :-
             Tail).
 
 sweep_predicate_location_(H, Path, Line) :-
-    predicate_property(H, file(Path0)),
-    predicate_property(H, line_count(Line)),
+    xref_defined(Path0, H, How),
+    xref_definition_line(How, Line),
     !,
     atom_string(Path0, Path).
 sweep_predicate_location_(H, Path, Line) :-
-    (   xref_defined(Path0, H, How),
-        xref_definition_line(How, Line)
-    ->  true
-    ;   xref_defined(Path0, H, _), Line = []
-    ),
+    predicate_property(H, file(Path0)),
+    predicate_property(H, line_count(Line)),
     atom_string(Path0, Path).
 
-sweep_predicate_location_(M, H, Path, Line) :-
-    predicate_property(M:H, file(Path0)),
-    predicate_property(M:H, line_count(Line)),
-    !,
-    atom_string(Path0, Path).
 sweep_predicate_location_(M, H, Path, Line) :-
     (   xref_defined(Path0, M:H, How),
         xref_definition_line(How, Line)
@@ -377,9 +369,12 @@ sweep_predicate_location_(M, H, Path, Line) :-
     ;   xref_defined(Path0, H, How),
         xref_definition_line(How, Line),
         xref_module(Path0, M)
-    ->  true
-    ;   xref_defined(Path0, M:H, _), Line = []
     ),
+    !,
+    atom_string(Path0, Path).
+sweep_predicate_location_(M, H, Path, Line) :-
+    predicate_property(M:H, file(Path0)),
+    predicate_property(M:H, line_count(Line)),
     atom_string(Path0, Path).
 
 
