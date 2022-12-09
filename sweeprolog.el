@@ -3457,14 +3457,28 @@ non-exported predicates defined in the current buffer."
           (user-error "No export list found"))))))
 
 (defun sweeprolog-align-spaces (&optional _)
-  "Adjust in-line whitespace between the previous next Prolog tokens.
+  "Adjust in-line spaces between the previous and next Prolog tokens.
 
 This command ensures that the next token starts at a column
 distanced from the beginning of the previous by a multiple of
 four columns, which accommodates the convetional alignment for
-if-then-else constructs in SWI-Prolog."
+if-then-else constructs and other common layouts in SWI-Prolog."
   (interactive "" sweeprolog-mode)
   (let ((bol (line-beginning-position)))
+    (if (nth 4 (syntax-ppss))
+        (combine-after-change-calls
+          (delete-horizontal-space)
+          (let* ((lend (point))
+                 (lbeg (save-excursion
+                        (while (and (< bol (point))
+                                    (not (= (char-syntax (char-before))
+                                            ? )))
+                          (forward-char -1))
+                        (point)))
+                 (num (- 4 (% (- lend lbeg) 4))))
+            (insert (make-string (if (< 0 num)
+                                     num
+                                   4) ? )))))
     (pcase (sweeprolog-last-token-boundaries)
       (`(,_ ,lbeg ,lend)
        (when (<= bol lend)

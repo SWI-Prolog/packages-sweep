@@ -1020,6 +1020,21 @@ scasp_and_show(Q, Model, Tree) :-
     (sweeprolog-end-of-top-term)
     (should (= (point) 252))))
 
+(ert-deftest align-spacs-in-line-comment ()
+  "Test using `sweeprolog-align-spaces' in a line comment."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+%!  foo is det.
+%
+%")
+    (sweeprolog-align-spaces)
+    (should (string= (buffer-string)
+                     "
+%!  foo is det.
+%
+%   "))))
+
 (ert-deftest electric-layout ()
   "Test `sweeprolog-electric-layout-mode'."
   (with-temp-buffer
@@ -1104,7 +1119,8 @@ foo :-
   (with-temp-buffer
     (sweeprolog-mode)
     (insert given)
-    (indent-region-line-by-line (point-min) (point-max))
+    (let ((inhibit-message t))
+      (indent-region-line-by-line (point-min) (point-max)))
     (should (string= (buffer-substring-no-properties (point-min) (point-max))
                      expected))))
 
