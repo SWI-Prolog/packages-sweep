@@ -3547,6 +3547,7 @@ certain contexts to maintain conventional Prolog layout."
   (setq-local indent-line-function #'sweeprolog-indent-line)
   (setq-local adaptive-fill-regexp "[ \t]*")
   (setq-local fill-indent-according-to-mode t)
+  (setq-local comment-multi-line t)
   (setq-local font-lock-defaults
               '(nil
                 nil
