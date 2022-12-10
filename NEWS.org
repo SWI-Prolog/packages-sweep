@@ -11,6 +11,33 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.9.5 on 2022-12-10
+
+** ~sweeprolog-align-spaces~ now works also in comments
+
+You can now use ~sweeprolog-align-spaces~ (or ~cycle-spacing~ in Emacs
+28+) to get the "right" amount of whitespace around the cursor
+position inside comments.
+
+** Improved interaction with ~auto-fill-mode~
+
+~sweeprolog-mode~ now customizes some settings related to text filling
+to make ~auto-fill-mode~ work as expected with SWI-Prolog comments.
+
+** Fixes
+
+- In previous versions, using ~sweeprolog-predicate-location~ on a
+  loaded predicate would give precedence to the location from which a
+  predicate was loaded, even if its source file has since been
+  modified causing its location to differ.  This behavior is fixed in
+  the current version, which means that ~M-.~ and friends should always
+  find the up-to-date location of predicate definitions.
+- Fixed possible infinite loop in
+  ~sweeprolog-beginning-of-predicate-at-point~ near the beginning of the
+  buffer.  This issue could be seen by calling
+  ~sweeprolog-document-predicate-at-point~ (~C-c C-d~) with point in the
+  first clause of the buffer.
+
 * Version 0.9.4 on 2022-12-06
 
 ** New minor mode for moving to holes with ~TAB~
