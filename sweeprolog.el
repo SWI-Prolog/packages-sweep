@@ -3545,6 +3545,8 @@ certain contexts to maintain conventional Prolog layout."
   (setq-local forward-sexp-function #'sweeprolog-forward-sexp-function)
   (setq-local syntax-propertize-function #'sweeprolog-syntax-propertize)
   (setq-local indent-line-function #'sweeprolog-indent-line)
+  (setq-local adaptive-fill-regexp "[ \t]*")
+  (setq-local fill-indent-according-to-mode t)
   (setq-local font-lock-defaults
               '(nil
                 nil

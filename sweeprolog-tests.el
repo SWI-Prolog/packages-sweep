@@ -1044,6 +1044,29 @@ scasp_and_show(Q, Model, Tree) :-
 %
 %   "))))
 
+(ert-deftest auto-fill-pldoc-comments ()
+  "Test writing PlDoc comments with `auto-fill-mode' enable."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (auto-fill-mode)
+    (seq-do (lambda (c)
+              (let ((last-command-event c))
+                (call-interactively #'self-insert-command)))
+            "
+%!  foobar is det.
+%
+%   Nam vestibulum accumsan nisl.  Donec pretium posuere tellus.  Aenean in sem ac leo mollis blandit.  Nam a sapien.  Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.
+"
+            )
+    (should (string= (buffer-string)
+                     "
+%!  foobar is det.
+%
+%   Nam vestibulum accumsan nisl.  Donec pretium posuere tellus.
+%   Aenean in sem ac leo mollis blandit.  Nam a sapien.  Proin quam
+%   nisl, tincidunt et, mattis eget, convallis nec, purus.
+"))))
+
 (ert-deftest electric-layout ()
   "Test `sweeprolog-electric-layout-mode'."
   (with-temp-buffer
