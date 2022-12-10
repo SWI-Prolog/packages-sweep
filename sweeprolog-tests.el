@@ -587,7 +587,7 @@ foo.
 foo :- Body.
 "))))
 
-(ert-deftest dwim-next-clause-module-qualified-cdg ()
+(ert-deftest dwim-next-clause-module-qualified-dcg ()
   "Tests inserting new module-qualified DCG non-terminal."
   (let ((temp (make-temp-file "sweeprolog-test"
                               nil
@@ -1019,6 +1019,15 @@ scasp_and_show(Q, Model, Tree) :-
     (goto-char (point-min))
     (sweeprolog-end-of-top-term)
     (should (= (point) 252))))
+
+(ert-deftest beginning-of-predicate-definition-near-bob ()
+  "Test finding the beginning of the first predicate definition."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "foo :- bar.")
+    (goto-char (point-min))
+    (sweeprolog-beginning-of-predicate-at-point)
+    (should (= (point) (point-min)))))
 
 (ert-deftest align-spacs-in-line-comment ()
   "Test using `sweeprolog-align-spaces' in a line comment."
