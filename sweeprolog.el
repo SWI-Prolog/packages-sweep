@@ -4231,15 +4231,8 @@ to the ARGth next hole in the buffer."
   (interactive "p" sweeprolog-mode)
   (if (use-region-p)
       (indent-region (region-beginning) (region-end))
-    (let ((point (point))
-          (tab-always-indent 'complete)
-          (completion-at-point-functions nil))
-      (unless (save-excursion
-                (beginning-of-line)
-                (or (sweeprolog-at-beginning-of-top-term-p)
-                    (looking-at-p "[ \t]*$")
-                    (looking-at-p (rx (or "%" "/*")))))
-        (indent-for-tab-command))
+    (let ((point (point)))
+      (sweeprolog-indent-line)
       (when (= point (point))
         (sweeprolog-forward-hole arg)))))
 
