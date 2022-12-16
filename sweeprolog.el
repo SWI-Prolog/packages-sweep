@@ -139,7 +139,7 @@ notices with the module header."
   :group 'sweeprolog)
 
 (defcustom sweeprolog-indent-offset 4
-  "Number of columns to indent lines with in `sweeprolog-mode' buffers."
+  "Number of columns to indent with in `sweeprolog-mode' buffers."
   :package-version '((sweeprolog . "0.3.1"))
   :type 'integer
   :group 'sweeprolog)
@@ -3395,8 +3395,7 @@ non-exported predicates defined in the current buffer."
       (unless (or (sweeprolog-at-beginning-of-top-term-p)
                   (sweeprolog-beginning-of-next-top-term))
         (user-error "No module declaration found"))
-      (let* ((indent-tabs-mode nil)
-             (target-position nil)
+      (let* ((target-position nil)
              (module-term-beg nil)
              (module-term-end nil)
              (exported-operator nil)
@@ -3670,7 +3669,7 @@ valid Prolog atom."
 (defun sweeprolog-indent-line-after-prefix (fbeg _fend _pre)
   (save-excursion
     (goto-char fbeg)
-    (+ (current-column) 4)))
+    (+ (current-column) sweeprolog-indent-offset)))
 
 (defun sweeprolog-indent-line-after-term ()
   (if-let ((open (nth 1 (syntax-ppss))))
@@ -3714,15 +3713,16 @@ valid Prolog atom."
   (interactive)
   (let ((pos (- (point-max) (point))))
     (back-to-indentation)
-    (let ((indent (if (nth 8 (syntax-ppss))
+    (let ((column (if (nth 8 (syntax-ppss))
                       'noindent
                     (if-let ((open (and (not (eobp))
                                         (= (char-syntax (char-after)) ?\))
                                         (nth 1 (syntax-ppss)))))
                         (save-excursion
                           (goto-char open)
-                          (when (or (= (char-syntax (char-before)) ?w)
-                                    (= (char-syntax (char-before)) ?_))
+                          (when (and (char-before)
+                                     (or (= (char-syntax (char-before)) ?w)
+                                         (= (char-syntax (char-before)) ?_)))
                             (when (save-excursion
                                     (forward-char)
                                     (skip-syntax-forward " " (line-end-position))
@@ -3754,14 +3754,14 @@ valid Prolog atom."
                                (pre  (sweeprolog-indent-line-after-prefix lbeg lend pre)))))))
                         (`(,_ltyp ,_lbeg ,_lend)
                          (sweeprolog-indent-line-after-term)))))))
-      (when (numberp indent)
-        (unless (= indent (current-column))
+      (when (numberp column)
+        (unless (= column (current-column))
           (combine-after-change-calls
             (delete-horizontal-space)
-            (insert (make-string indent ? )))))
+            (indent-to column))))
       (when (> (- (point-max) pos) (point))
         (goto-char (- (point-max) pos)))
-      indent)))
+      column)))
 
 
 ;;;; Xref
