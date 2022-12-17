@@ -335,7 +335,7 @@ permutations of the list =(1 2 3 4 5)=:
 :PROPERTIES:
 :CUSTOM_ID: funcall-from-prolog
 :DESCRIPTION: Special predicates for calling back to Emacs from Prolog
-:ALT_TITLE: Calling Back to Elisp
+:ALT_TITLE: Call Back to Elisp
 :END:
 
 The =sweep-module= defines the foreign Prolog predicates =sweep_funcall/2=
@@ -356,7 +356,7 @@ function without any arguments.
 :PROPERTIES:
 :CUSTOM_ID: editing-prolog-code
 :DESCRIPTION: Major mode for reading and writing Prolog
-:ALT_TITLE: Editing Prolog code
+:ALT_TITLE: Editing Prolog Code
 :END:
 
 #+CINDEX: sweeprolog-mode
