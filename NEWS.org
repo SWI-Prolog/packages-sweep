@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.9.6 on 2022-12-17
+
+** Indentation in ~sweeprolog-mode~ now respects ~indent-tabs-mode~
+
+With non-nil ~indent-tabs-mode~, tabs are now used to indent lines in
+Prolog code buffers.
+
+** New command for inferring the indentation style of the current buffer
+
+The new command ~sweeprolog-infer-indent-style~ can be used to update
+the buffer-local values of ~sweeprolog-indent-offset~ and
+~indent-tabs-mode~ according to the buffer's existing indentation style.
+
+** Fixes
+
+- Fixed issue with ~sweeprolog-indent-or-forward-hole~, in previous
+  versions it would fail to indent empty lines.
+
 * Version 0.9.5 on 2022-12-10
 
 ** ~sweeprolog-align-spaces~ now works also in comments
