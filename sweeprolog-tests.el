@@ -5,6 +5,10 @@
 (remove-hook 'flymake-diagnostic-functions
              #'flymake-proc-legacy-flymake)
 
+(add-hook 'sweeprolog-mode-hook (lambda ()
+                                  (setq-local indent-tabs-mode nil
+                                              inhibit-message t)))
+
 (defconst sweeprolog-tests-greeting
   "Hello from Elisp from Prolog from Elisp from Prolog from Elisp!")
 
@@ -17,7 +21,7 @@
     (cdr sol)))
 
 (defun sweeprolog-tests-greet-1 ()
-  (message sweeprolog-tests-greeting))
+  sweeprolog-tests-greeting)
 
 (ert-deftest elisp->prolog->elisp->prolog->elisp ()
   "Tests calling Elisp from Prolog from Elisp from Prolog from Elisp."
@@ -1129,6 +1133,25 @@ test_bindings(Name-Value) -->
     ['    ~w = ~p'-[Name-Value] ].
 "
                      ))))
+
+(ert-deftest infer-indent-style ()
+  "Test inferring indentation style from buffer contents."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo :-
+  bar.")
+    (sweeprolog-infer-indent-style)
+    (should (= sweeprolog-indent-offset 2))
+    (should (not indent-tabs-mode)))
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "
+foo :-
+\tbar.")
+    (sweeprolog-infer-indent-style)
+    (should (= sweeprolog-indent-offset tab-width))
+    (should indent-tabs-mode)))
 
 (ert-deftest custom-indentation ()
   "Test forcefully setting custom indentation levels."

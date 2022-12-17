@@ -376,12 +376,33 @@ appropriate indentation to apply based on a set of rules.
 
 #+FINDEX: sweeprolog-indent-line
 The entry point of the indentation engine is the function
-=sweeprolog-indent-line= which takes no arguments and indents that line at
-point.  =sweeprolog-mode= supports the standard Emacs interface for
-indentation by arranging for =sweeprolog-indent-line= to be called whenever a
-line should be indented, notably after pressing =TAB=.  For more a full
-description of the available commands and options that pertain to
-indentation, see [[info:emacs#Indentation][Indentation in the Emacs manual]].
+=sweeprolog-indent-line= which takes no arguments and indents that line
+at point.  =sweeprolog-mode= supports the standard Emacs interface for
+indentation by arranging for =sweeprolog-indent-line= to be called
+whenever a line should be indented, notably after pressing =TAB=.  For a
+full description of the available commands and options that pertain to
+indentation, see [[info:emacs#Indentation][Indentation]] in the Emacs manual.
+
+#+FINDEX: sweeprolog-infer-indent-style
+#+KINDEX: C-c C-I
+#+CINDEX: indentation style
+#+VINDEX: indent-tabs-mode
+#+VINDEX: sweeprolog-indent-offset
+The user option ~sweeprolog-indent-offset~ specifies how many columns
+lines are indented with.  The standard Emacs variable ~indent-tabs-mode~
+determines if indentation can use tabs or only spaces.  You may
+sometimes want to adjust these options to match the indentation style
+used in an existing Prolog codebase, the command
+~sweeprolog-infer-indent-style~ can do that for you by analyzing the
+contents of the current buffer and updating the buffer-local values of
+~sweeprolog-indent-offset~ and ~indent-tabs-mode~ accordingly.  Consider
+adding ~sweeprolog-infer-indent-style~ to ~sweeprolog-mode-hook~ to have
+it set up the indentation style automatically in all ~sweeprolog-mode~
+buffers:
+
+#+begin_src emacs-lisp
+  (add-hook 'sweeprolog-mode-hook #'sweeprolog-infer-indent-style)
+#+end_src
 
 *** Indentation rules
 :PROPERTIES:
@@ -412,7 +433,6 @@ rules:
                  ).
    #+end_src
 
-#+VINDEX: sweeprolog-indent-offset
 4. If the current line is the first non-comment line of a clause body,
    indent to the starting column of the head term plus the value of
    the user option =sweeprolog-indent-offset= (by default, four extra

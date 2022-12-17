@@ -3656,6 +3656,45 @@ valid Prolog atom."
 
 ;;;; Indentation
 
+(defun sweeprolog-infer-indent-style ()
+  "Infer indentation style for the current buffer from its contents.
+
+Examine the indentation of the first clause body starting on a
+line of its own and update the buffer-local values of
+`sweeprolog-indent-offset' and `indent-tabs-mode' are updated
+accordingly."
+  (interactive "" sweeprolog-mode)
+  (let ((offset nil)
+        (usetab nil))
+    (sweeprolog-analyze-buffer-with
+     (lambda (beg _end arg)
+       (pcase arg
+         ("body"
+          (unless offset
+            (save-excursion
+              (goto-char beg)
+              (let ((prefix (buffer-substring (line-beginning-position)
+                                              (point))))
+                (save-match-data
+                  (cond
+                   ((string-match (rx bos (+ " ") eos)
+                                  prefix)
+                    (setq offset (current-column)))
+                   ((string-match (rx bos (+ (or " " "\t")) eos)
+                                  prefix)
+                    (setq offset (current-column)
+                          usetab t)))))))))))
+    (if (not offset)
+        (message (concat "No indented body term found in"
+                         " current buffer.  Keeping current"
+                         " indentation style: offset=%s tabs=%s")
+                 sweeprolog-indent-offset
+                 indent-tabs-mode)
+      (message "Inferred indentation style: offset=%s tabs=%s"
+               offset usetab)
+      (setq-local sweeprolog-indent-offset offset
+                  indent-tabs-mode usetab))))
+
 (defun sweeprolog-indent-line-after-functor (fbeg _fend)
   (save-excursion
     (goto-char fbeg)
