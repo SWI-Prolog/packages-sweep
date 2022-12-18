@@ -607,6 +607,8 @@ Otherwise set ARGS to nil."
       (user-error "Cannot restart sweep with running top-level processes")))
   (message "Stoping sweep.")
   (sweeprolog-cleanup)
+  (setq sweeprolog--initialized       nil
+        sweeprolog-prolog-server-port nil)
   (message "Starting sweep.")
   (apply #'sweeprolog-init args))
 
