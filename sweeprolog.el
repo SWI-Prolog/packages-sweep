@@ -461,7 +461,10 @@ non-terminals)."
       sweeprolog-document-predicate-at-point
       (and (eq major-mode 'sweeprolog-mode)
            (sweeprolog-definition-at-point)) ]
-    [ "Update autoload directives" sweeprolog-update-dependencies t ]
+    [ "Update Autoload Directives" sweeprolog-update-dependencies
+      (eq major-mode 'sweeprolog-mode) ]
+    [ "Infer Indentation Style" sweeprolog-infer-indent-style
+      (eq major-mode 'sweeprolog-mode) ]
     "--"
     [ "Open top-level"         sweeprolog-top-level       t ]
     [ "Signal top-level"
