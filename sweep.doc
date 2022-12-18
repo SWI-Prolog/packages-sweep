@@ -58,7 +58,7 @@ from the \texttt{sweep} Git repository:
 \end{enumerate}
 
 \section{Getting started}
-\label{sec:sweep-installation}
+\label{sec:sweep-getting-started}
 After installing the \texttt{sweeprolog} Elisp library, load it into
 Emacs:
 
