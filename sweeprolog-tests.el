@@ -612,6 +612,30 @@ spam:foo --> Body.
 "
                      ))))
 
+(ert-deftest dwim-next-clause-args ()
+  "Tests inserting new clause with arguments."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+%!  foo(+Bar) is det.
+
+foo(bar) :- bar.
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                              "
+%!  foo(+Bar) is det.
+
+foo(bar) :- bar.
+foo(Bar) :- Body.
+
+"))))
+
 (ert-deftest dwim-next-clause-module-qualified ()
   "Tests inserting new module-qualified clause."
   (let ((temp (make-temp-file "sweeprolog-test"

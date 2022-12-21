@@ -2739,20 +2739,35 @@ instead."
                                 font-lock-face)))
 
 (defun sweeprolog-insert-clause (functor arity &optional neck module)
-  (let ((point nil)
-        (neck (or neck ":-")))
+  (let ((point (point))
+        (neck (or neck ":-"))
+        (head-format (sweeprolog--query-once "sweep" "sweep_format_head"
+                                             (cons functor arity))))
     (combine-after-change-calls
       (insert "\n"
               (if module
                   (concat module ":")
                 "")
-              functor)
-      (setq point (point))
-      (when (< 0 arity)
-        (insert "(")
-        (dotimes (_ (1- arity))
-          (insert (sweeprolog--hole) ", "))
-        (insert (sweeprolog--hole) ")"))
+              (car head-format))
+      (pcase (cdr head-format)
+        (`(compound
+           "term_position"
+           0 ,length
+           ,_fbeg ,_fend
+           ,holes)
+         (with-silent-modifications
+           (dolist (hole holes)
+             (pcase hole
+               (`(compound "-" ,hbeg ,hend)
+                (add-text-properties
+                 (- (point) length (- hbeg))
+                 (- (point) length (- hend))
+                 (list
+                  'sweeprolog-hole t
+                  'font-lock-face (list (sweeprolog-hole-face))
+                  'rear-nonsticky '(sweeprolog-hole
+                                    cursor-sensor-functions
+                                    font-lock-face)))))))))
       (insert " " neck " " (sweeprolog--hole "Body") ".\n"))
     (goto-char point)
     (sweeprolog-forward-hole)))

@@ -70,7 +70,8 @@
             sweep_interrupt/0,
             sweep_string_to_atom/2,
             sweep_file_path_in_library/2,
-            sweep_file_missing_dependencies/2
+            sweep_file_missing_dependencies/2,
+            sweep_format_head/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -937,3 +938,10 @@ dep_import(Path, Kind, PI0) -->
     {   term_string(PI0, PI)
     },
     [[Path, PI, Kind]].
+
+
+sweep_format_head([F0|A], R) :-
+    atom_string(F, F0),
+    pi_head(F/A, H),
+    sweep_current_module(M),
+    sweep_format_predicate(M, 0, H, R).
