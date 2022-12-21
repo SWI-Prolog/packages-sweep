@@ -1123,21 +1123,28 @@ resulting list even when found in the current clause."
               :exit-function
               (lambda (string status)
                 (pcase status
-                  ('finished (pcase (cdr (assoc-string string col))
-                               (`(compound
-                                  "term_position"
-                                  0 ,length
-                                  ,_fbeg ,_fend
-                                  ,holes)
-                                (with-silent-modifications
-                                  (dolist (hole holes)
-                                    (pcase hole
-                                      (`(compound "-" ,hbeg ,hend)
-                                       (put-text-property (- (point) length (- hbeg))
-                                                          (- (point) length (- hend))
-                                                          'sweeprolog-hole t)))))
-                                (backward-char length)
-                                (sweeprolog-forward-hole)))))))))))
+                  ('finished
+                   (pcase (cdr (assoc-string string col))
+                     (`(compound
+                        "term_position"
+                        0 ,length
+                        ,_fbeg ,_fend
+                        ,holes)
+                      (with-silent-modifications
+                        (dolist (hole holes)
+                          (pcase hole
+                            (`(compound "-" ,hbeg ,hend)
+                             (add-text-properties
+                              (- (point) length (- hbeg))
+                              (- (point) length (- hend))
+                              (list
+                               'sweeprolog-hole t
+                               'font-lock-face (list (sweeprolog-hole-face))
+                               'rear-nonsticky '(sweeprolog-hole
+                                                 cursor-sensor-functions
+                                                 font-lock-face)))))))
+                      (backward-char length)
+                      (sweeprolog-forward-hole)))))))))))
 
 
 ;;;; Packages
@@ -1819,7 +1826,7 @@ resulting list even when found in the current clause."
 
 (defun sweeprolog-analyze-start-font-lock (beg end)
   (with-silent-modifications
-    (font-lock-unfontify-region beg end)))
+    (remove-list-of-text-properties beg end '(font-lock-face))))
 
 (defun sweeprolog-maybe-syntax-error-face (end)
   (or (and (or (derived-mode-p 'sweeprolog-top-level-mode)
@@ -1885,10 +1892,7 @@ resulting list even when found in the current clause."
     (`("goal" "recursion" . ,_)
      (list (list beg end (sweeprolog-recursion-face))))
     (`("goal" "meta"      . ,_)
-     (cons (list beg end (sweeprolog-meta-face))
-           (when (and sweeprolog-highlight-holes
-                      (get-text-property beg 'sweeprolog-hole))
-             (list (list beg end (sweeprolog-hole-face))))))
+     (list (list beg end (sweeprolog-meta-face))))
     (`("goal" "built_in"  . ,_)
      (list (list beg end (sweeprolog-built-in-face))))
     (`("goal" "undefined" . ,_)
@@ -1914,23 +1918,26 @@ resulting list even when found in the current clause."
     ("type_error"
      (list (list beg end (sweeprolog-type-error-face))))
     (`("syntax_error" ,_ ,eb ,ee)
-     (save-excursion
-       (goto-char (min ee (point-max)))
-       (let ((ws nil)
-             (cur (point)))
-         (while (and (forward-comment 1)
-                     (forward-comment -1))
+     (let ((eb (min eb beg))
+           (ee (max ee end)))
+       (save-excursion
+         (goto-char (min ee (point-max)))
+         (let ((ws nil)
+               (cur (point)))
+           (while (and (forward-comment 1)
+                       (forward-comment -1))
+             (push (list cur (point) nil) ws)
+             (forward-comment 1)
+             (setq cur (point)))
+           (skip-chars-forward " \t\n")
            (push (list cur (point) nil) ws)
-           (forward-comment 1)
-           (setq cur (point)))
-         (skip-chars-forward " \t\n")
-         (push (list cur (point) nil) ws)
-         (let ((face (sweeprolog-maybe-syntax-error-face end)))
-           (cons (list beg (point) nil)
-                 (append (list (list eb ee nil)
-                               (list eb ee (sweeprolog-around-syntax-error-face))
-                               (list beg end face))
-                         ws))))))
+           (setq cur (point))
+           (let ((face (sweeprolog-maybe-syntax-error-face end)))
+             (cons (list beg cur nil)
+                   (append (list (list eb ee nil)
+                                 (list eb ee (sweeprolog-around-syntax-error-face))
+                                 (list beg end face))
+                           ws)))))))
     ("unused_import"
      (list (list beg end (sweeprolog-unused-import-face))))
     ("undefined_import"
@@ -1962,11 +1969,7 @@ resulting list even when found in the current clause."
     ("int"
      (list (list beg end (sweeprolog-int-face))))
     ("singleton"
-     (if (get-text-property beg 'sweeprolog-hole)
-         (cons (list beg end (sweeprolog-variable-face))
-               (when sweeprolog-highlight-holes
-                 (list (list beg end (sweeprolog-hole-face)))))
-       (list (list beg end (sweeprolog-singleton-face)))))
+     (list (list beg end (sweeprolog-singleton-face))))
     ("option_name"
      (list (list beg end (sweeprolog-option-name-face))))
     ("no_option_name"
@@ -1974,10 +1977,7 @@ resulting list even when found in the current clause."
     ("control"
      (list (list beg end (sweeprolog-control-face))))
     ("var"
-     (cons (list beg end (sweeprolog-variable-face))
-           (when (and sweeprolog-highlight-holes
-                      (get-text-property beg 'sweeprolog-hole))
-             (list (list beg end (sweeprolog-hole-face))))))
+     (list (list beg end (sweeprolog-variable-face))))
     ("fullstop"
      (save-excursion
        (goto-char (min end (point-max)))
@@ -2081,6 +2081,22 @@ resulting list even when found in the current clause."
             (remove-list-of-text-properties frag-beg frag-end
                                             '(font-lock-face))))))))
 
+(defun sweeprolog-analyze-end-font-lock (beg end)
+  (when sweeprolog-highlight-holes
+    (with-silent-modifications
+      (save-excursion
+        (goto-char beg)
+        (save-restriction
+          (narrow-to-region beg end)
+          (let ((hole (sweeprolog--next-hole)))
+            (while hole
+              (font-lock--add-text-property (car hole) (cdr hole)
+                                            'font-lock-face
+                                            (sweeprolog-hole-face)
+                                            (current-buffer)
+                                            nil)
+              (setq hole (sweeprolog--next-hole)))))))))
+
 (defun sweeprolog-analyze-start-flymake (&rest _)
   (flymake-start))
 
@@ -2171,7 +2187,7 @@ resulting list even when found in the current clause."
   '(sweeprolog-analyze-fragment-font-lock))
 
 (defvar sweeprolog-analyze-region-end-hook
-  nil)
+  '(sweeprolog-analyze-end-font-lock))
 
 (defun sweeprolog-xref-buffer ()
   (when-let ((fn (buffer-file-name)))
@@ -2717,7 +2733,9 @@ instead."
 (defun sweeprolog--hole (&optional string)
   (propertize (or string "_")
               'sweeprolog-hole t
-              'rear-sticky     '(sweeprolog-hole)))
+              'rear-nonsticky '(sweeprolog-hole
+                                cursor-sensor-functions
+                                font-lock-face)))
 
 (defun sweeprolog-insert-clause (functor arity &optional neck module)
   (let ((point nil)
