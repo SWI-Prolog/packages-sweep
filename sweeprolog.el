@@ -442,22 +442,20 @@ non-terminals)."
                                         sweeprolog-top-level-mode-map)
   "`sweep' menu."
   '("Sweep"
-    [ "Set Prolog flag"        sweeprolog-set-prolog-flag t ]
-    [ "Install Prolog package" sweeprolog-pack-install    t ]
-    [ "Load Prolog buffer"     sweeprolog-load-buffer     t ]
-    [ "Find Prolog module"     sweeprolog-find-module     t ]
-    [ "Find Prolog predicate"  sweeprolog-find-predicate  t ]
-    [ "Export predicate"
+    [ "Load Prolog Buffer" sweeprolog-load-buffer t ]
+    [ "Find Prolog Module" sweeprolog-find-module t ]
+    [ "Find Predicate" sweeprolog-find-predicate t ]
+    [ "Export Predicate"
       sweeprolog-export-predicate
       (and (eq major-mode 'sweeprolog-mode)
            (sweeprolog-definition-at-point)) ]
-    [ "Insert test-set template"
+    [ "Insert Test-set Template"
       sweeprolog-plunit-testset-skeleton
       (eq major-mode 'sweeprolog-mode) ]
-    [ "Insert module template"
+    [ "Insert Module Template"
       auto-insert
       (eq major-mode 'sweeprolog-mode) ]
-    [ "Document current predicate"
+    [ "Document Predicate"
       sweeprolog-document-predicate-at-point
       (and (eq major-mode 'sweeprolog-mode)
            (sweeprolog-definition-at-point)) ]
@@ -465,26 +463,29 @@ non-terminals)."
       (eq major-mode 'sweeprolog-mode) ]
     [ "Infer Indentation Style" sweeprolog-infer-indent-style
       (eq major-mode 'sweeprolog-mode) ]
+    [ "Set Prolog Flag" sweeprolog-set-prolog-flag t ]
+    [ "Install Prolog Package" sweeprolog-pack-install t ]
     "--"
-    [ "Open top-level"         sweeprolog-top-level       t ]
-    [ "Signal top-level"
+    [ "Open Top-level" sweeprolog-top-level t ]
+    [ "Signal Top-level"
       sweeprolog-top-level-signal
       (seq-filter (lambda (b)
                     (with-current-buffer b
                       (and (derived-mode-p 'sweeprolog-top-level-mode)
                            sweeprolog-top-level-thread-id)))
                   (buffer-list)) ]
-    [ "Open Top-level Menu"    sweeprolog-list-top-levels t ]
+    [ "Open Top-level Menu" sweeprolog-list-top-levels t ]
     "--"
-    [ "Describe Predicate"  sweeprolog-describe-predicate t ]
-    [ "Describe Prolog module" sweeprolog-describe-module t ]
+    [ "Describe Predicate" sweeprolog-describe-predicate t ]
+    [ "Describe Prolog Module" sweeprolog-describe-module t ]
     "--"
-    [ "Xref files in current project"
+    [ "Update Project Cross References"
       sweeprolog-xref-project-source-files
       (project-current) ]
     "--"
-    [ "Reset sweep"            sweeprolog-restart         t ]
-    [ "View sweep messages"    sweeprolog-view-messages   t ]))
+    [ "Reset Sweep" sweeprolog-restart t ]
+    [ "View Messages" sweeprolog-view-messages t ]
+    [ "Read the Sweep Manual" sweeprolog-info-manual t]))
 
 
 ;;;; Local variables
@@ -3969,6 +3970,11 @@ accordingly."
 
 ;;;; Help
 
+(defun sweeprolog-info-manual ()
+  "Display the Sweep manual in Info mode."
+  (interactive)
+  (info "sweep"))
+
 (defun sweeprolog--buttonize (string callback data)
   (if (fboundp 'buttonize)
       (buttonize string callback data)
@@ -4328,6 +4334,7 @@ propely."
 (defun sweeprolog-handle-command-line-args ()
   (add-to-list 'command-line-functions
                #'sweeprolog-command-line-function))
+
 
 ;;;; Footer
 
