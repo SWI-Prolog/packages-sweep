@@ -49,6 +49,8 @@
 
 (defvar sweeprolog-read-module-history nil)
 
+(defvar sweeprolog-read-functor-history nil)
+
 (defvar sweeprolog-top-level-signal-goal-history nil)
 
 (defvar sweeprolog--extra-init-args nil)
@@ -361,13 +363,14 @@ non-terminals)."
 
 (defvar sweeprolog-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
     (define-key map (kbd "C-c C-c") #'sweeprolog-analyze-buffer)
-    (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
-    (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
     (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
     (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
     (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
+    (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
+    (define-key map (kbd "C-c C-m") #'sweeprolog-insert-term-with-holes)
+    (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
+    (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
     (define-key map (kbd "C-c C-u") #'sweeprolog-update-dependencies)
     (define-key map (kbd "C-c C-`")
                 (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
@@ -381,11 +384,12 @@ non-terminals)."
     map)
   "Keymap for `sweeprolog-mode'.")
 
-(defvar sweeprolog-forward-hole-repeat-mode
+(defvar sweeprolog-forward-hole-repeat-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-i") #'sweeprolog-forward-hole)
-    (define-key map (kbd "p") #'sweeprolog-backward-hole)
-    (define-key map (kbd "n") #'sweeprolog-forward-hole)
+    (define-key map (kbd "C-n") #'sweeprolog-forward-hole)
+    (define-key map (kbd "C-p") #'sweeprolog-backward-hole)
+    (define-key map (kbd "C-m") #'sweeprolog-insert-term-with-holes)
     map)
   "Repeat map for \\[sweeprolog-forward-hole].")
 
@@ -866,6 +870,28 @@ depends on the value of the user option
 (defun sweeprolog-predicate-apropos (pattern)
   "Return a list of predicates whose name resembeles PATTERN."
   (sweeprolog--query-once "sweep" "sweep_predicate_apropos" pattern))
+
+(defun sweeprolog-read-functor (&optional arity)
+  "Read a Prolog functor/arity pair from the minibuffer.
+
+If ARITY is nil, prompt for the arity after reading the functor.
+Otherwise, read only the functor, with completion candidates are
+restricted to functors with arity ARITY, and return ARITY as the
+arity.
+
+Return a cons cell of the functor as a string and the arity."
+  (let* ((col (sweeprolog--query-once "sweep" "sweep_current_functors"
+                                      arity))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (key)
+                  (when-let ((val (cdr (assoc-string key col))))
+                    (concat "/" (number-to-string val)))))))
+    (let ((functor (completing-read "Functor: "
+                                    col nil nil nil
+                                    'sweeprolog-read-functor-history)))
+      (cons functor
+            (or arity (read-number (concat functor "/")))))))
 
 (defun sweeprolog-read-predicate (&optional prompt)
   "Read a Prolog predicate from the minibuffer with prompt PROMPT.
@@ -2091,12 +2117,15 @@ resulting list even when found in the current clause."
           (narrow-to-region beg end)
           (let ((hole (sweeprolog--next-hole)))
             (while hole
-              (font-lock--add-text-property (car hole) (cdr hole)
-                                            'font-lock-face
-                                            (sweeprolog-hole-face)
-                                            (current-buffer)
-                                            nil)
-              (setq hole (sweeprolog--next-hole)))))))))
+              (let ((hbeg (car hole))
+                    (hend (cdr hole)))
+                (font-lock--add-text-property hbeg hend
+                                              'font-lock-face
+                                              (sweeprolog-hole-face)
+                                              (current-buffer)
+                                              nil)
+                (goto-char hend)
+                (setq hole (sweeprolog--next-hole))))))))))
 
 (defun sweeprolog-analyze-start-flymake (&rest _)
   (flymake-start))
@@ -2625,64 +2654,79 @@ Interactively, POINT is set to the current point."
       (or (re-search-forward (rx "." (or white "\n")) nil t)
           (goto-char (point-max))))))
 
+(defun sweeprolog-at-hole-p (&optional point)
+  (setq point (or point (point)))
+  (get-text-property point 'sweeprolog-hole))
+
+(defun sweeprolog-beginning-of-hole (&optional point)
+  (let ((beg (or point (point))))
+    (when (sweeprolog-at-hole-p beg)
+      (while (and (< (point-min) beg)
+                  (sweeprolog-at-hole-p (1- beg)))
+        (setq beg (1- beg)))
+      beg)))
+
+(defun sweeprolog-end-of-hole (&optional point)
+  (let ((end (or point (point))))
+    (when (sweeprolog-at-hole-p end)
+      (while (and (< end (point-max))
+                  (sweeprolog-at-hole-p (1+ end)))
+        (setq end (1+ end)))
+      (1+ end))))
+
 (defun sweeprolog--next-hole (&optional wrap)
   "Return the bounds of the next hole in the current buffer.
 
 When WRAP in non-nil, wrap around if no holes are found between
 point and the end of the buffer."
-  (let ((current-hole-beg
-         (save-excursion
-           (while (and (get-text-property (point) 'sweeprolog-hole)
-                       (not (bobp)))
-             (forward-char -1))
-           (point))))
-    (while (and (get-text-property (point) 'sweeprolog-hole)
-                (not (eobp)))
-      (forward-char))
-    (while (not (or (get-text-property (point) 'sweeprolog-hole)
-                    (eobp)))
-      (forward-char))
-    (if (eobp)
-        (when wrap
-          (save-restriction
-            (goto-char (point-min))
-            (narrow-to-region (point) current-hole-beg)
-            (sweeprolog--next-hole)))
-      (let ((beg (point)))
-        (while (and (get-text-property (point) 'sweeprolog-hole)
-                    (not (eobp)))
-          (forward-char))
-        (cons beg (point))))))
+  (if-let ((current-hole-beg (sweeprolog-beginning-of-hole)))
+      (cons current-hole-beg
+            (sweeprolog-end-of-hole))
+    (let ((point (point)))
+      (while (not (or (sweeprolog-at-hole-p) (eobp)))
+        (forward-char))
+      (if (eobp)
+          (when wrap
+            (save-restriction
+              (goto-char (point-min))
+              (narrow-to-region (point) point)
+              (sweeprolog--next-hole)))
+        (cons (point)
+              (sweeprolog-end-of-hole))))))
+
+(defun sweeprolog--backward-wrap (&optional wrap)
+  (if (bobp)
+      (when wrap
+        (goto-char (point-max))
+        t)
+    (forward-char -1)
+    t))
 
 (defun sweeprolog--previous-hole (&optional wrap)
   "Return the bounds of the previous hole in the current buffer.
 
 When WRAP in non-nil, wrap around if no holes are found between
 point and the beginning of the buffer."
-  (let ((current-hole-end
-         (save-excursion
-           (while (and (get-text-property (point) 'sweeprolog-hole)
-                       (not (eobp)))
-             (forward-char))
-           (point))))
-    (forward-char -1)
-    (while (and (get-text-property (point) 'sweeprolog-hole)
-                (not (bobp)))
-      (forward-char -1))
-    (while (not (or (get-text-property (point) 'sweeprolog-hole)
-                    (bobp)))
-      (forward-char -1))
-    (if (bobp)
-        (when wrap
-          (save-restriction
-            (goto-char (point-max))
-            (narrow-to-region current-hole-end (point))
-            (sweeprolog--previous-hole)))
-      (let ((end (point)))
-        (while (and (get-text-property (point) 'sweeprolog-hole)
-                    (not (bobp)))
-          (forward-char -1))
-        (cons (1+ (point)) (1+ end))))))
+  (let ((start (point)))
+    (when (use-region-p)
+      (goto-char (region-beginning))
+      (deactivate-mark))
+    (when (sweeprolog--backward-wrap wrap)
+      (if-let ((current-hole-beg (sweeprolog-beginning-of-hole)))
+          (cons current-hole-beg
+                (sweeprolog-end-of-hole))
+        (let ((point (point)))
+          (while (not (or (sweeprolog-at-hole-p) (bobp)))
+            (forward-char -1))
+          (if (bobp)
+              (or (and wrap
+                       (save-restriction
+                         (goto-char (point-max))
+                         (narrow-to-region point (point))
+                         (sweeprolog--previous-hole)))
+                  (and (goto-char start) nil))
+            (cons (sweeprolog-beginning-of-hole)
+                  (sweeprolog-end-of-hole))))))))
 
 (defun sweeprolog--forward-hole (&optional wrap)
   (if-let ((hole (sweeprolog--next-hole wrap))
@@ -2725,11 +2769,15 @@ instead."
 
 (put 'sweeprolog-backward-hole
      'repeat-map
-     'sweeprolog-forward-hole-repeat-mode)
+     'sweeprolog-forward-hole-repeat-map)
 
 (put 'sweeprolog-forward-hole
      'repeat-map
-     'sweeprolog-forward-hole-repeat-mode)
+     'sweeprolog-forward-hole-repeat-map)
+
+(put 'sweeprolog-insert-term-with-holes
+     'repeat-map
+     'sweeprolog-forward-hole-repeat-map)
 
 (defun sweeprolog--hole (&optional string)
   (propertize (or string "_")
@@ -2737,6 +2785,104 @@ instead."
               'rear-nonsticky '(sweeprolog-hole
                                 cursor-sensor-functions
                                 font-lock-face)))
+
+(defun sweeprolog--precedence-at-point (&optional point)
+  (setq point (or point (point)))
+  (pcase (sweeprolog-last-token-boundaries point)
+    ((or `(operator ,obeg ,oend)
+         `(symbol   ,obeg ,oend))
+     (let ((op (buffer-substring-no-properties obeg oend)))
+       (or (and (string= "." op)
+                (or (not (char-after (1+ obeg)))
+                    (member (char-syntax (char-after (1+ obeg)))
+                            '(?> ? )))
+                1200)
+           (sweeprolog-op-infix-precedence op)
+           (sweeprolog-op-prefix-precedence op)
+           1200)))
+    (_ 1200)))
+
+(defun sweeprolog-insert-term-with-holes (functor arity)
+  "Insert a term with functor FUNCTOR and arity ARITY.
+
+If ARITY is negative, just insert a single hole at point.
+Otherwise, insert FUNCTOR along with ARITY holes, one for each of
+the term's arguments.
+
+Interactively, prompt for FUNCTOR.  Without a prefix argument,
+prompt for ARITY as well.  Otherwise, ARITY is the numeric value
+of the prefix argument."
+  (interactive
+   (let* ((arity (and current-prefix-arg
+                      (prefix-numeric-value current-prefix-arg))))
+     (if (and (numberp arity)
+              (< arity 0))
+         (list "_" arity)
+       (let ((functor-arity (sweeprolog-read-functor arity)))
+         (list (car functor-arity) (cdr functor-arity))))))
+  (combine-after-change-calls
+    (when (use-region-p)
+      (delete-region (region-beginning)
+                     (region-end)))
+    (let* ((beg (point)))
+      (when
+          (pcase (sweeprolog-last-token-boundaries beg)
+            (`(symbol ,obeg ,oend)
+             (let ((op (buffer-substring-no-properties obeg oend)))
+               (not (or (sweeprolog-op-infix-precedence op)
+                        (sweeprolog-op-prefix-precedence op)))))
+            (`(close . ,_) t))
+        (insert ", "))
+      (if (<= 0 arity)
+          (let ((term-format
+                 (sweeprolog--query-once
+                  "sweep" "sweep_format_term"
+                  (list functor arity
+                        (sweeprolog--precedence-at-point beg)))))
+            (insert (car term-format))
+            (pcase  (cdr term-format)
+              ((or `(compound
+                     "term_position"
+                     0 ,length
+                     ,_ ,_
+                     ,holes)
+                   `(compound
+                     "parentheses_term_position"
+                     0 ,length
+                     (compound
+                      "term_position"
+                      ,_ ,_ ,_ ,_
+                      ,holes)))
+               (with-silent-modifications
+                 (dolist (hole holes)
+                   (pcase hole
+                     (`(compound "-" ,hbeg ,hend)
+                      (add-text-properties
+                       (- (point) length (- hbeg))
+                       (- (point) length (- hend))
+                       (list
+                        'sweeprolog-hole t
+                        'font-lock-face (list (sweeprolog-hole-face))
+                        'rear-nonsticky '(sweeprolog-hole
+                                          cursor-sensor-functions
+                                          font-lock-face))))))))))
+        (insert (sweeprolog--hole functor)))
+      (pcase (sweeprolog-next-token-boundaries)
+        ('nil (insert "."))
+        (`(,kind ,obeg ,oend)
+         (if (save-excursion
+               (goto-char obeg)
+               (sweeprolog-at-beginning-of-top-term-p))
+             (insert ".")
+           (when (or (and (member kind '(symbol operator))
+                          (let ((op (buffer-substring-no-properties obeg oend)))
+                            (not (or (sweeprolog-op-infix-precedence op)
+                                     (sweeprolog-op-suffix-precedence op)))))
+                     (member kind '(open functor)))
+             (insert ", ")))))
+      (unless (= 0 arity)
+        (goto-char beg))
+      (sweeprolog-forward-hole))))
 
 (defun sweeprolog-insert-clause (functor arity &optional neck module)
   (let ((point (point))

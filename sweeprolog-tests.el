@@ -181,6 +181,26 @@ foo(Foo) :- bar.
                    '(sweeprolog-undefined-default-face
                      sweeprolog-body-default-face)))))
 
+(ert-deftest insert-term-with-holes ()
+  "Test `sweeprolog-insert-term-with-holes'."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (sweeprolog-insert-term-with-holes ":-" 2)
+    (call-interactively #'kill-region)
+    (sweeprolog-insert-term-with-holes "foo" 3)
+    (call-interactively #'kill-region)
+    (sweeprolog-insert-term-with-holes "bar" 0)
+    (call-interactively #'kill-region)
+    (sweeprolog-insert-term-with-holes ";" 2)
+    (call-interactively #'kill-region)
+    (sweeprolog-insert-term-with-holes "->" 2)
+    (should (string= (buffer-string)
+                     "foo(bar, (_->_;_), _):-_."))))
+
 (ert-deftest plunit-testset-skeleton ()
   "Tests inserting PlUnit test-set blocks."
   (let ((temp (make-temp-file "sweeprolog-test"

@@ -71,7 +71,9 @@
             sweep_string_to_atom/2,
             sweep_file_path_in_library/2,
             sweep_file_missing_dependencies/2,
-            sweep_format_head/2
+            sweep_format_head/2,
+            sweep_format_term/2,
+            sweep_current_functors/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -945,3 +947,28 @@ sweep_format_head([F0|A], R) :-
     pi_head(F/A, H),
     sweep_current_module(M),
     sweep_format_predicate(M, 0, H, R).
+
+sweep_format_term([F0,N,P], [S|SP]) :-
+    atom_string(F, F0),
+    pi_head(F/N, H),
+    length(NamedArgs, N),
+    maplist(=('$VAR'('_')), NamedArgs),
+    H =.. [F|NamedArgs],
+    term_string(H, S, [quoted(true),
+                       character_escapes(true),
+                       spacing(next_argument),
+                       numbervars(true),
+                       priority(P)]),
+    term_string(_, S, [subterm_positions(SP)]).
+
+sweep_current_functors(A0, Col) :-
+    (   A0 == []
+    ->  true
+    ;   A = A0
+    ),
+    findall([F|A],
+            (   current_functor(F0, A),
+                atom(F0),
+                atom_string(F0, F)
+            ),
+            Col).
