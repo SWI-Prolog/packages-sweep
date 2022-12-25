@@ -11,6 +11,18 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.10.0 on 2022-12-25
+
+** New command ~sweeprolog-insert-term-with-holes~
+
+This command, bound to ~C-c C-m~ (or ~C-c RET~) is ~sweeprolog-mode~
+buffers, inserts a Prolog term at point with a given functor and
+arity, using holes in place of the term's arguments.
+
+** Holes are now always highlighted as such, even in incomplete terms
+
+** Fix possible crash when resetting ~sweep~ with ~sweeprolog-restart~
+
 * Version 0.9.6 on 2022-12-17
 
 ** Indentation in ~sweeprolog-mode~ now respects ~indent-tabs-mode~
