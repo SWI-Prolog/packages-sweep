@@ -2127,6 +2127,24 @@ resulting list even when found in the current clause."
                 (goto-char hend)
                 (setq hole (sweeprolog--next-hole))))))))))
 
+(defun sweeprolog-analyze-fragment-fullstop (beg end arg)
+  (pcase arg
+    ((or "term"
+         "clause"
+         "grammar_rule"
+         "directive"
+         "method"
+         `("comment" . ,_))
+     (with-silent-modifications
+       (remove-list-of-text-properties beg end '(sweeprolog-fullstop))))
+    ("fullstop"
+     (with-silent-modifications
+       (add-text-properties beg end
+                            '(sweeprolog-fullstop
+                              t
+                              rear-nonsticky
+                              (sweeprolog-fullstop)))))))
+
 (defun sweeprolog-analyze-start-flymake (&rest _)
   (flymake-start))
 
@@ -2214,7 +2232,8 @@ resulting list even when found in the current clause."
   '(sweeprolog-analyze-start-font-lock))
 
 (defvar sweeprolog-analyze-region-fragment-hook
-  '(sweeprolog-analyze-fragment-font-lock))
+  '(sweeprolog-analyze-fragment-font-lock
+    sweeprolog-analyze-fragment-fullstop))
 
 (defvar sweeprolog-analyze-region-end-hook
   '(sweeprolog-analyze-end-font-lock))
@@ -2632,27 +2651,57 @@ Interactively, POINT is set to the current point."
     (unless (= target (point))
       (goto-char target))))
 
+(defun sweeprolog-at-fullstop-p (&optional point)
+  (setq point (or point (point)))
+  (get-text-property point 'sweeprolog-fullstop))
+
+(defun sweeprolog-end-of-last-fullstop (&optional point)
+  (setq point (or point (point)))
+  (if (sweeprolog-at-fullstop-p point)
+      (when-let ((beg (previous-single-property-change
+                       point
+                       'sweeprolog-fullstop)))
+        (previous-single-property-change beg 'sweeprolog-fullstop))
+    (previous-single-property-change point 'sweeprolog-fullstop)))
+
+(defun sweeprolog-end-of-next-fullstop (&optional point)
+  (setq point (or point (point)))
+  (when-let
+      ((end
+        (if (sweeprolog-at-fullstop-p point)
+            (next-single-property-change point 'sweeprolog-fullstop)
+          (when-let ((beg (next-single-property-change
+                           point
+                           'sweeprolog-fullstop)))
+            (next-single-property-change beg 'sweeprolog-fullstop)))))
+    (min (1+ end) (point-max))))
+
 (defun sweeprolog-end-of-top-term ()
-  (unless (eobp)
-    (while (and (nth 8 (syntax-ppss)) (not (eobp)))
-      (forward-char))
-    (or (re-search-forward (rx "." (or white "\n")) nil t)
-        (goto-char (point-max)))
-    (while (and (or (nth 8 (syntax-ppss))
-                    (save-excursion
-                      (nth 8 (syntax-ppss (max (point-min)
-                                               (1- (point))))))
-                    (save-match-data
-                      (looking-back (rx (or "#" "$" "&" "*" "+" "-"
-                                            "." "/" ":" "<" "=" ">"
-                                            "?" "@" "\\" "^" "~")
-                                        "." (or white "\n"))
-                                    (line-beginning-position))))
-                (not (eobp)))
+  (save-restriction
+    (narrow-to-region (or (sweeprolog-end-of-last-fullstop)
+                          (point-min))
+                      (or (sweeprolog-end-of-next-fullstop)
+                          (point-max)))
+    (unless (eobp)
       (while (and (nth 8 (syntax-ppss)) (not (eobp)))
         (forward-char))
       (or (re-search-forward (rx "." (or white "\n")) nil t)
-          (goto-char (point-max))))))
+          (goto-char (point-max)))
+      (while (and (or (nth 8 (syntax-ppss))
+                      (save-excursion
+                        (nth 8 (syntax-ppss (max (point-min)
+                                                 (1- (point))))))
+                      (save-match-data
+                        (looking-back (rx (or "#" "$" "&" "*" "+" "-"
+                                              "." "/" ":" "<" "=" ">"
+                                              "?" "@" "\\" "^" "~")
+                                          "." (or white "\n"))
+                                      (line-beginning-position))))
+                  (not (eobp)))
+        (while (and (nth 8 (syntax-ppss)) (not (eobp)))
+          (forward-char))
+        (or (re-search-forward (rx "." (or white "\n")) nil t)
+            (goto-char (point-max)))))))
 
 (defun sweeprolog-at-hole-p (&optional point)
   (setq point (or point (point)))
@@ -2882,6 +2931,7 @@ of the prefix argument."
              (insert ", ")))))
       (unless (= 0 arity)
         (goto-char beg))
+      (deactivate-mark)
       (sweeprolog-forward-hole))))
 
 (defun sweeprolog-insert-clause (functor arity &optional neck module)
@@ -3765,6 +3815,7 @@ certain contexts to maintain conventional Prolog layout."
              (consp cycle-spacing-actions)
              sweeprolog-enable-cycle-spacing
              (setq-local cycle-spacing-actions (cons #'sweeprolog-align-spaces cycle-spacing-actions))))
+  (sweeprolog-ensure-initialized)
   (sweeprolog--update-buffer-last-modified-time)
   (let ((time (current-time)))
     (sweeprolog-analyze-buffer t)
