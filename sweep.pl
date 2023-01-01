@@ -755,13 +755,19 @@ sweep_beginning_of_last_predicate(Start, Next) :-
                 L < Start
             ),
             Ls),
-    reverse(Ls, [Next|_]).
+    sort(Ls, Sorted),
+    reverse(Sorted, [Next|_]).
 
 sweep_beginning_of_next_predicate(Start, Next) :-
     sweep_source_id(Path),
     xref_source(Path, [comments(store)]),
-    xref_defined(Path, _, H), xref_definition_line(H, Next),
-    Start < Next.
+    findall(L,
+            (   xref_defined(Path, _, H),
+                xref_definition_line(H, L),
+                Start < L
+            ),
+            Ls),
+    sort(Ls, [Next|_]).
 
 sweep_source_id(Path) :-
     sweep_main_thread,
