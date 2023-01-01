@@ -11,6 +11,32 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.10.1 on 2023-01-01
+
+** New user option ~sweeprolog-read-predicate-documentation-function~
+
+This user option control how ~C-c C-d~
+(~sweeprolog-document-predicate-at-point~) prompts for initial
+documentation information, namely argument modes, determinism
+specification and predicate summary.  It specifies a function that
+~sweeprolog-document-predicate-at-point~ calls to get this information.
+
+The default value of this option is a new function
+~sweeprolog-read-predicate-documentation-default-function~ that
+preserves the current behavior of prompting the user to insert the
+needed information via the minibuffer.  An alternative function that
+uses holes instead is also provided, it is called
+~sweeprolog-read-predicate-documentation-with-holes~.
+
+** Improved handling of unbalanced quotes in ~sweeprolog-mode~ buffers
+
+Previously, unbalanced quotes in a Prolog clause could cause Sweep to
+treat the entire rest of buffer as part of that clause, causing major
+slowdowns when inserting Prolog strings and quoted atoms in large
+buffers.  To overcome this issue, this version introduces a mechanism
+for restricting analysis in such cases to the clauses surrounding the
+cursor.
+
 * Version 0.10.0 on 2022-12-25
 
 ** New command ~sweeprolog-insert-term-with-holes~
