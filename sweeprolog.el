@@ -1,6 +1,6 @@
 ;;; sweeprolog.el --- Embedded SWI-Prolog -*- lexical-binding:t -*-
 
-;; Copyright (C) 2022 Eshel Yaron
+;; Copyright (C) 2022-2023 Eshel Yaron
 
 ;; Author: Eshel Yaron <me@eshelyaron.com>
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
