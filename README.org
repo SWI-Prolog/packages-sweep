@@ -1062,15 +1062,32 @@ commands, see [[info:emacs#Comment Commands][Comment Commands in the Emacs manua
 
 #+KINDEX: C-c C-d
 #+FINDEX: sweeprolog-document-predicate-at-point
+#+FINDEX: sweeprolog-document-predicate-default-function
+#+FINDEX: sweeprolog-document-predicate-with-holes
+#+VINDEX: sweeprolog-document-predicate-function
 =sweep= also includes a dedicated command called
 =sweeprolog-document-predicate-at-point= for interactively creating
 =PlDoc= comments for predicates in =sweeprolog-mode= buffers.  This
 command, bound by default to =C-c C-d=, finds the beginning of the
 predicate definition under or right above the current cursor location,
-and inserts formatted =PlDoc= comments while prompting the user to
-interactively fill in the argument modes, determinism specification,
-and initial contents of the predicate documentation.
-=sweeprolog-document-predicate-at-point= leaves the cursor at the end of
+and inserts a formatted =PlDoc= comment.  This command fills in initial
+argument modes, determinism specification, and optionally a summary
+line for the documented predicate.  There are different ways in which
+~sweeprolog-document-predicate-at-point~ can obtain the needed initial
+documentation information, depending on the value of the user option
+~sweeprolog-read-predicate-documentation-function~ which specifies a
+function to retrieve this information.  The default function prompts
+you to insert the parameters one by one via the minibuffer.
+Alternatively, you can use holes (see [[#holes][Holes]]) for the predicate's
+argument modes and determinism specifiers by setting this option to
+~sweeprolog-read-predicate-documentation-with-holes~, as follows:
+
+#+begin_src emacs-lisp
+  (setq sweeprolog-read-predicate-documentation-function
+        #'sweeprolog-read-predicate-documentation-with-holes)
+#+end_src
+
+~sweeprolog-document-predicate-at-point~ leaves the cursor at the end of
 the newly inserted documentation comment for the user to extend or
 edit it if needed.  To add another comment line, use =M-j=
 (=default-indent-new-line=) which starts a new line with the comment

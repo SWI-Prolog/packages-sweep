@@ -358,6 +358,26 @@ non-terminals)."
   :type 'boolean
   :group 'sweeprolog)
 
+(defcustom sweeprolog-read-predicate-documentation-function
+  #'sweeprolog-read-predicate-documentation-default-function
+  "Function returning information for initial predicate documentation.
+
+The function should take two arguments, the functor name and
+arity of the predicate, and return a list of three strings.  The
+first string is the predicate's head template, the second is its
+determinism specification, and the third is a summary line."
+  :package-version '((sweeprolog "0.10.1"))
+  :type '(choice
+          (const
+           :tag "Prompt in Minibuffer"
+           sweeprolog-read-predicate-documentation-default-function)
+          (const
+           :tag "Use Holes"
+           sweeprolog-read-predicate-documentation-with-holes)
+          (function
+           :tag "Custom Function"))
+  :group 'sweeprolog)
+
 
 ;;;; Keymaps
 
@@ -3092,18 +3112,6 @@ of them signal success by returning non-nil."
       (when functor
         (list start functor arity stop neck module)))))
 
-(defun sweeprolog-insert-pldoc-for-predicate (functor arguments det summary)
-  (insert "\n\n")
-  (forward-char -2)
-  (insert (format "%%!  %s%s is %s.\n%%\n%%   %s"
-                  functor
-                  (if arguments
-                      (concat "(" (mapconcat #'identity arguments ", ") ")")
-                    "")
-                  det
-                  summary))
-  (fill-paragraph))
-
 (defun sweeprolog-end-of-predicate-at-point ()
   "Move to the end of the predicate definition at point."
   (when-let* ((def (sweeprolog-definition-at-point)))
@@ -3208,32 +3216,101 @@ predicate definition at or directly above POINT."
           (setq point nil)))
       (cons fun ari))))
 
+(defun sweeprolog-format-term-with-holes (functor arity &optional pre)
+  (let ((term-format
+         (sweeprolog--query-once
+          "sweep" "sweep_format_term"
+          (list functor arity (or pre 1200)))))
+    (let ((term (car term-format)))
+      (pcase  (cdr term-format)
+        ((or `(compound
+               "term_position"
+               ,_ ,_ ,_ ,_
+               ,holes)
+             `(compound
+               "parentheses_term_position"
+               ,_ ,_
+               (compound
+                "term_position"
+                ,_ ,_ ,_ ,_
+                ,holes)))
+         (dolist (hole holes)
+           (pcase hole
+             (`(compound "-" ,hbeg ,hend)
+              (add-text-properties
+               hbeg hend
+               (list
+                'sweeprolog-hole t
+                'font-lock-face (list (sweeprolog-hole-face))
+                'rear-nonsticky '(sweeprolog-hole
+                                  cursor-sensor-functions
+                                  font-lock-face))
+               term))))))
+      term)))
+
+(defun sweeprolog-read-predicate-documentation-with-holes (fun ari)
+  (list (sweeprolog-format-term-with-holes fun ari)
+        (sweeprolog--hole "Det")
+        nil))
+
+(defun sweeprolog-read-predicate-documentation-default-function (fun
+                                                                 ari)
+  (let ((cur 1)
+        (arguments nil))
+    (while (<= cur ari)
+      (let ((num (pcase cur
+                   (1 "First")
+                   (2 "Second")
+                   (3 "Third")
+                   (_ (concat (number-to-string cur) "th")))))
+        (push (read-string (concat num " argument: ")) arguments))
+      (setq cur (1+ cur)))
+    (setq arguments (reverse arguments))
+    (let ((det (cadr (read-multiple-choice
+                      "Determinism: "
+                      '((?d "det"       "Succeeds exactly once")
+                        (?s "semidet"   "Succeeds at most once")
+                        (?f "failure"   "Always fails")
+                        (?n "nondet"    "Succeeds any number of times")
+                        (?m "multi"     "Succeeds at least once")
+                        (?u "undefined" "Undefined")))))
+          (summary (read-string "Summary: ")))
+      (list (concat (sweeprolog-format-string-as-atom fun)
+                    (if arguments
+                        (concat "("
+                                (mapconcat #'identity arguments ", ")
+                                ")")
+                      ""))
+            det
+            (and (not (string-empty-p summary))
+                 summary)))))
+
+(defun sweeprolog-insert-predicate-documentation (head det sum)
+  (combine-after-change-calls
+    (insert "%!  " head " is " det ".\n"
+            (if sum (concat "%\n%   " sum "\n") "")
+            "\n")
+    (forward-char -2)
+    (fill-paragraph t)))
+
+(defun sweeprolog-read-predicate-documentation (fun ari)
+  "Return information for initial predicate documentation of FUN/ARI.
+
+Calls the function specified by
+`sweeprolog-read-predicate-documentation-function' to do the
+work."
+  (funcall sweeprolog-read-predicate-documentation-function fun ari))
+
 (defun sweeprolog-document-predicate-at-point (point)
-  "Insert PlDoc documentation for the predicate at or above POINT."
+  "Insert documentation comment for the predicate at or above POINT."
   (interactive "d" sweeprolog-mode)
   (when-let* ((pred (sweeprolog-beginning-of-predicate-at-point point))
-              (fun  (car pred))
-              (ari  (cdr pred)))
-    (let ((cur 1)
-          (arguments nil))
-      (while (<= cur ari)
-        (let ((num (pcase cur
-                     (1 "First")
-                     (2 "Second")
-                     (3 "Third")
-                     (_ (concat (number-to-string cur) "th")))))
-          (push (read-string (concat num " argument: ")) arguments))
-        (setq cur (1+ cur)))
-      (setq arguments (reverse arguments))
-      (let ((det (cadr (read-multiple-choice "Determinism: "
-                                             '((?d "det"       "Succeeds exactly once")
-                                               (?s "semidet"   "Succeeds at most once")
-                                               (?f "failure"   "Always fails")
-                                               (?n "nondet"    "Succeeds any number of times")
-                                               (?m "multi"     "Succeeds at least once")
-                                               (?u "undefined" "Undefined")))))
-            (summary (read-string "Summary: ")))
-        (sweeprolog-insert-pldoc-for-predicate fun arguments det summary)))))
+              (fun (car pred))
+              (ari (cdr pred))
+              (doc (sweeprolog-read-predicate-documentation fun ari)))
+    (sweeprolog-insert-predicate-documentation (car doc)
+                                               (cadr doc)
+                                               (caddr doc))))
 
 (defun sweeprolog-token-boundaries (&optional pos)
   (let ((point (or pos (point))))
