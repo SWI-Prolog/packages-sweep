@@ -390,6 +390,7 @@ determinism specification, and the third is a summary line."
     (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
     (define-key map (kbd "C-c C-m") #'sweeprolog-insert-term-with-holes)
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
+    (define-key map (kbd "C-c C-s") #'sweeprolog-term-search)
     (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
     (define-key map (kbd "C-c C-u") #'sweeprolog-update-dependencies)
     (define-key map (kbd "C-c C-`")
@@ -487,6 +488,9 @@ determinism specification, and the third is a summary line."
       (eq major-mode 'sweeprolog-mode) ]
     [ "Infer Indentation Style" sweeprolog-infer-indent-style
       (eq major-mode 'sweeprolog-mode) ]
+    [ "Search Term" sweeprolog-term-search
+      (derived-mode-p 'sweeprolog-mode)]
+    "--"
     [ "Set Prolog Flag" sweeprolog-set-prolog-flag t ]
     [ "Install Prolog Package" sweeprolog-pack-install t ]
     "--"
@@ -4624,6 +4628,125 @@ propely."
   (add-to-list 'command-line-functions
                #'sweeprolog-command-line-function))
 
+
+;;;; Term Search
+
+(defvar sweeprolog-term-search-last-term nil
+  "Last term searched with `sweeprolog-term-search'.")
+
+(defvar sweeprolog-term-search-read-term-history nil
+  "History list for `sweeprolog-term-search-read-term'.")
+
+(defvar-local sweeprolog-term-search-overlays nil
+  "List of `sweeprolog-term-search' overlays in the current buffer.")
+
+(defun sweeprolog-term-search-delete-overlays ()
+  "Delete overlays created by `sweeprolog-term-search'."
+  (interactive "" sweeprolog-mode)
+  (mapc #'delete-overlay sweeprolog-term-search-overlays)
+  (setq sweeprolog-term-search-overlays nil))
+
+(defun sweeprolog-term-search-repeat-forward ()
+  "Repeat last `sweeprolog-term-search' searching forward from point."
+  (interactive "" sweeprolog-mode)
+  (sweeprolog-term-search sweeprolog-term-search-last-term))
+
+(defun sweeprolog-term-search-repeat-backward ()
+  "Repeat last `sweeprolog-term-search' searching backward from point."
+  (interactive "" sweeprolog-mode)
+  (sweeprolog-term-search sweeprolog-term-search-last-term t))
+
+(defvar sweeprolog-term-search-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-m") #'sweeprolog-term-search-delete-overlays)
+    (define-key map (kbd "C-r") #'sweeprolog-term-search-repeat-backward)
+    (define-key map (kbd "C-s") #'sweeprolog-term-search-repeat-forward)
+    map)
+  "Transient keymap activated after `sweeprolog-term-search'.")
+
+(defun sweeprolog-term-search-in-buffer (term &optional buffer)
+  "Search for Prolog term TERM in buffer BUFFER.
+
+Return a list of (BEG . END) cons cells where BEG is the buffer
+position of the beginning of a matching term and END is its
+corresponding end position."
+  (setq buffer (or buffer (current-buffer)))
+  (with-current-buffer buffer
+    (let ((offset (point-min)))
+      (mapcar (lambda (match)
+                (cons (+ offset (car match))
+                      (+ offset (cdr match))))
+              (sweeprolog--query-once "sweep" "sweep_term_search"
+                                      (cons buffer-file-name term))))))
+
+(defun sweeprolog-term-search-read-term ()
+  "Read a Prolog term for searching with `sweeprolog-term-search'."
+  (read-string "[search] ?- " nil
+               sweeprolog-term-search-read-term-history))
+
+(defun sweeprolog-term-search-next (point overlays backward)
+  "Return first overlay in OVERLAYS starting after POINT.
+If no overlay starts after POINT, return the first overlay.
+
+If BACKWARD is non-nil, return last overlay ending before POINT
+instead, or the last overlay if no overlay ends before POINT."
+  (if backward
+      (let* ((match nil)
+             (reversed (reverse overlays))
+             (first (car reversed)))
+        (while (and reversed (not match))
+          (let ((head (car reversed))
+                (tail (cdr reversed)))
+            (if (<= (overlay-end head) point)
+                (setq match head)
+              (setq reversed tail))))
+        (or match first))
+    (let ((match nil)
+          (first (car overlays)))
+      (while (and overlays (not match))
+        (let ((head (car overlays))
+              (tail (cdr overlays)))
+          (if (< point (overlay-start head))
+              (setq match head)
+            (setq overlays tail))))
+      (or match first))))
+
+(defun sweeprolog-term-search (term &optional backward)
+  "Search forward for Prolog term TERM in the current buffer.
+
+If BACKWARD is non-nil, search backward instead."
+  (interactive (list (sweeprolog-term-search-read-term) nil)
+               sweeprolog-mode)
+  (sweeprolog-term-search-delete-overlays)
+  (setq sweeprolog-term-search-last-term term)
+  (let ((matches (sweeprolog-term-search-in-buffer term)))
+    (if (not matches)
+        (message "No matching term found.")
+      (setq sweeprolog-term-search-overlays
+            (mapcar (lambda (match)
+                      (let* ((beg (car match))
+                             (end (cdr match))
+                             (overlay (make-overlay beg end)))
+                        (overlay-put overlay 'face 'lazy-highlight)
+                        (overlay-put overlay 'evaporate t)
+                        overlay))
+                    matches))
+      (let ((next
+             (sweeprolog-term-search-next
+              (point) sweeprolog-term-search-overlays backward)))
+        (overlay-put next 'face 'isearch)
+        (push-mark (point) t)
+        (goto-char (overlay-start next)))
+      (set-transient-map sweeprolog-term-search-map t
+                         #'sweeprolog-term-search-delete-overlays)
+      (message
+       (substitute-command-keys
+        (concat
+         "Found " (number-to-string (length matches))
+         " occurences of `" term "'.  "
+         "\\<sweeprolog-term-search-map>"
+         "\\[sweeprolog-term-search-repeat-forward] for next match, "
+         "\\[sweeprolog-term-search-repeat-backward] for previous match."))))))
 
 ;;;; Footer
 

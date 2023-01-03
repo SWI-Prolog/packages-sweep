@@ -78,6 +78,28 @@ foo(Baz) :- baz.
     (should (not (sweeprolog-beginning-of-next-top-term)))
     (should (= (point) 19))))
 
+(ert-deftest beginning-of-next-top-term ()
+  "Test `sweeprolog-term-search'."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+bar(bar(bar), bar{bar:bar}, [bar,bar|bar]).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-min))
+    (sweeprolog-term-search "bar")
+    (should (= (point) 10))
+    (sweeprolog-term-search "bar")
+    (should (= (point) 24))
+    (sweeprolog-term-search "bar")
+    (should (= (point) 31))
+    (sweeprolog-term-search "bar")
+    (should (= (point) 35))
+    (sweeprolog-term-search "bar")
+    (should (= (point) 39))))
+
 (ert-deftest beginning-of-next-top-term-header ()
   "Test finding the beginning of the first top term."
   (let ((temp (make-temp-file "sweeprolog-test"

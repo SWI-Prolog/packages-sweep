@@ -73,7 +73,8 @@
             sweep_file_missing_dependencies/2,
             sweep_format_head/2,
             sweep_format_term/2,
-            sweep_current_functors/2
+            sweep_current_functors/2,
+            sweep_term_search/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -978,3 +979,54 @@ sweep_current_functors(A0, Col) :-
                 atom_string(F0, F)
             ),
             Col).
+
+sweep_term_search([Path0|String], Res) :-
+    term_string(Term, String),
+    atom_string(Path, Path0),
+    setup_call_cleanup(prolog_open_source(Path, Stream),
+                       sweep_search_stream(Stream, Term, Res),
+                       prolog_close_source(Stream)).
+
+sweep_search_stream(Stream, Term, Res) :-
+    prolog_read_source_term(Stream, Term0, _, [subterm_positions(TermPos)]),
+    sweep_search_stream_(Term0, TermPos, Stream, Term, Res).
+
+sweep_search_stream_(end_of_file, _, _, _, []) :-
+    !.
+sweep_search_stream_(Term0, TermPos, Stream, Term, Res) :-
+    findall([HS|HE],
+            sweep_match_term(TermPos, Term0, Term, HS, HE),
+            Res,
+            Tail),
+    sweep_search_stream(Stream, Term, Tail).
+
+sweep_match_term(Pos, Term0, Term, From, To) :-
+    compound(Pos),
+    Pos \= parentheses_term_position(_, _, _),
+    arg(1, Pos, From),
+    arg(2, Pos, To),
+    subsumes_term(Term, Term0).
+sweep_match_term(brace_term_position(_, _, Arg), {Term0}, Term, From, To) :-
+    sweep_match_term(Arg, Term0, Term, From, To).
+sweep_match_term(list_position(_, _, Elms, _), Term0, Term, From, To) :-
+    nth0(I, Elms, Elm),
+    nth0(I, Term0, Term1),
+    sweep_match_term(Elm, Term1, Term, From, To).
+sweep_match_term(list_position(_, _, _, Tail), Term0, Term, From, To) :-
+    list_tail(Term0, Term1),
+    sweep_match_term(Tail, Term1, Term, From, To).
+sweep_match_term(term_position(_, _, _, _, SubPos), Term0, Term, From, To) :-
+    nth1(I, SubPos, Sub),
+    arg(I, Term0, Term1),
+    sweep_match_term(Sub, Term1, Term, From, To).
+sweep_match_term(dict_position(_, _, _, _, KeyValuePosList), Term0, Term, From, To) :-
+    member(key_value_position(_, _, _, _, Key, _, ValuePos), KeyValuePosList),
+    get_dict(Key, Term0, Term1),
+    sweep_match_term(ValuePos, Term1, Term, From, To).
+sweep_match_term(parentheses_term_position(_, _, ContentPos), Term0, Term, From, To) :-
+    sweep_match_term(ContentPos, Term0, Term, From, To).
+sweep_match_term(quasi_quotation_position(_, _, SyntaxTerm, SyntaxPos, _), _, Term, From, To) :-
+    sweep_match_term(SyntaxPos, SyntaxTerm, Term, From, To).
+
+list_tail([_|T0], T) :- T0 = [_|_], !, list_tail(T0, T).
+list_tail([_|T], T).
