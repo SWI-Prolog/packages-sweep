@@ -85,6 +85,7 @@ foo(Baz) :- baz.
                               "pl"
                               "
 bar(bar(bar), bar{bar:bar}, [bar,bar|bar]).
+foo([Bar|Baz]).
 ")))
     (find-file-literally temp)
     (sweeprolog-mode)

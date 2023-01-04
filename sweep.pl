@@ -1028,5 +1028,5 @@ sweep_match_term(parentheses_term_position(_, _, ContentPos), Term0, Term, From,
 sweep_match_term(quasi_quotation_position(_, _, SyntaxTerm, SyntaxPos, _), _, Term, From, To) :-
     sweep_match_term(SyntaxPos, SyntaxTerm, Term, From, To).
 
-list_tail([_|T0], T) :- T0 = [_|_], !, list_tail(T0, T).
+list_tail([_|T0], T) :- nonvar(T0), T0 = [_|_], !, list_tail(T0, T).
 list_tail([_|T], T).

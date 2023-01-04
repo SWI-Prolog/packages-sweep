@@ -1338,7 +1338,7 @@ command ~M-x sweeprolog-term-search~.  This command, bound by default to
 ~C-c C-s~ in ~sweeprolog-mode~ buffers, prompts for a Prolog term to
 search for and finds terms in the current buffer that the search term
 subsumes.  For example, to find if-then-else constructs in the current
-buffer do ~C-c C-s _ ; _ -> _ RET~.
+buffer do ~C-c C-s _ -> _ ; _ RET~.
 
 #+FINDEX: sweeprolog-term-search-repeat-forward
 #+FINDEX: sweeprolog-term-search-repeat-backward
