@@ -4656,8 +4656,16 @@ propely."
   (interactive "" sweeprolog-mode)
   (sweeprolog-term-search sweeprolog-term-search-last-term t))
 
+(defun sweeprolog-term-search-abort ()
+  "Abort term search and restore point to its original position."
+  (interactive "" sweeprolog-mode)
+  (goto-char (mark t))
+  (pop-mark)
+  (signal 'quit nil))
+
 (defvar sweeprolog-term-search-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-g") #'sweeprolog-term-search-abort)
     (define-key map (kbd "C-m") #'sweeprolog-term-search-delete-overlays)
     (define-key map (kbd "C-r") #'sweeprolog-term-search-repeat-backward)
     (define-key map (kbd "C-s") #'sweeprolog-term-search-repeat-forward)
@@ -4711,11 +4719,14 @@ instead, or the last overlay if no overlay ends before POINT."
             (setq overlays tail))))
       (or match first))))
 
-(defun sweeprolog-term-search (term &optional backward)
+(defun sweeprolog-term-search (term &optional backward interactive)
   "Search forward for Prolog term TERM in the current buffer.
 
-If BACKWARD is non-nil, search backward instead."
-  (interactive (list (sweeprolog-term-search-read-term) nil)
+If BACKWARD is non-nil, search backward instead.
+
+If INTERACTIVE is non-nil, as it is when called interactively,
+push the current position to the mark ring before moving point."
+  (interactive (list (sweeprolog-term-search-read-term) nil t)
                sweeprolog-mode)
   (sweeprolog-term-search-delete-overlays)
   (setq sweeprolog-term-search-last-term term)
@@ -4735,7 +4746,8 @@ If BACKWARD is non-nil, search backward instead."
              (sweeprolog-term-search-next
               (point) sweeprolog-term-search-overlays backward)))
         (overlay-put next 'face 'isearch)
-        (push-mark (point) t)
+        (when interactive
+          (push-mark (point) t))
         (goto-char (overlay-start next)))
       (set-transient-map sweeprolog-term-search-map t
                          #'sweeprolog-term-search-delete-overlays)
