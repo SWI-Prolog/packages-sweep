@@ -11,6 +11,21 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.11.0 on 2023-01-05
+
+** New command ~sweeprolog-term-search~
+
+_Experimental_ new command, bound to ~C-c C-s~ in ~sweeprolog-mode~ buffers,
+prompts for a Prolog term and searches for terms subsumed by it in the
+current buffer.  All matching terms are temporarily highlighted and
+the cursor moves to the start of the next occurrence after point.
+
+** Fix bug where ~sweeprolog-forward-predicate~ got confused by dynamic predicates
+
+In previous versions, typing ~M-n~ (~sweeprolog-forward-predicate~) would
+sometimes go to the next dynamic predicate, jumping over regular
+predicates that come before it.
+
 * Version 0.10.1 on 2023-01-01
 
 ** New user option ~sweeprolog-read-predicate-documentation-function~
@@ -41,7 +56,7 @@ cursor.
 
 ** New command ~sweeprolog-insert-term-with-holes~
 
-This command, bound to ~C-c C-m~ (or ~C-c RET~) is ~sweeprolog-mode~
+This command, bound to ~C-c C-m~ (or ~C-c RET~) in ~sweeprolog-mode~
 buffers, inserts a Prolog term at point with a given functor and
 arity, using holes in place of the term's arguments.
 
