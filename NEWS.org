@@ -11,6 +11,20 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.11.1 on 2023-01-06
+
+** Term Search improvements
+
+Invoking ~sweeprolog-term-search~ with a prefix argument (i.e. typing
+~C-u C-c C-s~) now prompts for an arbitrary Prolog goal that variables
+in the search term should satisfy.
+
+We also use a new function ~sweeprolog-read-term~ for reading the search
+term, which checks that the minibuffer contains a valid Prolog term
+before exiting.  If the term is invalid this function refuses to exit
+the minibuffer and moves point to the position of the syntax error in
+the given term.
+
 * Version 0.11.0 on 2023-01-05
 
 ** New command ~sweeprolog-term-search~
