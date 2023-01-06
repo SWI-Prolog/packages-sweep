@@ -4604,7 +4604,7 @@ to the ARGth next hole in the buffer."
 When enabled, this minor mode binds TAB to the command
 `sweeprolog-indent-or-forward-hole', which moves to the next hole
 in the buffer when the called in a line that's already indented
-propely."
+properly."
   :group 'sweeprolog)
 
 
@@ -4631,14 +4631,13 @@ propely."
 
 ;;;; Term Search
 
-(defvar sweeprolog-term-search-last-term nil
+(defvar sweeprolog-term-search-last-search nil
   "Last term searched with `sweeprolog-term-search'.")
-
-(defvar sweeprolog-term-search-read-term-history nil
-  "History list for `sweeprolog-term-search-read-term'.")
 
 (defvar-local sweeprolog-term-search-overlays nil
   "List of `sweeprolog-term-search' overlays in the current buffer.")
+
+(defvar-local sweeprolog-term-search-repeat-count 0)
 
 (defun sweeprolog-term-search-delete-overlays ()
   "Delete overlays created by `sweeprolog-term-search'."
@@ -4649,18 +4648,27 @@ propely."
 (defun sweeprolog-term-search-repeat-forward ()
   "Repeat last `sweeprolog-term-search' searching forward from point."
   (interactive "" sweeprolog-mode)
-  (sweeprolog-term-search sweeprolog-term-search-last-term))
+  (setq sweeprolog-term-search-repeat-count
+        (mod (1+ sweeprolog-term-search-repeat-count)
+             (length sweeprolog-term-search-overlays)))
+  (sweeprolog-term-search (car sweeprolog-term-search-last-search)
+                          (cdr sweeprolog-term-search-last-search)))
 
 (defun sweeprolog-term-search-repeat-backward ()
   "Repeat last `sweeprolog-term-search' searching backward from point."
   (interactive "" sweeprolog-mode)
-  (sweeprolog-term-search sweeprolog-term-search-last-term t))
+  (setq sweeprolog-term-search-repeat-count
+        (mod (1- sweeprolog-term-search-repeat-count)
+             (length sweeprolog-term-search-overlays)))
+  (sweeprolog-term-search (car sweeprolog-term-search-last-search)
+                          (cdr sweeprolog-term-search-last-search) t))
 
 (defun sweeprolog-term-search-abort ()
   "Abort term search and restore point to its original position."
   (interactive "" sweeprolog-mode)
   (goto-char (mark t))
   (pop-mark)
+  (sweeprolog-term-search-delete-overlays)
   (signal 'quit nil))
 
 (defvar sweeprolog-term-search-map
@@ -4672,12 +4680,13 @@ propely."
     map)
   "Transient keymap activated after `sweeprolog-term-search'.")
 
-(defun sweeprolog-term-search-in-buffer (term &optional buffer)
-  "Search for Prolog term TERM in buffer BUFFER.
+(defun sweeprolog-term-search-in-buffer (term &optional goal buffer)
+  "Search for Prolog term TERM satisfying GOAL in buffer BUFFER.
 
 Return a list of (BEG . END) cons cells where BEG is the buffer
 position of the beginning of a matching term and END is its
 corresponding end position."
+  (setq goal   (or goal "true"))
   (setq buffer (or buffer (current-buffer)))
   (with-current-buffer buffer
     (let ((offset (point-min)))
@@ -4685,12 +4694,57 @@ corresponding end position."
                 (cons (+ offset (car match))
                       (+ offset (cdr match))))
               (sweeprolog--query-once "sweep" "sweep_term_search"
-                                      (cons buffer-file-name term))))))
+                                      (list buffer-file-name
+                                            term goal))))))
 
-(defun sweeprolog-term-search-read-term ()
-  "Read a Prolog term for searching with `sweeprolog-term-search'."
-  (read-string "[search] ?- " nil
-               sweeprolog-term-search-read-term-history))
+(defun sweeprolog-read-term-try ()
+  "Try to read a Prolog term in the minibuffer.
+
+Exit the minibuffer if successful, else report the error to the
+user and move point to the location of the error.  If point is
+not already at the location of the error, push a mark before
+moving point."
+  (interactive)
+  (unless (> (minibuffer-depth) 0)
+    (error "Minibuffer must be active"))
+  (if-let* ((contents (minibuffer-contents))
+            (error-point
+             (condition-case error
+                 (progn
+                   (sweeprolog--query-once "system" "term_string"
+                                           contents t)
+                   nil)
+               (prolog-exception (pcase error
+                                   (`(prolog-exception
+                                      compound "error"
+                                      (compound "syntax_error" ,_)
+                                      (compound ,_ ,_ ,point))
+                                    (+ (length (minibuffer-prompt))
+                                       point 1)))))))
+      (progn
+        (unless (= (point) error-point)
+          (push-mark))
+        (goto-char error-point)
+        (minibuffer-message "Invalid Prolog term"))
+    (exit-minibuffer)))
+
+(defvar sweeprolog-read-term-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map minibuffer-local-map)
+    (define-key map (kbd "C-m") #'sweeprolog-read-term-try)
+    (define-key map (kbd "C-j") #'sweeprolog-read-term-try)
+    map)
+  "Keymap used by `sweeprolog-read-term'.")
+
+(defvar sweeprolog-read-term-history nil
+  "History list for `sweeprolog-read-term'.")
+
+(defun sweeprolog-read-term (&optional prompt)
+  (setq prompt (or prompt "?- "))
+  "Read a Prolog term using the minibuffer."
+  (read-from-minibuffer prompt nil
+                        sweeprolog-read-term-map nil
+                        sweeprolog-read-term-history))
 
 (defun sweeprolog-term-search-next (point overlays backward)
   "Return first overlay in OVERLAYS starting after POINT.
@@ -4705,7 +4759,7 @@ instead, or the last overlay if no overlay ends before POINT."
         (while (and reversed (not match))
           (let ((head (car reversed))
                 (tail (cdr reversed)))
-            (if (<= (overlay-end head) point)
+            (if (< (overlay-start head) point)
                 (setq match head)
               (setq reversed tail))))
         (or match first))
@@ -4719,18 +4773,33 @@ instead, or the last overlay if no overlay ends before POINT."
             (setq overlays tail))))
       (or match first))))
 
-(defun sweeprolog-term-search (term &optional backward interactive)
+(defun sweeprolog-term-search (term &optional goal backward interactive)
   "Search forward for Prolog term TERM in the current buffer.
+
+Optional argument GOAL is a goal that matching terms must
+satisfy, it may refer to variables occuring in TERM.
 
 If BACKWARD is non-nil, search backward instead.
 
 If INTERACTIVE is non-nil, as it is when called interactively,
-push the current position to the mark ring before moving point."
-  (interactive (list (sweeprolog-term-search-read-term) nil t)
+push the current position to the mark ring before moving point.
+
+When called interactively with a prefix argument, prompt for
+GOAL."
+  (interactive (let* ((term (sweeprolog-read-term "[Term-search] ?- "))
+                      (goal (if current-prefix-arg
+                                (sweeprolog-read-term
+                                 (concat "[Term-search goal for "
+                                         term
+                                         "] ?- "))
+                              "true")))
+                 (list term goal nil t))
                sweeprolog-mode)
+  (when interactive
+    (setq sweeprolog-term-search-repeat-count 0))
   (sweeprolog-term-search-delete-overlays)
-  (setq sweeprolog-term-search-last-term term)
-  (let ((matches (sweeprolog-term-search-in-buffer term)))
+  (setq sweeprolog-term-search-last-search (cons term goal))
+  (let ((matches (sweeprolog-term-search-in-buffer term goal)))
     (if (not matches)
         (message "No matching term found.")
       (setq sweeprolog-term-search-overlays
@@ -4754,8 +4823,10 @@ push the current position to the mark ring before moving point."
       (message
        (substitute-command-keys
         (concat
-         "Found " (number-to-string (length matches))
-         " occurences of `" term "'.  "
+         "Match "
+         (number-to-string (1+ sweeprolog-term-search-repeat-count))
+         "/"
+         (number-to-string (length matches)) ".  "
          "\\<sweeprolog-term-search-map>"
          "\\[sweeprolog-term-search-repeat-forward] for next match, "
          "\\[sweeprolog-term-search-repeat-backward] for previous match."))))))
