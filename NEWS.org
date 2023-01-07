@@ -11,6 +11,16 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.11.2 on 2023-01-07
+
+** Term Search now uses terms at point for "future history"
+
+When reading a search term in the minibuffer, ~sweeprolog-term-search~
+now populates the "future history" with the terms at point starting
+from the most nested term.  This means that you can type ~M-n~ in the
+minibuffer to quickly fill in the term at point in order to search for
+similar terms.
+
 * Version 0.11.1 on 2023-01-06
 
 ** Term Search improvements
