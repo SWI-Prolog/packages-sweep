@@ -74,7 +74,8 @@
             sweep_format_head/2,
             sweep_format_term/2,
             sweep_current_functors/2,
-            sweep_term_search/2
+            sweep_term_search/2,
+            sweep_terms_at_point/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -1036,3 +1037,54 @@ sweep_match_term(quasi_quotation_position(_, _, SyntaxTerm, SyntaxPos, _), _, Te
 
 list_tail([_|T0], T) :- nonvar(T0), T0 = [_|_], !, list_tail(T0, T).
 list_tail([_|T], T).
+
+sweep_terms_at_point([String, Start, Point], Res) :-
+    (   sweep_source_id(Path0),
+        atom_string(Path, Path0),
+        findall(Op, xref_op(Path, Op), Ops),
+        (   xref_module(Path, Module)
+        ->  true
+        ;   Module = user
+        )
+    ->  true
+    ;   Module = user, Ops = []
+    ),
+    with_buffer_stream(
+        Stream,
+        String,
+        (   ignore((   nonvar(Path),
+                       set_stream(Stream, file_name(Path))
+                   )),
+            read_source_term_at_location(Stream, _,
+                                         [module(Module),
+                                          operators(Ops),
+                                          subterm_positions(SubPos)]),
+            findall([Beg|End],
+                    sweep_terms_at_point_(SubPos, Start, Point, Beg, End),
+                    Res)
+        )).
+
+sweep_terms_at_point_(SubPos, Start, Point, Beg, End) :-
+    SubPos \= parentheses_term_position(_, _, _),
+    arg(1, SubPos, Beg0),
+    arg(2, SubPos, End0),
+    Beg0 =< Point,
+    Point =< End0,
+    Beg is Beg0 + Start,
+    End is End0 + Start.
+sweep_terms_at_point_(list_position(_, _, Elms, _), Start, Point, Beg, End) :-
+    member(SubPos, Elms),
+    sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
+sweep_terms_at_point_(list_position(_, _, _, SubPos), Start, Point, Beg, End) :-
+    SubPos \== none,
+    sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
+sweep_terms_at_point_(term_position(_, _, _, _, Args), Start, Point, Beg, End) :-
+    member(SubPos, Args),
+    sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
+sweep_terms_at_point_(dict_position(_, _, _, _, KeyValuePosList), Start, Point, Beg, End) :-
+    member(key_value_position(_, _, _, _, _, _, SubPos), KeyValuePosList),
+    sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
+sweep_terms_at_point_(parentheses_term_position(_, _, SubPos), Start, Point, Beg, End) :-
+    sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
+sweep_terms_at_point_(quasi_quotation_position(_, _, _, SubPos, _), Start, Point, Beg, End) :-
+    sweep_terms_at_point_(SubPos, Start, Point, Beg, End).

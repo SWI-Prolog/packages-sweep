@@ -2524,7 +2524,7 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
 `sweeprolog-top-level-signal-default-goal'."
   (interactive (list (if current-prefix-arg
                          (read-string "Signal goal: ?- " nil
-                                      sweeprolog-top-level-signal-goal-history)
+                                      'sweeprolog-top-level-signal-goal-history)
                        sweeprolog-top-level-signal-default-goal)))
   (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
 
@@ -4263,6 +4263,7 @@ accordingly."
 
 ;;;; Help
 
+;;;###autoload
 (defun sweeprolog-info-manual ()
   "Display the Sweep manual in Info mode."
   (interactive)
@@ -4736,15 +4737,49 @@ moving point."
     map)
   "Keymap used by `sweeprolog-read-term'.")
 
+(defun sweeprolog-terms-at-point (&optional point)
+  "Return boundarines of Prolog terms at POINT, innermost first."
+  (setq point (or point (point)))
+  (save-excursion
+    (goto-char point)
+    (unless (sweeprolog-at-beginning-of-top-term-p)
+      (sweeprolog-beginning-of-top-term))
+    (unless (bobp)
+      (forward-char -1))
+    (let ((start (point)))
+      (sweeprolog-end-of-top-term)
+      (mapcar (lambda (beg-end)
+                (buffer-substring-no-properties (car beg-end)
+                                                (cdr beg-end)))
+              (reverse
+               (sweeprolog--query-once "sweep" "sweep_terms_at_point"
+                                       (list
+                                        (buffer-substring-no-properties
+                                         start (point))
+                                        start
+                                        (- point start))))))))
+
 (defvar sweeprolog-read-term-history nil
   "History list for `sweeprolog-read-term'.")
 
+(defvar sweeprolog-read-goal-history nil
+  "History list for `sweeprolog-read-goal'.")
+
 (defun sweeprolog-read-term (&optional prompt)
+  "Read a Prolog term prompting with PROMPT (default \"?- \")."
   (setq prompt (or prompt "?- "))
-  "Read a Prolog term using the minibuffer."
   (read-from-minibuffer prompt nil
                         sweeprolog-read-term-map nil
-                        sweeprolog-read-term-history))
+                        'sweeprolog-read-term-history
+                        (when (derived-mode-p 'sweeprolog-mode)
+                          (sweeprolog-terms-at-point))))
+
+(defun sweeprolog-read-goal (&optional prompt)
+  "Read a Prolog goal prompting with PROMPT (default \"?- \")."
+  (setq prompt (or prompt "?- "))
+  (read-from-minibuffer prompt nil
+                        sweeprolog-read-term-map nil
+                        'sweeprolog-read-goal-history))
 
 (defun sweeprolog-term-search-next (point overlays backward)
   "Return first overlay in OVERLAYS starting after POINT.
@@ -4788,7 +4823,7 @@ When called interactively with a prefix argument, prompt for
 GOAL."
   (interactive (let* ((term (sweeprolog-read-term "[Term-search] ?- "))
                       (goal (if current-prefix-arg
-                                (sweeprolog-read-term
+                                (sweeprolog-read-goal
                                  (concat "[Term-search goal for "
                                          term
                                          "] ?- "))
@@ -4830,6 +4865,7 @@ GOAL."
          "\\<sweeprolog-term-search-map>"
          "\\[sweeprolog-term-search-repeat-forward] for next match, "
          "\\[sweeprolog-term-search-repeat-backward] for previous match."))))))
+
 
 ;;;; Footer
 

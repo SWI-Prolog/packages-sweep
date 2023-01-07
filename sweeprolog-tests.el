@@ -78,7 +78,37 @@ foo(Baz) :- baz.
     (should (not (sweeprolog-beginning-of-next-top-term)))
     (should (= (point) 19))))
 
-(ert-deftest beginning-of-next-top-term ()
+(ert-deftest terms-at-point ()
+  "Test `sweeprolog-term-search'."
+  (let ((temp (make-temp-file "sweeprolog-terms-at-point-test"
+                              nil
+                              "pl"
+                              "
+recursive(Var) :-
+    (   true
+    ->  recursive(Bar)
+    ;   var(Baz)
+    *-> Bar is foo
+    ).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (should (equal (sweeprolog-terms-at-point 81)
+                '("Bar"
+                  "Bar is foo"
+                  "var(Baz)
+    *-> Bar is foo" "true
+    ->  recursive(Bar)
+    ;   var(Baz)
+    *-> Bar is foo"
+    "recursive(Var) :-
+    (   true
+    ->  recursive(Bar)
+    ;   var(Baz)
+    *-> Bar is foo
+    )")))))
+
+(ert-deftest term-search ()
   "Test `sweeprolog-term-search'."
   (let ((temp (make-temp-file "sweeprolog-test"
                               nil
