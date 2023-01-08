@@ -3884,18 +3884,13 @@ certain contexts to maintain conventional Prolog layout."
     (add-hook 'sweeprolog-analyze-region-start-hook #'sweeprolog-analyze-start-flymake nil t)
     (add-hook 'sweeprolog-analyze-region-fragment-hook #'sweeprolog-analyze-fragment-flymake nil t)
     (add-hook 'sweeprolog-analyze-region-end-hook #'sweeprolog-analyze-end-flymake nil t)
-    (setq-local next-error-function #'flymake-goto-next-error)
-    (add-hook 'window-selection-change-functions
-              (let ((buffer (current-buffer)))
-                (lambda (win)
-                  (when (equal buffer
-                               (window-buffer win))
-                    (next-error-select-buffer buffer))))
-              nil t))
+    (setq-local next-error-function #'flymake-goto-next-error))
   (when (and (boundp 'cycle-spacing-actions)
              (consp cycle-spacing-actions)
-             sweeprolog-enable-cycle-spacing
-             (setq-local cycle-spacing-actions (cons #'sweeprolog-align-spaces cycle-spacing-actions))))
+             sweeprolog-enable-cycle-spacing)
+    (setq-local cycle-spacing-actions
+                (cons #'sweeprolog-align-spaces
+                      cycle-spacing-actions)))
   (sweeprolog-ensure-initialized)
   (sweeprolog--update-buffer-last-modified-time)
   (let ((time (current-time)))
