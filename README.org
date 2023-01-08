@@ -1345,7 +1345,7 @@ C-s _ -> _ ; _ RET~.
 While prompting for a search term in the minibuffer, this command
 populates the "future history" with the Prolog terms at point, with
 the most nested term at point on top.  Typing ~M-n~ once in the
-minibuffer fills it the innermost term at point, typing ~M-n~ again
+minibuffer fills in the innermost term at point, typing ~M-n~ again
 cycles up the syntax tree at point filling the minibuffer with larger
 terms, up until the top-term at point.  For more information about
 minibuffer history commands, see [[info:emacs#Minibuffer History][Minibuffer History]] in the Emacs
@@ -1569,6 +1569,35 @@ integrates with the standard Emacs symbol completion mechanism to
 provide completion for predicate names.  To complete a partial
 predicate name in the top-level prompt, use =C-M-i= (or =M-TAB=).  For
 more information see [[info:emacs#Symbol Completion][Symbol Completion in the Emacs manual]].
+
+** Following Error Messages
+:PROPERTIES:
+:CUSTOM_ID: top-level-compilation-shell-minor-mode
+:DESCRIPTION: Minor mode for visiting source locations in printed messages
+:ALT_TITLE: Follow Messages
+:END:
+
+Many standard SWI-Prolog facilities generate messages that refer to
+specific source code locations.  For example, loading a Prolog file
+that contains singleton variables into the top-level will produce
+warning messages pointing to the starting line of the clauses where
+the singleton variables occur.  If you enable
+~compilation-shell-minor-mode~ in the top-level buffer, Emacs recognizes
+the Prolog messages that refer to source locations and provides
+convenient commands for visiting such source locations from the
+top-level buffer.  For more information about
+~compilation-shell-minor-mode~, see [[info:emacs#Compilation Mode][Compilation Mode]] in the Emacs
+manual.
+
+To use ~compilation-shell-minor-mode~ automatically in all top-level
+buffers, you can arrange for it to be enabled as part of the
+~sweeprolog-top-level-mode~ hook, as follows:
+
+#+begin_src emacs-lisp
+  (add-hook 'sweeprolog-top-level-mode-hook
+            #'compilation-shell-minor-mode)
+
+#+end_src
 
 * Finding Prolog code
 :PROPERTIES:
