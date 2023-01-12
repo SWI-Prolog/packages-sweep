@@ -391,6 +391,7 @@ determinism specification, and the third is a summary line."
     (define-key map (kbd "C-c C-m") #'sweeprolog-insert-term-with-holes)
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
     (define-key map (kbd "C-c C-s") #'sweeprolog-term-search)
+    (define-key map (kbd "C-c C-q") #'sweeprolog-top-level-send-goal)
     (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
     (define-key map (kbd "C-c C-u") #'sweeprolog-update-dependencies)
     (define-key map (kbd "C-c C-`")
@@ -502,6 +503,7 @@ determinism specification, and the third is a summary line."
                       (and (derived-mode-p 'sweeprolog-top-level-mode)
                            sweeprolog-top-level-thread-id)))
                   (buffer-list)) ]
+    [ "Send Goal to Top-level" sweeprolog-top-level-send-goal t ]
     [ "Open Top-level Menu" sweeprolog-list-top-levels t ]
     "--"
     [ "Describe Predicate" sweeprolog-describe-predicate t ]
@@ -2443,41 +2445,73 @@ Interactively, PROJ is the prefix argument."
         (sweeprolog--query-once "sweep" "sweep_colourise_query"
                                 (cons query (marker-position beg)))))))
 
-;;;###autoload
-(defun sweeprolog-top-level (&optional buffer)
-  "Run a Prolog top-level in BUFFER.
-If BUFFER is nil, a buffer called \"*sweeprolog-top-level*\" is used
-by default.
+(defun sweeprolog-top-level-buffer (&optional name)
+  "Return a Prolog top-level buffer named NAME.
 
-Interactively, a prefix arg means to prompt for BUFFER."
-  (interactive
-   (let* ((buffer
-           (and current-prefix-arg
-                (read-buffer "Top-level buffer: "
-                             (if (and (eq major-mode 'sweeprolog-top-level-mode)
-                                      (null (get-buffer-process
-                                             (current-buffer))))
-                                 (buffer-name)
-                               (generate-new-buffer-name "*sweeprolog-top-level*"))))))
-     (list buffer)))
-  (let ((buf (get-buffer-create (or buffer "*sweeprolog-top-level*"))))
-    (with-current-buffer buf
-      (unless (eq major-mode 'sweeprolog-top-level-mode)
-        (sweeprolog-top-level-mode)))
-    (unless sweeprolog-prolog-server-port
-      (sweeprolog-start-prolog-server))
-    (unless (sweeprolog--query-once "sweep" "sweep_accept_top_level_client"
-                                    (buffer-name buf))
-      (error "Failed to create new top-level!"))
-    (with-current-buffer buf
+If NAME is nil, use the default name \"*sweeprolog-top-level*\".
+
+If the buffer already exists, ensure it is associated with a live
+top-level."
+  (unless sweeprolog-prolog-server-port
+    (sweeprolog-start-prolog-server))
+  (let ((buf (get-buffer-create (or name "*sweeprolog-top-level*"))))
+    (unless (process-live-p (get-buffer-process buf))
+      (with-current-buffer buf
+        (unless (eq major-mode 'sweeprolog-top-level-mode)
+          (sweeprolog-top-level-mode)))
+      (unless (sweeprolog--query-once "sweep" "sweep_accept_top_level_client"
+                                      (buffer-name buf))
+        (error "Failed to create new top-level!"))
       (make-comint-in-buffer "sweeprolog-top-level"
                              buf
                              (cons "localhost"
                                    sweeprolog-prolog-server-port))
       (unless comint-last-prompt
-        (accept-process-output (get-buffer-process (current-buffer)) 1))
+        (accept-process-output (get-buffer-process buf) 1))
       (sweeprolog-top-level--populate-thread-id))
-    (pop-to-buffer buf sweeprolog-top-level-display-action)))
+    buf))
+
+;;;###autoload
+(defun sweeprolog-top-level (&optional buffer-name)
+  "Run a Prolog top-level in a buffer.
+
+BUFFER-NAME is passed to `sweeprolog-top-level-buffer' to obtain
+an appropriate buffer.
+
+Interactively, a prefix argument means to prompt for BUFFER-NAME."
+  (interactive
+   (list (and current-prefix-arg
+              (read-buffer "Top-level buffer: "
+                           (if (and (eq major-mode 'sweeprolog-top-level-mode)
+                                    (null (get-buffer-process
+                                           (current-buffer))))
+                               (buffer-name)
+                             (generate-new-buffer-name "*sweeprolog-top-level*"))))))
+  (pop-to-buffer (sweeprolog-top-level-buffer buffer-name)
+                 sweeprolog-top-level-display-action))
+
+(defun sweeprolog-top-level-send-string (string &optional buffer)
+  "Send STRING to the top-level associated with BUFFER.
+
+If BUFFER is nil, use `sweeprolog-top-level-buffer' to obtain an
+appropriate buffer."
+  (comint-send-string (get-buffer-process
+                       (or buffer (sweeprolog-top-level-buffer)))
+                      string))
+
+;;;###autoload
+(defun sweeprolog-top-level-send-goal (goal)
+  "Send GOAL to a top-level buffer and display that buffer."
+  (interactive (list (sweeprolog-read-goal)))
+  (let ((goal (cond
+               ((string-match (rx "." (or white "\n") eos) goal)
+                goal)
+               ((string-match (rx "." eos) goal)
+                (concat goal "\n"))
+               (t (concat goal ".\n")))))
+    (let ((buffer (sweeprolog-top-level-buffer)))
+      (sweeprolog-top-level-send-string goal buffer)
+      (display-buffer buffer sweeprolog-top-level-display-action))))
 
 (defun sweeprolog-top-level--post-self-insert-function ()
   (when-let ((pend (cdr comint-last-prompt)))

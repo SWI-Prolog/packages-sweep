@@ -1599,6 +1599,26 @@ buffers, you can arrange for it to be enabled as part of the
 
 #+end_src
 
+** Sending Goals to the Top-level
+:PROPERTIES:
+:CUSTOM_ID: top-level-send-goal
+:DESCRIPTION: Commands for sending goals to the be executed in the Top-level
+:ALT_TITLE: Send to Top-level
+:END:
+
+#+FINDEX: sweeprolog-top-level-send-goal
+You can send a goal to execute in a Prolog top-level from any buffer
+with the command ~M-x sweeprolog-top-level-send-goal~.  This command
+prompts for a Prolog goal in the minibuffer, executes it in a
+top-level buffer and displays that buffer if it's not already visible.
+While inserting the goal in the minibuffer, you can use ~TAB~ (or ~C-i~)
+to get completion suggestions.
+
+In ~sweeprolog-mode~ buffers, you can invoke
+~sweeprolog-top-level-send-goal~ by typing ~C-c C-q~.  It also uses the
+goal at point (if any) as the "future history" for the goal prompt,
+which you can access with ~M-n~ in the minibuffer.
+
 * Finding Prolog code
 :PROPERTIES:
 :CUSTOM_ID: finding-prolog-code
