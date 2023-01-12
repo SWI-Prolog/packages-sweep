@@ -4732,6 +4732,13 @@ moving point."
     map)
   "Keymap used by `sweeprolog-read-term'.")
 
+(defvar sweeprolog-read-goal-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map sweeprolog-read-term-map)
+    (define-key map (kbd "C-i") #'completion-at-point)
+    map)
+  "Keymap used by `sweeprolog-goal-term'.")
+
 (defun sweeprolog-terms-at-point (&optional point)
   "Return boundarines of Prolog terms at POINT, innermost first."
   (setq point (or point (point)))
@@ -4754,6 +4761,23 @@ moving point."
                                         start
                                         (- point start))))))))
 
+(defun sweeprolog-goals-at-point (&optional point)
+  (when (derived-mode-p 'sweeprolog-mode 'sweeprolog-top-level-mode)
+    (setq point (or point (point)))
+    (save-excursion
+      (goto-char point)
+      (mapcar (lambda (beg-end)
+                (buffer-substring-no-properties (car beg-end)
+                                                (cdr beg-end)))
+              (let ((goals-at-point nil))
+                (sweeprolog-analyze-term-at-point
+                 (lambda (beg end arg)
+                   (when (<= beg point end)
+                     (pcase arg
+                       (`("goal_term" ,_ ,_ ,_)
+                        (push (cons beg end) goals-at-point))))))
+                goals-at-point)))))
+
 (defvar sweeprolog-read-term-history nil
   "History list for `sweeprolog-read-term'.")
 
@@ -4772,9 +4796,16 @@ moving point."
 (defun sweeprolog-read-goal (&optional prompt)
   "Read a Prolog goal prompting with PROMPT (default \"?- \")."
   (setq prompt (or prompt "?- "))
-  (read-from-minibuffer prompt nil
-                        sweeprolog-read-term-map nil
-                        'sweeprolog-read-goal-history))
+  (minibuffer-with-setup-hook
+      (lambda ()
+        (set-syntax-table sweeprolog-mode-syntax-table)
+        (dolist (capf sweeprolog-completion-at-point-functions)
+          (add-hook 'completion-at-point-functions capf nil t)))
+    (read-from-minibuffer prompt nil
+                          sweeprolog-read-goal-map nil
+                          'sweeprolog-read-goal-history
+                          (when (derived-mode-p 'sweeprolog-mode)
+                            (sweeprolog-goals-at-point)))))
 
 (defun sweeprolog-term-search-next (point overlays backward)
   "Return first overlay in OVERLAYS starting after POINT.
