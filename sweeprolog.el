@@ -109,7 +109,7 @@ Prolog token as returned from `sweeprolog-last-token-boundaries'.")
   "Location of the SWI-Prolog source code root directory.
 
 When non-nil, the function `sweeprolog-predicate-location' will
-attempt to find the C defintions of SWI-Prolog native built-in
+attempt to find the C definitions of SWI-Prolog native built-in
 predicates.
 
 The value of this option can be a string, in which case it should
@@ -331,7 +331,7 @@ clause."
 
 It should take three arguments describing the new predicate,
 FUNCTOR, ARITY and NECK, and move point to a suitable position in
-the current buffer where the new predicate defintion should be
+the current buffer where the new predicate definition should be
 inserted.
 
 FUNCTOR is the predicate name given as a string, ARITY is its
@@ -353,7 +353,7 @@ non-terminals)."
   :group 'sweeprolog-top-level)
 
 (defcustom sweeprolog-highlight-holes t
-  "If non-nil, highlight holes in a dedicated faces."
+  "If non-nil, highlight holes in a dedicated face."
   :package-version '((sweeprolog "0.8.12"))
   :type 'boolean
   :group 'sweeprolog)
@@ -2371,7 +2371,7 @@ If VAR is nil, clear variable highlighting in the current clause
 instead.
 
 Interactively, operate on the clause at point.  If a prefix
-argument is specificed, clear variable highlighting in the
+argument is specified, clear variable highlighting in the
 current clause.  Otherwise prompt for VAR, defaulting to the
 variable at point, if any."
   (interactive (list (point)
@@ -2659,7 +2659,7 @@ buffer to load."
     fap))
 
 (defun sweeprolog-find-file-at-point (point)
-  "Find file specificed by the Prolog file spec at POINT.
+  "Find file specified by the Prolog file spec at POINT.
 
 Interactively, POINT is set to the current point."
   (interactive "d" sweeprolog-mode)
@@ -3168,7 +3168,7 @@ of them signal success by returning non-nil."
           (setq point nil))))))
 
 (defun sweeprolog-forward-predicate (&optional arg)
-  "Move forward over the ARGth next predicate defintion from point."
+  "Move forward over the ARGth next predicate definition from point."
   (interactive "p" sweeprolog-mode)
   (setq arg (or arg 1))
   (while (< 0 arg)
@@ -3183,7 +3183,7 @@ of them signal success by returning non-nil."
       (user-error "No next predicate"))))
 
 (defun sweeprolog-backward-predicate (&optional arg)
-  "Move backward over the ARGth next predicate defintion from point."
+  "Move backward over the ARGth next predicate definition from point."
   (interactive "p" sweeprolog-mode)
   (setq arg (or arg 1))
   (while (< 0 arg)
