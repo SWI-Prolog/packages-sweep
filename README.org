@@ -32,7 +32,7 @@ from Emacs Lisp (see [[Querying Prolog]]).  Sweep further builds on top of
 this interface and on top of the standard Emacs facilities to provide
 advanced features for developing SWI-Prolog programs in Emacs.
 
-** High-level architecture
+** High-level Architecture
 :PROPERTIES:
 :CUSTOM_ID: high-level-architecture
 :DESCRIPTION: Overall structure of this project
@@ -55,10 +55,9 @@ The different parts of Sweep are structured as follows:
   objects to Prolog terms and vice versa.
 
 #+CINDEX: sweeprolog.el
-- =sweeprolog.el= defines an Elisp library (named simply =sweeprolog=), which builds
-  on top of =sweep-module= to provide user-facing commands and
-  functionality. It is also responsible for loading and compiling the
-  dynamically loaded =sweep-module=.
+- =sweeprolog.el= defines an Elisp library (named simply =sweeprolog=),
+  which builds on top of =sweep-module= to provide user-facing commands
+  and functionality. It is also responsible for loading =sweep-module=.
 
 #+CINDEX: sweep.pl
 - =sweep.pl= defines a Prolog module (named, unsurprisingly, Sweep)
