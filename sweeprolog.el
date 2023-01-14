@@ -3286,16 +3286,19 @@ predicate definition at or directly above POINT."
                term))))))
       term)))
 
-(defun sweeprolog-read-predicate-documentation-with-holes (fun ari)
-  (list (sweeprolog-format-term-with-holes fun ari)
+(defun sweeprolog-read-predicate-documentation-with-holes
+    (functor arity)
+  "Use holes for initial documentation for predicate FUNCTOR/ARITY."
+  (list (sweeprolog-format-term-with-holes functor arity)
         (sweeprolog--hole "Det")
         nil))
 
-(defun sweeprolog-read-predicate-documentation-default-function (fun
-                                                                 ari)
+(defun sweeprolog-read-predicate-documentation-default-function
+    (functor arity)
+  "Prompt for initial documentation for predicate FUNCTOR/ARITY."
   (let ((cur 1)
         (arguments nil))
-    (while (<= cur ari)
+    (while (<= cur arity)
       (let ((num (pcase cur
                    (1 "First")
                    (2 "Second")
@@ -3313,7 +3316,7 @@ predicate definition at or directly above POINT."
                         (?m "multi"     "Succeeds at least once")
                         (?u "undefined" "Undefined")))))
           (summary (read-string "Summary: ")))
-      (list (concat (sweeprolog-format-string-as-atom fun)
+      (list (concat (sweeprolog-format-string-as-atom functor)
                     (if arguments
                         (concat "("
                                 (mapconcat #'identity arguments ", ")
