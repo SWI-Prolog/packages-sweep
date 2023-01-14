@@ -386,7 +386,10 @@ determinism specification, and the third is a summary line."
     (define-key map (kbd "C-c C-c") #'sweeprolog-analyze-buffer)
     (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
     (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
+    (define-key map (kbd "C-c TAB") #'sweeprolog-forward-hole)
     (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
+    (define-key map (kbd "C-c <backtab>") #'sweeprolog-backward-hole)
+    (define-key map (kbd "C-c C-S-i") #'sweeprolog-backward-hole)
     (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
     (define-key map (kbd "C-c C-m") #'sweeprolog-insert-term-with-holes)
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
@@ -408,9 +411,10 @@ determinism specification, and the third is a summary line."
 
 (defvar sweeprolog-forward-hole-repeat-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "TAB") #'sweeprolog-forward-hole)
     (define-key map (kbd "C-i") #'sweeprolog-forward-hole)
-    (define-key map (kbd "C-n") #'sweeprolog-forward-hole)
-    (define-key map (kbd "C-p") #'sweeprolog-backward-hole)
+    (define-key map (kbd "<backtab>") #'sweeprolog-backward-hole)
+    (define-key map (kbd "C-S-i") #'sweeprolog-backward-hole)
     (define-key map (kbd "C-m") #'sweeprolog-insert-term-with-holes)
     map)
   "Repeat map for \\[sweeprolog-forward-hole].")
