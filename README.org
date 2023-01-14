@@ -215,7 +215,33 @@ runtime on startup.
 :ALT_TITLE: Querying Prolog
 :END:
 
-#+FINDEX: sweeprolog-open-query
+This section describes a set of Elisp functions that interfaces with
+the embedded Prolog runtime:
+
+- Function: sweeprolog-open-query context module functor input reverse  :: Query
+  the Prolog predicate MODULE:FUNCTOR/2 in the context of the module
+  CONTEXT.  Converts INPUT to a Prolog term and uses it as the first
+  argument, unless REVERSE is non-nil, in which can it uses INPUT as
+  the second argument.  The other argument is called the output
+  argument of the query, it is expected to be unified with some output
+  that the query wants to return to Elisp.  The output argument can be
+  retrieved with ~sweeprolog-next-solution~.  Always returns ~t~ if called
+  with valid arguments, otherwise returns ~nil~.
+- Function: sweeprolog-next-solution :: Return the next solution of
+  the last Prolog query.  Returns a cons cell ~(DET . OUTPUT)~ if the
+  query succeed, where ~DET~ is the symbol ~!~ if no choice points remain
+  and ~t~ otherwise, and ~OUTPUT~ is the output argument of the query
+  converted to an Elisp sexp.  If there are no more solutions, return
+  ~nil~ instead.  If a Prolog exception was thrown, return a cons cell
+  ~(exception . EXP)~ where ~EXP~ is the exception term converted to
+  Elisp.
+- Function: sweeprolog-cut-query :: Cut the last Prolog query.  This
+  releases any resources reserved for it and makes further calls to
+  ~sweeprolog-next-solution~ invalid until you open a new query.
+- Function: sweeprolog-cut-query :: Close the last Prolog query.
+  Similar to ~sweeprolog-cut-query~ expect that any unifications created
+  by the last query are dropped.
+
 Sweep provides the Elisp function =sweeprolog-open-query= for invoking Prolog
 predicates.  The invoked predicate must be of arity two and will be
 called in mode =p(+In, -Out)= i.e. the predicate should treat the first
@@ -224,7 +250,7 @@ should be unified with some output.  This restriction is placed in
 order to facilitate a natural calling convention between Elisp, a
 functional language, and Prolog, a logical one.
 
-The =sweeprolog-open-query= function takes five arguments, the first three
+The ~sweeprolog-open-query~ function takes five arguments, the first three
 are strings which denote:
 - The name of the Prolog context module from which to execute the
   query,
@@ -232,32 +258,30 @@ are strings which denote:
   and
 - The name of the predicate to call.
 
-The fourth argument to =sweeprolog-open-query= is converted into a Prolog
+The fourth argument to ~sweeprolog-open-query~ is converted into a Prolog
 term and used as the first argument of the predicate (see [[Conversion
 of Elisp objects to Prolog terms]]).  The fifth argument is an
 optional "reverse" flag, when this flag is set to non-nil, the order
 of the arguments is reversed such that the predicate is called in mode
-=p(-Out, +In)= rather than =p(+In, -Out)=.
+~p(-Out, +In)~ rather than ~p(+In, -Out)~.
 
-#+FINDEX: sweeprolog-next-solution
-The function =sweeprolog-next-solution= can be used to examine the results of
-a query.  If the query succeeded, =sweeprolog-next-solution= returns a cons
-cell whose =car= is either the symbol =!= when the success was
-deterministic or =t= otherwise, and the =cdr= is the current value of the
+The function ~sweeprolog-next-solution~ can be used to examine the results of
+a query.  If the query succeeded, ~sweeprolog-next-solution~ returns a cons
+cell whose ~car~ is either the symbol ~!~ when the success was
+deterministic or ~t~ otherwise, and the ~cdr~ is the current value of the
 second (output) Prolog argument converted to an Elisp object (see
 [[Conversion of Prolog terms to Elisp objects]]).  If the query failed,
-=sweeprolog-next-solution= returns nil.
+~sweeprolog-next-solution~ returns nil.
 
-#+FINDEX: sweeprolog-cut-query
-#+FINDEX: sweeprolog-close-query
 Sweep only executes one Prolog query at a given time, thus queries
-opened with =sweeprolog-open-query= need to be closed before other queries
-can be opened.  When no more solutions are available for the current
-query (i.e. after =sweeprolog-next-solution= returned nil), or when otherwise
-further solutions are not of interest, the query must be closed with
-either =sweeprolog-cut-query= or =sweeprolog-close-query=. Both of these functions
-close the current query, but =sweeprolog-close-query= also destroys any
-Prolog bindings created by the query.
+opened with ~sweeprolog-open-query~ need to be closed before other
+queries can be opened.  When no more solutions are available for the
+current query (i.e. after ~sweeprolog-next-solution~ returned ~nil~), or
+when otherwise further solutions are not of interest, the query must
+be closed with either ~sweeprolog-cut-query~ or
+~sweeprolog-close-query~. Both of these functions close the current
+query, but ~sweeprolog-close-query~ also destroys any Prolog bindings
+created by the query.
 
 ** Conversion of Elisp objects to Prolog terms
 :PROPERTIES:
