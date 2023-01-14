@@ -291,7 +291,7 @@ created by the query.
 
 Sweep converts Elisp objects into Prolog terms to allow the Elisp
 programmers to specify arguments for Prolog predicates invocations (see
-=sweeprolog-open-query=).  Seeing as some Elisp objects, like Elisp compiled
+~sweeprolog-open-query~).  Seeing as some Elisp objects, like Elisp compiled
 functions, wouldn't be as useful for a passing to Prolog as others,
 Sweep only converts Elisp objects of certain types to Prolog, namely
 we convert /trees of strings and numbers/:
@@ -311,24 +311,24 @@ we convert /trees of strings and numbers/:
 :END:
 
 Sweep converts Prolog terms into Elisp object to allow efficient
-processing of Prolog query results in Elisp (see =sweeprolog-next-solution=).
+processing of Prolog query results in Elisp (see ~sweeprolog-next-solution~).
 
 - Prolog strings are converted to equivalent Elisp strings.
 - Prolog integers are converted to equivalent Elisp integers.
 - Prolog floats are converted to equivalent Elisp floats.
-- A Prolog atom =foo= is converted to a cons cell =(atom . "foo")=.
-- The Prolog empty list =[]= is converted to the Elisp nil object.
-- Prolog lists are converted to Elisp cons cells whose =car= and =cdr= are
+- A Prolog atom ~foo~ is converted to a cons cell ~(atom . "foo")~.
+- The Prolog empty list ~[]~ is converted to the Elisp ~nil~ object.
+- Prolog lists are converted to Elisp cons cells whose ~car~ and ~cdr~ are
   the representations of the head and the tail of the list.
 - Prolog compounds are converted to list whose first element is the
-  symbol =compound=. The second element is a string denoting the functor
+  symbol ~compound~. The second element is a string denoting the functor
   name of the compound, and the rest of the elements are the arguments
   of the compound in their Elisp representation.
 - All other Prolog terms (variables, blobs and dicts) are currently
   represented in Elisp only by their type:
-  + Prolog variables are converted to the symbol =variable=,
-  + Prolog blobs are converted to the symbol =blob=, and
-  + Prolog dicts are converted to the symbol =dict=.
+  + Prolog variables are converted to the symbol ~variable~,
+  + Prolog blobs are converted to the symbol ~blob~, and
+  + Prolog dicts are converted to the symbol ~dict~.
 
 ** Example - counting solutions for a Prolog predicate in Elisp
 :PROPERTIES:
@@ -339,8 +339,8 @@ processing of Prolog query results in Elisp (see =sweeprolog-next-solution=).
 
 As an example of using the Sweep interface for executing Prolog
 queries, we show an invocation of the non-deterministic predicate
-=lists:permutation/2= from Elisp where we count the number of different
-permutations of the list =(1 2 3 4 5)=:
+~lists:permutation/2~ from Elisp where we count the number of different
+permutations of the list ~(1 2 3 4 5)~:
 
 #+name: count-list-permutations
 #+begin_src emacs-lisp
@@ -361,18 +361,18 @@ permutations of the list =(1 2 3 4 5)=:
 :ALT_TITLE: Call Back to Elisp
 :END:
 
-The =sweep-module= defines the foreign Prolog predicates =sweep_funcall/2=
-and =sweep_funcall/3=, which allow for calling Elisp functions from
+The ~sweep-module~ defines the foreign Prolog predicates ~sweep_funcall/2~
+and ~sweep_funcall/3~, which allow for calling Elisp functions from
 Prolog code.  These predicates may only be called in the context of a
-Prolog query initiated by =sweeprolog-open-query=, i.e. only in the Prolog
+Prolog query initiated by ~sweeprolog-open-query~, i.e. only in the Prolog
 thread controlled by Emacs.  The first argument to these predicates is
 a Prolog string holding the name of the Elisp function to call.  The
 last argument to these predicates is unified with the return value of
 the Elisp function, represented as a Prolog term (see [[Conversion of
 Elisp objects to Prolog terms]]).  The second argument of
-=sweep_funcall/3= is converted to an Elisp object (see [[Conversion of
+~sweep_funcall/3~ is converted to an Elisp object (see [[Conversion of
 Prolog terms to Elisp objects]]) and passed as a sole argument to the
-invoked Elisp function.  The =sweep_funcall/2= variant invokes the Elisp
+invoked Elisp function.  The ~sweep_funcall/2~ variant invokes the Elisp
 function without any arguments.
 
 * Editing Prolog code
@@ -384,7 +384,7 @@ function without any arguments.
 
 #+CINDEX: sweeprolog-mode
 Sweep includes a dedicated major mode for reading and editing Prolog
-code, called =sweeprolog-mode=:
+code, called ~sweeprolog-mode~:
 
 - Command: sweeprolog-mode :: Enable Sweep major mode for reading and
   editing SWI-Prolog code in the current buffer.
@@ -392,8 +392,8 @@ code, called =sweeprolog-mode=:
   ~sweeprolog-mode~.  For more information about major mode hooks in
   Emacs see [[info:emacs#Hooks][Hooks]] in the Emacs manual.
 
-To activate this mode in a buffer, type =M-x sweeprolog-mode=.  To
-instruct Emacs to always open Prolog files in =sweeprolog-mode=, modify
+To activate this mode in a buffer, type ~M-x sweeprolog-mode~.  To
+instruct Emacs to always open Prolog files in ~sweeprolog-mode~, modify
 the Emacs variable ~auto-mode-alist~ accordingly:
 
 #+begin_src emacs-lisp
@@ -412,7 +412,7 @@ you visit a file, see [[info:emacs#Choosing Modes][Choosing Modes]] in the Emacs
 :END:
 
 #+CINDEX: indentation
-In =sweeprolog-mode= buffers, the appropriate indentation for each line is
+In ~sweeprolog-mode~ buffers, the appropriate indentation for each line is
 determined by a bespoke /indentation engine/.  The indentation engine
 analyses the syntactic context of a given line and determines the
 appropriate indentation to apply based on a set of rules.
@@ -429,10 +429,10 @@ appropriate indentation to apply based on a set of rules.
   for the current buffer from its contents.
 
 The entry point of the indentation engine is the function
-=sweeprolog-indent-line= which takes no arguments and indents that line
-at point.  =sweeprolog-mode= supports the standard Emacs interface for
-indentation by arranging for =sweeprolog-indent-line= to be called
-whenever a line should be indented, notably after pressing =TAB=.  For a
+~sweeprolog-indent-line~ which takes no arguments and indents that line
+at point.  ~sweeprolog-mode~ supports the standard Emacs interface for
+indentation by arranging for ~sweeprolog-indent-line~ to be called
+whenever a line should be indented, notably after pressing ~TAB~.  For a
 full description of the available commands and options that pertain to
 indentation, see [[info:emacs#Indentation][Indentation]] in the Emacs manual.
 
@@ -462,7 +462,7 @@ buffers:
 :ALT_TITLE: Indentation Rules
 :END:
 
-Lines in =sweeprolog-mode= buffers are indented according to the following
+Lines in ~sweeprolog-mode~ buffers are indented according to the following
 rules:
 
 1. If the current line starts inside a string or a multi-line comment,
@@ -487,11 +487,11 @@ rules:
 
 4. If the current line is the first non-comment line of a clause body,
    indent to the starting column of the head term plus the value of
-   the user option =sweeprolog-indent-offset= (by default, four extra
+   the user option ~sweeprolog-indent-offset~ (by default, four extra
    columns).
 
    As an example, this rule yields the following layouts when
-   =sweeprolog-indent-offset= is set to the default value of four columns:
+   ~sweeprolog-indent-offset~ is set to the default value of four columns:
 
    #+begin_src prolog
      some_functor(arg1, arg2) :-
@@ -521,7 +521,7 @@ rules:
 
 6. If the last non-comment line ends with a functor and its opening
    parenthesis, indent to the starting column of the functor plus
-   =sweeprolog-indent-offset=.
+   ~sweeprolog-indent-offset~.
 
    This rule yields the following layout:
 
@@ -531,7 +531,7 @@ rules:
    #+end_src
 
 7. If the last non-comment line ends with a prefix operator, indent to
-   starting column of the operator plus =sweeprolog-indent-offset=.
+   starting column of the operator plus ~sweeprolog-indent-offset~.
 
    This rule yields the following layout:
 
@@ -548,11 +548,11 @@ rules:
 :END:
 
 #+CINDEX: fontification
-=sweeprolog-mode= integrates with the standard Emacs =font-lock= system which
+~sweeprolog-mode~ integrates with the standard Emacs ~font-lock~ system which
 is used for highlighting text in buffers (see [[info:emacs#Font Lock][Font Lock in the Emacs
-manual]]).  =sweeprolog-mode= highlights different tokens in Prolog code
+manual]]).  ~sweeprolog-mode~ highlights different tokens in Prolog code
 according to their semantics, determined through static analysis which
-is performed on demand.  When a buffer is first opened in =sweeprolog-mode=,
+is performed on demand.  When a buffer is first opened in ~sweeprolog-mode~,
 its entire contents are analyzed to collect and cache cross reference
 data, and the buffer is highlighted accordingly.  In contrast, when
 editing and moving around the buffer, a faster, local analysis is
@@ -570,21 +570,21 @@ the buffer.
   number of idle seconds to wait before analyzing a ~sweeprolog-mode~
   buffer.  Defaults to 1.5.
 
-At any point in a =sweeprolog-mode= buffer, the command =C-c C-c= (or =M-x
-sweeprolog-analyze-buffer=) can be used to update the cross reference
+At any point in a ~sweeprolog-mode~ buffer, the command ~C-c C-c~ (or ~M-x
+sweeprolog-analyze-buffer~) can be used to update the cross reference
 cache and highlight the buffer accordingly.  When Flymake integration
 is enabled, this command also updates the diagnostics for the current
 buffer (see [[#diagnostics][Examining Diagnostics]]).  This may be useful e.g. after
 defining a new predicate.
 
-If the user option =sweeprolog-analyze-buffer-on-idle= is set to non-nil
-(as it is by default), =sweeprolog-mode= also updates semantic highlighting
+If the user option ~sweeprolog-analyze-buffer-on-idle~ is set to non-nil
+(as it is by default), ~sweeprolog-mode~ also updates semantic highlighting
 in the buffer whenever Emacs is idle for a reasonable amount of time,
 unless the buffer is larger than the value of the
-=sweeprolog-analyze-buffer-max-size= user option ( 100,000 by default).
+~sweeprolog-analyze-buffer-max-size~ user option ( 100,000 by default).
 The minimum idle time to wait before automatically updating semantic
 highlighting can be set via the user option
-=sweeprolog-analyze-buffer-min-interval=.
+~sweeprolog-analyze-buffer-min-interval~.
 
 #+CINDEX: sweeprolog-faces
 Sweep defines three highlighting /styles/, each containing more than 60
@@ -594,7 +594,7 @@ Emacs manual]]) to signify the specific semantics of each token in a
 Prolog code buffer.
 
 To view and customize all of the faces defined and used in Sweep, type
-=M-x customize-group RET sweeprolog-faces RET=.
+~M-x customize-group RET sweeprolog-faces RET~.
 
 *** Available Styles
 :PROPERTIES:
@@ -607,18 +607,18 @@ Sweep comes with three highlighting styles:
 
 1. The default style includes faces that mostly inherit from standard
    Emacs faces commonly used in programming modes.
-2. The =light= style mimics the colors used in the SWI-Prolog built-in
+2. The ~light~ style mimics the colors used in the SWI-Prolog built-in
    editor.
-3. The =dark= style mimics the colors used in the SWI-Prolog built-in
+3. The ~dark~ style mimics the colors used in the SWI-Prolog built-in
    editor in dark mode.
 
 - User Option: sweeprolog-faces-style :: Style of faces to use for
   semantic highlighting in ~sweeprolog-mode~ buffers.  Defaults to ~nil~.
 
-To choose a style, customize the user option =sweeprolog-faces-style= with
-=M-x customize-option RET sweeprolog-faces-style RET=.  The new style will
-apply to all new =sweeprolog-mode= buffers.  To apply the new style to an
-existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
+To choose a style, customize the user option ~sweeprolog-faces-style~ with
+~M-x customize-option RET sweeprolog-faces-style RET~.  The new style will
+apply to all new ~sweeprolog-mode~ buffers.  To apply the new style to an
+existing buffer, use ~C-x x f~ (~font-lock-update~) in that buffer.
 
 *** Highlighting occurrences of a variable
 :PROPERTIES:
@@ -628,11 +628,11 @@ existing buffer, use =C-x x f= (=font-lock-update=) in that buffer.
 :END:
 
 #+CINDEX: variable highlighting
-=sweeprolog-mode= can highlight all occurrences of a given Prolog
+~sweeprolog-mode~ can highlight all occurrences of a given Prolog
 variable in the clause in which it appears.  By default, occurrences
 of the variable at point are highlighted automatically whenever the
 cursor is moved into a variable.  To achieve this, Sweep uses the
-Emacs minor mode =cursor-sensor-mode= which allows for running hooks
+Emacs minor mode ~cursor-sensor-mode~ which allows for running hooks
 when the cursor enters or leaves certain text regions (see also [[info:elisp#Special
 Properties][Special Properties in the Elisp manual]]).
 
@@ -645,13 +645,13 @@ Properties][Special Properties in the Elisp manual]]).
   variable at point in ~sweeprolog-mode~ buffers.  Defaults to ~t~.
 
 To disable automatic variable highlighting based on the variable at
-point, customize the variable =sweeprolog-enable-cursor-sensor= to nil.
+point, customize the variable ~sweeprolog-enable-cursor-sensor~ to nil.
 
 To manually highlight occurrences of a variable in the clause
-surrounding point, =sweeprolog-mode= provides the command =M-x
-sweeprolog-highlight-variable=.  This command prompts for variable to
+surrounding point, ~sweeprolog-mode~ provides the command ~M-x
+sweeprolog-highlight-variable~.  This command prompts for variable to
 highlight, defaulting to the variable at point, if any.  If called
-with a prefix argument (=C-u M-x sweeprolog-highlight-variable=), it
+with a prefix argument (~C-u M-x sweeprolog-highlight-variable~), it
 clears all variable highlighting in the current clause instead.
 
 *** Quasi-quotation highlighting
@@ -661,7 +661,7 @@ clears all variable highlighting in the current clause instead.
 :ALT_TITLE: Quasi-Quotation
 :END:
 
-Quasi-quotations in =sweeprolog-mode= buffer are highlighted according
+Quasi-quotations in ~sweeprolog-mode~ buffer are highlighted according
 to the Emacs mode corresponding to the quoted language by default.
 
 - User Option: sweeprolog-qq-mode-alist :: Alist of (TYPE . MODE)
@@ -670,12 +670,12 @@ to the Emacs mode corresponding to the quoted language by default.
   quasi-quoted text.
 
 The association between SWI-Prolog quasi-quotation types and Emacs
-major modes is determined by the user option =sweeprolog-qq-mode-alist=.
-To modify the default associations provided by =sweeprolog-mode=, type
-=M-x customize-option RET sweeprolog-qq-mode-alist RET=.
+major modes is determined by the user option ~sweeprolog-qq-mode-alist~.
+To modify the default associations provided by ~sweeprolog-mode~, type
+~M-x customize-option RET sweeprolog-qq-mode-alist RET~.
 
 If a quasi-quotation type does not have a matching mode in
-=sweeprolog-qq-mode-alist=, the function =sweeprolog-qq-content-face= is
+~sweeprolog-qq-mode-alist~, the function ~sweeprolog-qq-content-face~ is
 used to determine a default face for quoted content.
 
 For more information about quasi-quotations in SWI-Prolog, see
