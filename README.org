@@ -143,7 +143,7 @@ start Emacs with =libswipl= loaded upfront via =LD_PRELOAD=, for example:
   LD_PRELOAD=/usr/local/lib/libswipl.so emacs
 #+end_src
 
-* Prolog initialization and cleanup
+* Prolog Initialization and Cleanup
 :PROPERTIES:
 :CUSTOM_ID: prolog-init
 :DESCRIPTION: Functions for starting and stopping the embedded Prolog runtime
@@ -1843,7 +1843,7 @@ The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
 |-----+--------------------------------------+-----------------------------------|
 | ~F~   | ~sweeprolog-set-prolog-flag~           | [[*Setting Prolog flags][Setting Prolog Flags]]              |
 | ~P~   | ~sweeprolog-pack-install~              | [[*Installing Prolog packages][Installing Prolog packages]]        |
-| ~R~   | ~sweeprolog-restart~                   | [[*Prolog initialization and cleanup][Prolog Initialization and Cleanup]] |
+| ~R~   | ~sweeprolog-restart~                   | [[#prolog-init][Prolog Initialization and Cleanup]] |
 | ~T~   | ~sweeprolog-list-top-levels~           | [[#top-level-menu][The Top-level Menu Buffer]]         |
 | ~X~   | ~sweeprolog-xref-project-source-files~ | [[#sweeprolog-xref][Definitions and References]]        |
 | ~e~   | ~sweeprolog-view-messages~             | [[#prolog-messages][Examining Prolog Messages]]         |
