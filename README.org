@@ -1828,6 +1828,7 @@ The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
 | ~l~   | ~sweeprolog-load-buffer~               | [[#loading-buffers][Loading Buffers]]                   |
 | ~m~   | ~sweeprolog-find-module~               | [[#finding-prolog-code][Finding Prolog Code]]               |
 | ~p~   | ~sweeprolog-find-predicate~            | [[*Finding Prolog code][Finding Prolog Code]]               |
+| ~q~   | ~sweeprolog-top-level-send-goal~       | [[#top-level-send-goal][Sending Goals to the Top-level]]    |
 | ~t~   | ~sweeprolog-top-level~                 | [[#prolog-top-level][The Prolog Top-level]]              |
 
 * Examining Prolog messages

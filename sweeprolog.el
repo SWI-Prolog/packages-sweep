@@ -456,6 +456,7 @@ determinism specification, and the third is a summary line."
     (define-key map "l" #'sweeprolog-load-buffer)
     (define-key map "m" #'sweeprolog-find-module)
     (define-key map "p" #'sweeprolog-find-predicate)
+    (define-key map "q" #'sweeprolog-top-level-send-goal)
     (define-key map "t" #'sweeprolog-top-level)
     map)
   "Keymap for `sweeprolog' global commands.")
