@@ -11,6 +11,34 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 <https://eshelyaron.com/sweep.html>.
 
+* Version 0.11.3 on 2023-01-015
+
+** Improve integration with the standard ~compilation-mode~
+
+In previous versions, following an error/warning message from a buffer
+that enables ~compilation-mode~ or one of its derivatives to a
+~sweeprolog-mode~ buffer would forcefully set the ~next-error-last-buffer~
+to the target ~sweeprolog-mode~ buffer.  That would cause further ~M-x
+next-error~ (~M-g n~) invocations to jump to the next Flymake error in
+that buffer, instead of going to the next error from the original
+~compilation-mode~ buffer.  This issue is fixed in this version.
+
+The manual is also extended to cover the usage of
+~compilation-shell-minor-mode~ in Sweep Top-level buffers.
+
+** New command ~sweeprolog-top-level-send-goal~
+
+This command can be called from anywhere to send a Prolog query to the
+Sweep Top-level and show the results.  In ~sweeprolog-mode~ buffers,
+it's bound to ~C-c C-q~.  It's also bound to ~q~ in ~sweeprolog-prefix-map~,
+so if you've got that bound to e.g. ~C-c p~ you can run a query with
+this command from anywhere with ~C-c p q~.
+
+** Various documentation improvements
+
+The Sweep manual is extended with more details and useful information,
+and several docstrings have been tweaked.
+
 * Version 0.11.2 on 2023-01-07
 
 ** Term Search now uses terms at point for "future history"
