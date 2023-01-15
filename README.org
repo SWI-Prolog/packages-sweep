@@ -100,7 +100,7 @@ from the Sweep Git repository:
      (add-to-list 'load-path "/path/to/sweep")
    #+end_src
 
-* Getting started
+* Getting Started
 :PROPERTIES:
 :CUSTOM_ID: getting-started
 :DESCRIPTION: First steps with sweep
@@ -149,9 +149,29 @@ start Emacs with =libswipl= loaded upfront via =LD_PRELOAD=, for example:
 :ALT_TITLE: Initialization
 :END:
 
-#+FINDEX: sweeprolog-initialize
 The embedded SWI-Prolog runtime must be initialized before it can
-start executing queries.  In Sweep, Prolog initialization is done via
+start executing queries.  Initializing Prolog is usually taken care of
+by Sweep when you first use a command that requires running some
+Prolog code.  This section elaborates about Prolog initialization and
+its customization options in Sweep:
+
+- Function: sweeprolog-initialize prog &rest args :: Initialize the
+  embedded Prolog runtime.  PROG should be the path to the =swipl=
+  executable, and ARGS should be a list of strings denoting command
+  line arguments for =swipl=.  They are used to initialize Prolog as if
+  it was started from the command line as ~PROG ARGS~.
+- Function: sweeprolog-handle-command-line-args :: Enable support for
+  the Sweep specific ~--swipl-args~ Emacs command line flag.  This flag
+  can be used to specify additional Prolog initialization arguments
+  for Sweep to use when initializing Prolog on-demand, directly from
+  Emacs's command line invocation.
+- User Option: sweeprolog-init-args :: List of strings used as
+  initialization arguments for Prolog.  Sweep uses these as the ARGS
+  argument of ~sweeprolog-initialize~ when it initializes Prolog
+  on-demand.
+- Command: sweeprolog-restart :: Restart the embedded Prolog runtime.
+
+In Sweep, Prolog initialization is done via
 the C-implemented =sweeprolog-initialize= Elisp function defined in
 =sweep-module=.  =sweeprolog-initialize= takes one or more arguments, which
 must all be strings, and initializes the embedded Prolog as if it were
@@ -159,7 +179,6 @@ invoked externally in a command line with the given strings as command
 line arguments, where the first argument to =sweeprolog-initialize=
 corresponds to =argv[0]=.
 
-#+VINDEX: sweeprolog-init-args
 Sweep loads and initializes Prolog on-demand at the first invocation
 of a command that requires the embedded Prolog.  The arguments used to
 initialize Prolog are then determined by the value of the user-option
@@ -175,7 +194,6 @@ helper library =sweep.pl= and to create a boolean Prolog flag Sweep, set
 to ~true~, which indicates to SWI-Prolog that it is running under Sweep.
 
 #+CINDEX: command line arguments
-#+FINDEX: sweeprolog-handle-command-line-args
 It is also possible to specify initialization arguments to SWI-Prolog
 by passing them as command line arguments to Emacs, which can be
 convenient when using Emacs and Sweep as an alternative for the common
@@ -199,7 +217,6 @@ ensured by calling it from the command line as well:
   emacs -f sweeprolog-handle-command-line-args --swipl-args -l foobar.pl \;
 #+end_src
 
-#+FINDEX: sweeprolog-restart
 The embedded Prolog runtime can be reset using the command
 ~sweeprolog-restart~.  This command cleans up the the Prolog state and
 resources, and starts it anew.  When called with a prefix argument
@@ -214,8 +231,8 @@ runtime on startup.
 :ALT_TITLE: Querying Prolog
 :END:
 
-This section describes a set of Elisp functions that interfaces with
-the embedded Prolog runtime:
+This section describes a set of Elisp functions that let you invoke
+Prolog queries and interact with the embedded Prolog runtime:
 
 - Function: sweeprolog-open-query context module functor input reverse  :: Query
   the Prolog predicate MODULE:FUNCTOR/2 in the context of the module

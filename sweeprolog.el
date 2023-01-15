@@ -4663,6 +4663,7 @@ properly."
 
 ;;;###autoload
 (defun sweeprolog-handle-command-line-args ()
+  "Add flag `--swipl-args' to Emacs's command line handling."
   (add-to-list 'command-line-functions
                #'sweeprolog-command-line-function))
 
