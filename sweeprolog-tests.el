@@ -78,6 +78,22 @@ foo(Baz) :- baz.
     (should (not (sweeprolog-beginning-of-next-top-term)))
     (should (= (point) 19))))
 
+(ert-deftest help-echo-for-dependency ()
+  "Test that the `help-echo' property is set correctly."
+  (let ((temp (make-temp-file "sweeprolog-help-echo-text"
+                              nil
+                              "pl"
+                              "
+:- use_module(library(lists)).
+
+foo(Foo, Bar) :- flatten(Bar, Baz), member(Foo, Baz).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char 24)
+    (should (string-match "Dependency on .*, resolves calls to flatten/2, member/2"
+                          (help-at-pt-kbd-string)))))
+
 (ert-deftest terms-at-point ()
   "Test `sweeprolog-term-search'."
   (let ((temp (make-temp-file "sweeprolog-terms-at-point-test"
@@ -216,7 +232,6 @@ foo(Foo) :- bar.
     (should (equal (get-text-property (+ (point-min) 16)
                                       'font-lock-face)
                    '(sweeprolog-local-default-face
-                     sweeprolog-predicate-indicator-default-face
                      sweeprolog-body-default-face)))
     (should (equal (get-text-property (+ (point-min) 23)
                                       'font-lock-face)

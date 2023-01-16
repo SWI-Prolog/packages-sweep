@@ -75,7 +75,8 @@
             sweep_format_term/2,
             sweep_current_functors/2,
             sweep_term_search/2,
-            sweep_terms_at_point/2
+            sweep_terms_at_point/2,
+            sweep_predicate_dependencies/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -809,8 +810,9 @@ sweep_beginning_of_next_predicate(Start, Next) :-
 
 sweep_source_id(Path) :-
     sweep_main_thread,
-    user:sweep_funcall("buffer-file-name", Path),
-    string(Path).
+    user:sweep_funcall("buffer-file-name", Path0),
+    string(Path0),
+    atom_string(Path, Path0).
 
 sweep_atom_collection(Sub, Col) :-
     findall(S,
@@ -936,7 +938,10 @@ sweep_string_to_atom(String, AtomString) :-
 sweep_file_path_in_library(Path, Spec) :-
     file_name_on_path(Path, Spec0),
     prolog_deps:segments(Spec0, Spec1),
-    term_string(Spec1, Spec).
+    (   string(Spec1)
+    ->  Spec = Spec1
+    ;   term_string(Spec1, Spec)
+    ).
 
 predicate_argument_names(M:F/A, Args) :-
     doc_comment(M:F/A, _, _, C),
@@ -1075,8 +1080,7 @@ list_tail([_|T0], T) :- nonvar(T0), T0 = [_|_], !, list_tail(T0, T).
 list_tail([_|T], T).
 
 sweep_terms_at_point([String, Start, Point], Res) :-
-    (   sweep_source_id(Path0),
-        atom_string(Path, Path0),
+    (   sweep_source_id(Path),
         findall(Op, xref_op(Path, Op), Ops),
         (   xref_module(Path, Module)
         ->  true
@@ -1124,3 +1128,15 @@ sweep_terms_at_point_(parentheses_term_position(_, _, SubPos), Start, Point, Beg
     sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
 sweep_terms_at_point_(quasi_quotation_position(_, _, _, SubPos, _), Start, Point, Beg, End) :-
     sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
+
+sweep_predicate_dependencies([To0|From0], Deps) :-
+    atom_string(To, To0),
+    atom_string(From, From0),
+    setof(PI,
+          PI0^Head^By^(
+                          xref_defined(To, Head, imported(From)),
+                          xref_called(To, Head, By),
+                          pi_head(PI0, Head),
+                          term_string(PI0, PI)
+                      ),
+          Deps).

@@ -698,6 +698,53 @@ used to determine a default face for quoted content.
 For more information about quasi-quotations in SWI-Prolog, see
 [[https://www.swi-prolog.org/pldoc/man?section=quasiquotations][library(quasi_quotations) in the SWI-Prolog manual]].
 
+** Hover for Help
+:PROPERTIES:
+:CUSTOM_ID: help-echo
+:DESCRIPTION: Display description of Prolog tokens by hovering with the mouse
+:ALT_TITLE: Hover for Help
+:END:
+
+In the [[#semantic-highlighting][Semantic Highlighting]] section we talked about how Sweep
+performs semantic analysis to determine the meaning of different terms
+in different contexts and highlight them accordingly.  Beyond
+highlighting, Sweep can also tell you explicitly what different tokens
+in Prolog code mean by annotating them with a textual description
+that's displayed when you hover over them with the mouse.
+
+- User Option: sweeprolog-enable-help-echo :: If non-nil, annotate
+  Prolog tokens with help text via the ~help-echo~ text
+  property. Defaults to ~t~.
+- Key: C-h . (display-local-help) :: Display the ~help-echo~ text of the
+  token at point in the echo area.
+
+If the user option ~sweeprolog-enable-help-echo~ is non-nil, as it is by
+default, ~sweeprolog-mode~ annotates tokens with a short description of
+their meaning in that specific context.  This is done by adding the
+~help-echo~ text property to different parts of the buffer based on
+semantic analysis.  The ~help-echo~ text is automatically displayed at
+the mouse tooltip when you hover over different tokens in the buffer.
+
+Alternatively, you can display the ~help-echo~ text for the token at
+point in the echo area by typing ~C-h .~ (~C-h~ followed by dot).
+
+The ~help-echo~ description of file specification in import directives
+is especially useful as it tells you which predicates that the current
+buffer uses actually come from the imported file.  For example, if we
+have a Prolog file with the following contents:
+
+#+begin_src prolog
+  :- use_module(library(lists)).
+
+  foo(Foo, Bar) :- flatten(Bar, Baz), member(Foo, Baz).
+#+end_src
+
+Then hovering over ~library(lists)~ shows:
+
+#+begin_quote
+Dependency on /usr/local/lib/swipl/library/lists.pl, resolves calls to flatten/2, member/2
+#+end_quote
+
 ** Maintaining Code Layout
 :PROPERTIES:
 :CUSTOM_ID: whitespace
@@ -887,8 +934,8 @@ placeholder terms, called simply "holes".  Holes indicate the location
 of missing terms that the user can later fill in, essentially they
 represent source-level unknown terms and their presence satisfies the
 Prolog parser.  Holes are written in the buffer as regular Prolog
-variables, but they are annotated with a special text property[fn:2]
-that allows Sweep to recognize them as holes needed to be filled.
+variables, but they are annotated with a special text property that
+allows Sweep to recognize them as holes needed to be filled.
 
 #+KINDEX: C-c C-m
 - Key: C-c RET (sweeprolog-insert-term-with-holes) :: Insert a Prolog
@@ -968,8 +1015,6 @@ code as usual.  As an alternative to manually killing the region with
 ~C-w~, with ~delete-selection-mode~ enabled the placeholder is
 automatically deleted when you insert a character while the region is
 active (see also [[info:emacs#Using Region][Using Region in the Emacs manual]]).
-
-[fn:2] see [[info:elisp#Text Properties][Text Properties in the Elisp manual]]
 
 ** Definitions and References
 :PROPERTIES:

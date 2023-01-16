@@ -378,6 +378,14 @@ determinism specification, and the third is a summary line."
            :tag "Custom Function"))
   :group 'sweeprolog)
 
+(defcustom sweeprolog-enable-help-echo t
+  "If non-nil, annotate Prolog tokens with the `help-echo' property.
+
+When enabled, `sweeprolog-mode' adds a short description to each
+token via its `help-echo' text property."
+  :package-version '((sweeprolog "0.12.0"))
+  :type 'boolean
+  :group 'sweeprolog)
 
 ;;;; Keymaps
 
@@ -1956,14 +1964,18 @@ resulting list even when found in the current clause."
   (with-silent-modifications
     (remove-list-of-text-properties beg end '(font-lock-face))))
 
+(defun sweeprolog-analyze-start-help-echo (beg end)
+  (with-silent-modifications
+    (remove-list-of-text-properties beg end '(help-echo))))
+
 (defun sweeprolog-maybe-syntax-error-face (end)
   (or (and (or (derived-mode-p 'sweeprolog-top-level-mode)
                (and sweeprolog--analyze-point
-                       (<= (save-excursion
-                             (goto-char sweeprolog--analyze-point)
-                             (sweeprolog-beginning-of-top-term)
-                             (1- (point)))
-                           (1+ end) sweeprolog--analyze-point))
+                    (<= (save-excursion
+                          (goto-char sweeprolog--analyze-point)
+                          (sweeprolog-beginning-of-top-term)
+                          (1- (point)))
+                        (1+ end) sweeprolog--analyze-point))
                (< (save-excursion
                     (goto-char sweeprolog--analyze-point)
                     (sweeprolog-end-of-top-term) (point))
@@ -2249,6 +2261,166 @@ resulting list even when found in the current clause."
                                               nil)
                 (goto-char hend)
                 (setq hole (sweeprolog--next-hole))))))))))
+
+(defun sweeprolog--help-echo-for-comment (kind)
+  (pcase kind
+    ("string" "XPCE method summary")
+    ("structured" "PlDoc structured comment")
+    (_ "Comment")))
+
+(defun sweeprolog--help-echo-for-dependency (file)
+  (lambda (_ buf _)
+    (let ((preds
+           (sweeprolog--query-once "sweep" "sweep_predicate_dependencies"
+                                   (cons (buffer-file-name buf)
+                                         file))))
+      (format "Dependency on %s, resolves calls to %s"
+              file
+              (mapconcat (lambda (pi)
+                           (propertize pi 'face
+                                       (sweeprolog-predicate-indicator-face)))
+                         preds ", ")))))
+
+(defun sweeprolog--help-echo-for-unused-dependency (file)
+  (format "Unused dependency on %s" file))
+
+(defun sweeprolog--help-echo-for-module (module)
+  (format "Module %s" module))
+
+(defun sweeprolog--help-echo-for-type-error (error-type)
+  (format "Type error (expected %s)" error-type))
+
+(defun sweeprolog--help-echo-for-head-functor (kind functor arity)
+  (pcase kind
+    ("unreferenced" (format "Unreferenced predicate %s/%s head term"
+                            functor arity))
+    ("test" "PlUnit test")
+    ("meta" (format "Meta predicate %s/%s head term"
+                    functor arity))
+    ("def_iso" (format "Built-in ISO specified predicate %s/%s head term"
+                       functor arity))
+    ("def_swi" (format "Built-in SWI-Prolog predicate %s/%s head term"
+                       functor arity))
+    ("iso" (format "ISO specified predicate %s/%s head term"
+                   functor arity))
+    ("exported" (format "Exported predicate %s/%s head term"
+                        functor arity))
+    ("hook" (format "Hook predicate %s/%s head term"
+                    functor arity))
+    ("built_in" (format "Built-in predicate %s/%s head term"
+                        functor arity))
+    (`("imported" . ,file) (format "Predicate %s/%s head term imported from %s"
+                                   functor arity file))
+    (`("extern" ,module . ,_) (format "External predicate %s/%s head term from module %s"
+                                      functor arity module))
+    ("public" (format "Public predicate %s/%s head term"
+                      functor arity))
+    ("dynamic" (format "Public predicate %s/%s head term"
+                       functor arity))
+    ("multifile" (format "Multifile predicate %s/%s head term"
+                         functor arity))
+    ("local" (format "Local predicate %s/%s head term"
+                     functor arity))))
+
+(defun sweeprolog--help-echo-for-goal-functor (kind functor arity)
+  (pcase kind
+    ("built_in" (format "Call to built-in predicate %s/%s"
+                        functor arity))
+    (`("imported" . ,file) (format "Call to predicate %s/%s imported from %s"
+                                   functor arity file))
+    (`("autoload" . ,file) (format "Call to predicate %s/%s autoloaded from %s"
+                                   functor arity file))
+    ("global" (format "Call to global predicate %s/%s"
+                      functor arity))
+    (`("global" . ,type) (format "Call to %s global predicate %s/%s"
+                                 type functor arity))
+    ("undefined" (format "Call to undefined predicate %s/%s"
+                         functor arity))
+    ("thread_local" (format "Call to thread-local predicate %s/%s"
+                            functor arity))
+    ("dynamic" (format "Call to dynamic predicate %s/%s"
+                       functor arity))
+    ("multifile" (format "Call to multifile predicate %s/%s"
+                         functor arity))
+    ("expanded" (format "Call to expanded predicate %s/%s"
+                        functor arity))
+    (`("extern" ,module . ,_) (format "Call to external predicate %s/%s from module %s"
+                                      functor arity module))
+    ("recursion" (format "Recursive call to predicate %s/%s"
+                         functor arity))
+    ("meta" (format "Call to meta predicate %s/%s"
+                    functor arity))
+    ("foreign" (format "Call to foreign predicate %s/%s"
+                       functor arity))
+    ("local" (format "Call to local predicate %s/%s"
+                     functor arity))
+    ("constraint" (format "Call to constraint %s/%s"
+                          functor arity))
+    ("not_callable" "Call to a non-callable term")))
+
+(defun sweeprolog-analyze-fragment-help-echo (beg end arg)
+  (when-let
+      (help-echo
+       (pcase arg
+         (`("comment" . ,kind)
+          (sweeprolog--help-echo-for-comment kind))
+         (`("head" ,kind ,functor ,arity)
+          (sweeprolog--help-echo-for-head-functor kind functor arity))
+         (`("goal" ,kind ,functor ,arity)
+          (sweeprolog--help-echo-for-goal-functor kind functor arity))
+         ("instantiation_error" "Instantiation error")
+         (`("type_error" . ,kind)
+          (sweeprolog--help-echo-for-type-error kind))
+         ("unused_import" "Unused import")
+         ("undefined_import" "Undefined import")
+         ("error" "Unknown error")
+         ("html_attribute" "HTML attribute")
+         ("html" "HTML")
+         ("dict_tag" "Dict tag")
+         ("dict_key" "Dict key")
+         ("dict_sep" "Dict separator")
+         ("meta" "Meta predicate argument specification")
+         ("flag_name" "Flag name")
+         ("no_flag_name" "Unknown flag")
+         ("ext_quant" "Existential quantification")
+         ("atom" "Atom")
+         ("float" "Float")
+         ("int" "Integer")
+         ("singleton" "Singleton variable")
+         ("option_name" "Option name")
+         ("no_option_name" "Unknown option")
+         ("control" "Control construct")
+         ("var" "Variable")
+         ("fullstop" "Fullstop")
+         ("functor" "Functor")
+         ("arity" "Arity")
+         ("predicate_indicator" "Predicate indicator")
+         ("string" "String")
+         ("codes" "Codes")
+         ("chars" "Chars")
+         (`("module" . ,module)
+          (sweeprolog--help-echo-for-module module))
+         ("neck" "Neck")
+         (`("hook" . ,_) "Hook")
+         ("hook" "Hook")
+         ("qq_type" "Quasi-quotation type specifier")
+         ("qq_sep" "Quasi-quotation separator")
+         ("qq_open" "Quasi-quotation opening delimiter")
+         ("qq_close" "Quasi-quotation closing delimiter")
+         ("identifier" "Identifier")
+         (`("file" . ,file)
+          (sweeprolog--help-echo-for-dependency file))
+         (`("file_no_depend" . ,file)
+          (sweeprolog--help-echo-for-unused-dependency file))
+         ("nofile" "Unknown file specification")
+         ("op_type" "Operator type")
+         ("keyword" "Keyword")
+         ("rational" "Rational")
+         ("dict_function" "Dict function")
+         ("dict_return_op" "Dict return operator")
+         ("func_dot" "Dict function dot")))
+    (with-silent-modifications
+      (put-text-property beg end 'help-echo help-echo))))
 
 (defun sweeprolog-analyze-fragment-fullstop (beg end arg)
   (pcase arg
@@ -4013,6 +4185,9 @@ certain contexts to maintain conventional Prolog layout."
     (when (fboundp 'eldoc-documentation-default)
       (setq-local eldoc-documentation-strategy #'eldoc-documentation-default))
     (add-hook 'eldoc-documentation-functions #'sweeprolog-predicate-modes-doc nil t))
+  (when sweeprolog-enable-help-echo
+    (add-hook 'sweeprolog-analyze-region-start-hook #'sweeprolog-analyze-start-help-echo nil t)
+    (add-hook 'sweeprolog-analyze-region-fragment-hook #'sweeprolog-analyze-fragment-help-echo nil t))
   (when sweeprolog-enable-flymake
     (add-hook 'flymake-diagnostic-functions #'sweeprolog-diagnostic-function nil t)
     (flymake-mode)
@@ -4615,7 +4790,7 @@ accordingly."
                    'sweeprolog--find-predicate-from-symbol))
 
 
-;;;; Dependency Managagement
+;;;; Dependency Management
 
 (defun sweeprolog-update-dependencies ()
   "Add explicit dependencies for implicitly autoaloaded predicates."
