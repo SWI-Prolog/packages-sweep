@@ -9,9 +9,25 @@ This file contains the release notes for =sweep=, an embedding of
 SWI-Prolog in Emacs.
 
 For further details, please consult the manual:
-<https://eshelyaron.com/sweep.html>.
+[[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
-* Version 0.11.3 on 2023-01-015
+* Version 0.12.0 on 2023-01-16
+
+** Add on-hover descriptions to tokens in Prolog code
+
+~sweeprolog-mode~ can now annotate tokens in Prolog code with textual
+descriptions that are displayed at the mouse tooltip when you hover
+over different tokens in the buffer.  This is done by using the
+~help-echo~ text property.  You can also display these descriptions in
+the echo area with ~C-h .~ (~display-local-help~).
+
+** New user option ~sweeprolog-enable-help-echo~
+
+This is a flag controlling whether ~sweeprolog-mode~ adds descriptions
+to tokens in Prolog code via the ~help-echo~ text property.  It is set
+to ~t~ by default.
+
+* Version 0.11.3 on 2023-01-15
 
 ** Improve integration with the standard ~compilation-mode~
 

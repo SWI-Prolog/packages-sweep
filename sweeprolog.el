@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.11.3
+;; Package-Version: 0.12.0
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -2386,6 +2386,7 @@ resulting list even when found in the current clause."
          ("atom" "Atom")
          ("float" "Float")
          ("int" "Integer")
+         ("empty_list" "Empty list")
          ("singleton" "Singleton variable")
          ("option_name" "Option name")
          ("no_option_name" "Unknown option")
