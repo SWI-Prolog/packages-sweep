@@ -470,14 +470,11 @@ sweep_color_normalized_(_, Goal0, [Kind0,Head|_], [Goal,Kind,F,N]) :-
     sweep_color_goal(Goal0),
     !,
     atom_string(Goal0, Goal),
-    sweeprolog_goal_kind_normalized(Kind0, Kind),
-    (   (   var(Head)
-        ->  true
-        ;   Head == []
-        )
-    ->  F = Head, N = 0
-    ;   pi_head(F0/N, Head),
+    sweep_goal_kind_normalized(Kind0, Kind),
+    (   callable(Head)
+    ->  pi_head(F0/N, Head),
         atom_string(F0, F)
+    ;   term_string(Head, F), N = 0
     ).
 sweep_color_normalized_(Offset, syntax_error, [Message0,Start0-End0|_], ["syntax_error", Message, Start, End]) :-
     !,
@@ -505,20 +502,59 @@ sweep_color_normalized_(_, file, [File0|_], ["file"|File]) :-
 sweep_color_normalized_(_, file_no_depend, [File0|_], ["file_no_depend"|File]) :-
     !,
     atom_string(File0, File).
+sweep_color_normalized_(_, type_error, [Kind0|_], ["type_error"|Kind]) :-
+    !,
+    Kind0 =.. [Kind1|_],
+    atom_string(Kind1, Kind).
 sweep_color_normalized_(_, Nom0, _, Nom) :-
     atom_string(Nom0, Nom).
 
-sweeprolog_goal_kind_normalized(autoload(Path0), ["autoload"|Path]) :-
+sweep_goal_kind_normalized(autoload(Path0), ["autoload"|Path]) :-
     !,
     absolute_file_name(Path0, Path1, [extensions([pl])]),
     atom_string(Path1, Path).
-sweeprolog_goal_kind_normalized(Kind0, Kind) :-
+sweep_goal_kind_normalized(imported(Path0), ["imported"|Path]) :-
+    !,
+    absolute_file_name(Path0, Path1, [extensions([pl])]),
+    atom_string(Path1, Path).
+sweep_goal_kind_normalized(global(Kind0, _), ["global"|Kind]) :-
+    !,
+    atom_string(Kind0, Kind).
+sweep_goal_kind_normalized(thread_local(_), "thread_local") :-
+    !.
+sweep_goal_kind_normalized(dynamic(_), "dynamic") :-
+    !.
+sweep_goal_kind_normalized(multifile(_), "multifile") :-
+    !.
+sweep_goal_kind_normalized(foreign(_), "foreign") :-
+    !.
+sweep_goal_kind_normalized(local(_), "local") :-
+    !.
+sweep_goal_kind_normalized(constraint(_), "constraint") :-
+    !.
+sweep_goal_kind_normalized(public(_), "public") :-
+    !.
+sweep_goal_kind_normalized(extern(Module0), ["extern",Module]) :-
+    !,
+    (   atom(Module0)
+    ->  atom_string(Module0, Module)
+    ;   Module = Module0
+    ).
+sweep_goal_kind_normalized(extern(Module0,Kind0), ["extern",Module,Kind]) :-
+    !,
+    (   atom(Module0)
+    ->  atom_string(Module0, Module)
+    ;   Module = Module0
+    ),
+    atom_string(Kind0, Kind).
+sweep_goal_kind_normalized(Kind0, Kind) :-
     term_string(Kind0, Kind).
 
 sweep_color_goal(goal).
 sweep_color_goal(goal_term).
 sweep_color_goal(head).
 sweep_color_goal(head_term).
+sweep_color_goal(predicate_indicator).
 
 sweep_expand_file_name([String|Dir], Exp) :-
     term_string(Spec, String, [syntax_errors(quiet)]),

@@ -1468,6 +1468,13 @@ resulting list even when found in the current clause."
   "Public definitions.")
 
 (sweeprolog-defface
+  head-constraint
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "palegreen")
+  "Constraint definitions.")
+
+(sweeprolog-defface
   meta-spec
   (:inherit font-lock-preprocessor-face)
   (:inherit font-lock-preprocessor-face)
@@ -1487,6 +1494,13 @@ resulting list even when found in the current clause."
   (:foreground "navyblue")
   (:foreground "darkcyan")
   "Local predicate calls.")
+
+(sweeprolog-defface
+  expanded
+  (:inherit font-lock-function-name-face)
+  (:foreground "blue" :underline t)
+  (:foreground "cyan" :underline t)
+  "Expanded predicate calls.")
 
 (sweeprolog-defface
   autoload
@@ -1536,6 +1550,20 @@ resulting list even when found in the current clause."
   (:foreground "magenta" :underline t)
   (:foreground "magenta" :underline t)
   "Thread local predicate calls.")
+
+(sweeprolog-defface
+  not-callable
+  (:inherit font-lock-warning-face)
+  (:background "orange")
+  (:background "orange")
+  "Terms that are not callable.")
+
+(sweeprolog-defface
+  constraint
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "palegreen")
+  "Constraint calls.")
 
 (sweeprolog-defface
   global
@@ -1671,6 +1699,27 @@ resulting list even when found in the current clause."
   "Dict separators.")
 
 (sweeprolog-defface
+  dict-return-op
+  (:inherit font-lock-preprocessor-face)
+  (:foreground "blue")
+  (:foreground "cyan")
+  "Dict return operators.")
+
+(sweeprolog-defface
+  dict-function
+  (:inherit font-lock-function-name-face)
+  (:foreground "navyblue")
+  (:foreground "darkcyan")
+  "Dict functions.")
+
+(sweeprolog-defface
+  func-dot
+  (:inherit font-lock-preprocessor-face)
+  (:weight bold)
+  (:weight bold)
+  "Dict function dots.")
+
+(sweeprolog-defface
   file
   (:inherit button)
   (:foreground "blue" :underline t)
@@ -1755,6 +1804,13 @@ resulting list even when found in the current clause."
   "Existential quantifiers.")
 
 (sweeprolog-defface
+  keyword
+  (:inherit font-lock-keyword-face)
+  (:foreground "blue")
+  (:foreground "cyan")
+  "Control constructs.")
+
+(sweeprolog-defface
   control
   (:inherit font-lock-keyword-face)
   (:inherit font-lock-keyword-face)
@@ -1783,10 +1839,24 @@ resulting list even when found in the current clause."
   "Floats.")
 
 (sweeprolog-defface
+  rational
+  (:inherit font-lock-constant-face)
+  (:foreground "steelblue")
+  (:foreground "steelblue")
+  "Rationals.")
+
+(sweeprolog-defface
+  chars
+  (:inherit font-lock-constant-face)
+  (:foreground "navyblue")
+  (:foreground "palegreen")
+  "Chars.")
+
+(sweeprolog-defface
   codes
   (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
+  (:foreground "navyblue")
+  (:foreground "palegreen")
   "Codes.")
 
 (sweeprolog-defface
@@ -1933,20 +2003,24 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-head-hook-face))))
     (`("head" "built_in" . ,_)
      (list (list beg end (sweeprolog-head-built-in-face))))
+    (`("head" ("imported" . ,_) . ,_)
+     (list (list beg end (sweeprolog-head-imported-face))))
+    (`("head" ("extern" . ,_) . ,_)
+     (list (list beg end (sweeprolog-head-extern-face))))
+    (`("head" "public" . ,_)
+     (list (list beg end (sweeprolog-head-public-face))))
+    (`("head" "dynamic" . ,_)
+     (list (list beg end (sweeprolog-head-dynamic-face))))
+    (`("head" "multifile" . ,_)
+     (list (list beg end (sweeprolog-head-multifile-face))))
+    (`("head" "local" . ,_)
+     (list (list beg end (sweeprolog-head-local-face))))
+    (`("head" "constraint" . ,_)
+     (list (list beg end (sweeprolog-head-constraint-face))))
     (`("goal" ("autoload" . ,_) . ,_)
      (list (list beg end (sweeprolog-autoload-face))))
-    (`("head" ,(rx "imported(") . ,_)
-     (list (list beg end (sweeprolog-head-imported-face))))
-    (`("head" ,(rx "extern(") . ,_)
-     (list (list beg end (sweeprolog-head-extern-face))))
-    (`("head" ,(rx "public ") . ,_)
-     (list (list beg end (sweeprolog-head-public-face))))
-    (`("head" ,(rx "dynamic ") . ,_)
-     (list (list beg end (sweeprolog-head-dynamic-face))))
-    (`("head" ,(rx "multifile ") . ,_)
-     (list (list beg end (sweeprolog-head-multifile-face))))
-    (`("head" ,(rx "local(") . ,_)
-     (list (list beg end (sweeprolog-head-local-face))))
+    (`("goal" "expanded" . ,_)
+     (list (list beg end (sweeprolog-expanded-face))))
     (`("goal" "recursion" . ,_)
      (list (list beg end (sweeprolog-recursion-face))))
     (`("goal" "meta"      . ,_)
@@ -1957,23 +2031,27 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-undefined-face))))
     (`("goal" "global" . ,_)
      (list (list beg end (sweeprolog-global-face))))
-    (`("goal" ,(rx "dynamic ") . ,_)
+    (`("goal" "not_callable" . ,_)
+     (list (list beg end (sweeprolog-not-callable-face))))
+    (`("goal" "dynamic" . ,_)
      (list (list beg end (sweeprolog-dynamic-face))))
-    (`("goal" ,(rx "multifile ") . ,_)
+    (`("goal" "multifile" . ,_)
      (list (list beg end (sweeprolog-multifile-face))))
-    (`("goal" ,(rx "thread_local ") . ,_)
+    (`("goal" "thread_local" . ,_)
      (list (list beg end (sweeprolog-thread-local-face))))
-    (`("goal" ,(rx "extern(") . ,_)
+    (`("goal" ("extern" . ,_) . ,_)
      (list (list beg end (sweeprolog-extern-face))))
-    (`("goal" ,(rx "imported(") . ,_)
+    (`("goal" ("imported" . ,_) . ,_)
      (list (list beg end (sweeprolog-imported-face))))
-    (`("goal" ,(rx "global(") . ,_)
+    (`("goal" ("global" . ,_) . ,_)
      (list (list beg end (sweeprolog-global-face))))
-    (`("goal" ,(rx "local(") . ,_)
+    (`("goal" "local" . ,_)
      (list (list beg end (sweeprolog-local-face))))
+    (`("goal" "constraint" . ,_)
+     (list (list beg end (sweeprolog-constraint-face))))
     ("instantiation_error"
      (list (list beg end (sweeprolog-instantiation-error-face))))
-    ("type_error"
+    (`("type_error" . ,_)
      (list (list beg end (sweeprolog-type-error-face))))
     (`("syntax_error" ,_ ,eb ,ee)
      (let ((eb (min eb beg))
@@ -2002,6 +2080,8 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-undefined-import-face))))
     ("error"
      (list (list beg end (sweeprolog-error-face))))
+    ("keyword"
+     (list (list beg end (sweeprolog-keyword-face))))
     ("html_attribute"
      (list (list beg end (sweeprolog-html-attribute-face))))
     ("html"
@@ -2012,6 +2092,12 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-dict-key-face))))
     ("dict_sep"
      (list (list beg end (sweeprolog-dict-sep-face))))
+    ("dict_function"
+     (list (list beg end (sweeprolog-dict-function-face))))
+    ("dict_return_op"
+     (list (list beg end (sweeprolog-dict-return-op-face))))
+    ("func_dot"
+     (list (list beg end (sweeprolog-func-dot-face))))
     ("meta"
      (list (list beg end (sweeprolog-meta-spec-face))))
     ("flag_name"
@@ -2024,6 +2110,8 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-atom-face))))
     ("float"
      (list (list beg end (sweeprolog-float-face))))
+    ("rational"
+     (list (list beg end (sweeprolog-rational-face))))
     ("int"
      (list (list beg end (sweeprolog-int-face))))
     ("singleton"
@@ -2057,6 +2145,10 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-arity-face))))
     ("predicate_indicator"
      (list (list beg end (sweeprolog-predicate-indicator-face))))
+    ("chars"
+     (list (list beg end (sweeprolog-chars-face))))
+    ("codes"
+     (list (list beg end (sweeprolog-codes-face))))
     ("string"
      (list (list beg end (sweeprolog-string-face))))
     (`("module" . ,_)
@@ -2199,8 +2291,9 @@ resulting list even when found in the current clause."
                                   file)))))
                 ("instantiation_error"
                  (cons :warning "Instantiation error"))
-                ("type_error"
-                 (cons :warning "Type error"))
+                (`("type_error" . ,error-type)
+                 (cons :warning (format "Type error (expected %s)"
+                                        error-type)))
                 (`("syntax_error" ,message . ,_)
                  (and (or (and sweeprolog--analyze-point
                                (<= (save-excursion
