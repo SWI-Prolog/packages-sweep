@@ -1028,10 +1028,18 @@ module name, F is a functor name and N is its arity."
                      'sweeprolog-read-module-history)))
 
 ;;;###autoload
-(defun sweeprolog-find-module (mod)
-  "Jump to the source file of the Prolog module MOD."
+(defun sweeprolog-find-module (mod &optional other-window)
+  "Jump to the source file of the Prolog module MOD.
+
+If OTHER-WINDOW is non-nil, find it in another window.
+
+Interactively, OTHER-WINDOW is the prefix argument and this
+command prompts for MOD."
   (interactive (list (sweeprolog-read-module-name)))
-  (find-file (sweeprolog-module-path mod)))
+  (let ((file (sweeprolog-module-path mod)))
+    (if other-window
+        (find-file-other-window file)
+      (find-file file))))
 
 
 ;;;; Completion at point
@@ -2929,13 +2937,18 @@ buffer to load."
             (setq fap file))))))
     fap))
 
-(defun sweeprolog-find-file-at-point (point)
+(defun sweeprolog-find-file-at-point (point &optional other-window)
   "Find file specified by the Prolog file spec at POINT.
 
-Interactively, POINT is set to the current point."
-  (interactive "d" sweeprolog-mode)
+If OTHER-WINDOW is non-nil, find it in another window.
+
+Interactively, POINT is set to the current point and OTHER-WINDOW
+is the prefix argument."
+  (interactive "d\nP" sweeprolog-mode)
   (if-let ((file (sweeprolog-file-at-point point)))
-      (find-file file)
+      (if other-window
+          (find-file-other-window file)
+        (find-file file))
     (user-error "No file specification found at point!")))
 
 
@@ -4232,7 +4245,10 @@ certain contexts to maintain conventional Prolog layout."
   (when sweeprolog-enable-cursor-sensor
     (add-hook 'sweeprolog-analyze-region-fragment-hook
               #'sweeprolog-analyze-fragment-variable nil t)
-    (cursor-sensor-mode 1)))
+    (cursor-sensor-mode 1))
+  (when (boundp 'context-menu-functions)
+    (add-hook 'context-menu-functions
+              #'sweeprolog-context-menu-function)))
 
 
 ;;;; Skeletons and auto-insert
@@ -5203,6 +5219,122 @@ GOAL."
          "\\<sweeprolog-term-search-map>"
          "\\[sweeprolog-term-search-repeat-forward] for next match, "
          "\\[sweeprolog-term-search-repeat-backward] for previous match."))))))
+
+
+;;;; Right-Click Context Menu
+
+(defvar sweeprolog-context-menu-file-at-click nil
+  "Prolog file specification at mouse click.")
+
+(defvar sweeprolog-context-menu-module-at-click nil
+  "Prolog module name at mouse click.")
+
+(defvar sweeprolog-context-menu-predicate-at-click nil
+  "Prolog predicate indicator at mouse click.")
+
+(defun sweeprolog-context-menu-find-module ()
+  "Find Prolog module at mouse click."
+  (interactive)
+  (sweeprolog-find-module sweeprolog-context-menu-module-at-click))
+
+(defun sweeprolog-context-menu-find-module-other-window ()
+  "Find Prolog module at mouse click in another window."
+  (interactive)
+  (sweeprolog-find-module sweeprolog-context-menu-module-at-click t))
+
+(defun sweeprolog-context-menu-describe-module ()
+  "Describe Prolog module at mouse click."
+  (interactive)
+  (sweeprolog-describe-module sweeprolog-context-menu-module-at-click))
+
+(defun sweeprolog-context-menu-find-file ()
+  "Find Prolog file at mouse click."
+  (interactive)
+  (find-file sweeprolog-context-menu-file-at-click))
+
+(defun sweeprolog-context-menu-find-file-other-window ()
+  "Find Prolog file at mouse click in another window."
+  (interactive)
+  (find-file-other-window sweeprolog-context-menu-file-at-click))
+
+(defun sweeprolog-context-menu-describe-predicate ()
+  "Describe Prolog predicate at mouse click."
+  (interactive)
+  (sweeprolog-describe-predicate sweeprolog-context-menu-predicate-at-click))
+
+(defun sweeprolog-context-menu-for-predicate (menu tok _beg _end _point)
+  "Extend MENU with predicate-related commands if TOK describes one."
+  (pcase tok
+    ((or `("head" ,_ ,f ,a)
+         `("goal" ,_ ,f ,a))
+     (let ((pred (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
+                                         (append (list f a)
+                                                 (buffer-file-name)))))
+       (setq sweeprolog-context-menu-predicate-at-click pred)
+       (define-key menu [sweeprolog-describe-predicate]
+                   `(menu-item "Describe This Predicate"
+                               sweeprolog-context-menu-describe-predicate
+                               :help ,(format "Describe predicate %s" pred)
+                               :keys "\\[sweeprolog-describe-predicate]"))))))
+
+(defun sweeprolog-context-menu-for-module (menu tok _beg _end _point)
+  "Extend MENU with module-related commands if TOK describes one."
+  (pcase tok
+    (`("module" . ,module)
+     (setq sweeprolog-context-menu-module-at-click module)
+     (define-key menu [sweeprolog-predicate-module]
+                 `(menu-item "Describe This Module"
+                             sweeprolog-context-menu-describe-module
+                             :help ,(format "Describe module %s" module)
+                             :keys "\\[sweeprolog-describe-module]"))
+     (define-key menu [sweeprolog-find-module-other-window]
+                 `(menu-item "Find in Other Window"
+                             sweeprolog-context-menu-find-module-other-window
+                             :help ,(format "Find module %s in other window" module)
+                             :keys "\\[universal-argument] \\[sweeprolog-find-module]"))
+     (define-key menu [sweeprolog-find-module]
+                 `(menu-item "Find This Module"
+                             sweeprolog-context-menu-find-module
+                             :help ,(format "Find module %s" module)
+                             :keys "\\[sweeprolog-find-module]")))))
+
+(defun sweeprolog-context-menu-for-file (menu tok _beg _end _point)
+  "Extend MENU with file-related commands if TOK specifies one."
+  (pcase tok
+    ((or `("file"           . ,file)
+         `("file_no_depend" . ,file))
+     (setq sweeprolog-context-menu-file-at-click file)
+     (define-key menu [sweeprolog-find-file-other-window]
+                 `(menu-item "Find in Other Window"
+                             sweeprolog-context-menu-find-file-other-window
+                             :help ,(format "Find %s in other window" file)
+                             :keys "\\[universal-argument] \\[sweeprolog-find-file-at-point]"))
+     (define-key menu [sweeprolog-find-file]
+                 `(menu-item "Find This File"
+                             sweeprolog-context-menu-find-file
+                             :help ,(format "Find %s" file)
+                             :keys "\\[sweeprolog-find-file-at-point]")))))
+
+(defvar sweeprolog-context-menu-functions
+  '(sweeprolog-context-menu-for-file
+    sweeprolog-context-menu-for-module
+    sweeprolog-context-menu-for-predicate)
+  "Functions that create context menu entries for Prolog tokens.
+Each function receives as its arguments the menu, the Prolog
+token's description, its start position, its end position, and
+the position for which the menu is created.")
+
+(defun sweeprolog-context-menu-function (menu click)
+  "Populate MENU with Prolog commands at CLICK."
+  (let ((point (posn-point (event-start click))))
+    (save-mark-and-excursion
+      (goto-char point)
+      (sweeprolog-analyze-term-at-point
+       (lambda (beg end tok)
+         (when (<= beg point end)
+           (run-hook-with-args 'sweeprolog-context-menu-functions
+                               menu tok beg point end))))))
+  menu)
 
 
 ;;;; Footer
