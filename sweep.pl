@@ -359,6 +359,9 @@ sweep_predicate_apropos(Query0, Matches) :-
             Tail).
 
 sweep_predicate_location_(H, Path, Line) :-
+    xref_defined(Path0, H, How0),
+    xref_definition_line(How0, _),
+    xref_source(Path0, [comments(store)]),
     xref_defined(Path0, H, How),
     xref_definition_line(How, Line),
     !,
@@ -369,13 +372,16 @@ sweep_predicate_location_(H, Path, Line) :-
     atom_string(Path0, Path).
 
 sweep_predicate_location_(M, H, Path, Line) :-
-    (   xref_defined(Path0, M:H, How),
-        xref_definition_line(How, Line)
+    (   xref_defined(Path0, M:H, How0),
+        xref_definition_line(How0, _)
     ->  true
-    ;   xref_defined(Path0, H, How),
-        xref_definition_line(How, Line),
+    ;   xref_defined(Path0, H, How0),
+        xref_definition_line(How0, _),
         xref_module(Path0, M)
     ),
+    xref_source(Path0, [comments(store)]),
+    xref_defined(Path0, H, How),
+    xref_definition_line(How, Line),
     !,
     atom_string(Path0, Path).
 sweep_predicate_location_(M, H, Path, Line) :-

@@ -2108,7 +2108,7 @@ mailing list.
 :END:
 
 While Sweep is ready to be used for effective editing of Prolog code,
-there some further improvements that we want to pursue:
+some improvements remain to be pursued:
 
 ** Improvements around editing Prolog
 :PROPERTIES:
