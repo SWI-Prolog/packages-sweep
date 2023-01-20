@@ -124,6 +124,10 @@ recursive(Var) :-
     *-> Bar is foo
     )")))))
 
+(ert-deftest predicate-location ()
+  "Test `sweeprolog-predicate-location'."
+  (should (sweeprolog-predicate-location "memory_file:new_memory_file/1")))
+
 (ert-deftest term-search ()
   "Test `sweeprolog-term-search'."
   (let ((temp (make-temp-file "sweeprolog-test"

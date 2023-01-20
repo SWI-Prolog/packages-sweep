@@ -384,6 +384,14 @@ sweep_predicate_location_(M, H, Path, Line) :-
     xref_definition_line(How, Line),
     !,
     atom_string(Path0, Path).
+sweep_predicate_location_(M, H, P, L) :-
+    '$autoload':library_index(H, M, P0),
+    absolute_file_name(P0, P1, [extensions([pl])]),
+    xref_source(P1, [comments(store)]),
+    xref_defined(P1, H, How),
+    xref_definition_line(How, L),
+    !,
+    atom_string(P1, P).
 sweep_predicate_location_(M, H, Path, Line) :-
     predicate_property(M:H, file(Path0)),
     predicate_property(M:H, line_count(Line)),
