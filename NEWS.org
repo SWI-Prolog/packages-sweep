@@ -11,6 +11,30 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.13.0 on 2023-01-20
+
+** Right-click context menu support
+
+Sweep now leverages the Context Menu minor mode built into Emacs 28+
+to provide right-click menus for Prolog code that give you access to
+different commands depending on what you click on.  You can enable
+Context Menu mode with ~M-x context-menu-mode~.
+
+** Jumping to predicate definition works also for autoloadable predicates
+
+Jumping to predicate definitions with ~M-.~ (~xref-find-definitions~) now
+works also for predicates defined in source files listed in the
+library index that weren't loaded or visited yet.
+
+** Fixed inaccuracy in jumping to predicate definitions in modified buffers
+
+In previous versions, jumping to the definition of a predicate defined
+in another buffer that has recently been modified could end up placing
+point in the wrong line of that buffer due to stale xref data.  This
+version fixes this issue, jumping to predicate definitions with ~M-.~
+now locates the current definition line also in face of recent
+modifications.
+
 * Version 0.12.0 on 2023-01-16
 
 ** Add on-hover descriptions to tokens in Prolog code
