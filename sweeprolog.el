@@ -1294,11 +1294,25 @@ resulting list even when found in the current clause."
              (_      ',face)))))))
 
 (sweeprolog-defface
-  functor
+  function
   (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "darkcyan")
-  "Functors.")
+  (:foreground "blue")
+  (:foreground "cyan")
+  "Arithmetic functions.")
+
+(sweeprolog-defface
+  no-function
+  (:inherit font-lock-warning-face)
+  (:foreground "red")
+  (:foreground "red")
+  "Unknown arithmetic functions.")
+
+(sweeprolog-defface
+ functor
+ (:inherit font-lock-function-name-face)
+ (:foreground "navyblue")
+ (:foreground "darkcyan")
+ "Functors.")
 
 (sweeprolog-defface
   arity
@@ -2054,6 +2068,8 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-not-callable-face))))
     (`("goal" "dynamic" . ,_)
      (list (list beg end (sweeprolog-dynamic-face))))
+    (`("goal" "foreign" . ,_)
+     (list (list beg end (sweeprolog-foreign-face))))
     (`("goal" "multifile" . ,_)
      (list (list beg end (sweeprolog-multifile-face))))
     (`("goal" "thread_local" . ,_)
@@ -2216,6 +2232,10 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-file-face))))
     (`("file_no_depend" . ,_)
      (list (list beg end (sweeprolog-file-no-depend-face))))
+    ("function"
+     (list (list beg end (sweeprolog-function-face))))
+    ("no_function"
+     (list (list beg end (sweeprolog-no-function-face))))
     ("nofile"
      (list (list beg end (sweeprolog-no-file-face))))
     ("op_type"
@@ -2421,6 +2441,8 @@ resulting list even when found in the current clause."
          (`("file_no_depend" . ,file)
           (sweeprolog--help-echo-for-unused-dependency file))
          ("nofile" "Unknown file specification")
+         ("function" "Arithmetic function")
+         ("no_function" "Unknown arithmetic function")
          ("op_type" "Operator type")
          ("keyword" "Keyword")
          ("rational" "Rational")
@@ -2507,7 +2529,9 @@ resulting list even when found in the current clause."
                  (cons :note (format "Unused dependency on %s"
                                      file)))
                 ("nofile"
-                 (cons :warning "No such file"))))
+                 (cons :warning "No such file"))
+                ("no_function"
+                 (cons :warning "No such arithmetic function"))))
              (diag (flymake-make-diagnostic (current-buffer)
                                             beg end
                                             (car type-text)
