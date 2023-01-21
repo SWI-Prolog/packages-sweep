@@ -2848,9 +2848,8 @@ appropriate buffer."
                             (and (derived-mode-p 'sweeprolog-top-level-mode)
                                  sweeprolog-top-level-thread-id)))))
          (read-string "Signal goal: ?- ")))
-  (sweeprolog-signal-thread (buffer-local-value 'sweeprolog-top-level-thread-id
-                                                (get-buffer buffer))
-                            goal))
+  (with-current-buffer (get-buffer buffer)
+    (sweeprolog-top-level-signal-current goal)))
 
 (defun sweeprolog-top-level-signal-current (goal)
   "Signal the current top-level thread to run GOAL.
@@ -2862,6 +2861,8 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
                          (read-string "Signal goal: ?- " nil
                                       'sweeprolog-top-level-signal-goal-history)
                        sweeprolog-top-level-signal-default-goal)))
+  (unless sweeprolog-top-level-thread-id
+    (sweeprolog-top-level--populate-thread-id))
   (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
 
 ;;;###autoload
