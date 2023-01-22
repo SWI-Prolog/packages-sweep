@@ -829,12 +829,17 @@ PROJECT (only on Emacs 28 or later)."
                                 (project-current)))
                          (or (project-current)
                              (user-error "No current project")))))
-  (when-let ((proj (or project (project-current))))
-    (mapc (lambda (path)
-            (sweeprolog--query-once "sweep" "sweep_xref_source" path))
-          (seq-filter (lambda (path)
-                        (string= "pl" (file-name-extension path)))
-                      (project-files proj)))))
+  (when-let ((proj (or project (project-current)))
+             (files (seq-filter
+                     (lambda (path)
+                       (string= "pl" (file-name-extension path)))
+                     (project-files proj))))
+    (dolist-with-progress-reporter
+        (file (seq-filter (lambda (file)
+                            (string= "pl" (file-name-extension file)))
+                          (project-files proj)))
+        "Analyzing Prolog files in project... "
+      (sweeprolog--query-once "sweep" "sweep_xref_source" file))))
 
 (defun sweeprolog-predicate-references (mfn)
   "Find source locations where the predicate MFN is called."
