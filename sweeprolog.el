@@ -2869,7 +2869,7 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
   (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
 
 ;;;###autoload
-(define-derived-mode sweeprolog-top-level-mode comint-mode "sweep Top-level"
+(define-derived-mode sweeprolog-top-level-mode comint-mode "Sweep Top-level"
   "Major mode for interacting with an inferior Prolog interpreter."
   :group 'sweeprolog-top-level
   (setq-local comint-prompt-regexp           (rx line-start "?- ")
@@ -4196,7 +4196,7 @@ certain contexts to maintain conventional Prolog layout."
         sweeprolog--buffer-modified t))
 
 ;;;###autoload
-(define-derived-mode sweeprolog-mode prog-mode "sweep"
+(define-derived-mode sweeprolog-mode prog-mode "Sweep"
   "Major mode for reading and editing Prolog code."
   :group 'sweeprolog
   (setq-local comment-start "%")
@@ -4587,7 +4587,7 @@ accordingly."
     (user-error "No top-level menu entry here")))
 
 (define-derived-mode sweeprolog-top-level-menu-mode
-  tabulated-list-mode "sweep Top-level Menu"
+  tabulated-list-mode "Sweep Top-level Menu"
   "Major mode for browsing a list of active `sweep' top-levels."
   (setq tabulated-list-format [("Buffer"      32 t)
                                ("Status"      32 t)
