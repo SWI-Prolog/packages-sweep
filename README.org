@@ -1844,6 +1844,45 @@ In ~sweeprolog-mode~ buffers, you can invoke
 goal at point (if any) as the "future history" for the goal prompt,
 which you can access with ~M-n~ in the minibuffer.
 
+* Executing Prolog Asynchronously
+:PROPERTIES:
+:CUSTOM_ID: async-query
+:DESCRIPTION: Running goals in seperate threads, redirecting their output to Emacs buffers
+:ALT_TITLE: Async Queries
+:END:
+
+#+CINDEX: async queries
+#+CINDEX: query asynchronously
+#+CINDEX: Sweep Async Output mode
+Sweep provides a facility for executing Prolog goals in separate
+threads and capturing their output in Emacs buffers as it is produced.
+You can use this for running queries without blocking Emacs.
+
+- Key: C-c C-& (sweeprolog-async-goal) :: Execute a Prolog goal
+  asynchronously and display its output in a dedicated buffer.
+
+The command ~M-x sweeprolog-async-goal~, bound to ~C-c C-&~ in
+~sweeprolog-mode~ buffers, prompts for a Prolog goal and executes it in
+a new Prolog thread, redirecting its output and error streams to an
+Emacs buffer that gets updated asynchronously.
+
+This is similar in nature to running asynchronous shell commands with
+the standard ~M-&~ (~async-shell-command~) or ~M-x compile~, expect that
+~sweeprolog-async-goal~ runs a Prolog goal instead of a shell command.
+For more information about these commands see [[info:emacs#Single Shell][Single Shell]] and
+[[info:emacs#Compilation][Compilation]] in the Emacs manual.
+
+The output buffer that ~sweeprolog-async-goal~ creates uses a dedicated
+mode called /Sweep Async Output mode/.  This mode is derived from the
+standard Compilation mode, it provides all of the usual commands
+documented in [[info:emacs#Compilation Mode][Compilation Mode]].  Notably, you can run the same query
+again by typing ~g~ (~sweeprolog-async-goal-restart~) in the output
+buffer.  To interrupt the goal running in the current output buffer,
+press ~C-c C-k~ (~kill-compilation~).
+
+_Compatibility note_: asynchronous queries use pipe processes that
+require Emacs 28 or later and SWI-Prolog 9.1.4 or later.
+
 * Finding Prolog code
 :PROPERTIES:
 :CUSTOM_ID: finding-prolog-code
@@ -1957,6 +1996,7 @@ The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
 | ~p~   | ~sweeprolog-find-predicate~            | [[*Finding Prolog code][Finding Prolog Code]]               |
 | ~q~   | ~sweeprolog-top-level-send-goal~       | [[#top-level-send-goal][Sending Goals to the Top-level]]    |
 | ~t~   | ~sweeprolog-top-level~                 | [[#prolog-top-level][The Prolog Top-level]]              |
+| ~&~   | ~sweeprolog-async-goal~                | [[#async-query][Executing Prolog Asynchronously]]   |
 
 * Examining Prolog messages
 :PROPERTIES:

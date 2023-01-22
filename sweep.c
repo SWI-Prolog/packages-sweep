@@ -387,6 +387,17 @@ sweep_cut_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   }
 }
 
+#if defined EMACS_MAJOR_VERSION && EMACS_MAJOR_VERSION >= 28
+emacs_value
+sweep_open_channel(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
+{
+  if (nargs == 1) {
+    return env->make_integer(env, env->open_channel(env, args[0]));
+  }
+  return enil(env);
+}
+#endif
+
 emacs_value
 sweep_next_solution(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
 {
@@ -475,6 +486,19 @@ sweep_open_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
 }
 
 static foreign_t
+sweep_fd_open(term_t f, term_t o) {
+  IOSTREAM *w;
+  int fd = -1;
+
+  if (PL_get_integer(f, &fd) &&
+      (w = Sfdopen(fd, "w")) &&
+      PL_unify_stream(o, w))
+    return TRUE;
+
+  return FALSE;
+}
+
+static foreign_t
 sweep_funcall0(term_t f, term_t v) {
   char * string = NULL;
   emacs_value r = NULL;
@@ -552,6 +576,7 @@ sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
 
   PL_register_foreign("sweep_funcall", 3, sweep_funcall1, 0);
   PL_register_foreign("sweep_funcall", 2, sweep_funcall0, 0);
+  PL_register_foreign("sweep_fd_open", 2, sweep_fd_open,  0);
 
   r = PL_initialise(nargs, argv);
 
@@ -674,6 +699,13 @@ This function drops the current instantiation of the query variables.",
   emacs_value func_cleanup = env->make_function (env, 0, 0, sweep_cleanup, "Cleanup Prolog.", NULL);
   emacs_value args_cleanup[] = {symbol_cleanup, func_cleanup};
   env->funcall (env, env->intern (env, "defalias"), 2, args_cleanup);
+
+#if defined EMACS_MAJOR_VERSION && EMACS_MAJOR_VERSION >= 28
+  emacs_value symbol_open_channel = env->intern (env, "sweeprolog-open-channel");
+  emacs_value func_open_channel = env->make_function (env, 1, 1, sweep_open_channel, "Open channel.", NULL);
+  emacs_value args_open_channel[] = {symbol_open_channel, func_open_channel};
+  env->funcall (env, env->intern (env, "defalias"), 2, args_open_channel);
+#endif
 
   provide(env, "sweep-module");
 

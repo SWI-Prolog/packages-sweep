@@ -76,7 +76,9 @@
             sweep_current_functors/2,
             sweep_term_search/2,
             sweep_terms_at_point/2,
-            sweep_predicate_dependencies/2
+            sweep_predicate_dependencies/2,
+            sweep_async_goal/2,
+            sweep_interrupt_async_goal/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -1154,3 +1156,31 @@ sweep_predicate_dependencies([To0|From0], Deps) :-
                           term_string(PI0, PI)
                       ),
           Deps).
+
+sweep_async_goal([GoalString|FD], TId) :-
+    term_string(Goal, GoalString),
+    random_between(1, 1024, Cookie),
+    thread_self(Self),
+    thread_create(sweep_start_async_goal(Self, Cookie, Goal, FD), T,
+                  [detached(true)]),
+    at_halt((   is_thread(T),
+                thread_property(T, status(running))
+            ->  thread_signal(T, thread_exit(0)),
+                thread_join(T, _)
+            ;   true
+            )),
+    thread_get_message(sweep_async_goal_started(Cookie)),
+    thread_property(T, id(TId)).
+
+sweep_start_async_goal(Caller, Cookie, Goal, FD) :-
+    thread_send_message(Caller, sweep_async_goal_started(Cookie)),
+    setup_call_cleanup((   sweep_fd_open(FD, Out),
+                           set_prolog_IO(current_input, Out, Out)
+                       ),
+                       once(Goal),
+                       (   format("~nSweep async goal finished~n"),
+                           close(Out)
+                       )).
+
+sweep_interrupt_async_goal(TId, TId) :-
+    thread_signal(TId, throw(interrupted)).

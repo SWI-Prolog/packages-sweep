@@ -409,6 +409,7 @@ token via its `help-echo' text property."
                 (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
                     #'sweeprolog-show-diagnostics
                   #'flymake-show-diagnostics-buffer))
+    (define-key map (kbd "C-c C-&") #'sweeprolog-async-goal)
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
     (define-key map (kbd "M-p")     #'sweeprolog-backward-predicate)
@@ -466,6 +467,7 @@ token via its `help-echo' text property."
     (define-key map "p" #'sweeprolog-find-predicate)
     (define-key map "q" #'sweeprolog-top-level-send-goal)
     (define-key map "t" #'sweeprolog-top-level)
+    (define-key map "&" #'sweeprolog-async-goal)
     map)
   "Keymap for `sweeprolog' global commands.")
 
@@ -517,6 +519,7 @@ token via its `help-echo' text property."
                            sweeprolog-top-level-thread-id)))
                   (buffer-list)) ]
     [ "Send Goal to Top-level" sweeprolog-top-level-send-goal t ]
+    [ "Run Async Goal" sweeprolog-async-goal t ]
     [ "Open Top-level Menu" sweeprolog-list-top-levels t ]
     "--"
     [ "Describe Predicate" sweeprolog-describe-predicate t ]
@@ -5360,6 +5363,100 @@ the position for which the menu is created.")
                                menu tok beg point end))))))
   menu)
 
+
+
+;;;; Async Prolog Queries
+
+(defvar-local sweeprolog-async-goal-thread-id nil
+  "Prolog thread running the async goal of the current buffer.")
+
+(defvar-local sweeprolog-async-goal-current-goal nil
+  "Prolog async goal of the current buffer.")
+
+(defun sweeprolog-async-goal-interrupt (proc &optional _group)
+  "Interrupt async Prolog goal associated with process PROC."
+  (with-current-buffer (process-buffer proc)
+    (sweeprolog--query-once "sweep" "sweep_interrupt_async_goal"
+                            sweeprolog-async-goal-thread-id)))
+
+(defun sweeprolog-async-goal-filter (proc string)
+  "Process filter function for async Prolog queries.
+
+Deletes PROC if STRING contains an end of output marker string."
+  (internal-default-process-filter proc string)
+  (when (string-match (rx "Sweep async goal finished")
+                      string)
+    (sit-for 1)
+    (delete-process proc)))
+
+(defun sweeprolog-async-goal-start (goal &optional buffer)
+  "Start async Prolog goal GOAL and direct its output to BUFFER."
+  (setq buffer (or buffer (current-buffer)))
+  (sweeprolog-ensure-initialized)
+  (if (fboundp 'sweeprolog-open-channel)
+      (let* ((proc (make-pipe-process
+                    :name (concat "?- " goal)
+                    :buffer buffer
+                    :filter #'sweeprolog-async-goal-filter))
+             (fd (sweeprolog-open-channel proc)))
+        (sweeprolog--query-once "sweep" "sweep_async_goal"
+                                (cons goal fd)))
+    (error "Async queries require Emacs 28 and SWI-Prolog 9.1.4 or later")))
+
+(defun sweeprolog-async-goal-restart ()
+  "Restart async Prolog goal in the current buffer."
+  (interactive "" sweeprolog-async-goal-output-mode)
+  (when-let ((proc (get-buffer-process (current-buffer))))
+    (if (process-live-p proc)
+        (if (yes-or-no-p "A goal is running; kill it? ")
+            (condition-case ()
+                (progn
+                  (interrupt-process proc)
+                  (sit-for 1)
+                  (delete-process proc))
+              (error nil))
+          (error "Cannot have two processes in `%s' at once"
+                 (buffer-name)))))
+  (setq sweeprolog-async-goal-thread-id
+        (sweeprolog-async-goal-start
+         sweeprolog-async-goal-current-goal)))
+
+(defvar sweeprolog-async-goal-output-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map compilation-mode-map)
+    (define-key map (kbd "g") #'sweeprolog-async-goal-restart)
+    map)
+  "Keymap used by `sweeprolog-async-goal-output-mode'.")
+
+(define-compilation-mode sweeprolog-async-goal-output-mode
+  "Sweep Async Output"
+  "Major mode for viewing the output of async Prolog queries."
+  (add-hook 'interrupt-process-functions
+            #'sweeprolog-async-goal-interrupt nil t)
+  (add-hook 'kill-buffer-hook
+            (lambda ()
+              (when-let ((proc (get-buffer-process (current-buffer))))
+                (when (and (process-live-p proc)
+                           sweeprolog-async-goal-thread-id)
+                  (condition-case _
+                      (sweeprolog--query-once "sweep" "sweep_interrupt_async_goal"
+                                              sweeprolog-async-goal-thread-id)
+                    (prolog-exception nil)))))
+            nil t))
+
+;;;###autoload
+(defun sweeprolog-async-goal (goal)
+  "Execute GOAL and display its output in a buffer asynchronously."
+  (interactive (list (sweeprolog-read-goal "[async] ?- ")))
+  (let* ((buffer-name (generate-new-buffer-name
+                       (format "*Async Output for %s*" goal)))
+         (buffer (get-buffer-create buffer-name))
+         (tid (sweeprolog-async-goal-start goal buffer)))
+    (with-current-buffer buffer
+      (sweeprolog-async-goal-output-mode)
+      (setq sweeprolog-async-goal-thread-id     tid
+            sweeprolog-async-goal-current-goal goal))
+    (display-buffer buffer)))
 
 ;;;; Footer
 
