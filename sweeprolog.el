@@ -2953,6 +2953,7 @@ buffer to load."
                    #'sweeprolog-file-name-handler))
 
 (defun sweeprolog-file-at-point (&optional point)
+  "Return the file name specified by the Prolog file spec at POINT."
   (setq point (or point (point)))
   (let ((fap nil))
     (sweeprolog-analyze-term-at-point

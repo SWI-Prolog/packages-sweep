@@ -1094,18 +1094,31 @@ library directories.
 
 - Key: C-c C-o (sweeprolog-find-file-at-point) :: Resolve file
   specification at point and visit the specified file.
+- Function: sweeprolog-file-at-point &optional point :: Return the
+  file name specified by the Prolog file specification at POINT.
 
-You can follow file specifications that occur in =sweeprolog-mode=
-buffers with =C-c C-o= (or =M-x sweeprolog-find-file-at-point=) whenever
+You can follow file specifications that occur in ~sweeprolog-mode~
+buffers with ~C-c C-o~ (or ~M-x sweeprolog-find-file-at-point~) whenever
 point is over a valid file specification.  For example, consider a
-Prolog file buffer with the common directive =use_module/1=:
+Prolog file buffer with the common directive ~use_module/1~:
 
 #+begin_src prolog
   :- use_module(library(lists)).
 #+end_src
 
-With point in any position inside =library(lists)=, typing =C-c C-o= will
+With point in any position inside ~library(lists)~, typing ~C-c C-o~ will
 open the =lists.pl= file in the Prolog library.
+
+Sweep also extends Emacs's ~file-name-at-point-functions~ hook with the
+function ~sweeprolog-file-at-point~ that returns the resolved Prolog
+file specification at point, if any.  Emacs uses this hook to populate
+the "future history" of minibuffer prompts that read file names, such
+as the one you get when you type ~C-x C-f~ (~find-file~).  In particular
+this means that if point is in a Prolog file specification, you can
+type ~M-n~ after ~C-x C-f~ to populate the minibuffer with the
+corresponding file name.  You can then go ahead and visit the file by
+typing ~RET~, or you can edit the minibuffer contents and visit a nearby
+file instead.
 
 For more information about file specifications in SWI-Prolog, see
 [[https://www.swi-prolog.org/pldoc/doc_for?object=absolute_file_name/3][absolute_file_name/3]] in the SWI-Prolog manual.
@@ -1909,7 +1922,7 @@ loaded or auto-loadable Prolog predicate.
 :ALT_TITLE: File Spec Expansion
 :END:
 
-Sweep defines a handler for the Emacs function =expand-file-file= that
+Sweep defines a handler for the Emacs function =expand-file-name= that
 recognizes Prolog file specifications, such as =library(lists)=, and
 expands them to their corresponding absolute paths.  This means that
 one can use Prolog file specifications with Emacs's standard =find-file=
