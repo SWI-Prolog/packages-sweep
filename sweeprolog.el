@@ -861,12 +861,7 @@ PROJECT (only on Emacs 28 or later)."
       (when (fboundp 'project-known-project-roots)
         (car (seq-filter
               (lambda (root)
-                (member (car
-                         (reverse
-                          (seq-filter
-                           (lambda (s)
-                             (not (string-empty-p s)))
-                           (file-name-split root))))
+                (member (file-name-base (directory-file-name root))
                         '("swipl" "swipl-devel")))
               (project-known-project-roots)))))))
 
