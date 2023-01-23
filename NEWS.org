@@ -3,13 +3,31 @@
 #+email:                 me@eshelyaron.com
 #+language:              en
 #+options:               ':t toc:nil num:nil ^:{}
-#+startup:               content indent
+#+startup:               showall
 
-This file contains the release notes for =sweep=, an embedding of
+This file contains the release notes for Sweep, an embedding of
 SWI-Prolog in Emacs.
 
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
+
+* Version 0.14.0 on 2023-01-23
+
+** New command ~sweeprolog-async-goal~
+
+Sweep can now run goals in separate threads while redirecting their
+output to Emacs buffers.  To run goals and display their output
+asynchronously, use the new command ~M-x sweeprolog-async-goal~ (bound
+to ~C-c C-&~ in ~sweeprolog-mode~).  Sweep uses a dedicated mode called
+~sweeprolog-async-goal-output-mode~ which derives from ~compilation-mode~
+for the goal's output.
+
+** The command ~sweeprolog-xref-project-source-files~ now reports its progress
+
+** Fixed issue where signaling new Top-levels could fail
+
+This version fixes an issue where signaling newly created Prolog
+Top-level threads with ~C-c C-c~ could fail due to a race condition.
 
 * Version 0.13.0 on 2023-01-20
 

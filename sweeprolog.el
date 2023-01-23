@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.13.0
+;; Package-Version: 0.14.0
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -531,7 +531,8 @@ token via its `help-echo' text property."
     "--"
     [ "Reset Sweep" sweeprolog-restart t ]
     [ "View Messages" sweeprolog-view-messages t ]
-    [ "Read the Sweep Manual" sweeprolog-info-manual t]))
+    [ "Read the Sweep Manual" sweeprolog-info-manual t]
+    [ "Sweep News" sweeprolog-view-news t]))
 
 
 ;;;; Local variables
@@ -4618,6 +4619,12 @@ accordingly."
   "Display the Sweep manual in Info mode."
   (interactive)
   (info "sweep"))
+
+;;;###autoload
+(defun sweeprolog-view-news ()
+  "View the Sweep News file, which lists recent changes to Sweep."
+  (interactive)
+  (view-file (expand-file-name "NEWS.org" sweeprolog--directory)))
 
 (defun sweeprolog--buttonize (string callback data)
   (if (fboundp 'buttonize)
