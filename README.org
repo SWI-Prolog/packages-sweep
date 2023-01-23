@@ -1008,13 +1008,21 @@ can be automated by adding ~sweeprolog-forward-hole-on-tab-mode~ to
   (add-hook 'sweeprolog-mode-hook #'sweeprolog-forward-hole-on-tab-mode)
 #+end_src
 
+#+CINDEX filling holes
+#+CINDEX holes, filling
 To "fill" a hole marked by one of the aforementioned commands, either
 use ~C-c C-m~ as described above or type ~C-w~ (~M-x kill-region~) to kill
 the region and remove the placeholder variable, and then insert Prolog
-code as usual.  As an alternative to manually killing the region with
-~C-w~, with ~delete-selection-mode~ enabled the placeholder is
-automatically deleted when you insert a character while the region is
-active (see also [[info:emacs#Using Region][Using Region in the Emacs manual]]).
+code as usual.  Yanking a hole with ~C-y~ (~yank~) after you kill it
+removes the special hole property and inserts it as a plain variable.
+This is particularly useful if you want to keep the variable name that
+Sweep chose for the hole--to do that simply press ~C-w C-y~ with the
+hole marked.
+
+As an alternative to manually killing the region with ~C-w~, with
+~delete-selection-mode~ enabled the placeholder is automatically deleted
+when you insert a character while the region is active (see also [[info:emacs#Using Region][Using
+Region]] in the Emacs manual).
 
 ** Definitions and References
 :PROPERTIES:

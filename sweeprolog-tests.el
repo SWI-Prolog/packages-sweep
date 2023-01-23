@@ -253,6 +253,20 @@ foo(Foo) :- bar.
                    '(sweeprolog-undefined-default-face
                      sweeprolog-body-default-face)))))
 
+(ert-deftest yank-hole ()
+  "Test killing and yanking a hole as a plain variable."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (sweeprolog-insert-term-with-holes ":-" 2)
+    (should (get-text-property (point-min) 'sweeprolog-hole))
+    (call-interactively #'kill-region)
+    (call-interactively #'yank)
+    (should (not (get-text-property (point-min) 'sweeprolog-hole)))))
+
 (ert-deftest insert-term-with-holes ()
   "Test `sweeprolog-insert-term-with-holes'."
   (let ((temp (make-temp-file "sweeprolog-test"

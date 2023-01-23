@@ -4277,7 +4277,10 @@ certain contexts to maintain conventional Prolog layout."
     (cursor-sensor-mode 1))
   (when (boundp 'context-menu-functions)
     (add-hook 'context-menu-functions
-              #'sweeprolog-context-menu-function)))
+              #'sweeprolog-context-menu-function))
+  (unless (member 'sweeprolog-hole yank-excluded-properties)
+   (setq-local yank-excluded-properties
+               (cons 'sweeprolog-hole yank-excluded-properties))))
 
 
 ;;;; Skeletons and auto-insert
