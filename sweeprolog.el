@@ -506,6 +506,8 @@ token via its `help-echo' text property."
       (eq major-mode 'sweeprolog-mode) ]
     [ "Search Term" sweeprolog-term-search
       (derived-mode-p 'sweeprolog-mode)]
+    [ "Count Holes" sweeprolog-count-holes
+      (derived-mode-p 'sweeprolog-mode)]
     "--"
     [ "Set Prolog Flag" sweeprolog-set-prolog-flag t ]
     [ "Install Prolog Package" sweeprolog-pack-install t ]
@@ -3094,6 +3096,25 @@ is the prefix argument."
         (setq end (1+ end)))
       (1+ end))))
 
+
+(defun sweeprolog-count-holes (&optional interactive)
+  "Count holes in the current buffer and return the total number.
+If INTERACTIVE is non-nil, as it is when called interactively,
+also print a message with the result."
+  (interactive (list t) sweeprolog-mode)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((hole nil) (count 0))
+      (while (setq hole (sweeprolog--next-hole))
+        (goto-char (cdr hole))
+        (setq count (1+ count)))
+      (when interactive
+        (message "%s %s left in buffer %s."
+                 (if (zerop count) "No" count)
+                 (ngettext "hole" "holes" count)
+                 (buffer-name)))
+      count)))
+
 (defun sweeprolog--next-hole (&optional wrap)
   "Return the bounds of the next hole in the current buffer.
 
@@ -3127,10 +3148,12 @@ point and the end of the buffer."
 
 When WRAP in non-nil, wrap around if no holes are found between
 point and the beginning of the buffer."
+  (when (and (< (point-min) (point))
+             (sweeprolog-at-hole-p (1- (point))))
+    (forward-char -1)
+    (while (and (sweeprolog-at-hole-p) (not (bobp)))
+      (forward-char -1)))
   (let ((start (point)))
-    (when (use-region-p)
-      (goto-char (region-beginning))
-      (deactivate-mark))
     (when (sweeprolog--backward-wrap wrap)
       (if-let ((current-hole-beg (sweeprolog-beginning-of-hole)))
           (cons current-hole-beg
@@ -3138,7 +3161,7 @@ point and the beginning of the buffer."
         (let ((point (point)))
           (while (not (or (sweeprolog-at-hole-p) (bobp)))
             (forward-char -1))
-          (if (bobp)
+          (if (and (bobp) (not (sweeprolog-at-hole-p)))
               (or (and wrap
                        (save-restriction
                          (goto-char (point-max))
@@ -3148,44 +3171,37 @@ point and the beginning of the buffer."
             (cons (sweeprolog-beginning-of-hole)
                   (sweeprolog-end-of-hole))))))))
 
-(defun sweeprolog--forward-hole (&optional wrap)
-  (if-let ((hole (sweeprolog--next-hole wrap))
-           (beg  (car hole))
-           (end  (cdr hole)))
-      (progn
-        (goto-char end)
-        (push-mark beg t t))
-    (user-error "No holes following point")))
+(defun sweeprolog-backward-hole (&optional n)
+  "Move point to the previous Nth hole in the current buffer.
+If N is 0, display the number of holes in the current buffer by
+calling `sweeprolog-count-holes' instead.
 
-(defun sweeprolog--backward-hole (&optional wrap)
-  (if-let ((hole (sweeprolog--previous-hole wrap))
-           (beg  (car hole))
-           (end  (cdr hole)))
-      (progn
-        (goto-char end)
-        (push-mark beg t t))
-    (user-error "No holes before point")))
-
-(defun sweeprolog-backward-hole (&optional arg)
-  "Move point to the previous hole in a `sweeprolog-mode' buffer.
-
-With negative prefix argument ARG, move to the next hole
-instead."
+See also `sweeprolog-forward-hole'."
   (interactive "p" sweeprolog-mode)
-  (setq arg (or arg 1))
-  (sweeprolog-forward-hole (- arg)))
+  (sweeprolog-forward-hole (- (or n 1))))
 
-(defun sweeprolog-forward-hole (&optional arg)
-  "Move point to the next hole in a `sweeprolog-mode' buffer.
+(defun sweeprolog-forward-hole (&optional n)
+  "Move point to the next Nth hole in the current buffer.
+If N is 0, display the number of holes in the current buffer by
+calling `sweeprolog-count-holes' instead.
 
-With negative prefix argument ARG, move to the previous hole
-instead."
+See also `sweeprolog-backward-hole'."
   (interactive "p" sweeprolog-mode)
-  (setq arg (or arg 1)
-        deactivate-mark nil)
-  (if (> 0 arg)
-      (sweeprolog--backward-hole t)
-    (sweeprolog--forward-hole t)))
+  (setq n (or n 1))
+  (if (zerop n)
+      (sweeprolog-count-holes t)
+    (let* ((func (if (< 0 n)
+                     #'sweeprolog--next-hole
+                   #'sweeprolog--previous-hole))
+           (hole (funcall func t)))
+      (unless hole
+        (user-error "No holes in buffer %s" (buffer-name)))
+      (goto-char (cdr hole))
+      (dotimes (_ (1- (abs n)))
+        (setq hole (funcall func t))
+        (goto-char (cdr hole)))
+      (setq deactivate-mark nil)
+      (push-mark (car hole) t t))))
 
 (put 'sweeprolog-backward-hole
      'repeat-map

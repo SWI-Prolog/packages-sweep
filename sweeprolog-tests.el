@@ -287,6 +287,29 @@ foo(Foo) :- bar.
     (should (string= (buffer-string)
                      "foo(bar, (_->_;_), _):-_."))))
 
+(ert-deftest forward-many-holes ()
+  "Tests jumping over holes with `sweeprolog-forward-hole'."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "\n"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-min))
+    (sweeprolog-insert-term-with-holes ":-" 2)
+    (deactivate-mark)
+    (goto-char (point-max))
+    (sweeprolog-insert-term-with-holes ":-" 2)
+    (goto-char (point-min))
+    (should (= (sweeprolog-count-holes) 4))
+    (sweeprolog-forward-hole 2)
+    (should (= (point) 5))
+    (sweeprolog-forward-hole -1)
+    (should (= (point) 2))
+    (sweeprolog-forward-hole -2)
+    (should (= (point) 8))))
+
 (ert-deftest plunit-testset-skeleton ()
   "Tests inserting PlUnit test-set blocks."
   (let ((temp (make-temp-file "sweeprolog-test"

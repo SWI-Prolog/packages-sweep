@@ -998,10 +998,15 @@ Use these commands to move between holes in the current Prolog buffer:
 
 #+KINDEX: C-c C-i
 - Key: C-c TAB (sweeprolog-forward-hole) :: Move point to the next
-  hole in the buffer.
+  hole in the buffer and select it as the region.  With numeric prefix
+  argument /n/, move forward over /n/ - 1 holes and select the next one.
 #+KINDEX: C-c C-S-i
 - Key: C-c S-TAB (sweeprolog-backward-hole) :: Move point to the
-  previous hole in the buffer.
+  previous hole in the buffer and select it as the region.  With
+  numeric prefix argument /n/, move backward over /n/ - 1 holes and select
+  the next one.
+- Key: C-0 C-c TAB (sweeprolog-count-holes) :: Display the number of
+  holes that are present in the buffer.
 - Command: sweeprolog-forward-hole-on-tab-mode :: Toggle moving to the
   next hole in the buffer with ~TAB~ if the current line is already
   properly indented.
@@ -1010,8 +1015,17 @@ To jump to the next hole in a ~sweeprolog-mode~ buffer, use the command
 ~M-x sweeprolog-forward-hole~, bound by default to ~C-c TAB~ (or ~C-c C-i~).
 This command sets up the region to cover the next hole after point
 leaving the cursor at right after the hole.  To jump to the previous
-hole instead, use ~sweeprolog-backward-hole~ or call
+hole use ~C-c S-TAB~ (~sweeprolog-backward-hole~), or call
 ~sweeprolog-forward-hole~ with a negative prefix argument (~C-- C-c TAB~).
+
+You can also call ~sweeprolog-forward-hole~ and ~sweeprolog-backward-hole~
+with a numeric prefix argument to jump over the specified number of
+holes.  For example, typing ~C-3 C-c TAB~ skips the next two holes in
+the buffer and selects the third as the region.  As a special case, if
+you call these commands with a zero prefix argument (~C-0 C-c TAB~),
+they invoke the command ~sweeprolog-count-holes~ instead of jumping.
+This command counts how many holes are left in the current buffer and
+reports its finding via a message in the echo area.
 
 When the minor mode ~sweeprolog-forward-hole-on-tab-mode~ is enabled,
 the ~TAB~ key is bound to a command moves to the next hole when called
