@@ -11,6 +11,29 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.14.1 on 2023-01-28
+
+** New command ~sweeprolog-count-holes~
+
+This command displays the number of holes in the current
+~sweeprolog-mode~ buffer.
+
+** New numeric argument to ~sweeprolog-forward-hole~
+
+You can now call ~sweeprolog-forward-hole~ with a numeric prefix
+argument (e.g. ~C-3 C-c TAB~) to move forward over that many holes. As a
+special case, if you call it with a zero numeric argument (e.g. by
+typing ~C-0 C-c TAB~), it invokes ~sweeprolog-count-holes~ instead.
+
+This change applies to ~sweeprolog-backward-predicate~ as well.
+
+** Predicate completion now consults the manual for argument names
+
+Completing predicate calls to built-in predicates with ~C-M-i~
+(~completion-at-point~) now uses the argument names from the
+documentation of the predicate in the SWI-Prolog manual to name the
+holes it inserts as placeholder arguments.
+
 * Version 0.14.0 on 2023-01-23
 
 ** New command ~sweeprolog-async-goal~
