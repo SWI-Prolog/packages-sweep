@@ -1455,9 +1455,9 @@ prefix argument (~C-u C-c C-e~).
 ~sweeprolog-mode~ empowers Emacs's standard ~completion-at-point~ command,
 bound by default to ~C-M-i~ and ~M-TAB~, with context-aware completion for
 Prolog terms.  For background about completion-at-point in Emacs, see [[info:emacs#Symbol
-Completion][Symbol Completion in the Emacs manual]].
+Completion][Symbol Completion]] in the Emacs manual.
 
-In ~sweeprolog-mode~ buffers, the following enhancements are provided:
+Sweep provides the following Prolog-specific completion facilities:
 
 - Variable name completion :: If the text before point can be
   completed to one or more variable names that appear elsewhere in the
@@ -1468,7 +1468,7 @@ In ~sweeprolog-mode~ buffers, the following enhancements are provided:
   candidates.  Predicate calls are inserted as complete term.  If the
   chosen predicate takes arguments, holes are inserted in their places
   (see [[#holes][Holes]]).
-- Atom completion :: If point is at a non-callable,
+- Atom completion :: If point is at a non-callable position,
   ~completion-at-point~ suggests matching atoms as completion
   candidates.
 

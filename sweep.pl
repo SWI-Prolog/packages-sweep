@@ -960,12 +960,38 @@ sweep_file_path_in_library(Path, Spec) :-
     ).
 
 predicate_argument_names(M:F/A, Args) :-
+    (   M == system
+    ->  true
+    ;   sub_atom(M, 0, 1, _, '$')
+    ),
+    pldoc_man:load_man_object(F/A, _, _, DOM0),
+    memberchk(element(dt, _, DOM1), DOM0),
+    memberchk(element(a, _, DOM2), DOM1),
+    catch(findall(Arg,
+                  (   member(element(var, _, Vars), DOM2),
+                      member(ArgsSpec, Vars),
+                      term_string(CommaSeparatedArgs,
+                                  ArgsSpec,
+                                  [module(pldoc_modes),
+                                   variable_names(VN)]),
+                      maplist(call, VN),
+                      comma_list(CommaSeparatedArgs, ArgsList),
+                      member(Arg, ArgsList)
+                  ),
+                  Args0),
+          error(syntax_error(_),_),
+          fail),
+    predicate_argument_names_(A, Args0, Args).
+predicate_argument_names(M:F/A, Args) :-
     doc_comment(M:F/A, _, _, C),
     comment_modes(C, ModeAndDets),
     member(ModeAndDet, ModeAndDets),
     strip_det(ModeAndDet, Head),
     Head =.. [_|Args0],
-    length(Args0, A),
+    predicate_argument_names_(A, Args0, Args).
+
+predicate_argument_names_(Arity, Args0, Args) :-
+    length(Args0, Arity),
     maplist(strip_mode_and_type, Args0, Args).
 
 strip_mode_and_type(S, N), compound(S) => arg(1, S, N0), strip_type(N0, N).

@@ -443,7 +443,7 @@ baz(Baz) :- findall(X, b_g
     (call-interactively #'completion-at-point)
     (should (string= (buffer-string)
                      "
-baz(Baz) :- findall(X, b_getval(_, _)
+baz(Baz) :- findall(X, b_getval(Name, Value)
 "
                      ))))
 
