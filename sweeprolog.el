@@ -319,7 +319,7 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
   "If non-nil, enable `cursor-sensor-mode' in `sweeprolog-mode'.
 
 When enabled, `sweeprolog-mode' leverages `cursor-sensor-mode' to
-highlight all occurences of the variable at point in the current
+highlight all occurrences of the variable at point in the current
 clause."
   :package-version '((sweeprolog "0.4.2"))
   :type 'boolean
@@ -401,12 +401,13 @@ token via its `help-echo' text property."
     (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
     (define-key map (kbd "C-c C-m") #'sweeprolog-insert-term-with-holes)
     (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
-    (define-key map (kbd "C-c C-s") #'sweeprolog-term-search)
     (define-key map (kbd "C-c C-q") #'sweeprolog-top-level-send-goal)
+    (define-key map (kbd "C-c C-r") #'sweeprolog-rename-variable)
+    (define-key map (kbd "C-c C-s") #'sweeprolog-term-search)
     (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
     (define-key map (kbd "C-c C-u") #'sweeprolog-update-dependencies)
     (define-key map (kbd "C-c C-`")
-                (if (fboundp 'flymake-show-buffer-diagnostics)  ;; Flymake 1.2.1+
+                (if (fboundp 'flymake-show-buffer-diagnostics) ;; Flymake 1.2.1+
                     #'sweeprolog-show-diagnostics
                   #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-c C-&") #'sweeprolog-async-goal)
@@ -2673,7 +2674,7 @@ modified."
      start end)))
 
 (defun sweeprolog-highlight-variable (point &optional var)
-  "Highlight occurences of the variable VAR in the clause at POINT.
+  "Highlight occurrences of the variable VAR in the clause at POINT.
 
 If VAR is nil, clear variable highlighting in the current clause
 instead.
@@ -5277,6 +5278,9 @@ GOAL."
 
 ;;;; Right-Click Context Menu
 
+(defvar sweeprolog-context-menu-point-at-click nil
+  "Buffer position at mouse click.")
+
 (defvar sweeprolog-context-menu-file-at-click nil
   "Prolog file specification at mouse click.")
 
@@ -5285,6 +5289,9 @@ GOAL."
 
 (defvar sweeprolog-context-menu-predicate-at-click nil
   "Prolog predicate indicator at mouse click.")
+
+(defvar sweeprolog-context-menu-variable-at-click nil
+  "Prolog variable at mouse click.")
 
 (defun sweeprolog-context-menu-find-module ()
   "Find Prolog module at mouse click."
@@ -5315,6 +5322,13 @@ GOAL."
   "Describe Prolog predicate at mouse click."
   (interactive)
   (sweeprolog-describe-predicate sweeprolog-context-menu-predicate-at-click))
+
+(defun sweeprolog-context-menu-rename-variable ()
+  "Rename Prolog variable at mouse click."
+  (interactive)
+  (sweeprolog-rename-variable sweeprolog-context-menu-variable-at-click
+                              nil
+                              sweeprolog-context-menu-point-at-click))
 
 (defun sweeprolog-context-menu-for-predicate (menu tok _beg _end _point)
   "Extend MENU with predicate-related commands if TOK describes one."
@@ -5369,10 +5383,30 @@ GOAL."
                              :help ,(format "Find %s" file)
                              :keys "\\[sweeprolog-find-file-at-point]")))))
 
+(defun sweeprolog-context-menu-for-variable (menu tok beg end point)
+  "Extend MENU with file-related commands if TOK specifies one.
+BEG and END are the variable's beginning and end positions, and
+POINT is the buffer position of the mouse click."
+  (pcase tok
+    ((or "var"
+         "singleton"
+         `("goal_term" "meta" variable 0))
+     (setq sweeprolog-context-menu-point-at-click point
+           sweeprolog-context-menu-variable-at-click
+           (buffer-substring-no-properties beg end))
+     (define-key menu [sweeprolog-rename-variable]
+                 `(menu-item "Rename Variable"
+                             sweeprolog-context-menu-rename-variable
+                             :help ,(concat "Rename variable "
+                                            (propertize sweeprolog-context-menu-variable-at-click
+                                                        'face (sweeprolog-variable-face)))
+                             :keys "\\[sweeprolog-rename-variable]")))))
+
 (defvar sweeprolog-context-menu-functions
   '(sweeprolog-context-menu-for-file
     sweeprolog-context-menu-for-module
-    sweeprolog-context-menu-for-predicate)
+    sweeprolog-context-menu-for-predicate
+    sweeprolog-context-menu-for-variable)
   "Functions that create context menu entries for Prolog tokens.
 Each function receives as its arguments the menu, the Prolog
 token's description, its start position, its end position, and
@@ -5387,7 +5421,7 @@ the position for which the menu is created.")
        (lambda (beg end tok)
          (when (<= beg point end)
            (run-hook-with-args 'sweeprolog-context-menu-functions
-                               menu tok beg point end))))))
+                               menu tok beg end point))))))
   menu)
 
 
@@ -5484,6 +5518,79 @@ Deletes PROC if STRING contains an end of output marker string."
       (setq sweeprolog-async-goal-thread-id     tid
             sweeprolog-async-goal-current-goal goal))
     (display-buffer buffer)))
+
+
+;;;; Refactoring
+
+(defun sweeprolog--variables-at-point ()
+  "Return information about variables in the Prolog term at point.
+
+Returns a cons cell (VAR-OCCURRENCES . VAR-AT-POINT).
+VAR-OCCURRENCES is an alist of elements (VAR . OCCURRENCES) where
+VAR is a variable name and OCCURRENCES is itself an alist of
+elements (BEG . END) describing the beginning and end of
+occurrences of this variable in buffer positions.  VAR-AT-POINT
+is the name of the variable at point, if any."
+  (let ((point (point))
+        (vars nil)
+        (var-at-point nil))
+    (sweeprolog-analyze-term-at-point
+     (lambda (beg end arg)
+       (pcase arg
+         ((or "var"
+              "singleton"
+              `("goal_term" "meta" variable 0))
+          (let ((var (buffer-substring-no-properties beg end)))
+            (push (cons beg end)
+                  (alist-get var vars nil nil #'string=))
+            (when (<= beg point end)
+              (setq var-at-point var)))))))
+    (cons vars var-at-point)))
+
+(defun sweeprolog-rename-variable (&optional old new point)
+  "Rename the variable OLD to NEW in the Prolog term at POINT.
+
+If OLD is nil, prompt for it in the minibuffer with completion.
+If NEW is nil, prompt for it as well.  If POINT is nil, it
+defaults to the current point.
+
+Interactively, OLD, NEW and POINT are nil."
+  (interactive "" sweeprolog-mode)
+  (setq point (or point (point)))
+  (save-excursion
+    (goto-char point)
+    (let* ((term-var-occurrences (sweeprolog--variables-at-point))
+           (var-occurrences (car term-var-occurrences))
+           (var-at-point (cdr term-var-occurrences)))
+      (unless var-occurrences
+        (user-error "No variables to rename here!"))
+      (let* ((old-name
+              (or old
+                  (completing-read
+                   (concat
+                    "Rename variable"
+                    (when-let ((def var-at-point))
+                      (concat " (default "
+                              (propertize def 'face (sweeprolog-variable-face))
+                              ")"))
+                    ": ")
+                   var-occurrences nil t nil nil var-at-point)))
+             (new-name
+              (or new
+                  (read-string
+                   (concat
+                    "Rename "
+                    (propertize old-name 'face (sweeprolog-variable-face))
+                    " to: ")
+                   nil nil old-name))))
+        (combine-after-change-calls
+          (dolist (old-occurrence (alist-get old-name var-occurrences
+                                             nil nil #'string=))
+            (let ((occurrence-beg (car old-occurrence))
+                  (occurrence-end (cdr old-occurrence)))
+              (delete-region occurrence-beg occurrence-end)
+              (goto-char occurrence-beg)
+              (insert new-name))))))))
 
 ;;;; Footer
 

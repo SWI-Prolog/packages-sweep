@@ -1646,7 +1646,7 @@ backward to the previous match.
 #+CINDEX: right click menu
 In addition to the keybindings that Sweep provides for invoking its
 commands, it integrates with Emacs's standard Context Menu minor mode
-to provide contextual menus that you operate with the mouse.
+to provide contextual menus that you interact with using the mouse.
 
 - Command: context-menu-mode :: Toggle Context Menu mode.  When
   enabled, clicking the mouse button ~down-mouse-3~ (i.e. right-click)
@@ -1668,7 +1668,8 @@ the buffer.
 If you right-click on a Prolog file specification or module name,
 Sweep suggests visiting it either in the current window or in another.
 If you right-click on a predicate, it lets you view its documentation
-in dedicated buffer.
+in a dedicated buffer (see also [[#prolog-help][Prolog Help]]).  For variables, it
+suggests to renaming (see .
 
 You can further extend and customize the context menu that
 ~sweeprolog-mode~ provides by adding functions to the variable
@@ -1676,6 +1677,30 @@ You can further extend and customize the context menu that
 receives the menu that is being created and a description of the
 clicked Prolog token, and it can extend the menu with entries before
 it's displayed.
+
+** Renaming Variables
+:PROPERTIES:
+:CUSTOM_ID: rename-variable
+:DESCRIPTION: Replacing occurrences of one Prolog variable with another
+:ALT_TITLE: Renaming Variables
+:END:
+
+You can rename a Prolog variable across the current top-term with the
+following command:
+
+- Key: C-c C-r (sweeprolog-rename-variable) :: Rename a variable
+  across the topmost Prolog term at point.
+
+The command ~sweeprolog-rename-variable~, bound to ~C-c C-r~, prompts for
+two variable names and replaces all occurrences of the first variable
+in the term at point with the second.  The prompt for the first (old)
+variable name provides completion based on the existing variable names
+in the current term, and it uses the variable at point as its default.
+
+If Context Menu mode is enabled, you can also rename variables by
+right-clicking on them with the mouse and selecting =Rename Variable=
+from the top of the context menu.  See [[#context-menu][Context Menu]] for more
+information about context menus in Sweep.
 
 * Prolog Help
 :PROPERTIES:

@@ -287,6 +287,21 @@ foo(Foo) :- bar.
     (should (string= (buffer-string)
                      "foo(bar, (_->_;_), _):-_."))))
 
+(ert-deftest rename-variable ()
+  "Tests renaming varialbes."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "foo(Bar,Baz) :- spam(Baz,Bar).")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-min))
+    (sweeprolog-rename-variable "Bar" "Spam")
+    (sweeprolog-rename-variable "Baz" "Bar")
+    (sweeprolog-rename-variable "Spam" "Baz")
+    (should (string= (buffer-string)
+                     "foo(Baz,Bar) :- spam(Bar,Baz)."))))
+
 (ert-deftest forward-many-holes ()
   "Tests jumping over holes with `sweeprolog-forward-hole'."
   (let ((temp (make-temp-file "sweeprolog-test"
