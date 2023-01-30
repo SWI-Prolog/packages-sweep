@@ -5547,15 +5547,19 @@ is the name of the variable at point, if any."
               (setq var-at-point var)))))))
     (cons vars var-at-point)))
 
-(defun sweeprolog-rename-variable (&optional old new point)
+(defun sweeprolog--format-variable (var)
+  (propertize var 'face (sweeprolog-variable-face)))
+
+(defun sweeprolog-rename-variable (&optional old new point interactive)
   "Rename the variable OLD to NEW in the Prolog term at POINT.
 
 If OLD is nil, prompt for it in the minibuffer with completion.
 If NEW is nil, prompt for it as well.  If POINT is nil, it
-defaults to the current point.
+defaults to the current point.  If INTERACTIVE is non-nil, also
+print a message with the number of replaced occurrences of OLD.
 
-Interactively, OLD, NEW and POINT are nil."
-  (interactive "" sweeprolog-mode)
+Interactively, OLD, NEW and POINT are nil, and INTERACTIVE is t."
+  (interactive (list nil nil nil t) sweeprolog-mode)
   (setq point (or point (point)))
   (save-excursion
     (goto-char point)
@@ -5564,33 +5568,51 @@ Interactively, OLD, NEW and POINT are nil."
            (var-at-point (cdr term-var-occurrences)))
       (unless var-occurrences
         (user-error "No variables to rename here!"))
-      (let* ((old-name
+      (let* ((max-var-len (apply #'max
+                                 (mapcar #'length
+                                         (mapcar #'car
+                                                 var-occurrences))))
+             (completion-extra-properties
+              (list :annotation-function
+                    (lambda (key)
+                      (let ((n (length (alist-get key var-occurrences nil nil #'string=))))
+                        (concat (make-string (- max-var-len (length key)) ? )
+                                (format " %d %s" n
+                                        (ngettext "occurrence"
+                                                  "occurrences"
+                                                  n)))))))
+             (old-name
               (or old
                   (completing-read
                    (concat
                     "Rename variable"
                     (when-let ((def var-at-point))
-                      (concat " (default "
-                              (propertize def 'face (sweeprolog-variable-face))
-                              ")"))
+                      (concat " (default " (sweeprolog--format-variable def) ")"))
                     ": ")
                    var-occurrences nil t nil nil var-at-point)))
              (new-name
               (or new
                   (read-string
                    (concat
-                    "Rename "
-                    (propertize old-name 'face (sweeprolog-variable-face))
-                    " to: ")
-                   nil nil old-name))))
+                    "Rename " (sweeprolog--format-variable old-name) " to: ")
+                   nil nil old-name)))
+             (old-occurrences
+              (alist-get old-name var-occurrences nil nil #'string=))
+             (num (length old-occurrences)))
         (combine-after-change-calls
-          (dolist (old-occurrence (alist-get old-name var-occurrences
-                                             nil nil #'string=))
+          (dolist (old-occurrence old-occurrences)
             (let ((occurrence-beg (car old-occurrence))
                   (occurrence-end (cdr old-occurrence)))
               (delete-region occurrence-beg occurrence-end)
               (goto-char occurrence-beg)
-              (insert new-name))))))))
+              (insert new-name))))
+        (when interactive
+          (message "Replaced %d %s of %s to %s."
+                   num
+                   (ngettext "occurrence" "occurrences" num)
+                   (sweeprolog--format-variable old-name)
+                   (sweeprolog--format-variable new-name)))))))
+
 
 ;;;; Footer
 
