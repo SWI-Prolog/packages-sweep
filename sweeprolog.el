@@ -4514,17 +4514,20 @@ accordingly."
     (list (xref-make (concat path ":" (number-to-string line)) (xref-make-file-location path line 0)))))
 
 (cl-defmethod xref-backend-references ((_backend (eql sweeprolog)) mfn)
-  (let ((refs (sweeprolog-predicate-references mfn)))
-    (seq-map (lambda (loc)
-               (let* ((by   (nth 0 loc))
-                      (file (nth 1 loc))
-                      (beg  (nth 2 loc))
-                      (buf (find-file-noselect file t)))
-                 (xref-make (format "Call from %s at line %s" by
-                                    (with-current-buffer buf
-                                      (line-number-at-pos beg t)))
-                            (xref-make-buffer-location buf beg))))
-             refs)))
+  (let ((xref-items nil)
+        (refs (sweeprolog-predicate-references mfn)))
+    (dolist-with-progress-reporter (loc refs)
+        "Formatting cross references... "
+      (push (let* ((by   (nth 0 loc))
+                   (file (nth 1 loc))
+                   (beg  (nth 2 loc))
+                   (buf (find-file-noselect file t)))
+              (xref-make (format "Call from %s at line %s" by
+                                 (with-current-buffer buf
+                                   (line-number-at-pos beg t)))
+                         (xref-make-buffer-location buf beg)))
+            xref-items))
+    (reverse xref-items)))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql sweeprolog)) pattern)
   (let ((matches (sweeprolog-predicate-apropos pattern)))
