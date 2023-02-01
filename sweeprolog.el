@@ -4516,10 +4516,14 @@ accordingly."
 (cl-defmethod xref-backend-references ((_backend (eql sweeprolog)) mfn)
   (let ((refs (sweeprolog-predicate-references mfn)))
     (seq-map (lambda (loc)
-               (let ((by (car loc))
-                     (path (cadr loc))
-                     (line (or (cddr loc) 1)))
-                 (xref-make by (xref-make-file-location path line 0))))
+               (let* ((by   (nth 0 loc))
+                      (file (nth 1 loc))
+                      (beg  (nth 2 loc))
+                      (buf (find-file-noselect file t)))
+                 (xref-make (format "Call from %s at line %s" by
+                                    (with-current-buffer buf
+                                      (line-number-at-pos beg t)))
+                            (xref-make-buffer-location buf beg))))
              refs)))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql sweeprolog)) pattern)

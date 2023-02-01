@@ -302,6 +302,28 @@ foo(Foo) :- bar.
     (should (string= (buffer-string)
                      "foo(Baz,Bar) :- spam(Bar,Baz)."))))
 
+(ert-deftest find-references ()
+  "Tests `sweeprolog-predicate-references'."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              ":- module(test_sweep_find_references, [caller/0]).
+
+caller :- callee, baz, callee.
+caller :- baz, callee, baz.
+
+callee.
+
+baz.
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (should (equal (sweeprolog-predicate-references "test_sweep_find_references:callee/0")
+                   (list (list "caller/0" temp 63 6)
+                         (list "caller/0" temp 76 6)
+                         (list "caller/0" temp 99 6))))))
+
 (ert-deftest forward-many-holes ()
   "Tests jumping over holes with `sweeprolog-forward-hole'."
   (let ((temp (make-temp-file "sweeprolog-test"

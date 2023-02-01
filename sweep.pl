@@ -316,20 +316,39 @@ sweep_module_description([M0|P], [M|[P]]) :- atom_string(M0, M).
 sweep_predicate_references(MFN, Refs) :-
     term_string(M:F/N, MFN),
     pi_head(F/N, H),
-    findall([B,Path|Line],
+    findall([B, Path, From, Len],
             (xref_called(Path0, H, B0, _, Line),
              pi_head(B1, B0),
              term_string(B1, B),
-             atom_string(Path0, Path)),
+             atom_string(Path0, Path),
+             reference_span(Path0, Line, H, From, Len)),
             Refs,
             Tail),
-    findall([B,Path|Line],
+    findall([B, Path, From, Len],
             (xref_called(Path0, M:H, B0, _, Line),
              pi_head(B1, B0),
              term_string(B1, B),
-             atom_string(Path0, Path)),
+             atom_string(Path0, Path),
+             reference_span(Path0, Line, H, From, Len)),
             Tail).
 
+:- dynamic current_reference_span/2.
+
+reference_span(Path, Line, Head, From, Len) :-
+    retractall(current_reference_span(_, _)),
+    setup_call_cleanup(prolog_open_source(Path, Stream),
+                       (   prolog_source:seek_to_line(Stream, Line),
+                           prolog_colourise_term(Stream, Path, reference_span_(Head), [])
+                       ),
+                       prolog_close_source(Stream)),
+    !,
+    current_reference_span(From, Len).
+
+reference_span_(Head, goal_term(_, Goal), Beg0, Len) :-
+    \+ \+ Head = Goal,
+    Beg is Beg0 + 1,
+    assertz(current_reference_span(Beg, Len)).
+reference_span_(_, _, _, _) :- true.
 
 sweep_predicate_location(MFN, [Path|Line]) :-
     term_string(M:F/N, MFN),
