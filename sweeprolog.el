@@ -3439,10 +3439,11 @@ of them signal success by returning non-nil."
   (sweeprolog-analyze-buffer t)
   (remove-hook 'sweeprolog-analyze-region-fragment-hook cb t))
 
-(defun sweeprolog-analyze-term-at-point (cb)
-  (let ((sweeprolog--analyze-point (point)))
+(defun sweeprolog-analyze-term-at-point (cb &optional point)
+  (setq point (or point (point)))
+  (let ((sweeprolog--analyze-point point))
     (add-hook 'sweeprolog-analyze-region-fragment-hook cb nil t)
-    (sweeprolog-analyze-term (point))
+    (sweeprolog-analyze-term point)
     (remove-hook 'sweeprolog-analyze-region-fragment-hook cb t)))
 
 (defun sweeprolog-definition-at-point (&optional point)
@@ -5335,7 +5336,8 @@ GOAL."
   (interactive)
   (sweeprolog-rename-variable sweeprolog-context-menu-variable-at-click
                               nil
-                              sweeprolog-context-menu-point-at-click))
+                              sweeprolog-context-menu-point-at-click
+                              t))
 
 (defun sweeprolog-context-menu-for-predicate (menu tok _beg _end _point)
   "Extend MENU with predicate-related commands if TOK describes one."
@@ -5529,8 +5531,8 @@ Deletes PROC if STRING contains an end of output marker string."
 
 ;;;; Refactoring
 
-(defun sweeprolog--variables-at-point ()
-  "Return information about variables in the Prolog term at point.
+(defun sweeprolog--variables-at-point (point)
+  "Return information about variables in the Prolog term at POINT.
 
 Returns a cons cell (VAR-OCCURRENCES . VAR-AT-POINT).
 VAR-OCCURRENCES is an alist of elements (VAR . OCCURRENCES) where
@@ -5538,8 +5540,7 @@ VAR is a variable name and OCCURRENCES is itself an alist of
 elements (BEG . END) describing the beginning and end of
 occurrences of this variable in buffer positions.  VAR-AT-POINT
 is the name of the variable at point, if any."
-  (let ((point (point))
-        (vars nil)
+  (let ((vars nil)
         (var-at-point nil))
     (sweeprolog-analyze-term-at-point
      (lambda (beg end arg)
@@ -5551,7 +5552,8 @@ is the name of the variable at point, if any."
             (push (cons beg end)
                   (alist-get var vars nil nil #'string=))
             (when (<= beg point end)
-              (setq var-at-point var)))))))
+              (setq var-at-point var))))))
+     point)
     (cons vars var-at-point)))
 
 (defun sweeprolog--format-variable (var)
@@ -5568,57 +5570,56 @@ print a message with the number of replaced occurrences of OLD.
 Interactively, OLD, NEW and POINT are nil, and INTERACTIVE is t."
   (interactive (list nil nil nil t) sweeprolog-mode)
   (setq point (or point (point)))
-  (save-excursion
-    (goto-char point)
-    (let* ((term-var-occurrences (sweeprolog--variables-at-point))
-           (var-occurrences (car term-var-occurrences))
-           (var-at-point (cdr term-var-occurrences)))
-      (unless var-occurrences
-        (user-error "No variables to rename here!"))
-      (let* ((max-var-len (apply #'max
-                                 (mapcar #'length
-                                         (mapcar #'car
-                                                 var-occurrences))))
-             (completion-extra-properties
-              (list :annotation-function
-                    (lambda (key)
-                      (let ((n (length (alist-get key var-occurrences nil nil #'string=))))
-                        (concat (make-string (- max-var-len (length key)) ? )
-                                (format " %d %s" n
-                                        (ngettext "occurrence"
-                                                  "occurrences"
-                                                  n)))))))
-             (old-name
-              (or old
-                  (completing-read
-                   (concat
-                    "Rename variable"
-                    (when-let ((def var-at-point))
-                      (concat " (default " (sweeprolog--format-variable def) ")"))
-                    ": ")
-                   var-occurrences nil t nil nil var-at-point)))
-             (new-name
-              (or new
-                  (read-string
-                   (concat
-                    "Rename " (sweeprolog--format-variable old-name) " to: ")
-                   nil nil old-name)))
-             (old-occurrences
-              (alist-get old-name var-occurrences nil nil #'string=))
-             (num (length old-occurrences)))
+  (let* ((term-var-occurrences (sweeprolog--variables-at-point point))
+         (var-occurrences (car term-var-occurrences))
+         (var-at-point (cdr term-var-occurrences)))
+    (unless var-occurrences
+      (user-error "No variables to rename here!"))
+    (let* ((max-var-len (apply #'max
+                               (mapcar #'length
+                                       (mapcar #'car
+                                               var-occurrences))))
+           (completion-extra-properties
+            (list :annotation-function
+                  (lambda (key)
+                    (let ((n (length (alist-get key var-occurrences nil nil #'string=))))
+                      (concat (make-string (- max-var-len (length key)) ? )
+                              (format " %d %s" n
+                                      (ngettext "occurrence"
+                                                "occurrences"
+                                                n)))))))
+           (old-name
+            (or old
+                (completing-read
+                 (concat
+                  "Rename variable"
+                  (when-let ((def var-at-point))
+                    (concat " (default " (sweeprolog--format-variable def) ")"))
+                  ": ")
+                 var-occurrences nil t nil nil var-at-point)))
+           (new-name
+            (or new
+                (read-string
+                 (concat
+                  "Rename " (sweeprolog--format-variable old-name) " to: ")
+                 nil nil old-name)))
+           (old-occurrences
+            (alist-get old-name var-occurrences nil nil #'string=))
+           (num (length old-occurrences)))
+      (save-excursion
         (combine-after-change-calls
           (dolist (old-occurrence old-occurrences)
             (let ((occurrence-beg (car old-occurrence))
                   (occurrence-end (cdr old-occurrence)))
               (delete-region occurrence-beg occurrence-end)
               (goto-char occurrence-beg)
-              (insert new-name))))
-        (when interactive
-          (message "Replaced %d %s of %s to %s."
-                   num
-                   (ngettext "occurrence" "occurrences" num)
-                   (sweeprolog--format-variable old-name)
-                   (sweeprolog--format-variable new-name)))))))
+              (insert new-name)))))
+      (when interactive
+        (message "Replaced %d %s of %s to %s."
+                 num
+                 (ngettext "occurrence" "occurrences" num)
+                 (sweeprolog--format-variable old-name)
+                 (sweeprolog--format-variable new-name))))))
 
 
 ;;;; Footer
