@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.15.0 on 2023-02-01
+
+** New command ~sweeprolog-rename-variable~
+
+This command, bound to ~C-c C-r~ in ~sweeprolog-mode~ buffers,
+interactively renames a variable in the current clause.  You can now
+also rename variables by right-clicking on them and selecting ~Rename
+Variable~ with Context Menu mode enabled.
+
+** Jumping to predicate references now goes to the exact call position
+
+The cross reference information that Sweep provides is enhanced to
+include exact buffer positions for predicate references.  In prior
+versions, jumping to predicate references with ~M-?~
+(~xref-find-references~) would go to the beginning of the clause which
+invokes the given predicate, now it goes to the exact location of the
+invocation.
+
 * Version 0.14.1 on 2023-01-28
 
 ** New command ~sweeprolog-count-holes~
