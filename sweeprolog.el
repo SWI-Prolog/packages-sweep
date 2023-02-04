@@ -387,6 +387,14 @@ token via its `help-echo' text property."
   :type 'boolean
   :group 'sweeprolog)
 
+(defcustom sweeprolog-rename-variable-allow-existing 'confirm
+  "If non-nil, allow renaming variables to existing variable names.
+If it is the symbol `confirm', allow but ask for confirmation
+first."
+  :package-version '((sweeprolog "0.15.1"))
+  :type 'symbol
+  :group 'sweeprolog)
+
 ;;;; Keymaps
 
 (defvar sweeprolog-mode-map
@@ -5559,15 +5567,95 @@ is the name of the variable at point, if any."
 (defun sweeprolog--format-variable (var)
   (propertize var 'face (sweeprolog-variable-face)))
 
-(defun sweeprolog-rename-variable (&optional old new point interactive)
+(defvar sweeprolog-read-new-variable--existing-vars nil)
+(defvar-local sweeprolog-read-new-variable--warned nil)
+
+(defun sweeprolog--variable-name-p (string)
+  "Return t if STRING is valid Prolog variable name."
+  (save-match-data
+    (let ((case-fold-search nil))
+      (not
+       (not
+        (string-match (rx bos (or "_" upper) (* alnum) eos) string))))))
+
+(defun sweeprolog-read-new-variable-try ()
+  "Try to exit the minibuffer with a new Prolog variable name.
+
+If the minibuffer contains a variable that already occurs in the
+current clause, warn and ask for confirmation before exiting.  If
+the minibuffer does not contain a valid variable name, report it
+and refuse to exit."
+  (interactive)
+  (unless (> (minibuffer-depth) 0)
+    (error "Minibuffer must be active"))
+  (let ((choice (minibuffer-contents)))
+    (if (sweeprolog--variable-name-p choice)
+        (if (member choice sweeprolog-read-new-variable--existing-vars)
+            (pcase sweeprolog-rename-variable-allow-existing
+              ('confirm (if (string= sweeprolog-read-new-variable--warned choice)
+                            (exit-minibuffer)
+                          (minibuffer-message
+                           (substitute-command-keys
+                            "%s already exists, type \\[sweeprolog-read-new-variable-try] again to confirm")
+                           (sweeprolog--format-variable choice))
+                          (setq sweeprolog-read-new-variable--warned choice)))
+              ('nil (minibuffer-message "%s already exists" (sweeprolog--format-variable choice)))
+              (_ (exit-minibuffer)))
+          (exit-minibuffer))
+      (minibuffer-message "Invalid Prolog variable name"))))
+
+(put 'sweeprolog-read-new-variable-try :advertised-binding [?\C-m])
+
+(defvar sweeprolog-read-new-variable-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map minibuffer-local-map)
+    (define-key map (kbd "C-m") #'sweeprolog-read-new-variable-try)
+    (define-key map (kbd "C-j") #'sweeprolog-read-new-variable-try)
+    map)
+  "Keymap used by `sweeprolog-read-new-variable'.")
+
+(defun sweeprolog-read-new-variable (prompt existing-vars)
+  "Prompt with PROMPT for a new Prolog variable.
+EXISTING-VARS is a list of existing variable names (strings)."
+  (let ((sweeprolog-read-new-variable--existing-vars existing-vars))
+    (read-from-minibuffer prompt nil sweeprolog-read-new-variable-map)))
+
+(defun sweeprolog-read-existing-variable (occurrences &optional default)
+  (let* ((max-var-len (apply #'max
+                             (mapcar #'length
+                                     (mapcar #'car
+                                             occurrences))))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (key)
+                  (let ((n (length (alist-get key
+                                              occurrences
+                                              nil nil
+                                              #'string=))))
+                    (concat (make-string (- max-var-len
+                                            (length key))
+                                         ? )
+                            (format " %d %s" n
+                                    (ngettext "occurrence"
+                                              "occurrences"
+                                              n))))))))
+    (completing-read
+     (concat
+      "Rename variable"
+      (when default
+        (concat " (default " (sweeprolog--format-variable default) ")"))
+      ": ")
+     occurrences nil t nil nil default)))
+
+(defun sweeprolog-rename-variable (&optional old new point verbose)
   "Rename the variable OLD to NEW in the Prolog term at POINT.
 
 If OLD is nil, prompt for it in the minibuffer with completion.
 If NEW is nil, prompt for it as well.  If POINT is nil, it
-defaults to the current point.  If INTERACTIVE is non-nil, also
-print a message with the number of replaced occurrences of OLD.
+defaults to the current point.  If VERBOSE is non-nil, also print
+a message with the number of replaced occurrences of OLD.
 
-Interactively, OLD, NEW and POINT are nil, and INTERACTIVE is t."
+Interactively, OLD, NEW and POINT are nil, and VERBOSE is t."
   (interactive (list nil nil nil t) sweeprolog-mode)
   (setq point (or point (point)))
   (let* ((term-var-occurrences (sweeprolog--variables-at-point point))
@@ -5575,34 +5663,19 @@ Interactively, OLD, NEW and POINT are nil, and INTERACTIVE is t."
          (var-at-point (cdr term-var-occurrences)))
     (unless var-occurrences
       (user-error "No variables to rename here!"))
-    (let* ((max-var-len (apply #'max
-                               (mapcar #'length
-                                       (mapcar #'car
-                                               var-occurrences))))
-           (completion-extra-properties
-            (list :annotation-function
-                  (lambda (key)
-                    (let ((n (length (alist-get key var-occurrences nil nil #'string=))))
-                      (concat (make-string (- max-var-len (length key)) ? )
-                              (format " %d %s" n
-                                      (ngettext "occurrence"
-                                                "occurrences"
-                                                n)))))))
-           (old-name
+    (let* ((old-name
             (or old
-                (completing-read
-                 (concat
-                  "Rename variable"
-                  (when-let ((def var-at-point))
-                    (concat " (default " (sweeprolog--format-variable def) ")"))
-                  ": ")
-                 var-occurrences nil t nil nil var-at-point)))
+                (sweeprolog-read-existing-variable var-occurrences
+                                                   var-at-point)))
+           (old-formatted (sweeprolog--format-variable old-name))
+           (existing-vars (mapcar #'car var-occurrences))
            (new-name
             (or new
-                (read-string
-                 (concat
-                  "Rename " (sweeprolog--format-variable old-name) " to: ")
-                 nil nil old-name)))
+                (sweeprolog-read-new-variable
+                 (concat "Rename "
+                         old-formatted
+                         " to: ")
+                 existing-vars)))
            (old-occurrences
             (alist-get old-name var-occurrences nil nil #'string=))
            (num (length old-occurrences)))
@@ -5614,11 +5687,13 @@ Interactively, OLD, NEW and POINT are nil, and INTERACTIVE is t."
               (delete-region occurrence-beg occurrence-end)
               (goto-char occurrence-beg)
               (insert new-name)))))
-      (when interactive
-        (message "Replaced %d %s of %s to %s."
+      (when verbose
+        (message (if (member new-name existing-vars)
+                     "Merged %d %s of %s to %s."
+                   "Replaced %d %s of %s to %s.")
                  num
                  (ngettext "occurrence" "occurrences" num)
-                 (sweeprolog--format-variable old-name)
+                 old-formatted
                  (sweeprolog--format-variable new-name))))))
 
 

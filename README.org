@@ -1650,7 +1650,7 @@ to provide contextual menus that you interact with using the mouse.
 
 - Command: context-menu-mode :: Toggle Context Menu mode.  When
   enabled, clicking the mouse button ~down-mouse-3~ (i.e. right-click)
-  activates a menu whose contents depends on its surrounding context.
+  activates a menu whose contents depend on its surrounding context.
 - Variable: sweeprolog-context-menu-functions :: List of functions
   that create Context Menu entries for Prolog tokens.  Each function
   should receive as its arguments the menu that is being created, the
@@ -1669,7 +1669,9 @@ If you right-click on a Prolog file specification or module name,
 Sweep suggests visiting it either in the current window or in another.
 If you right-click on a predicate, it lets you view its documentation
 in a dedicated buffer (see also [[#prolog-help][Prolog Help]]).  For variables, it
-suggests to renaming (see .
+enables the ~Rename Variable~ menu entry that you can use to rename the
+variable you click on across its containing clause (see [[#rename-variable][Renaming
+Variables]]).
 
 You can further extend and customize the context menu that
 ~sweeprolog-mode~ provides by adding functions to the variable
@@ -1690,12 +1692,27 @@ following command:
 
 - Key: C-c C-r (sweeprolog-rename-variable) :: Rename a variable
   across the topmost Prolog term at point.
+- User Option: sweeprolog-rename-variable-allow-existing :: If
+  non-nil, allow selecting an existing variable name as the new name
+  of a variable being renamed with ~sweeprolog-rename-variable~.  If it
+  is the symbol ~confirm~, allow but ask for confirmation first.
+  Defaults to ~confirm~.
 
 The command ~sweeprolog-rename-variable~, bound to ~C-c C-r~, prompts for
 two variable names and replaces all occurrences of the first variable
 in the term at point with the second.  The prompt for the first (old)
 variable name provides completion based on the existing variable names
 in the current term, and it uses the variable at point as its default.
+
+The user option ~sweeprolog-rename-variable-allow-existing~ controls
+what happens if the second (new) variable name that you insert in the
+minibuffer already occurs in the current clause.  By default it is set
+to ~confirm~, which says to ask for confirmation before selecting an
+existing variable name as the new name.  This is because renaming a
+variable to another existing variable name potentially alters the
+semantics of the term by merging the two variables.  Other
+alternatives for this user option are ~t~ for allowing such merges
+without confirmation, and ~nil~ for refusing them altogether.
 
 If Context Menu mode is enabled, you can also rename variables by
 right-clicking on them with the mouse and selecting =Rename Variable=
