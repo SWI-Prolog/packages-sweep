@@ -392,7 +392,9 @@ token via its `help-echo' text property."
 If it is the symbol `confirm', allow but ask for confirmation
 first."
   :package-version '((sweeprolog "0.15.1"))
-  :type 'symbol
+  :type '(choice (const :tag "Allow"   t)
+                 (const :tag "Confirm" confirm)
+                 (const :tag "Refuse"  nil))
   :group 'sweeprolog)
 
 ;;;; Keymaps
