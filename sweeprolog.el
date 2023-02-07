@@ -2481,6 +2481,10 @@ resulting list even when found in the current clause."
          `("comment" . ,_))
      (with-silent-modifications
        (remove-list-of-text-properties beg end '(sweeprolog-fullstop))))
+    (`("syntax_error" ,_ ,eb ,ee)
+     (with-silent-modifications
+       (remove-list-of-text-properties (min beg eb) (max end ee)
+                                       '(sweeprolog-fullstop))))
     ("fullstop"
      (with-silent-modifications
        (add-text-properties beg end
