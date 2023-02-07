@@ -421,6 +421,8 @@ first."
                     #'sweeprolog-show-diagnostics
                   #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-c C-&") #'sweeprolog-async-goal)
+    (define-key map (kbd "C-c C--") #'sweeprolog-decrement-numbered-variables)
+    (define-key map (kbd "C-c C-+") #'sweeprolog-increment-numbered-variables)
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
     (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
     (define-key map (kbd "M-p")     #'sweeprolog-backward-predicate)
@@ -5349,6 +5351,22 @@ GOAL."
                               sweeprolog-context-menu-point-at-click
                               t))
 
+(defun sweeprolog-context-menu-increment-numbered-variables ()
+  "Increment numbered variables starting with the variable at click."
+  (interactive)
+  (sweeprolog-increment-numbered-variables
+   1
+   sweeprolog-context-menu-point-at-click
+   sweeprolog-context-menu-variable-at-click))
+
+(defun sweeprolog-context-menu-decrement-numbered-variables ()
+  "Decrement numbered variables starting with the variable at click."
+  (interactive)
+  (sweeprolog-decrement-numbered-variables
+   1
+   sweeprolog-context-menu-point-at-click
+   sweeprolog-context-menu-variable-at-click))
+
 (defun sweeprolog-context-menu-for-predicate (menu tok _beg _end _point)
   "Extend MENU with predicate-related commands if TOK describes one."
   (pcase tok
@@ -5413,12 +5431,29 @@ POINT is the buffer position of the mouse click."
      (setq sweeprolog-context-menu-point-at-click point
            sweeprolog-context-menu-variable-at-click
            (buffer-substring-no-properties beg end))
+     (when-let ((var-num
+                 (sweeprolog--decode-numbered-variable-name
+                  sweeprolog-context-menu-variable-at-click)))
+       (define-key menu [sweeprolog-decrement-numbered-variables]
+                   `(menu-item "Decrement Variable Numbers"
+                               sweeprolog-context-menu-decrement-numbered-variables
+                               :help ,(concat "Decrement variable numbers starting from "
+                                              (sweeprolog--format-variable
+                                               sweeprolog-context-menu-variable-at-click))
+                               :keys "\\[sweeprolog-decrement-numbered-variables]"))
+       (define-key menu [sweeprolog-increment-numbered-variables]
+                   `(menu-item "Increment Variable Numbers"
+                               sweeprolog-context-menu-increment-numbered-variables
+                               :help ,(concat "Increment variable numbers starting from "
+                                              (sweeprolog--format-variable
+                                               sweeprolog-context-menu-variable-at-click))
+                               :keys "\\[sweeprolog-increment-numbered-variables]")))
      (define-key menu [sweeprolog-rename-variable]
                  `(menu-item "Rename Variable"
                              sweeprolog-context-menu-rename-variable
                              :help ,(concat "Rename variable "
-                                            (propertize sweeprolog-context-menu-variable-at-click
-                                                        'face (sweeprolog-variable-face)))
+                                            (sweeprolog--format-variable
+                                             sweeprolog-context-menu-variable-at-click))
                              :keys "\\[sweeprolog-rename-variable]")))))
 
 (defvar sweeprolog-context-menu-functions
@@ -5580,6 +5615,17 @@ is the name of the variable at point, if any."
        (not
         (string-match (rx bos (or "_" upper) (* alnum) eos) string))))))
 
+(defun sweeprolog--decode-numbered-variable-name (string)
+  "Return t if STRING is valid number variable name."
+  (save-match-data
+    (let ((case-fold-search nil))
+      (when (string-match (rx bos (group-n 1 (or "_" upper) (or (seq (* alnum) letter)
+                                                                ""))
+                              (group-n 2 (or "0" (seq (any (?1 . ?9)) (* digit)))) eos)
+                          string)
+        (cons (match-string 1 string)
+              (string-to-number (match-string 2 string)))))))
+
 (defun sweeprolog-read-new-variable-try ()
   "Try to exit the minibuffer with a new Prolog variable name.
 
@@ -5622,7 +5668,7 @@ EXISTING-VARS is a list of existing variable names (strings)."
   (let ((sweeprolog-read-new-variable--existing-vars existing-vars))
     (read-from-minibuffer prompt nil sweeprolog-read-new-variable-map)))
 
-(defun sweeprolog-read-existing-variable (occurrences &optional default)
+(defun sweeprolog-read-existing-variable (occurrences &optional default prompt)
   (let* ((max-var-len (apply #'max
                              (mapcar #'length
                                      (mapcar #'car
@@ -5643,7 +5689,7 @@ EXISTING-VARS is a list of existing variable names (strings)."
                                               n))))))))
     (completing-read
      (concat
-      "Rename variable"
+      (or prompt "Rename variable")
       (when default
         (concat " (default " (sweeprolog--format-variable default) ")"))
       ": ")
@@ -5664,7 +5710,7 @@ Interactively, OLD, NEW and POINT are nil, and VERBOSE is t."
          (var-occurrences (car term-var-occurrences))
          (var-at-point (cdr term-var-occurrences)))
     (unless var-occurrences
-      (user-error "No variables to rename here!"))
+      (user-error "Term does not contain variables!"))
     (let* ((old-name
             (or old
                 (sweeprolog-read-existing-variable var-occurrences
@@ -5697,6 +5743,158 @@ Interactively, OLD, NEW and POINT are nil, and VERBOSE is t."
                  (ngettext "occurrence" "occurrences" num)
                  old-formatted
                  (sweeprolog--format-variable new-name))))))
+
+(defun sweeprolog--decode-numbered-variable (string)
+  (when (string-match (rx bos
+                          (group-n 1
+                            (or "_" upper)
+                            (* (or "_" alnum))
+                            (or "_" letter))
+                          (group-n 2
+                            (+ digit))
+                          eos)
+                      string)
+    (cons (match-string 1 string)
+          (string-to-number (match-string 2 string)))))
+
+(defvar sweeprolog-increment-numbered-variables-last-result nil)
+
+(defvar sweeprolog-increment-numbered-variables-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "+") #'sweeprolog-increment-numbered-variables-more)
+    (define-key map (kbd "-") #'sweeprolog-decrement-numbered-variables-more)
+    map)
+  "Transient keymap activated after `sweeprolog-increment-numbered-variables'.")
+
+(defun sweeprolog-increment-numbered-variables (increment point &optional from)
+  "Increment numbered variables from at POINT starting with FROM.
+
+FROM is either nil or a numbered varialbe (a string) that occurs
+in clause at POINT.  If it is nil, prompt for a numbered variable
+in the clause at POINT and use that as FROM.
+
+INCREMENT is an integer that is added to the number in each
+occurrence of FROM and any numbered variable that has the same
+base name and a greater number in the clause at POINT.
+
+Interactively, POINT is point, FROM is nil, and INCREMENT is the
+numeric prefix argument (1 without prefix argument)."
+  (interactive (list (prefix-numeric-value current-prefix-arg)
+                     (point) nil)
+               sweeprolog-mode)
+  (let* ((term-var-occurrences (sweeprolog--variables-at-point point))
+         (numbered-vars (seq-filter
+                         (lambda (v)
+                           (sweeprolog--decode-numbered-variable-name
+                            (car v)))
+                         (car term-var-occurrences)))
+         (var-at-point (cdr term-var-occurrences)))
+    (unless numbered-vars
+      (user-error "Term does not contain numbered variables!"))
+    (let* ((old-name
+            (or from
+                (sweeprolog-read-existing-variable
+                 numbered-vars var-at-point
+                 (if (< 0 increment)
+                     "Increment variable"
+                   "Decrement variable"))))
+           (old-decoded (sweeprolog--decode-numbered-variable-name
+                         old-name))
+           (base (car old-decoded))
+           (first (cdr old-decoded))
+           (target (+ increment first)))
+      (when (< increment 0)
+        (let ((old-formatted (sweeprolog--format-variable old-name))
+              (decrement (- increment))
+              (blocker nil))
+          (cond
+           ((< target 0)
+            (user-error "Cannot decrement %s by %d (negative variable number)"
+                        old-formatted decrement))
+           ((setq blocker
+                  (caar (seq-filter (lambda (numbered-var)
+                                      (pcase (sweeprolog--decode-numbered-variable-name
+                                              (car numbered-var))
+                                        (`(,nb . ,nn) (and (string= nb base)
+                                                           (< nn first)
+                                                           (<= target nn)))))
+                                    numbered-vars)))
+            (user-error "Cannot decrement %s by %d (blocked on %s)"
+                        old-formatted decrement blocker)))))
+      (let* ((rest
+              (seq-filter
+               (lambda (v)
+                 (pcase (sweeprolog--decode-numbered-variable-name
+                         (car v))
+                   (`(,b . ,n) (and (string= b base)
+                                    (<= first n)))))
+               numbered-vars))
+             (to-replace
+              (sort
+               (apply #'append
+                      (mapcar
+                       (lambda (v)
+                         (pcase (sweeprolog--decode-numbered-variable-name
+                                 (car v))
+                           (`(,b . ,n)
+                            (let* ((ni (+ n increment))
+                                   (bn (concat b (number-to-string ni))))
+                              (mapcar
+                               (lambda (p)
+                                 (list (car p)
+                                       (cdr p)
+                                       bn))
+                               (cdr v))))))
+                       rest))
+               (lambda (l r)
+                 (> (car l) (car r))))))
+        (save-excursion
+          (combine-after-change-calls
+            (dolist (replace to-replace)
+              (let ((beg (nth 0 replace)))
+                (delete-region beg (nth 1 replace))
+                (goto-char beg)
+                (insert (nth 2 replace))))))
+        (setq sweeprolog-increment-numbered-variables-last-result
+              (concat base (number-to-string target)))
+        (set-transient-map sweeprolog-increment-numbered-variables-map t)
+        (message
+         (substitute-command-keys
+          (concat
+           "Repeat with "
+           "\\<sweeprolog-increment-numbered-variables-map>"
+           "\\[sweeprolog-increment-numbered-variables-more], "
+           "\\[sweeprolog-decrement-numbered-variables-more]")))))))
+
+(defun sweeprolog-decrement-numbered-variables (decrement point &optional old)
+  "Decrement numbered variables from at POINT starting with FROM.
+
+FROM is either nil or a numbered varialbe (a string) that occurs
+in clause at POINT.  If it is nil, prompt for a numbered variable
+in the clause at POINT and use that as FROM.
+
+DECREMENT is an integer that is substracted from the number in
+each occurrence of FROM and any numbered variable that has the
+same base name and a greater number in the clause at POINT.
+
+Interactively, POINT is point, FROM is nil, and DECREMENT is the
+numeric prefix argument (1 without prefix argument)."
+  (interactive (list (prefix-numeric-value current-prefix-arg)
+                     (point) nil)
+               sweeprolog-mode)
+  (sweeprolog-increment-numbered-variables (- decrement) point old))
+
+(defun sweeprolog-increment-numbered-variables-more ()
+  "Increment the last incremented/decremented numbered variable."
+  (interactive)
+  (sweeprolog-increment-numbered-variables
+   1 (point) sweeprolog-increment-numbered-variables-last-result))
+
+(defun sweeprolog-decrement-numbered-variables-more ()
+  "Decrement the last incremented/decremented numbered variable."
+  (interactive)
+  (sweeprolog-decrement-numbered-variables
+   1 (point) sweeprolog-increment-numbered-variables-last-result))
 
 
 ;;;; Footer

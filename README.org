@@ -1719,6 +1719,91 @@ right-clicking on them with the mouse and selecting =Rename Variable=
 from the top of the context menu.  See [[#context-menu][Context Menu]] for more
 information about context menus in Sweep.
 
+** Numbered Variables
+:PROPERTIES:
+:CUSTOM_ID: numbered-variables
+:DESCRIPTION: Commands for managing numbers in names of related variables
+:ALT_TITLE: Numbered Variables
+:END:
+
+A widespread convention in Prolog is using a common prefix with a
+numeric suffix to name related variables, such as ~Foo0~, ~Foo1~, etc..
+Sweep provides convenient commands for managing such /numbered variable/
+sequences consistently:
+
+- Key: C-c C-+ (sweeprolog-increment-numbered-variables) :: Prompt for
+  a numbered variable and increment it and all numbered variables with
+  the same base name and a greater number in the current clause.
+- Key: C-c C-- (sweeprolog-decrement-numbered-variables) :: Prompt for
+  a numbered variable and decrement it and all numbered variables with
+  the same base name and a greater number in the current clause.
+
+Numbering variables is often used to convey the order in which they
+are bound.  For example:
+
+#+begin_src prolog
+  %!  process(+State0, -State) is det.
+
+  process(State0, State) :-
+      foo(State0, State1),
+      bar(State2, State1),
+      baz(State2, State).
+#+end_src
+
+Here ~State0~ and ~State~ are respectively the input and output arguments
+of ~process/2~, and ~State1~ and ~State2~ represent intermediary stages
+between them.
+
+The command ~C-c C-+~ (~sweeprolog-increment-numbered-variables~) prompts
+you for a numbered variable in the current clause, and increments the
+number of that variable along with all other numbered variables with
+the same base name and a greater number.  You can use it to "make
+room" for another intermediary variable between two sequentially
+numbered variables.  If you call this command with point on a numeric
+variable, it suggests that variable as the default choice.  If you
+call this command with a prefix argument, it increments by the numeric
+value of the prefix argument, otherwise it increments by one.
+
+For instance, typing ~C-c C-+ State1 RET~ with point anywhere in the
+definition of ~process/2~ from the above example results in the
+following code:
+
+#+begin_src prolog
+  process(State0, State) :-
+      foo(State0, State2),
+      bar(State3, State2),
+      baz(State3, State).
+#+end_src
+
+Note how all occurrences of ~State1~ are replaced with ~State2~, while
+occurrences of ~State2~ are replaced with ~State3~.  The overall semantics
+of the clause doesn't change, but we can now replace the call to ~foo/2~
+with two goals and reintroduce ~State1~ as an intermediary result
+between them while keeping our numbering consistent, e.g.:
+
+#+begin_src prolog
+  process(State0, State) :-
+      one(State0, State1), two(State1, State2),
+      bar(State3, State2),
+      baz(State3, State).
+#+end_src
+
+If Context Menu mode is enabled, you can also invoke
+~sweeprolog-increment-numbered-variables~ by right-clicking on a
+numbered variables and selecting =Increment Variable Numbers= from the
+context menu.  See [[#context-menu][Context Menu]].
+
+The command ~C-c C--~ (~sweeprolog-decrement-numbered-variables~) is
+similar to ~C-c C-+~ except it decrements all numbered variables
+starting with a given numbered variable rather than incrementing them.
+You can use this function after you delete a numbered variable,
+leaving you with a gap in the variable numbering sequence, to
+decrement the following numbered variables accordingly.
+
+After invoking either ~C-c C--~ or ~C-c C-+~, you can continue to
+decrement or increment the same set of numbered variables by repeating
+with ~-~ and ~+~.
+
 * Prolog Help
 :PROPERTIES:
 :CUSTOM_ID: prolog-help

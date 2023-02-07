@@ -302,6 +302,29 @@ foo(Foo) :- bar.
     (should (string= (buffer-string)
                      "foo(Baz,Bar) :- spam(Bar,Baz)."))))
 
+(ert-deftest increment-variable ()
+  "Tests renaming varialbes."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              ".pl"
+                              "
+foo(Bar0,Bar) :-
+    spam(Bar0,Bar1),
+    bar(Bar1,Bar2),
+    baz(Bar2, Bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (1+ (point-min)))
+    (sweeprolog-increment-numbered-variables 1 (point) "Bar1")
+    (should (string= (buffer-string)
+                     "
+foo(Bar0,Bar) :-
+    spam(Bar0,Bar2),
+    bar(Bar2,Bar3),
+    baz(Bar3, Bar).
+"))))
+
 (ert-deftest find-references ()
   "Tests `sweeprolog-predicate-references'."
   (let ((temp (make-temp-file "sweeprolog-test"
