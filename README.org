@@ -155,20 +155,24 @@ by Sweep when you first use a command that requires running some
 Prolog code.  This section elaborates about Prolog initialization and
 its customization options in Sweep:
 
+#+FINDEX: sweeprolog-initialize
 - Function: sweeprolog-initialize prog &rest args :: Initialize the
   embedded Prolog runtime.  PROG should be the path to the =swipl=
   executable, and ARGS should be a list of strings denoting command
   line arguments for =swipl=.  They are used to initialize Prolog as if
   it was started from the command line as ~PROG ARGS~.
+#+FINDEX: sweeprolog-handle-command-line-args
 - Function: sweeprolog-handle-command-line-args :: Enable support for
   the Sweep specific ~--swipl-args~ Emacs command line flag.  This flag
   can be used to specify additional Prolog initialization arguments
   for Sweep to use when initializing Prolog on-demand, directly from
   Emacs's command line invocation.
+#+VINDEX: sweeprolog-init-args
 - User Option: sweeprolog-init-args :: List of strings used as
   initialization arguments for Prolog.  Sweep uses these as the ARGS
   argument of ~sweeprolog-initialize~ when it initializes Prolog
   on-demand.
+#+FINDEX: sweeprolog-restart
 - Command: sweeprolog-restart :: Restart the embedded Prolog runtime.
 
 In Sweep, Prolog initialization is done via
@@ -234,6 +238,7 @@ runtime on startup.
 This section describes a set of Elisp functions that let you invoke
 Prolog queries and interact with the embedded Prolog runtime:
 
+#+FINDEX: sweeprolog-open-query
 - Function: sweeprolog-open-query context module functor input reverse  :: Query
   the Prolog predicate MODULE:FUNCTOR/2 in the context of the module
   CONTEXT.  Converts INPUT to a Prolog term and uses it as the first
@@ -243,6 +248,7 @@ Prolog queries and interact with the embedded Prolog runtime:
   that the query wants to return to Elisp.  The output argument can be
   retrieved with ~sweeprolog-next-solution~.  Always returns ~t~ if called
   with valid arguments, otherwise returns ~nil~.
+#+FINDEX: sweeprolog-next-solution
 - Function: sweeprolog-next-solution :: Return the next solution of
   the last Prolog query.  Returns a cons cell ~(DET . OUTPUT)~ if the
   query succeed, where ~DET~ is the symbol ~!~ if no choice points remain
@@ -251,10 +257,12 @@ Prolog queries and interact with the embedded Prolog runtime:
   ~nil~ instead.  If a Prolog exception was thrown, return a cons cell
   ~(exception . EXP)~ where ~EXP~ is the exception term converted to
   Elisp.
+#+FINDEX: sweeprolog-cut-query
 - Function: sweeprolog-cut-query :: Cut the last Prolog query.  This
   releases any resources reserved for it and makes further calls to
   ~sweeprolog-next-solution~ invalid until you open a new query.
-- Function: sweeprolog-cut-query :: Close the last Prolog query.
+#+FINDEX: sweeprolog-close-query
+- Function: sweeprolog-close-query :: Close the last Prolog query.
   Similar to ~sweeprolog-cut-query~ expect that any unifications created
   by the last query are dropped.
 
@@ -403,8 +411,10 @@ function without any arguments.
 Sweep includes a dedicated major mode for reading and editing Prolog
 code, called ~sweeprolog-mode~:
 
+#+FINDEX: sweeprolog-mode
 - Command: sweeprolog-mode :: Enable Sweep major mode for reading and
   editing SWI-Prolog code in the current buffer.
+#+VINDEX: sweeprolog-mode-hook
 - Variable: sweeprolog-mode-hook :: Hook run after entering
   ~sweeprolog-mode~.  For more information about major mode hooks in
   Emacs see [[info:emacs#Hooks][Hooks]] in the Emacs manual.
@@ -434,14 +444,17 @@ determined by a bespoke /indentation engine/.  The indentation engine
 analyses the syntactic context of a given line and determines the
 appropriate indentation to apply based on a set of rules.
 
+#+KINDEX: TAB
 #+KINDEX: C-i
 - Key: TAB (indent-for-tab-command) :: Indent the current line.  If
   the region is active, indent all the lines within it.  Calls the
   mode-dependent function specified by the variable
   ~indent-line-function~ to do the work.
+#+FINDEX: sweeprolog-indent-line
 - Function: sweeprolog-indent-line :: Indent the current line
   according to SWI-Prolog conventions.  This function is used as an
   ~indent-line-function~ in ~sweeprolog-mode~ buffers.
+#+FINDEX: sweeprolog-infer-indent-style
 - Command: sweeprolog-infer-indent-style :: Infer indentation style
   for the current buffer from its contents.
 
@@ -576,13 +589,17 @@ editing and moving around the buffer, a faster, local analysis is
 invoked to updated the semantic highlighting in response to changes in
 the buffer.
 
+#+FINDEX: sweeprolog-analyze-buffer
 - Key: C-c C-c (sweeprolog-analyze-buffer) :: Analyze the current
   buffer and update cross-references.
+#+VINDEX: sweeprolog-analyze-buffer-on-idle
 - User Option: sweeprolog-analyze-buffer-on-idle :: If non-nil,
   analyze ~sweeprolog-mode~ buffers on idle.  Defaults to ~t~.
+#+VINDEX: sweeprolog-analyze-buffer-max-size
 - User Option: sweeprolog-analyze-buffer-max-size :: Maximum number
   characters in a ~sweeprolog-mode~ buffer to analyze on idle.  Larger
   buffers are not analyzed on idle.  Defaults to 100,000 characters.
+#+VINDEX: sweeprolog-analyze-buffer-min-interval
 - User Option: sweeprolog-analyze-buffer-min-interval :: Minimum
   number of idle seconds to wait before analyzing a ~sweeprolog-mode~
   buffer.  Defaults to 1.5.
@@ -629,6 +646,7 @@ Sweep comes with three highlighting styles:
 3. The ~dark~ style mimics the colors used in the SWI-Prolog built-in
    editor in dark mode.
 
+#+VINDEX: sweeprolog-faces-style
 - User Option: sweeprolog-faces-style :: Style of faces to use for
   semantic highlighting in ~sweeprolog-mode~ buffers.  Defaults to ~nil~.
 
@@ -653,10 +671,12 @@ Emacs minor mode ~cursor-sensor-mode~ which allows for running hooks
 when the cursor enters or leaves certain text regions (see also [[info:elisp#Special
 Properties][Special Properties in the Elisp manual]]).
 
+#+FINDEX: sweeprolog-highlight-variable
 - Command: sweeprolog-highlight-variable :: Highlight occurrences of a
   Prolog variable in the clause at point.  With a prefix argument,
   clear variable highlighting in the clause at point instead.
 
+#+VINDEX: sweeprolog-enable-cursor-sensor
 - User Option: sweeprolog-enable-cursor-sensor :: If non-nil, use
   ~cursor-sensor-mode~ to highlight Prolog variables sharing with the
   variable at point in ~sweeprolog-mode~ buffers.  Defaults to ~t~.
@@ -681,6 +701,7 @@ clears all variable highlighting in the current clause instead.
 Quasi-quotations in ~sweeprolog-mode~ buffer are highlighted according
 to the Emacs mode corresponding to the quoted language by default.
 
+#+VINDEX: sweeprolog-qq-mode-alist
 - User Option: sweeprolog-qq-mode-alist :: Alist of (TYPE . MODE)
   pairs, where TYPE is a Prolog quasi-quotation type, and MODE is a
   symbol specifying a major mode to use for highlighting the
@@ -712,6 +733,7 @@ highlighting, Sweep can also tell you explicitly what different tokens
 in Prolog code mean by annotating them with a textual description
 that's displayed when you hover over them with the mouse.
 
+#+VINDEX: sweeprolog-enable-help-echo
 - User Option: sweeprolog-enable-help-echo :: If non-nil, annotate
   Prolog tokens with help text via the ~help-echo~ text
   property. Defaults to ~t~.
@@ -783,10 +805,12 @@ Layout mode]]).
 :ALT_TITLE: Aligning Spaces
 :END:
 
+#+FINDEX: sweeprolog-align-spaces
 - Command: sweeprolog-align-spaces :: Insert or remove spaces around
   point to such that the next Prolog token starts at a column
   distanced from the beginning of the previous token by a multiple of
   four columns.
+#+VINDEX: sweeprolog-enable-cycle-spacing
 - User Option: sweeprolog-enable-cycle-spacing :: If non-nil, add
   ~sweeprolog-align-spaces~ as the first element of
   ~cycle-spacing-actions~ in ~sweeprolog-mode~ buffers.  Defaults to ~t~.
@@ -845,6 +869,7 @@ lines to Emacs's initialization file (see [[info:emacs#Init File][The Emacs Init
 The minor mode ~sweeprolog-electric-layout-mode~ adjusts whitespace
 around point automatically as you type:
 
+#+FINDEX: sweeprolog-electric-layout-mode
 - Command: sweeprolog-electric-layout-mode :: Toggle automatic
   whitespace adjustment according to SWI-Prolog conventions.
 
@@ -960,6 +985,7 @@ holes for the arguments (if any), which you can incrementally fill one
 after the other.
 
 #+KINDEX: C-c C-m
+#+FINDEX: sweeprolog-insert-term-with-holes
 - Key: C-c RET (sweeprolog-insert-term-with-holes) :: Insert a Prolog
   term with a given functor and arity at point, using holes for
   arguments.
@@ -997,16 +1023,20 @@ have a closing fullstop, it adds the fullstop after the inserted term.
 Use these commands to move between holes in the current Prolog buffer:
 
 #+KINDEX: C-c C-i
+#+FINDEX: sweeprolog-forward-hole
 - Key: C-c TAB (sweeprolog-forward-hole) :: Move point to the next
   hole in the buffer and select it as the region.  With numeric prefix
   argument /n/, move forward over /n/ - 1 holes and select the next one.
 #+KINDEX: C-c C-S-i
+#+FINDEX: sweeprolog-backward-hole
 - Key: C-c S-TAB (sweeprolog-backward-hole) :: Move point to the
   previous hole in the buffer and select it as the region.  With
   numeric prefix argument /n/, move backward over /n/ - 1 holes and select
   the next one.
+#+FINDEX: sweeprolog-count-holes
 - Key: C-0 C-c TAB (sweeprolog-count-holes) :: Display the number of
   holes that are present in the buffer.
+#+FINDEX: sweeprolog-forward-hole-on-tab-mode
 - Command: sweeprolog-forward-hole-on-tab-mode :: Toggle moving to the
   next hole in the buffer with ~TAB~ if the current line is already
   properly indented.
@@ -1081,6 +1111,7 @@ and inserting a Prolog term at once.
 Sweep highlights holes in Prolog buffer by default so you can easily
 identify missing terms.
 
+#+VINDEX: sweeprolog-highlight-holes
 - User Option: sweeprolog-highlight-holes :: If non-nil, highlight
   holes in ~sweeprolog-mode~ buffers with a dedicated face.  By default,
   this is set to ~t~.
@@ -1137,10 +1168,13 @@ throughout the current project.
 The following commands act on entire Prolog predicate definitions as a
 single unit:
 
+#+FINDEX: sweeprolog-forward-predicate
 - Key: M-n (sweeprolog-forward-predicate) :: Move forward from point
   to the next predicate definition in the current buffer.
+#+FINDEX: sweeprolog-backward-predicate
 - Key: M-p (sweeprolog-backward-predicate) :: Move backward from point
   to the previous predicate definition.
+#+FINDEX: sweeprolog-mark-predicate
 - Key: M-h (sweeprolog-mark-predicate) :: Select the current predicate
   as the active region, put point at the its beginning, and the mark
   at the end.
@@ -1167,8 +1201,10 @@ specifications/, special Prolog terms that act as path aliases, such
 as ~library(lists)~ which refers to a file ~lists.pl~ in any of the Prolog
 library directories.
 
+#+FINDEX: sweeprolog-find-file-at-point
 - Key: C-c C-o (sweeprolog-find-file-at-point) :: Resolve file
   specification at point and visit the specified file.
+#+FINDEX: sweeprolog-file-at-point
 - Function: sweeprolog-file-at-point &optional point :: Return the
   file name specified by the Prolog file specification at POINT.
 
@@ -1208,6 +1244,7 @@ For more information about file specifications in SWI-Prolog, see
 #+CINDEX: loading
 You can load a buffer of SWI-Prolog code with the following command:
 
+#+FINDEX: sweeprolog-load-buffer
 - Key: C-c C-l (sweeprolog-load-buffer) :: Load the current buffer
   into the embedded SWI-Prolog runtime.
 
@@ -1237,6 +1274,7 @@ Sweep integrates with the Emacs =auto-insert= facility to simplify
 creation of new SWI-Prolog modules.  =auto-insert= allows for populating
 newly created files with templates defined by the relevant major mode.
 
+#+VINDEX: sweeprolog-module-header-comment-skeleton
 - User Option: sweeprolog-module-header-comment-skeleton :: Additional
   content to put in the topmost comment in Prolog module headers.
 
@@ -1300,15 +1338,19 @@ programming languages, which apply also to writing =PlDoc= comments for
 Prolog predicates.  For an overview of the relevant standard Emacs
 commands, see [[info:emacs#Comment Commands][Comment Commands in the Emacs manual]].
 
+#+FINDEX: sweeprolog-document-predicate-at-point
 - Key: C-c C-d (sweeprolog-document-predicate-at-point) :: Insert
   =PlDoc= documentation comment for the predicate at or above point.
+#+VINDEX: sweeprolog-read-predicate-documentation-function
 - User Option: sweeprolog-read-predicate-documentation-function :: Function
   to use for determining the initial contents of documentation
   comments inserted with ~sweeprolog-document-predicate-at-point~.
+#+FINDEX: sweeprolog-read-predicate-documentation-default-function
 - Function: sweeprolog-read-predicate-documentation-default-function functor arity :: Prompt
   and read from the minibuffer the arguments modes, determinism
   specification and initial summary for the documentation of the
   predicate FUNCTOR/ARITY.
+#+FINDEX: sweeprolog-read-predicate-documentation-with-holes
 - Function: sweeprolog-read-predicate-documentation-with-holes functor arity :: Use
   holes for the initial documentation of the predicate FUNCTOR/ARITY.
 
@@ -1363,6 +1405,7 @@ cursor enters a predicate definition or invocation, the signature and
 summary of that predicate are displayed in the echo area at the bottom
 of the frame.
 
+#+VINDEX: sweeprolog-enable-eldoc
 - User Option: sweeprolog-enable-eldoc :: If non-nil, enable ElDoc
   support in ~sweeprolog-mode~ buffers.  Defaults to ~t~.
 
@@ -1385,8 +1428,10 @@ Doc][Programming Language Doc]] in the Emacs manual.
 to the user by integrating with Flymake, a powerful interface for
 on-the-fly diagnostics built into Emacs.
 
+#+VINDEX: sweeprolog-enable-flymake
 - User Option: sweeprolog-enable-flymake :: If non-nil, enable Flymake
   support in ~sweeprolog-mode~ buffers.  Defaults to ~t~.
+#+FINDEX: sweeprolog-show-diagnostics
 - Key: C-c C-` (sweeprolog-show-diagnostics) :: List diagnostics for
   the current buffer or project in a dedicated buffer.
 
@@ -1424,6 +1469,7 @@ dependent modules unless they it is /exported/, by including it in the
 export list of the defining module (i.e. the second argument of the
 ~module/2~ directive).
 
+#+FINDEX: sweeprolog-export-predicate
 - Key: C-c C-e (sweeprolog-export-predicate) :: Add the predicate
   predicate at point to the export list of the current Prolog module.
 
@@ -1489,8 +1535,10 @@ term at or after point according to the context in which
 ~sweeprolog-insert-term-dwim~ is invoked.
 
 #+KINDEX: C-M-m
+#+FINDEX: sweeprolog-insert-term-dwim
 - Key: M-RET (sweeprolog-insert-term-dwim) :: Insert an appropriate
   Prolog term in the current buffer, based on the context at point.
+#+VINDEX: sweeprolog-insert-term-functions
 - Variable: sweeprolog-insert-term-functions :: List of functions for
   ~sweeprolog-insert-term-dwim~ to try for inserting a Prolog term based
   on the current context.
@@ -1504,9 +1552,11 @@ By default, ~sweeprolog-insert-term-dwim~ tries the following insertion
 functions, in order:
 
 #+VINDEX: sweeprolog-new-predicate-location-function
+#+FINDEX: sweeprolog-maybe-insert-next-clause
 - Function: sweeprolog-maybe-insert-next-clause :: If the last token before
   point is a fullstop ending a predicate clause, insert a new clause
   below it.
+#+FINDEX: sweeprolog-maybe-define-predicate
 - Function: sweeprolog-maybe-define-predicate :: If point is over a call to an
   undefined predicate, insert a definition for that predicate.  By
   default, the new predicate definition is inserted right below the
@@ -1532,6 +1582,7 @@ within the directives ~begin_tests/1~ and ~end_tests/1~.  To insert a new
 block of unit tests (also known as a /test-set/) in a Prolog buffer, use
 the command ~M-x sweeprolog-plunit-testset-skeleton~.
 
+#+FINDEX: sweeprolog-plunit-testset-skeleton
 - Command: sweeprolog-plunit-testset-skeleton :: Insert a =PlUnit=
   test-set skeleton at point.
 
@@ -1570,9 +1621,11 @@ implicitly autoloaded predicates in the current ~sweeprolog-mode~ buffer
 and make the dependencies on them explicit, use the command ~M-x
 sweeprolog-update-dependencies~ bound to ~C-c C-u~.
 
+#+FINDEX: sweeprolog-update-dependencies
 - Key: C-c C-u (sweeprolog-update-dependencies) :: Add explicit
   dependencies for implicitly autoloaded predicates in the current
   buffer.
+#+VINDEX: sweeprolog-note-implicit-autoloads
 - User Option: sweeprolog-note-implicit-autoloads :: If non-nil, have
   Flymake complain about implicitly autoloaded predicates in
   ~sweeprolog-mode~ buffers.
@@ -1598,10 +1651,13 @@ diagnosing implicit autoloads, customize the user option
 You can search for Prolog terms matching a given search term with the
 command ~M-x sweeprolog-term-search~.
 
+#+FINDEX: sweeprolog-term-search
 - Key: C-c C-s (sweeprolog-term-search) :: Search for Prolog terms
   matching a given search term in the current buffer.
+#+FINDEX: sweeprolog-term-search-repeat-forward
 - Command: sweeprolog-term-search-repeat-forward :: Repeat the last
   Term Search, searching forward from point.
+#+FINDEX: sweeprolog-term-search-repeat-backward
 - Command: sweeprolog-term-search-repeat-backward :: Repeat the last
   Term Search, searching backward from point.
 
@@ -1651,6 +1707,7 @@ to provide contextual menus that you interact with using the mouse.
 - Command: context-menu-mode :: Toggle Context Menu mode.  When
   enabled, clicking the mouse button ~down-mouse-3~ (i.e. right-click)
   activates a menu whose contents depend on its surrounding context.
+#+VINDEX: sweeprolog-context-menu-functions
 - Variable: sweeprolog-context-menu-functions :: List of functions
   that create Context Menu entries for Prolog tokens.  Each function
   should receive as its arguments the menu that is being created, the
@@ -1690,8 +1747,10 @@ it's displayed.
 You can rename a Prolog variable across the current top-term with the
 following command:
 
+#+FINDEX: sweeprolog-rename-variable
 - Key: C-c C-r (sweeprolog-rename-variable) :: Rename a variable
   across the topmost Prolog term at point.
+#+VINDEX: sweeprolog-rename-variable-allow-existing
 - User Option: sweeprolog-rename-variable-allow-existing :: If
   non-nil, allow selecting an existing variable name as the new name
   of a variable being renamed with ~sweeprolog-rename-variable~.  If it
@@ -1731,9 +1790,11 @@ numeric suffix to name related variables, such as ~Foo0~, ~Foo1~, etc..
 Sweep provides convenient commands for managing such /numbered variable/
 sequences consistently:
 
+#+FINDEX: sweeprolog-increment-numbered-variables
 - Key: C-c C-+ (sweeprolog-increment-numbered-variables) :: Prompt for
   a numbered variable and increment it and all numbered variables with
   the same base name and a greater number in the current clause.
+#+FINDEX: sweeprolog-decrement-numbered-variables
 - Key: C-c C-- (sweeprolog-decrement-numbered-variables) :: Prompt for
   a numbered variable and decrement it and all numbered variables with
   the same base name and a greater number in the current clause.
@@ -1818,8 +1879,10 @@ Emacs ~help~ user interface, akin to Emacs's built-in ~describe-function~
 Emacs ~help~ and its special major mode, ~help-mode~, see [[info:emacs#Help Mode][Help Mode in the
 Emacs manual]].
 
+#+FINDEX: sweeprolog-describe-module
 - Command: sweeprolog-describe-module :: Prompt for a Prolog module
   and display its full documentation in a help buffer.
+#+FINDEX: sweeprolog-describe-predicate
 - Command: sweeprolog-describe-predicate :: Prompt for a Prolog
   predicate and display its full documentation in a help buffer.
 
@@ -2073,6 +2136,7 @@ Sweep provides a facility for executing Prolog goals in separate
 threads and capturing their output in Emacs buffers as it is produced.
 You can use this for running queries without blocking Emacs.
 
+#+FINDEX: sweeprolog-async-goal
 - Key: C-c C-& (sweeprolog-async-goal) :: Execute a Prolog goal
   asynchronously and display its output in a dedicated buffer.
 
