@@ -11,6 +11,31 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.16.0 on 2023-02-11
+
+** New user option ~sweeprolog-rename-variable-allow-existing~
+
+This user option controls what happens when you try to rename a
+variable with ~C-c C-r~ (~sweeprolog-rename-variable~) to the name of
+another existing variable.  By default this is set to ~confirm~, which
+causes ~sweeprolog-rename-variable~ to notify and ask you for
+confirmation is such cases.
+
+** New commands for managing numbered variables
+
+This version include two new commands for managing numbers in Prolog
+variable names, ~sweeprolog-increment-numbered-variables~ and
+~sweeprolog-decrement-numbered-variables~, bound to ~C-c C-+~ and ~C-c C--~
+respectively.  See the new "Numbered Variables" manual section for
+more information.
+
+** Integration with Info lookup commands
+
+You can use the standard ~C-h K~ and ~C-h F~ commands to find the Info
+manual node documenting a given Sweep command.
+
+** Bug fix in end-of-clause detection with ~Dict.key~ terms
+
 * Version 0.15.0 on 2023-02-01
 
 ** New command ~sweeprolog-rename-variable~
