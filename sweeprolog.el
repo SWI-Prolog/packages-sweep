@@ -3233,6 +3233,8 @@ See also `sweeprolog-backward-hole'."
      'repeat-map
      'sweeprolog-forward-hole-repeat-map)
 
+(put 'sweeprolog-insert-term-dwim 'undo-inhibit-region t)
+
 (defun sweeprolog--hole (&optional string)
   (propertize (or string "_")
               'sweeprolog-hole t
