@@ -142,6 +142,51 @@ start Emacs with =libswipl= loaded upfront via =LD_PRELOAD=, for example:
   LD_PRELOAD=/usr/local/lib/libswipl.so emacs
 #+end_src
 
+* Discovering Sweep
+:PROPERTIES:
+:CUSTOM_ID: discovering-sweep
+:DESCRIPTION: Tips for finding out about Sweep features
+:ALT_TITLE: Discovering Sweep
+:END:
+
+Sweep comes with many useful commands and features for working with
+SWI-Prolog.  This section lists suggested ways for you to get to know
+the provided commands and make the most out of Sweep.
+
+The main documentation resource for Sweep is this very manual.  It
+describes almost every command and customization option that Sweep
+provides.  Since Sweep includes many features, describing all them makes
+this manual longer then you'd probably want to read upfront.  Instead
+it's recommended that you skim this manual to get an idea of the
+available features, and then return to it as a reference during your
+work with Sweep.
+
+To open this manual from within Emacs, type ~C-h i~ (~info~) to open the
+Info reader, followed by ~d m sweep RET~ to go to the top Info directory
+and select the Sweep manual.  Sweep also provides a convenient command
+for opening the manual:
+
+#+FINDEX: sweeprolog-info-manual
+- Command: sweeprolog-info-manual :: Display the Sweep manual in Info.
+
+To open the relevant part of the manual for a specific command that you
+want to learn more about, type ~C-h F~ followed by the name of that
+command.  For example, typing ~C-h F sweeprolog-info-manual RET~ brings up
+this manual section in Info.  If the command you're interested in is
+bound to a key sequence, you can go to its Info node by typing ~C-h K~
+followed by the key sequence that invokes it.
+
+Other than the text in this manual, Sweep commands and user options have
+Elisp documentation strings that describe them individually.  The
+various Emacs Help commands (~C-h k~, ~C-h f~, ~C-h v~, etc.) display these
+documentation strings in a dedicated Help buffer (see [[info:emacs#Help][Help]] in the Emacs
+manual).  From the Help buffer, you can jump to the relevant Info node
+typing ~i~ (~help-goto-info~) to read more about related commands and
+customization options.
+
+You can also view an HTML version of this manual online at
+[[https://eshelyaron.com/sweep.html]].
+
 * Prolog Initialization and Cleanup
 :PROPERTIES:
 :CUSTOM_ID: prolog-init
@@ -424,12 +469,16 @@ instruct Emacs to always open Prolog files in ~sweeprolog-mode~, modify
 the Emacs variable ~auto-mode-alist~ accordingly:
 
 #+begin_src emacs-lisp
-  (add-to-list 'auto-mode-alist '("\\.pl\\'"   . sweeprolog-mode))
-  (add-to-list 'auto-mode-alist '("\\.plt\\'"  . sweeprolog-mode))
+  (add-to-list 'auto-mode-alist '("\\.plt?\\'"  . sweeprolog-mode))
 #+end_src
 
 For more information about how Emacs chooses a major mode to use when
 you visit a file, see [[info:emacs#Choosing Modes][Choosing Modes]] in the Emacs manual.
+
+To list all of the commands available in a ~sweeprolog-mode~ buffer, type
+~C-h m~ (~describe-mode~).  When Menu Bar mode is enabled, you can run many
+of these commands via the Sweep menu.  For more information about Menu
+Bar mode, see [[info:emacs#Menu Bars][Menu Bars]] in the Emacs manual.
 
 ** Indentation
 :PROPERTIES:
