@@ -35,6 +35,7 @@
 (require 'help-mode)
 (require 'find-func)
 (require 'shr)
+(require 'info-look)
 
 
 ;;;; Global variables
@@ -4663,6 +4664,14 @@ accordingly."
   "Display the Sweep manual in Info mode."
   (interactive)
   (info "sweep"))
+
+(info-lookup-maybe-add-help
+ :mode     (cons 'emacs-lisp-mode "sweeprolog")
+ :regexp   (concat "\\bsweeprolog-[^][()`'‘’,\" \t\n]+")
+ :doc-spec '(("(sweep)Function Index" nil "^ -+ .*: " "\\( \\|$\\)")
+             ("(sweep)Variable Index" nil "^ -+ .*: " "\\( \\|$\\)")))
+
+(add-to-list 'Info-file-list-for-emacs (cons "sweeprolog" "sweep"))
 
 ;;;###autoload
 (defun sweeprolog-view-news ()
