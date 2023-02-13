@@ -909,7 +909,7 @@ foo :- Body.
 "))))
 
 (ert-deftest update-dependencies-no-autoload ()
-  "Tests making adding a use_module/1 directive."
+  "Tests adding a use_module/2 directive."
   (let ((temp (make-temp-file "sweeprolog-test"
                               nil
                               "pl"
@@ -929,13 +929,11 @@ bar(X) :- arithmetic_function(X).
     (should (string= (buffer-string)
                               "
 :- module(foo, [bar/1]).
+:- use_module(library(arithmetic), [arithmetic_function/1]).
 
 /** <module> Foo
 
 */
-
-:- use_module(library(arithmetic), [ arithmetic_function/1
-                                   ]).
 
 bar(X) :- arithmetic_function(X).
 "))))
@@ -979,6 +977,120 @@ bar(X) :- permutation(X, [1,2,3]).
 "
                      ))))
 
+(ert-deftest update-dependencies-without-inference ()
+  "Tests setting `sweeprolog-dependency-directive' to `autoload'."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- use_module(library(lists), [ member/2
+                              ]).
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- maplist(X, [1,2,3]).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (let ((sweeprolog-dependency-directive 'autoload))
+     (call-interactively #'sweeprolog-update-dependencies))
+    (should (string= (buffer-string)
+                     "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- use_module(library(lists), [ member/2
+                              ]).
+:- autoload(library(apply), [maplist/2]).
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- maplist(X, [1,2,3]).
+"
+                     ))))
+
+(ert-deftest update-dependencies-without-inference-2 ()
+  "Tests setting `sweeprolog-dependency-directive' to `use-module'."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- maplist(X, [1,2,3]).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (let ((sweeprolog-dependency-directive 'use-module))
+     (call-interactively #'sweeprolog-update-dependencies))
+    (should (string= (buffer-string)
+                     "
+:- module(foo, [bar/1]).
+:- use_module(library(apply), [maplist/2]).
+:- use_module(library(lists), [member/2]).
+
+/** <module> Foo
+
+*/
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- maplist(X, [1,2,3]).
+"
+                     ))))
+
+(ert-deftest update-dependencies-with-use-module ()
+  "Tests updating dependencies in presence of use_module directives."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- use_module(library(lists), [ member/2
+                              ]).
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- maplist(X, [1,2,3]).
+"
+                              )))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (call-interactively #'sweeprolog-update-dependencies)
+    (should (string= (buffer-string)
+                     "
+:- module(foo, [bar/1]).
+
+/** <module> Foo
+
+*/
+
+:- use_module(library(lists), [ member/2
+                              ]).
+:- use_module(library(apply), [maplist/2]).
+
+bar(X) :- member(X, [1,2,3]).
+bar(X) :- maplist(X, [1,2,3]).
+"
+                     ))))
+
 (ert-deftest update-dependencies-autoload-from-package ()
   "Tests making implicit autoloads from a package explicit."
   (let ((temp (make-temp-file "sweeprolog-test"
@@ -1000,13 +1112,11 @@ bar(X) :- http_open(X, X, X).
     (should (string= (buffer-string)
                      "
 :- module(foo, [bar/1]).
+:- autoload(library(http/http_open), [http_open/3]).
 
 /** <module> Foo
 
 */
-
-:- autoload(library(http/http_open), [ http_open/3
-                                     ]).
 
 bar(X) :- http_open(X, X, X).
 "))))
@@ -1032,13 +1142,11 @@ bar(X) :- member(X, [1,2,3]).
     (should (string= (buffer-string)
                      "
 :- module(foo, [bar/1]).
+:- autoload(library(lists), [member/2]).
 
 /** <module> Foo
 
 */
-
-:- autoload(library(lists), [ member/2
-                            ]).
 
 bar(X) :- member(X, [1,2,3]).
 "
@@ -1050,14 +1158,11 @@ bar(X) :- member(X, [1,2,3]).
     (should (string= (buffer-string)
                      "
 :- module(foo, [bar/1]).
+:- autoload(library(lists), [member/2, permutation/2]).
 
 /** <module> Foo
 
 */
-
-:- autoload(library(lists), [ member/2,
-                              permutation/2
-                            ]).
 
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- permutation(X, [1,2,3])."))))

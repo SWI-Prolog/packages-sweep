@@ -398,6 +398,26 @@ first."
                  (const :tag "Refuse"  nil))
   :group 'sweeprolog)
 
+(defcustom sweeprolog-dependency-directive 'infer
+  "Prolog directive to use for adding dependencies.
+This determines whether `sweeprolog-update-dependencies' uses
+`autoload/2' or `use_module/2' directives to make implicit
+dependencies into explicit dependencies.
+
+If set to the symbol `use-module', then
+`sweeprolog-update-dependencies' only uses `use_module/2'
+directives.  If set to the symbol `infer', then
+`sweeprolog-update-dependencies' uses `autoload/2' directives
+unless the buffer already contains dependency directives and all
+of them are `use_module/2' directives.  Any other values means to
+use `autoload/2' for all added directives."
+  :package-version '((sweeprolog "0.16.1"))
+  :type '(choice (const :tag "Prefer use_module/2" use-module)
+                 (const :tag "Prefer autoload/2"  autoload)
+                 (const :tag "Infer" infer))
+  :group 'sweeprolog)
+
+
 ;;;; Keymaps
 
 (defvar sweeprolog-mode-map
@@ -4902,19 +4922,60 @@ accordingly."
 (defun sweeprolog-update-dependencies ()
   "Add explicit dependencies for implicitly autoaloaded predicates."
   (interactive "" sweeprolog-mode)
-  (let ((existing nil)
+  (let ((styles   nil)
+        (existing nil)
         (current-directive-beg nil)
         (current-directive-end nil)
-        (current-directive-file nil))
+        (current-directive-file nil)
+        (last-directive-end nil)
+        (in-directive nil)
+        (seen-non-directive nil)
+        (first-structured-comment nil))
     (sweeprolog-analyze-buffer-with
      (lambda (beg end arg)
        (pcase arg
+         ("directive"
+          (setq in-directive t))
+         (`("goal_term" "built_in" "autoload" 1)
+          (when in-directive
+            (add-to-list 'styles 'autoload)
+            (unless seen-non-directive
+              (setq last-directive-end end))))
          (`("goal_term" "built_in" "autoload" 2)
-          (setq current-directive-beg beg
-                current-directive-end end))
+          (when in-directive
+            (setq current-directive-beg beg
+                  current-directive-end end)
+            (unless seen-non-directive
+              (setq last-directive-end end))
+            (add-to-list 'styles 'autoload)))
+         (`("goal_term" "built_in" "use_module" 1)
+          (when in-directive
+            (add-to-list 'styles 'use-module)
+            (unless seen-non-directive
+              (setq last-directive-end end))))
          (`("goal_term" "built_in" "use_module" 2)
-          (setq current-directive-beg beg
-                current-directive-end end))
+          (when in-directive
+            (setq current-directive-beg beg
+                  current-directive-end end)
+            (unless seen-non-directive
+              (setq last-directive-end end))
+            (add-to-list 'styles 'use-module)))
+         (`("goal_term" "built_in" "module" 2)
+          (when in-directive
+            (unless seen-non-directive
+              (setq last-directive-end end))))
+         (`("goal_term" . ,_)
+          (setq in-directive nil))
+         ((or "term"
+              "clause"
+              "grammar_rule"
+              "method")
+          (setq in-directive nil
+                seen-non-directive beg))
+         (`("comment" . "structured")
+          (unless (or first-structured-comment
+                      (< seen-non-directive beg))
+            (setq first-structured-comment beg)))
          ((or `("file"           . ,file)
               `("file_no_depend" . ,file))
           (when (and current-directive-beg
@@ -4930,6 +4991,14 @@ accordingly."
             (push
              (cons current-directive-file (copy-marker (1- end) t))
              existing))))))
+    (setq last-directive-end
+          (copy-marker (or (and last-directive-end
+                                (save-excursion
+                                  (goto-char last-directive-end)
+                                  (sweeprolog-end-of-top-term)
+                                  (point)))
+                           first-structured-comment
+                           (point-min))))
     (if-let ((missing
               (sweeprolog--query-once "sweep" "sweep_file_missing_dependencies"
                                       (buffer-file-name))))
@@ -4937,59 +5006,72 @@ accordingly."
           (dolist (autoloaded missing)
             (let* ((file    (nth 0 autoloaded))
                    (pred    (nth 1 autoloaded))
-                   (kind    (nth 2 autoloaded)))
+                   (kind    (pcase sweeprolog-dependency-directive
+                              ('use-module "use_module")
+                              ('infer (if (equal styles '(use-module))
+                                          "use_module"
+                                        (nth 2 autoloaded)))
+                              (_ (nth 2 autoloaded)))))
               (if (not pred)
                   (save-mark-and-excursion
-                    (goto-char (point-min))
-                    (sweeprolog-end-of-top-term)
-                    (while (forward-comment 1))
-                    (insert ":- " kind "("
-                            (sweeprolog--query-once "sweep"
-                                                    "sweep_file_path_in_library"
-                                                    file)
-                            ").\n\n")
+                    (goto-char last-directive-end)
+                    (insert-before-markers
+                     ":- " kind "("
+                     (sweeprolog--query-once "sweep"
+                                             "sweep_file_path_in_library"
+                                             file)
+                     ").\n")
                     (indent-region-line-by-line (save-excursion
                                                   (sweeprolog-beginning-of-top-term)
                                                   (point))
                                                 (point)))
-                (message "Adding explicit dependency on %s from %s."
-                         pred file)
                 (if-let ((marker (cdr (assoc-string file existing))))
                     (save-mark-and-excursion
                       (goto-char marker)
-                      (pcase (sweeprolog-last-token-boundaries)
-                        (`(open ,_ ,oend)
-                         (goto-char oend)
-                         (insert " " pred "\n"))
-                        (`(symbol ,_ ,oend)
-                         (let ((point (point)))
+                      (let ((close-line (line-number-at-pos (point)))
+                            (previous-line nil))
+                        (pcase (sweeprolog-last-token-boundaries)
+                          (`(open ,_ ,oend)
                            (goto-char oend)
-                           (insert ",")
-                           (goto-char (1+ point))
-                           (insert pred "\n")))
-                        (tok
-                         (user-error "Unexpected token %s while looking for import list"
-                                     tok)))
-                      (indent-region-line-by-line  (save-excursion
-                                                     (sweeprolog-beginning-of-top-term)
-                                                     (point))
-                                                   (save-excursion
-                                                     (sweeprolog-end-of-top-term)
-                                                     (point))))
+                           (insert pred))
+                          (`(symbol ,_ ,oend)
+                           (let ((import-list-end-marker
+                                  (copy-marker (point))))
+                             (goto-char oend)
+                             (setq previous-line (line-number-at-pos (point)))
+                             (delete-horizontal-space)
+                             (insert-before-markers (if (eolp)
+                                                        ","
+                                                      ", "))
+                             (goto-char import-list-end-marker)
+                             (insert pred)
+                             (unless (= previous-line close-line)
+                               (insert "\n"))
+                             (when (< fill-column (current-column))
+                               (goto-char import-list-end-marker)
+                               (insert "\n"))))
+                          (tok
+                           (user-error "Unexpected token %s while looking for import list"
+                                       tok))))
+                      (indent-region-line-by-line (save-excursion
+                                                    (sweeprolog-beginning-of-top-term)
+                                                    (point))
+                                                  (save-excursion
+                                                    (sweeprolog-end-of-top-term)
+                                                    (point))))
                   (save-mark-and-excursion
-                    (goto-char (point-min))
-                    (sweeprolog-end-of-top-term)
-                    (while (forward-comment 1))
-                    (insert ":- " kind "("
-                            (sweeprolog--query-once "sweep"
-                                                    "sweep_file_path_in_library"
-                                                    file)
-                            ", [ " pred "\n]).\n\n")
+                    (goto-char last-directive-end)
+                    (insert-before-markers
+                     ":- " kind "("
+                     (sweeprolog--query-once "sweep"
+                                             "sweep_file_path_in_library"
+                                             file)
+                     ", [" pred "]).\n")
                     (indent-region-line-by-line (save-excursion
                                                   (sweeprolog-beginning-of-top-term)
                                                   (point))
                                                 (point))
-                    (push (cons file (copy-marker (- (point) 5) t)) existing))))))
+                    (push (cons file (copy-marker (- (point) 4) t)) existing))))))
           (sweeprolog-analyze-buffer t))
       (message "No implicit autoloads found."))))
 

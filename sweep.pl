@@ -192,7 +192,7 @@ sweep_analyze_region_(OneTerm, Offset, Stream, Path, _) :-
 sweep_handle_fragment(Offset, comment(Kind), Beg, Len) :-
     !,
     Start is Beg + Offset,
-    asserta(sweep_current_comment(Kind, Start, Len)).
+    assertz(sweep_current_comment(Kind, Start, Len)).
 sweep_handle_fragment(Offset, Col, Beg, Len) :-
     sweep_handle_fragment_(Offset, Col, Beg, Len).
 

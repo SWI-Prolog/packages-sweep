@@ -1674,13 +1674,33 @@ sweeprolog-update-dependencies~ bound to ~C-c C-u~.
 - Key: C-c C-u (sweeprolog-update-dependencies) :: Add explicit
   dependencies for implicitly autoloaded predicates in the current
   buffer.
+#+VINDEX: sweeprolog-dependency-directive
+- User Option: sweeprolog-dependency-directive :: Determines which
+  Prolog directive to use in ~sweeprolog-update-dependencies~ when
+  adding new directives.  The value of this user option is one of the
+  symbols ~use-module~, ~autoload~ or ~infer~.  If it is ~use-module~,
+  ~sweeprolog-update-dependencies~ adds ~use_module/2~ directives,
+  ~autoload~ means to add ~autoload/2~ directives, and ~infer~ says to infer
+  which directive to use based on the existing dependency directives
+  in the buffer, if any.  Defaults to ~infer~.
 #+VINDEX: sweeprolog-note-implicit-autoloads
 - User Option: sweeprolog-note-implicit-autoloads :: If non-nil, have
   Flymake complain about implicitly autoloaded predicates in
   ~sweeprolog-mode~ buffers.
 
-This command analyzes the current buffer and adds or updates
-~autoload/2~ and ~use_module/2~ as needed.
+The command ~sweeprolog-update-dependencies~, bound to ~C-c C-u~, analyzes
+the current buffer and adds or updates ~autoload/2~ and ~use_module/2~ as
+needed.
+
+When this command adds a new directive, rather than updating an
+existing one, it can use either ~autoload/2~ or ~use_module/2~ to declare
+the new dependency based on the value of the user option
+~sweeprolog-dependency-directive~.  If you set this option is to
+~use-module~, new dependencies use the ~use_module/2~ directive.  If it's
+~autoload~, new dependencies use ~autoload/2~.  If it's ~infer~, as it is by
+default, new dependencies use ~autoload/2~ unless the buffer already
+contains dependency directives and they are all ~use_module/2~
+directives, in which case they also use ~use_module/2~.
 
 By default, when Flymake integration is enabled (see [[#diagnostics][Examining
 diagnostics]]), calls to implicitly autoloaded predicates are marked
