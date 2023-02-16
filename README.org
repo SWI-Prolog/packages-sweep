@@ -1308,6 +1308,11 @@ buffer otherwise.  To choose a different buffer to load while visiting
 a ~sweeprolog-mode~ buffer, invoke ~sweeprolog-load-buffer~ with a prefix
 argument (~C-u C-c C-l~).
 
+The mode line displays the work "Loaded" next to the "Sweep" major
+mode indicator if the current buffer has is loaded and it hasn't been
+modified since.  See [[info:emacs#Mode Line][Mode Line]] in the Emacs manual for more
+information about the mode line.
+
 More relevant information about loading code in SWI-Prolog can be
 found in [[https://www.swi-prolog.org/pldoc/man?section=consulting][Loading Prolog source files]] in the SWI-Prolog manual.
 
@@ -2512,11 +2517,6 @@ some improvements remain to be pursued:
   of the generic ~prog-mode~ to inherit user-set hooks and
   modifications, but careful consideration is required to make sure
   ~sweeprolog-mode~ overrides all conflicting ~prolog-mode~ features.
-
-- Reflect buffer status in the mode line :: It may be useful to
-  indicate in the mode line whether the current ~sweeprolog-mode~ buffer
-  has been loaded into the Prolog runtime and/or if its
-  cross-reference data is up to date.
 
 - Make predicate completion aware of module-qualification :: predicate
   completion should detect when the prefix it's trying to complete

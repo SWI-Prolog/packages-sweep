@@ -2938,6 +2938,22 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
                 (cancel-timer sweeprolog-top-level-timer)))
             nil t))
 
+(defun sweeprolog-buffer-load-time (&optional buffer)
+  (setq buffer (or buffer (current-buffer)))
+  (sweeprolog--query-once "sweep" "sweep_source_file_load_time"
+                          (with-current-buffer buffer
+                           (or (buffer-file-name)
+                               (expand-file-name (buffer-name))))))
+
+(defun sweeprolog-buffer-loaded-since-last-modification-p ()
+  (when-let ((mtime (or sweeprolog--buffer-last-modified-time
+                        (and (buffer-file-name)
+                             (float-time
+                              (file-attribute-modification-time
+                               (file-attributes (buffer-file-name)))))))
+             (ltime (sweeprolog-buffer-load-time)))
+    (<= mtime ltime)))
+
 (defun sweeprolog-load-buffer (buffer)
   "Load the Prolog buffer BUFFER into the embedded SWI-Prolog runtime.
 
@@ -2958,13 +2974,21 @@ buffer to load."
                                    (with-current-buffer n
                                      (eq major-mode 'sweeprolog-mode))))))))
   (with-current-buffer buffer
-    (let* ((beg (point-min))
-           (end (point-max))
-           (contents (buffer-substring-no-properties beg end)))
-      (if (sweeprolog--query-once "sweep" "sweep_load_buffer"
-                                  (cons contents (buffer-file-name)))
-          (message "Loaded %s." (buffer-name))
-        (user-error "Loading %s failed!" (buffer-name))))))
+    (if (sweeprolog-buffer-loaded-since-last-modification-p)
+        (message "Buffer %s already loaded." (buffer-name))
+      (let* ((beg (point-min))
+             (end (point-max))
+             (contents (buffer-substring-no-properties beg end)))
+        (if (sweeprolog--query-once "sweep" "sweep_load_buffer"
+                                    (list contents
+                                          (or sweeprolog--buffer-last-modified-time
+                                              (float-time))
+                                          (or (buffer-file-name)
+                                              (expand-file-name (buffer-name)))))
+            (progn
+              (message "Loaded %s." (buffer-name))
+              (force-mode-line-update))
+          (user-error "Loading %s failed!" (buffer-name)))))))
 
 
 ;;;; Prolog file specifications
@@ -4270,6 +4294,10 @@ certain contexts to maintain conventional Prolog layout."
   (setq-local adaptive-fill-regexp "[ \t]*")
   (setq-local fill-indent-according-to-mode t)
   (setq-local comment-multi-line t)
+  (setq-local mode-line-process
+              '(:eval
+                (when (sweeprolog-buffer-loaded-since-last-modification-p)
+                  "/Loaded")))
   (setq-local font-lock-defaults
               '(nil
                 nil

@@ -78,7 +78,8 @@
             sweep_terms_at_point/2,
             sweep_predicate_dependencies/2,
             sweep_async_goal/2,
-            sweep_interrupt_async_goal/2
+            sweep_interrupt_async_goal/2,
+            sweep_source_file_load_time/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -651,15 +652,19 @@ sweep_op_info_(Op, _Path, [Type|Pred]) :-
     current_op(Pred, Type0, Op),
     atom_string(Type0, Type).
 
-sweep_load_buffer([String|Path0], Result) :-
+sweep_source_file_load_time(Path0, Time) :-
+    atom_string(Path, Path0),
+    source_file_property(Path, modified(Time)).
+
+sweep_load_buffer([String,Modified,Path0], _) :-
     atom_string(Path, Path0),
     with_buffer_stream(Stream,
                        String,
-                       sweep_load_buffer_(Stream, Path, Result)).
+                       sweep_load_buffer_(Stream, Modified, Path)).
 
-sweep_load_buffer_(Stream, Path, true) :-
+sweep_load_buffer_(Stream, Modified, Path) :-
     set_stream(Stream, file_name(Path)),
-    @(load_files(Path, [stream(Stream)]), user).
+    @(load_files(Path, [modified(Modified), stream(Stream)]), user).
 
 with_buffer_stream(Stream, String, Goal) :-
     setup_call_cleanup(( new_memory_file(H),
