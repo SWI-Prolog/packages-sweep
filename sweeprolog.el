@@ -5518,7 +5518,7 @@ GOAL."
                              :keys "\\[sweeprolog-find-file-at-point]")))))
 
 (defun sweeprolog-context-menu-for-variable (menu tok beg end point)
-  "Extend MENU with file-related commands if TOK specifies one.
+  "Extend MENU with variable-related commands if TOK specifies one.
 BEG and END are the variable's beginning and end positions, and
 POINT is the buffer position of the mouse click."
   (pcase tok
