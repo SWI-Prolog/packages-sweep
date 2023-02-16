@@ -79,7 +79,14 @@
             sweep_predicate_dependencies/2,
             sweep_async_goal/2,
             sweep_interrupt_async_goal/2,
-            sweep_source_file_load_time/2
+            sweep_source_file_load_time/2,
+            sweep_set_breakpoint/2,
+            sweep_set_breakpoint_condition/2,
+            sweep_delete_breakpoint/2,
+            sweep_current_breakpoints/2,
+            sweep_current_breakpoints_in_region/2,
+            sweep_breakpoint_range/2,
+            sweep_breakpoint_file/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -1234,3 +1241,55 @@ sweep_start_async_goal(Caller, Cookie, Goal, FD) :-
 
 sweep_interrupt_async_goal(TId, TId) :-
     thread_signal(TId, throw(interrupted)).
+
+sweep_set_breakpoint([File0,Line,Char], Id) :-
+    atom_string(File, File0),
+    set_breakpoint(File, Line, Char, Id).
+
+sweep_set_breakpoint_condition([Id|Cond], _) :-
+    set_breakpoint_condition(Id, Cond).
+
+sweep_delete_breakpoint(Id, _) :-
+    delete_breakpoint(Id).
+
+sweep_current_breakpoints(_, BPs) :-
+    findall(BP-Claue,
+            breakpoint_property(BP, clause(Claue)),
+            BPs0),
+    maplist(format_breakpoint, BPs0, BPs).
+
+format_breakpoint(Id-Clause, [["id"|Id],["predicate"|Pred],["clause"|ClauseNum]|BP]) :-
+    clause_property(Clause, predicate(Pred0)),
+    term_string(Pred0, Pred),
+    pi_head(Pred0, Head),
+    nth_clause(Head, ClauseNum, Clause),
+    findall(Prop, breakpoint_property(Id, Prop), Props),
+    convlist(format_breakpoint_property, Props, BP).
+
+format_breakpoint_property(file(File0), ["file"|File]) :-
+    atom_string(File0, File).
+format_breakpoint_property(line_count(Line), ["line"|Line]).
+format_breakpoint_property(character_range(Start0, Len), ["range",Start,End]) :-
+    Start is Start0 + 1, End is Start + Len.
+format_breakpoint_property(condition(Cond), ["condition"|Cond]).
+
+sweep_current_breakpoints_in_region([Path0, Beg, End], BPs) :-
+    atom_string(Path, Path0),
+    findall([BPBeg|BPEnd],
+            (   breakpoint_property(BPId, file(Path)),
+                breakpoint_property(BPId, character_range(BPBeg0, Len)),
+                BPBeg is BPBeg0 + 1,
+                Beg =< BPBeg,
+                BPBeg =< End,
+                BPEnd is BPBeg + Len
+            ),
+            BPs).
+
+sweep_breakpoint_range(Id, [Beg|End]) :-
+    breakpoint_property(Id, character_range(Beg0, Len)),
+    Beg is Beg0 + 1,
+    End is Beg + Len.
+
+sweep_breakpoint_file(Id, File) :-
+    breakpoint_property(Id, file(File0)),
+    atom_string(File0, File).

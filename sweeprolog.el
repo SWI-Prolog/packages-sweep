@@ -411,17 +411,23 @@ directives.  If set to the symbol `infer', then
 unless the buffer already contains dependency directives and all
 of them are `use_module/2' directives.  Any other values means to
 use `autoload/2' for all added directives."
-  :package-version '((sweeprolog "0.16.1"))
+  :package-version '((sweeprolog "0.17.0"))
   :type '(choice (const :tag "Prefer use_module/2" use-module)
                  (const :tag "Prefer autoload/2"  autoload)
                  (const :tag "Infer" infer))
   :group 'sweeprolog)
 
+(defcustom sweeprolog-highlight-breakpoints t
+  "If non-nil, highlight breakpoints with a dedicated face."
+  :package-version '((sweeprolog "0.17.0"))
+  :type 'boolean
+  :group 'sweeprolog)
 
 ;;;; Keymaps
 
 (defvar sweeprolog-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-b") #'sweeprolog-set-breakpoint)
     (define-key map (kbd "C-c C-c") #'sweeprolog-analyze-buffer)
     (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
     (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
@@ -489,6 +495,7 @@ use `autoload/2' for all added directives."
 ;;;###autoload
 (defvar sweeprolog-prefix-map
   (let ((map (make-sparse-keymap)))
+    (define-key map "B" #'sweeprolog-list-breakpoints)
     (define-key map "F" #'sweeprolog-set-prolog-flag)
     (define-key map "P" #'sweeprolog-pack-install)
     (define-key map "R" #'sweeprolog-restart)
@@ -545,6 +552,12 @@ use `autoload/2' for all added directives."
     "--"
     [ "Set Prolog Flag" sweeprolog-set-prolog-flag t ]
     [ "Install Prolog Package" sweeprolog-pack-install t ]
+    "--"
+    [ "Set Breakpoint" sweeprolog-set-breakpoint
+      (derived-mode-p 'sweeprolog-mode) ]
+    [ "Delete Breakpoint" sweeprolog-delete-breakpoint
+      (sweeprolog-current-breakpoints) ]
+    [ "List Breakpoints" sweeprolog-list-breakpoints t ]
     "--"
     [ "Open Top-level" sweeprolog-top-level t ]
     [ "Signal Top-level"
@@ -2327,7 +2340,12 @@ resulting list even when found in the current clause."
                                               (current-buffer)
                                               nil)
                 (goto-char hend)
-                (setq hole (sweeprolog--next-hole))))))))))
+                (setq hole (sweeprolog--next-hole)))))))))
+  (when (and sweeprolog-highlight-breakpoints
+             (sweeprolog-buffer-loaded-since-last-modification-p))
+    (with-silent-modifications
+      (dolist (bp (sweeprolog-current-breakpoints-in-region beg end))
+        (sweeprolog--highlight-breakpoint (car bp) (cdr bp))))))
 
 (defun sweeprolog--help-echo-for-comment (kind)
   (pcase kind
@@ -5438,6 +5456,9 @@ GOAL."
 (defvar sweeprolog-context-menu-variable-at-click nil
   "Prolog variable at mouse click.")
 
+(defvar sweeprolog-context-menu-breakpoints-at-click nil
+  "Prolog breakpoints at mouse click.")
+
 (defun sweeprolog-context-menu-find-module ()
   "Find Prolog module at mouse click."
   (interactive)
@@ -5491,6 +5512,27 @@ GOAL."
    1
    sweeprolog-context-menu-point-at-click
    sweeprolog-context-menu-variable-at-click))
+
+(defun sweeprolog-breakpoint-context-menu-set ()
+  "Set breakpoint at click."
+  (interactive)
+  (sweeprolog-set-breakpoint sweeprolog-context-menu-point-at-click))
+
+(defun sweeprolog-breakpoint-context-menu-delete ()
+  "Delete breakpoints at click."
+  (interactive)
+  (dolist (id sweeprolog-context-menu-breakpoints-at-click)
+    (sweeprolog-delete-breakpoint id))
+  (let ((n (length sweeprolog-context-menu-breakpoints-at-click)))
+   (message "Deleted %d %s" n
+            (ngettext "breakpoint" "breakpoints" n))))
+
+(defun sweeprolog-breakpoint-context-menu-set-condition ()
+  "Set condition goal for the breakpoint at click."
+  (interactive)
+  (let ((id (car sweeprolog-context-menu-breakpoints-at-click))
+        (cond (sweeprolog-read-breakpoint-condition)))
+    (sweeprolog-set-breakpoint-condition id cond)))
 
 (defun sweeprolog-context-menu-for-predicate (menu tok _beg _end _point)
   "Extend MENU with predicate-related commands if TOK describes one."
@@ -5581,8 +5623,43 @@ POINT is the buffer position of the mouse click."
                                              sweeprolog-context-menu-variable-at-click))
                              :keys "\\[sweeprolog-rename-variable]")))))
 
+(defun sweeprolog-context-menu-for-clause (menu tok _beg _end point)
+  "Extend MENU with clause-related commands if TOK specifies one.
+POINT is the buffer position of the mouse click."
+  (pcase tok
+    ((or "clause"
+         "grammar_rule")
+     (when-let ((file (buffer-file-name))
+                (submenu (make-sparse-keymap (propertize "Breakpoint"))))
+       (if-let ((bps-at-point
+                 (sweeprolog-breakpoints-at-point file point))
+                (ids (mapcar (lambda (bp)
+                               (alist-get "id" bp nil nil #'string=))
+                             bps-at-point)))
+           (progn
+             (setq sweeprolog-context-menu-breakpoints-at-click ids)
+             (define-key-after submenu [sweeprolog-delete-breakpoint]
+               `(menu-item "Delete"
+                           sweeprolog-breakpoint-context-menu-delete
+                           :help "Delete this breakpoint"
+                           :keys "\\[negative-argument] \\[sweeprolog-set-breakpoint]"))
+             (define-key-after submenu [sweeprolog-set-breakpoint-condition]
+               `(menu-item "Set condition"
+                           sweeprolog-breakpoint-context-menu-set-condition
+                           :help "Set condition goal for this breakpoint"
+                           :keys "\\[universal-argument] \\[sweeprolog-set-breakpoint]")))
+         (setq sweeprolog-context-menu-point-at-click point)
+         (define-key-after submenu [sweeprolog-set-breakpoint]
+           `(menu-item "Set"
+                       sweeprolog-breakpoint-context-menu-set
+                       :help "Set breakpoint"
+                       :keys "\\[sweeprolog-set-breakpoint]")))
+       (define-key-after menu [sweeprolog-breakpoint]
+         `(menu-item "Breakpoint" ,submenu))))))
+
 (defvar sweeprolog-context-menu-functions
-  '(sweeprolog-context-menu-for-file
+  '(sweeprolog-context-menu-for-clause
+    sweeprolog-context-menu-for-file
     sweeprolog-context-menu-for-module
     sweeprolog-context-menu-for-predicate
     sweeprolog-context-menu-for-variable)
@@ -6020,6 +6097,287 @@ numeric prefix argument (1 without prefix argument)."
   (interactive)
   (sweeprolog-decrement-numbered-variables
    1 (point) sweeprolog-increment-numbered-variables-last-result))
+
+
+;;;; Breakpoints
+
+(defun sweeprolog-current-breakpoints ()
+  "Return the list for current Prolog breakpoints.
+Each breakpoint is represented as an alist with string keys."
+  (sweeprolog--query-once "sweep" "sweep_current_breakpoints" nil))
+
+(defun sweeprolog-current-breakpoints-in-region (beg end &optional buf)
+  "Return breakpoints that start between BEG an END in BUF.
+If BUF is nil, it defaults to the current buffer.
+
+The return value is an alist of elements (BPBEG . BPEND) where
+BPBEG is the start position of the breakpoint and BPEND is its
+end.  list for current Prolog breakpoints."
+  (setq buf (or buf (current-buffer)))
+  (with-current-buffer buf
+    (sweeprolog--query-once "sweep" "sweep_current_breakpoints_in_region"
+                            (list (or (buffer-file-name)
+                                      (expand-file-name (buffer-name)))
+                                  beg end))))
+
+(defun sweeprolog-read-breakpoint (&optional prompt)
+  "Read a Prolog breakpoint id in the minibuffer, with completion.
+If PROMPT is non-nil, use it as the minibuffer prompt, otherwise
+prompt with \"Breakpoint: \"."
+  (let* ((bps (sweeprolog-current-breakpoints))
+         (col (mapcar (lambda (bp)
+                        (let ((id (alist-get "id" bp nil nil #'string=))
+                              (file (alist-get "file" bp nil nil #'string=))
+                              (line (alist-get "line" bp nil nil #'string=)))
+                          (cons (number-to-string id)
+                                (format "%s%s:%d"
+                                        (make-string (- 4 (floor (log id 10))) ? )
+                                        file line))))
+                      bps))
+         (current-file (buffer-file-name))
+         (current-line (line-number-at-pos (point)))
+         (def
+          (mapcar (lambda (bp)
+                    (number-to-string (alist-get "id" bp nil nil #'string=)))
+                  (seq-filter (lambda (bp)
+                                (and (string= (expand-file-name (alist-get "file" bp nil nil #'string=))
+                                              current-file)
+                                     (= (alist-get "line" bp nil nil #'string=)
+                                        current-line)))
+                              bps)))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (key)
+                  (alist-get key col nil nil #'string=)))))
+    (string-to-number
+     (completing-read (concat (or prompt "Breakpoint")
+                              (when def (concat " (default " (car def) ")"))
+                              ": ")
+                      col nil t nil nil def))))
+
+(defun sweeprolog-read-breakpoint-condition ()
+  "Read a Prolog breakpoint condition in the minibuffer."
+  (sweeprolog-read-goal "[breakpoint condition] ?- "))
+
+(defun sweeprolog-set-breakpoint-condition (id cond)
+  "Attach condition goal COND to the breakpoint with id ID."
+  (interactive (list (sweeprolog-read-breakpoint "Set condition for breakpoint")
+                     (sweeprolog-read-breakpoint-condition)))
+  (sweeprolog--query-once "sweep" "sweep_set_breakpoint_condition"
+                          (cons id cond)))
+
+(defun sweeprolog-delete-breakpoint (id)
+  "Delete the breakpoint with id ID."
+  (interactive (list (sweeprolog-read-breakpoint "Delete breakpoint")))
+  (let* ((file (sweeprolog--query-once "sweep" "sweep_breakpoint_file" id))
+         (buf (find-buffer-visiting file (lambda (b)
+                                           (with-current-buffer b
+                                             (and (derived-mode-p 'sweeprolog-mode)
+                                                  sweeprolog-highlight-breakpoints)))))
+         (range (sweeprolog--query-once "sweep" "sweep_breakpoint_range" id)))
+    (sweeprolog--query-once "sweep" "sweep_delete_breakpoint" id)
+    (message "Deleted breakpoint (id %d)" id)
+    (when (and buf range)
+      (with-current-buffer buf
+        (sweeprolog-analyze-term (car range))))))
+
+(defface sweeprolog-breakpoint-face
+  '((((background light)) :background "lightgreen")
+    (t                    :background "darkgreen"))
+  "Face used to highlight Prolog breakpoints."
+  :group 'sweeprolog-faces)
+
+(defvar sweeprolog-breakpoint-face 'sweeprolog-breakpoint-face
+  "Face to use for highlighting Prolog breakpoints.")
+
+(defun sweeprolog--highlight-breakpoint (beg end)
+  (font-lock--add-text-property beg end
+                                'font-lock-face
+                                sweeprolog-breakpoint-face
+                                (current-buffer)
+                                nil))
+
+(defun sweeprolog-highlight-breakpoint (id)
+  (when sweeprolog-highlight-breakpoints
+    (when-let
+        ((range
+          (sweeprolog--query-once "sweep" "sweep_breakpoint_range"
+                                  id)))
+      (with-silent-modifications
+        (sweeprolog--highlight-breakpoint (car range)
+                                          (cdr range))))))
+
+(defun sweeprolog-breakpoints-at-point (file point)
+  (seq-filter (lambda (bp)
+                (and (string= (expand-file-name (alist-get "file" bp nil nil #'string=))
+                              file)
+                     (when-let ((range (alist-get "range" bp nil nil #'string=)))
+                       (<= (car range) point (cadr range)))))
+              (sweeprolog-current-breakpoints)))
+
+(defun sweeprolog-read-breakpoint-at-point (point &optional prompt)
+  "Prompt with PROMPT for a breakpoint at POINT, with completion.
+If there only one breakpoint at POINT, return it without prompting."
+  (let* ((bps (sweeprolog-breakpoints-at-point (buffer-file-name)
+                                               point))
+         (col (mapcar (lambda (bp)
+                        (let ((id (alist-get "id" bp nil nil #'string=))
+                              (file (alist-get "file" bp nil nil #'string=))
+                              (line (alist-get "line" bp nil nil #'string=)))
+                          (cons (number-to-string id)
+                                (format "%s%s:%d"
+                                        (make-string (- 4 (floor (log id 10))) ? )
+                                        file line))))
+                      bps)))
+    (when col
+      (string-to-number
+       (if (= (length col) 1)
+           (caar col)
+         (let ((completion-extra-properties
+                (list :annotation-function
+                      (lambda (key)
+                        (alist-get key col nil nil #'string=)))))
+           (completing-read (or prompt "Breakpoint at point: ") col nil t)))))))
+
+(defun sweeprolog-delete-breakpoint-at-point (point)
+  "Delete breakpoint at POINT."
+  (interactive "d" sweeprolog-mode)
+  (if-let ((id (sweeprolog-read-breakpoint-at-point
+                point "Delete breakpoint at point: ")))
+      (sweeprolog-delete-breakpoint id)
+    (user-error "No breakpoints here!")))
+
+(defun sweeprolog-set-breakpoint (point &optional cond delete)
+  "Set breakpoint at POINT with condition COND.
+If DELETE is non-nil, delete the breakpoint at POINT instead.
+
+Interactively, POINT is point.  If called without a prefix
+argument, COND and DELETE are nil.  If called with a positive
+prefix argument, prompt for COND.  Otherwise, if called with a
+zero or negative prefix argument, delete the breakpoint at POINT
+instead."
+  (interactive
+   (cons (point)
+         (cond ((< (prefix-numeric-value current-prefix-arg) 1)
+                (list nil t))
+               (current-prefix-arg
+                (list (sweeprolog-read-breakpoint-condition)))))
+   sweeprolog-mode)
+  (if delete
+      (sweeprolog-delete-breakpoint-at-point point)
+    (if (or (sweeprolog-buffer-loaded-since-last-modification-p)
+            (and (y-or-n-p (concat (if (sweeprolog-buffer-load-time)
+                                       "Buffer modified since it was last loaded, re"
+                                     "Buffer isn't loaded, ")
+                                   "load before setting breakpoint?"))
+                 (sweeprolog-load-buffer (current-buffer))))
+        (if-let ((bp (sweeprolog--query-once "sweep" "sweep_set_breakpoint"
+                                             (list (buffer-file-name)
+                                                   (line-number-at-pos point)
+                                                   (1- point)))))
+            (progn
+              (if cond
+                  (if (sweeprolog-set-breakpoint-condition bp cond)
+                      (message "Created conditional breakpoint (id %d)." bp)
+                    (sweeprolog-delete-breakpoint bp)
+                    (user-error "Failed to set breakpoint condition"))
+                (message "Created breakpoint (id %d)." bp))
+              (sweeprolog-highlight-breakpoint bp))
+          (user-error "Failed to create breakpoint"))
+      (user-error "Cannot set breakpoint in buffer without loading it"))))
+
+(defun sweeprolog-breakpoint-menu-mode--entries ()
+  (mapcar (lambda (bp)
+            (let ((id (alist-get "id" bp nil nil #'string=))
+                  (file (alist-get "file" bp nil nil #'string=))
+                  (line (alist-get "line" bp nil nil #'string=))
+                  (pred (alist-get "predicate" bp nil nil #'string=))
+                  (clause (alist-get "clause" bp nil nil #'string=))
+                  (cond (alist-get "condition" bp nil nil #'string=)))
+              (list id (vector (number-to-string id)
+                               (if file file "")
+                               (if line (number-to-string line) "")
+                               (propertize pred
+                                           'face
+                                           (sweeprolog-predicate-indicator-face))
+                               (number-to-string clause)
+                               (or cond "")))))
+          (sweeprolog-current-breakpoints)))
+
+(defun sweeprolog-breakpoint-menu-mode--refresh ()
+  (tabulated-list-init-header)
+  (setq tabulated-list-entries (sweeprolog-breakpoint-menu-mode--entries)))
+
+(defun sweeprolog-breakpoint-menu-find (&optional other-window)
+  "Go to the source position of the breakpoint at point.
+If OTHER-WINDOW is non-nil, find it in another window."
+  (interactive "" sweeprolog-breakpoint-menu-mode)
+  (if-let ((vec (tabulated-list-get-entry)))
+      (let* ((file (seq-elt vec 1))
+             (line (seq-elt vec 2)))
+        (if other-window
+            (find-file-other-window file)
+          (find-file file))
+        (goto-char (point-min))
+        (forward-line (1- (string-to-number line))))
+    (user-error "No breakpoint menu entry here")))
+
+(defun sweeprolog-breakpoint-menu-find-other-window ()
+  "Find the position of the breakpoint at point in another window."
+  (interactive "" sweeprolog-breakpoint-menu-mode)
+  (sweeprolog-breakpoint-menu-find t))
+
+(defun sweeprolog-breakpoint-menu-delete ()
+  "Delete the breakpoint at point."
+  (interactive "" sweeprolog-breakpoint-menu-mode)
+  (if-let ((id (car (tabulated-list-delete-entry))))
+      (sweeprolog-delete-breakpoint id)
+    (user-error "No breakpoint menu entry here")))
+
+(defun sweeprolog-breakpoint-menu-set-condition (bp cond)
+  "Attach condition goal COND to the breakpoint BP at point."
+  (interactive (list (tabulated-list-get-id)
+                     (sweeprolog-read-breakpoint-condition))
+               sweeprolog-breakpoint-menu-mode)
+  (if bp
+      (if (sweeprolog-set-breakpoint-condition bp cond)
+          (tabulated-list-revert)
+        (user-error "Failed to set breakpoint condition"))
+    (user-error "No breakpoint menu entry here")))
+
+(defvar sweeprolog-breakpoint-menu-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") #'sweeprolog-breakpoint-menu-find)
+    (define-key map (kbd "o")   #'sweeprolog-breakpoint-menu-find-other-window)
+    (define-key map (kbd "C")   #'sweeprolog-breakpoint-menu-set-condition)
+    (define-key map (kbd "D")   #'sweeprolog-breakpoint-menu-delete)
+    map)
+  "Local keymap for `sweeprolog-breakpoint-menu-mode' buffers.")
+
+(define-derived-mode sweeprolog-breakpoint-menu-mode
+  tabulated-list-mode "Sweep Breakpoint Menu"
+  "Major mode for browsing the list of current Prolog breakpoints."
+  (setq tabulated-list-format [("ID"   8  t)
+                               ("File" 40 t)
+                               ("Line" 8  t)
+                               ("Predicate" 32  t)
+                               ("Clause" 8  t)
+                               ("Condition" 20 t)])
+  (setq tabulated-list-padding 2)
+  (setq tabulated-list-sort-key (cons "ID" nil))
+  (add-hook 'tabulated-list-revert-hook
+            #'sweeprolog-breakpoint-menu-mode--refresh nil t)
+  (tabulated-list-init-header))
+
+(defun sweeprolog-list-breakpoints ()
+  "Display a list of Prolog breakpoints."
+  (interactive)
+  (let ((buf (get-buffer-create "*Sweep Breakpoints*")))
+    (with-current-buffer buf
+      (sweeprolog-breakpoint-menu-mode)
+      (sweeprolog-breakpoint-menu-mode--refresh)
+      (tabulated-list-print))
+    (pop-to-buffer buf)))
 
 
 ;;;; Footer

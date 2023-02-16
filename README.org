@@ -1316,6 +1316,71 @@ information about the mode line.
 More relevant information about loading code in SWI-Prolog can be
 found in [[https://www.swi-prolog.org/pldoc/man?section=consulting][Loading Prolog source files]] in the SWI-Prolog manual.
 
+** Setting Breakpoints
+:PROPERTIES:
+:CUSTOM_ID: breakpoints
+:DESCRIPTION: Commands for setting breakpoints in Prolog buffers
+:ALT_TITLE: Setting Breakpoints
+:END:
+
+#+CINDEX: breakpoints
+You can set /breakpoints/ in ~sweeprolog-mode~ buffers to have SWI-Prolog
+break before specific goals in the code (see [[https://www.swi-prolog.org/pldoc/man?section=trace-breakpoints][Breakpoints]] in the
+SWI-Prolog manual).
+
+#+FINDEX: sweeprolog-set-breakpoint
+- Key: C-c C-b (sweeprolog-set-breakpoint) :: Set a breakpoint.
+#+VINDEX: sweeprolog-highlight-breakpoints
+- User Option: sweeprolog-highlight-breakpoints :: If non-nil,
+  highlight breakpoints in ~sweeprolog-mode~ buffers.  Defaults to ~t~.
+
+The command ~sweeprolog-set-breakpoint~, bound to ~C-c C-b~, sets a
+breakpoint at the position of the cursor.  If you call it with a
+positive prefix argument (e.g. ~C-u C-c C-b~), it creates a conditional
+breakpoint with a condition goal that you insert in the minibuffer.
+If you call it with a non-positive prefix argument (e.g. ~C-0 C-c C-b~),
+it deletes the breakpoint at point instead.
+
+When Context Menu mode is enabled, you can also create and delete
+breakpoints in ~sweeprolog-mode~ buffers through right-click context
+menus (see [[#context-menu][Context Menu]]).
+
+By default, Sweep highlights terms with active breakpoints in
+~sweeprolog-mode~ buffers.  To inhibit breakpoint highlighting,
+customize the user option ~sweeprolog-highlight-breakpoints~ to ~nil~.
+
+*** Breakpoint Menu
+:PROPERTIES:
+:CUSTOM_ID: breakpoint-menu
+:DESCRIPTION: Special mode for managing breakpoints
+:ALT_TITLE: Breakpoint Menu
+:END:
+
+Sweep provides a /breakpoint menu/ that lets you manage breakpoints
+across your codebase.
+
+#+FINDEX: sweeprolog-list-breakpoints
+- Command: sweeprolog-list-breakpoints :: Display a list of active
+  breakpoints.
+
+To open the breakpoint menu, type ~M-x sweeprolog-list-breakpoints~.
+This command opens the breakpoint menu in the =*Sweep Breakpoints*=
+buffer.  The major mode of this buffer is Sweep Breakpoint Menu,
+which is a special mode that includes useful commands for managing
+Prolog breakpoints:
+
+#+FINDEX: sweeprolog-breakpoint-menu-find
+- Key: RET (sweeprolog-breakpoint-menu-find) :: Go to the position of
+  the breakpoint corresponding to the breakpoint menu entry at point.
+#+FINDEX: sweeprolog-breakpoint-menu-find-other-window
+- Key: o (sweeprolog-breakpoint-menu-find-other-window) :: Show the
+  position of the breakpoint corresponding to the breakpoint menu
+  entry at point, in another window.
+#+FINDEX: sweeprolog-breakpoint-menu-set-condition
+- Key: c (sweeprolog-breakpoint-menu-set-condition) :: Set the
+  condition goal for the breakpoint corresponding to the breakpoint
+  menu entry at point.
+
 ** Creating New Modules
 :PROPERTIES:
 :CUSTOM_ID: creating-new-modules
@@ -2336,6 +2401,7 @@ The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
 
 | Key | Command                              | Documentation                     |
 |-----+--------------------------------------+-----------------------------------|
+| ~B~   | ~sweeprolog-list-breakpoints~          | [[#breakpoint-menu][Breakpoint Menu]]                   |
 | ~F~   | ~sweeprolog-set-prolog-flag~           | [[*Setting Prolog flags][Setting Prolog Flags]]              |
 | ~P~   | ~sweeprolog-pack-install~              | [[*Installing Prolog packages][Installing Prolog packages]]        |
 | ~R~   | ~sweeprolog-restart~                   | [[#prolog-init][Prolog Initialization and Cleanup]] |
