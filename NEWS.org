@@ -11,6 +11,39 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.17.0 on 2023-02-16
+
+** New user option ~sweeprolog-dependency-directive~
+
+This user option determines the preferred Prolog directive to use in
+~sweeprolog-update-dependencies~ for adding new explicit dependencies in
+the buffer.  See the documentation for possible values.
+
+** Modified formatting of added dependency directives
+
+The format ~sweeprolog-update-dependencies~ uses for new dependency is
+modified to be more concise and similar to the format used by the
+corresponding command of the SWI-Prolog built-in editor.
+
+** Mode line indication for loaded buffers
+
+Buffers in ~sweeprolog-mode~ now display an indication in the mode line
+if they are loaded into the current SWI-Prolog runtime.
+
+** New commands for managing breakpoints
+
+This version includes new commands for setting and removing
+breakpoints ~sweeprolog-mode~ buffers.  See the new "Setting
+Breakpoints" manual section for more information.
+
+** Minor bug fix in ~sweeprolog-beginning-of-top-term~
+
+This version includes a fix for how the function
+~sweeprolog-beginning-of-top-term~ handles head terms with quoted
+functors (as in ~'foo'(Bar) :- ...~).  This function is used for finding
+the beginning of Prolog clauses, and this issue affected some commands
+that need to analyze the clause at point.
+
 * Version 0.16.0 on 2023-02-11
 
 ** New user option ~sweeprolog-rename-variable-allow-existing~
