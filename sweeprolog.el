@@ -633,7 +633,7 @@ use `autoload/2' for all added directives."
                             (group-n 1 (one-or-more not-newline))
                             eos)
                         line)
-      (load (match-string 1 line)))))
+      (module-load (match-string 1 line)))))
 
 (defun sweeprolog--ensure-module ()
   "Locate and load `sweep-module', unless already loaded."
