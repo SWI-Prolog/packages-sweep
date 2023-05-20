@@ -865,18 +865,19 @@ sweep_atom_collection(Sub, Col) :-
     findall(S,
             (   current_atom(A),
                 atom_string(A, S),
-                sub_string(S, _, _, _, Sub)
+                once(sub_string(S, _, _, _, Sub))
             ),
             Col).
 
-sweep_predicate_completion_candidates(D, Ps) :-
+sweep_predicate_completion_candidates([D|Sub], Ps) :-
     integer(D),
     sweep_current_module(M),
     findall(H,
             (   (   @(predicate_property(H, visible), M)
                 ;   xref_defined(_, H, _)
                 ),
-                pi_head(_/N, H),
+                pi_head(F/N, H),
+                once(sub_atom(F, _, _, _, Sub)),
                 N - D >= 0
             ),
             Hs),

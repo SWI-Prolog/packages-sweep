@@ -1240,8 +1240,10 @@ resulting list even when found in the current clause."
                  (not (or (sweeprolog--char-uppercase-p first)
                           (= first ?_)))))
       (when-let
-          ((col (sweeprolog--query-once "sweep" "sweep_predicate_completion_candidates"
-                                        (sweeprolog-context-callable-p))))
+          ((col (sweeprolog--query-once
+                 "sweep" "sweep_predicate_completion_candidates"
+                 (cons (sweeprolog-context-callable-p)
+                       (buffer-substring-no-properties beg end)))))
         (list beg end col
               :exclusive 'no
               :annotation-function
