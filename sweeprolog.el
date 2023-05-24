@@ -1457,8 +1457,7 @@ resulting list even when found in the current clause."
 (sweeprolog-defface
   head-meta
   (:inherit font-lock-preprocessor-face)
-  (:inherit default)
-  (:inherit default)
+  nil nil
   "Meta predicate definitions.")
 
 (sweeprolog-defface
@@ -1743,7 +1742,7 @@ resulting list even when found in the current clause."
 
 (sweeprolog-defface
   qq-content
-  (:inherit default)
+  nil
   (:foreground "red4")
   (:foreground "red4")
   "Quasi-quotation content.")
@@ -1972,46 +1971,22 @@ resulting list even when found in the current clause."
   (:background "orange")
   "Syntax errors.")
 
-(sweeprolog-defface
-  around-syntax-error
-  (:inherit default)
-  (:inherit default)
-  (:inherit default)
+(sweeprolog-defface around-syntax-error nil nil nil
   "Text around a syntax error.")
 
-(sweeprolog-defface
-  clause
-  (:inherit default)
-  (:inherit default)
-  (:inherit default)
+(sweeprolog-defface clause nil nil nil
   "Predicate clauses.")
 
-(sweeprolog-defface
-  grammar-rule
-  (:inherit default)
-  (:inherit default)
-  (:inherit default)
+(sweeprolog-defface grammar-rule nil nil nil
   "DCG grammar rules.")
 
-(sweeprolog-defface
-  term
-  (:inherit default)
-  (:inherit default)
-  (:inherit default)
+(sweeprolog-defface term nil nil nil
   "Top terms.")
 
-(sweeprolog-defface
-  body
-  (:inherit default)
-  (:inherit default)
-  (:inherit default)
+(sweeprolog-defface body nil nil nil
   "Clause and query bodies.")
 
-(sweeprolog-defface
-  directive
-  (:inherit default)
-  (:inherit default)
-  (:inherit default)
+(sweeprolog-defface directive nil nil nil
   "Directives.")
 
 (sweeprolog-defface
