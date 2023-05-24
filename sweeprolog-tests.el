@@ -214,44 +214,44 @@ foo(Foo) :- bar.
     (sweeprolog-mode)
     (should (equal (get-text-property (+ (point-min) 1)
                                       'font-lock-face)
-                   '(sweeprolog-neck-default-face
-                     sweeprolog-directive-default-face)))
+                   '(sweeprolog-neck
+                     sweeprolog-directive)))
     (should (equal (get-text-property (+ (point-min) 2)
                                       'font-lock-face)
-                   '(sweeprolog-directive-default-face)))
+                   '(sweeprolog-directive)))
     (should (equal (get-text-property (+ (point-min) 3)
                                       'font-lock-face)
-                   '(sweeprolog-built-in-default-face
-                     sweeprolog-body-default-face)))
+                   '(sweeprolog-built-in
+                     sweeprolog-body)))
     (should (equal (get-text-property (+ (point-min) 9)
                                       'font-lock-face)
-                   '(sweeprolog-body-default-face)))
+                   '(sweeprolog-body)))
     (should (equal (get-text-property (+ (point-min) 10)
                                       'font-lock-face)
-                   '(sweeprolog-identifier-default-face
-                     sweeprolog-body-default-face)))
+                   '(sweeprolog-identifier
+                     sweeprolog-body)))
     (should (equal (get-text-property (+ (point-min) 13)
                                       'font-lock-face)
-                   '(sweeprolog-body-default-face)))
+                   '(sweeprolog-body)))
     (should (equal (get-text-property (+ (point-min) 16)
                                       'font-lock-face)
-                   '(sweeprolog-local-default-face
-                     sweeprolog-body-default-face)))
+                   '(sweeprolog-local
+                     sweeprolog-body)))
     (should (equal (get-text-property (+ (point-min) 23)
                                       'font-lock-face)
-                   '(sweeprolog-fullstop-default-face)))
+                   '(sweeprolog-fullstop)))
     (should (equal (get-text-property (+ (point-min) 26)
                                       'font-lock-face)
-                   '(sweeprolog-head-exported-default-face
-                     sweeprolog-clause-default-face)))
+                   '(sweeprolog-head-exported
+                     sweeprolog-clause)))
     (should (equal (get-text-property (+ (point-min) 31)
                                       'font-lock-face)
-                   '(sweeprolog-singleton-default-face
-                     sweeprolog-clause-default-face)))
+                   '(sweeprolog-singleton
+                     sweeprolog-clause)))
     (should (equal (get-text-property (+ (point-min) 39)
                                       'font-lock-face)
-                   '(sweeprolog-undefined-default-face
-                     sweeprolog-body-default-face)))))
+                   '(sweeprolog-undefined
+                     sweeprolog-body)))))
 
 (ert-deftest yank-hole ()
   "Test killing and yanking a hole as a plain variable."
@@ -750,8 +750,8 @@ bar(Bar) :- baz(Bar).
                (prop-match-end
                 (text-property-search-forward
                  'font-lock-face
-                 '(sweeprolog-syntax-error-default-face
-                   sweeprolog-around-syntax-error-default-face)))))))
+                 '(sweeprolog-syntax-error
+                   sweeprolog-around-syntax-error)))))))
 
 (ert-deftest file-at-point ()
   "Test recognizing file specifications."

@@ -750,44 +750,44 @@ the order of the arguments is reversed."
 
 ;;;; Prolog messages
 
-(defface sweeprolog-debug-prefix-face
+(defface sweeprolog-debug-prefix
   '((default :inherit shadow))
   "Face used to highlight the \"DEBUG\" message prefix."
   :group 'sweeprolog-faces)
 
-(defvar sweeprolog-debug-prefix-face 'sweeprolog-debug-prefix-face
+(defvar sweeprolog-debug-prefix-face 'sweeprolog-debug-prefix
   "Name of the face used to highlight the \"DEBUG\" message prefix.")
 
-(defface sweeprolog-debug-topic-face
+(defface sweeprolog-debug-topic
   '((default :inherit shadow))
   "Face used to highlight the topic in debug messages."
   :group 'sweeprolog-faces)
 
-(defvar sweeprolog-debug-topic-face 'sweeprolog-debug-topic-face
+(defvar sweeprolog-debug-topic-face 'sweeprolog-debug-topic
   "Name of the face used to highlight the topic in debug messages.")
 
-(defface sweeprolog-info-prefix-face
+(defface sweeprolog-info-prefix
   '((default :inherit default))
   "Face used to highlight the \"INFO\" message prefix."
   :group 'sweeprolog-faces)
 
-(defvar sweeprolog-info-prefix-face 'sweeprolog-info-prefix-face
+(defvar sweeprolog-info-prefix-face 'sweeprolog-info-prefix
   "Name of the face used to highlight the \"INFO\" message prefix.")
 
-(defface sweeprolog-warning-prefix-face
+(defface sweeprolog-warning-prefix
   '((default :inherit font-lock-warning-face))
   "Face used to highlight the \"WARNING\" message prefix."
   :group 'sweeprolog-faces)
 
-(defvar sweeprolog-warning-prefix-face 'sweeprolog-warning-prefix-face
+(defvar sweeprolog-warning-prefix-face 'sweeprolog-warning-prefix
   "Name of the face used to highlight the \"WARNING\" message prefix.")
 
-(defface sweeprolog-error-prefix-face
+(defface sweeprolog-error-prefix
   '((default :inherit error))
   "Face used to highlight the \"ERROR\" message prefix."
   :group 'sweeprolog-faces)
 
-(defvar sweeprolog-error-prefix-face 'sweeprolog-error-prefix-face
+(defvar sweeprolog-error-prefix-face 'sweeprolog-error-prefix
   "Name of the face used to highlight the \"ERROR\" message prefix.")
 
 (defun sweeprolog-view-messages ()
@@ -1323,11 +1323,12 @@ resulting list even when found in the current clause."
     "Define sweeprolog face FACE with doc DOC."
     (declare
      (indent defun)
-     (doc-string 4))
-    (let ((func (intern (concat "sweeprolog-" (symbol-name name) "-face")))
-          (facd (intern (concat "sweeprolog-" (symbol-name name) "-dark-face")))
-          (facl (intern (concat "sweeprolog-" (symbol-name name) "-light-face")))
-          (face (intern (concat "sweeprolog-" (symbol-name name) "-default-face"))))
+     (doc-string 5))
+    (let* ((sn (symbol-name name))
+           (func (intern (concat "sweeprolog-" sn "-face")))
+           (facd (intern (concat "sweeprolog-" sn "-dark")))
+           (facl (intern (concat "sweeprolog-" sn "-light")))
+           (face (intern (concat "sweeprolog-" sn))))
       `(progn
          (defface ,facl
            '((default              . ,light))
