@@ -11,6 +11,22 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.17.0 on 2023-05-24
+
+** Faster predicate completion in large projects
+
+Completing predicates in ~sweeprolog-mode~ buffers now pre-filters
+candidates based on the text around point, making the entire process
+much faster in large projects with many defined predicates.
+
+** Removed the ~-face~ suffix from names of defined faces
+
+Sweep defines many faces for highlighting different kinds of text.  In
+prior versions, these faces were given names such as
+~sweeprolog-foo-face~.  This version removes the redundant ~-face~
+suffix from all face names.  (So the same face would now be called
+simply ~sweeprolog-foo~.)
+
 * Version 0.17.0 on 2023-02-16
 
 ** New user option ~sweeprolog-dependency-directive~
