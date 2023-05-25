@@ -11,7 +11,7 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
-* Version 0.17.0 on 2023-05-24
+* Version 0.18.0 on 2023-05-24
 
 ** Faster predicate completion in large projects
 
