@@ -1581,7 +1581,7 @@ resulting list even when found in the current clause."
 
 (sweeprolog-defface
   expanded
-  (:inherit font-lock-function-name-face)
+  (:inherit font-lock-preprocessor-face)
   (:foreground "blue" :underline t)
   (:foreground "cyan" :underline t)
   "Expanded predicate calls.")
@@ -2010,6 +2010,13 @@ resulting list even when found in the current clause."
   (:box t)
   "Holes.")
 
+(sweeprolog-defface
+  macro
+  (:inherit font-lock-preprocessor-face)
+  (:foreground "blue" :underline t)
+  (:foreground "cyan" :underline t)
+  "Macros.")
+
 ;;;; Font-lock
 
 (defun sweeprolog-analyze-start-font-lock (beg end)
@@ -2115,6 +2122,10 @@ resulting list even when found in the current clause."
      (list (list beg end (sweeprolog-local-face))))
     (`("goal" "constraint" . ,_)
      (list (list beg end (sweeprolog-constraint-face))))
+    (`("macro" . ,_)
+     (list (list beg end (sweeprolog-macro-face))))
+    ("expanded"
+     (list (list beg end (sweeprolog-expanded-face))))
     ("instantiation_error"
      (list (list beg end (sweeprolog-instantiation-error-face))))
     (`("type_error" . ,_)
@@ -2421,6 +2432,9 @@ resulting list even when found in the current clause."
                           functor arity))
     ("not_callable" "Call to a non-callable term")))
 
+(defun sweeprolog--help-echo-for-macro (expansion)
+  (format "Macro indicator, expands to (%s)" expansion))
+
 (defun sweeprolog-analyze-fragment-help-echo (beg end arg)
   (when-let
       (help-echo
@@ -2464,6 +2478,8 @@ resulting list even when found in the current clause."
          ("chars" "Chars")
          (`("module" . ,module)
           (sweeprolog--help-echo-for-module module))
+         (`("macro" . ,expansion)
+          (sweeprolog--help-echo-for-macro expansion))
          ("neck" "Neck")
          (`("hook" . ,_) "Hook")
          ("hook" "Hook")
