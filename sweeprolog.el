@@ -3800,7 +3800,14 @@ work."
            ((or (= syn ?.)
                 (= syn ?\\))
             (skip-syntax-forward ".")
-            (list 'operator beg (point)))
+            (let ((end (point)))
+              (while (and (< beg (point))
+                          (not (sweeprolog--query-once
+                                "sweep" "sweep_op_info"
+                                (cons (buffer-substring-no-properties beg (point))
+                                      (buffer-file-name)))))
+                (forward-char -1))
+              (list 'operator beg (if (= beg (point)) end (point)))))
            ((= syn ?\()
             (list 'open beg (point)))
            ((= syn ?\))
@@ -3836,9 +3843,16 @@ work."
             (skip-syntax-backward "w_")
             (list 'functor (point) end))
            ((or (= syn ?.)
-                (= syn ?\\))  ; specifically, the backslash character
+                (= syn ?\\))   ; specifically, the backslash character
             (skip-syntax-backward ".")
-            (list 'operator (point) end))
+            (let ((beg (point)))
+              (while (and (< (point) end)
+                          (not (sweeprolog--query-once
+                                "sweep" "sweep_op_info"
+                                (cons (buffer-substring-no-properties (point) end)
+                                      (buffer-file-name)))))
+                (forward-char 1))
+              (list 'operator (if (= end (point)) beg (point)) end)))
            ((= syn ?\()
             (list 'open (1- end) end))
            ((= syn ?\))

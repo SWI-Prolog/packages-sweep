@@ -1791,4 +1791,16 @@ head,
     body.
 "))
 
+(ert-deftest forward-sexp-with-adjacent-operators ()
+  "Tests detecting the fullstop in presence of `.=.'."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "a,+b.")
+    (goto-char (point-min))
+    (sweeprolog--forward-sexp)
+    (should (= (point) 2))
+    (goto-char (point-max))
+    (sweeprolog--backward-sexp)
+    (should (= (point) 4))))
+
 ;;; sweeprolog-tests.el ends here
