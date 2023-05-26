@@ -5500,6 +5500,11 @@ GOAL."
   (interactive)
   (sweeprolog-describe-predicate sweeprolog-context-menu-predicate-at-click))
 
+(defun sweeprolog-context-menu-expand-macro ()
+  "Expand Prolog macro at mouse click."
+  (interactive)
+  (sweeprolog-expand-macro-at-pos sweeprolog-context-menu-point-at-click))
+
 (defun sweeprolog-context-menu-rename-variable ()
   "Rename Prolog variable at mouse click."
   (interactive)
@@ -5668,12 +5673,24 @@ POINT is the buffer position of the mouse click."
        (define-key-after menu [sweeprolog-breakpoint]
          `(menu-item "Breakpoint" ,submenu))))))
 
+(defun sweeprolog-context-menu-for-macro (menu tok beg _end _point)
+  "Extend MENU with macro-related commands if TOK at BEG is one."
+  (pcase tok
+    (`("macro" . ,expansion)
+     (setq sweeprolog-context-menu-point-at-click beg)
+     (define-key menu [sweeprolog-expand-macro]
+                 `(menu-item "Expand Macro"
+                             sweeprolog-context-menu-expand-macro
+                             :help ,(format "Expand macro to %s" expansion)
+                             :keys "\\[sweeprolog-expand-macro-at-point]")))))
+
 (defvar sweeprolog-context-menu-functions
   '(sweeprolog-context-menu-for-clause
     sweeprolog-context-menu-for-file
     sweeprolog-context-menu-for-module
     sweeprolog-context-menu-for-predicate
-    sweeprolog-context-menu-for-variable)
+    sweeprolog-context-menu-for-variable
+    sweeprolog-context-menu-for-macro)
   "Functions that create context menu entries for Prolog tokens.
 Each function receives as its arguments the menu, the Prolog
 token's description, its start position, its end position, and
@@ -6390,6 +6407,31 @@ If OTHER-WINDOW is non-nil, find it in another window."
       (tabulated-list-print))
     (pop-to-buffer buf)))
 
+(defun sweeprolog-expand-macro-at-pos (pos)
+  "Expand Prolog macro starting at POS.
+
+Return nil if POS is not the beginning of a macro invocation."
+  (let* ((end (save-excursion
+                (goto-char pos)
+                (sweeprolog--forward-sexp)
+                (point)))
+         (expansion
+          (sweeprolog--query-once "sweep" "sweep_expand_macro"
+                                  (buffer-substring-no-properties
+                                   pos end))))
+    (when expansion
+      (combine-after-change-calls
+        (delete-region pos end)
+        (save-excursion
+          (goto-char pos)
+          (insert expansion)))
+      t)))
+
+(defun sweeprolog-expand-macro-at-point (point)
+  "Expand Prolog macro starting at POINT."
+  (interactive "d" sweeprolog-mode)
+  (unless (sweeprolog-expand-macro-at-pos point)
+    (user-error "No macro invocation at point")))
 
 ;;;; Footer
 

@@ -86,7 +86,8 @@
             sweep_current_breakpoints/2,
             sweep_current_breakpoints_in_region/2,
             sweep_breakpoint_range/2,
-            sweep_breakpoint_file/2
+            sweep_breakpoint_file/2,
+            sweep_expand_macro/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -104,6 +105,7 @@
 :- use_module(library(prolog_pack)).
 :- use_module(library(prolog_deps)).
 :- use_module(library(dcg/high_order)).
+:- use_module(library(macros)).
 
 :- if(exists_source(library(help))).
 :- use_module(library(help)).
@@ -1296,3 +1298,12 @@ sweep_breakpoint_range(Id, [Beg|End]) :-
 sweep_breakpoint_file(Id, File) :-
     breakpoint_property(Id, file(File0)),
     atom_string(File0, File).
+
+sweep_expand_macro(String0, String) :-
+    sweep_current_module(M),
+    term_string(Term0, String0, [variable_names(Vs),
+                                 subterm_positions(Pos0),
+                                 module(M)]),
+    functor(Term0, '#', 1),
+    macros:expand_macros(M, Term0, Term, Pos0, _, _, _),
+    term_string(Term, String, [variable_names(Vs), module(M)]).
