@@ -11,6 +11,18 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.18.1 on 2023-05-26
+
+** Support for SWI-Prolog's new macros mechanism
+
+SWI-Prolog recently introduced a new mechanism for using macros,
+implemented in ~library(macros)~.  Sweep now provides semantic
+highlighting and tooltip information for these macros, as well as a
+new command ~sweeprolog-expand-macro-at-point~ for replacing macro
+invocations with their replacements in source buffers.
+
+** Fixed issue with tokenization of adjacent distinct operators in Elisp
+
 * Version 0.18.0 on 2023-05-24
 
 ** Faster predicate completion in large projects
