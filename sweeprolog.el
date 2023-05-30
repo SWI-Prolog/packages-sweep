@@ -448,6 +448,7 @@ use `autoload/2' for all added directives."
                     #'sweeprolog-show-diagnostics
                   #'flymake-show-diagnostics-buffer))
     (define-key map (kbd "C-c C-&") #'sweeprolog-async-goal)
+    (define-key map (kbd "C-c C-%") #'sweeprolog-make-example-usage-comment)
     (define-key map (kbd "C-c C--") #'sweeprolog-decrement-numbered-variables)
     (define-key map (kbd "C-c C-+") #'sweeprolog-increment-numbered-variables)
     (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
@@ -517,6 +518,13 @@ use `autoload/2' for all added directives."
     (define-key map (kbd "TAB") #'sweeprolog-indent-or-forward-hole)
     map)
   "Keymap for moving to next hole with TAB.")
+
+(defvar sweeprolog-top-level-example-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-b") #'sweeprolog-top-level-example-display-source)
+    (define-key map (kbd "C-c C-q") #'sweeprolog-top-level-example-done)
+    map)
+  "Keymap for example top-level buffer.")
 
 ;;;; Menu bar
 
@@ -604,6 +612,8 @@ use `autoload/2' for all added directives."
 
 (defvar-local sweeprolog-top-level-thread-id nil
   "Prolog top-level thread ID corresponding to this buffer.")
+
+(defvar-local sweeprolog-top-level-example-marker nil)
 
 (defvar-local sweeprolog--buffer-last-modified-time nil)
 
@@ -6432,6 +6442,75 @@ Return nil if POS is not the beginning of a macro invocation."
   (interactive "d" sweeprolog-mode)
   (unless (sweeprolog-expand-macro-at-pos point)
     (user-error "No macro invocation at point")))
+
+(define-minor-mode sweeprolog-top-level-example-mode
+  "Minor mode for example top-level sessions.
+This mode is enabled in top-level buffers created by
+\\[sweeprolog-make-example-usage-comment]."
+  :lighter " Example"
+  :group 'sweeprolog)
+
+(defun sweeprolog-top-level-example-display-source ()
+  "Pop to the source position where this example session was started.
+This is the position where
+`sweeprolog-make-example-usage-comment' was invoked to create
+the current top-level buffer, and where
+\\[sweeprolog-top-level-example-done] inserts its contents of as
+a comment."
+  (interactive "" sweeprolog-top-level-mode)
+  (unless sweeprolog-top-level-example-mode
+    (user-error "Not in an example top-level session"))
+  (let ((source-buffer (marker-buffer sweeprolog-top-level-example-marker)))
+    (unless (buffer-live-p source-buffer)
+      (user-error "Source buffer for this example session no longer alive"))
+    (let ((marker sweeprolog-top-level-example-marker))
+      (display-buffer source-buffer)
+      (goto-char marker))))
+
+(defun sweeprolog-top-level-example-done ()
+  "Finalize the current example top-level session.
+This kills the current top-level buffer and inserts its contents
+as a comment in the source location where you invoked
+`sweeprolog-make-example-usage-comment' to create it."
+  (interactive "" sweeprolog-top-level-mode)
+  (unless sweeprolog-top-level-example-mode
+    (user-error "Not in an example top-level session"))
+  (let ((source-buffer (marker-buffer sweeprolog-top-level-example-marker)))
+    (unless (buffer-live-p source-buffer)
+      (user-error "Source buffer for this example session no longer alive"))
+    (let ((top-level-buffer (current-buffer))
+          (example (replace-regexp-in-string
+                    (rx "?- " eos) ""
+                    (string-replace
+                     "\n\n" "\n"
+                     (buffer-substring-no-properties (point-min)
+                                                     (point-max)))))
+          (marker sweeprolog-top-level-example-marker))
+      (pop-to-buffer source-buffer)
+      (unless (string-empty-p example)
+        (save-excursion
+          (goto-char marker)
+          (insert example)
+          (comment-region marker (point))))
+      (delete-process (get-buffer-process top-level-buffer))
+      (kill-buffer top-level-buffer))))
+
+(defun sweeprolog-make-example-usage-comment (point)
+  "Start a top-level and record it as a comment at POINT.
+This creates a new example top-level buffer where you can perform
+queries in this top-level as usual.  Use
+\\<sweeprolog-top-level-example-mode-map>\\[sweeprolog-top-level-example-done]
+in the example top-level buffer to finish and format the session
+as a comment in the source buffer at starting at POINT."
+  (interactive "d" sweeprolog-mode)
+  (let ((marker (copy-marker point))
+        (buffer (sweeprolog-top-level-buffer (generate-new-buffer-name
+                                              "*Example Session*"))))
+    (pop-to-buffer buffer)
+    (setq sweeprolog-top-level-example-marker marker
+          header-line-format (substitute-command-keys
+                              (format "`\\<sweeprolog-top-level-example-mode-map>\\[sweeprolog-top-level-example-done]' to quit and write contents as a comment in buffer %s" (buffer-name (marker-buffer marker)))))
+    (sweeprolog-top-level-example-mode)))
 
 ;;;; Footer
 
