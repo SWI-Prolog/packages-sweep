@@ -11,6 +11,15 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.18.2 on 2023-05-30
+
+** New command ~sweeprolog-make-example-usage-comment~
+
+This command, bound to ~C-c C-%~ in ~sweeprolog-mode~ buffers, lets
+you capture and insert top-level interaction logs demonstrating your
+code's usage as source code comments.  See the new "Example Usage
+Comments" in the manual for more details.
+
 * Version 0.18.1 on 2023-05-26
 
 ** Support for SWI-Prolog's new macros mechanism
