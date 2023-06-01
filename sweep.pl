@@ -554,6 +554,9 @@ sweep_color_normalized_(_, type_error, [Kind0|_], ["type_error"|Kind]) :-
     atom_string(Kind1, Kind).
 sweep_color_normalized_(_, macro, [String|_], ["macro"|String]) :-
     !.
+sweep_color_normalized_(_, decl_option, [Opt0|_], ["decl_option"|Opt]) :-
+    !,
+    term_string(Opt0, Opt).
 sweep_color_normalized_(_, Nom0, _, Nom) :-
     atom_string(Nom0, Nom).
 

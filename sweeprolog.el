@@ -2027,6 +2027,13 @@ resulting list even when found in the current clause."
   (:foreground "cyan" :underline t)
   "Macros.")
 
+(sweeprolog-defface
+  declaration-option
+  (:weight bold)
+  (:weight bold)
+  (:weight bold)
+  "Declaration options.")
+
 ;;;; Font-lock
 
 (defun sweeprolog-analyze-start-font-lock (beg end)
@@ -2305,7 +2312,9 @@ resulting list even when found in the current clause."
     ("method"
      (list (list beg end nil) (list beg end (sweeprolog-method-face))))
     ("class"
-     (list (list beg end (sweeprolog-class-face))))))
+     (list (list beg end (sweeprolog-class-face))))
+    (`("decl_option" . ,_)
+     (list (list beg end (sweeprolog-declaration-option-face))))))
 
 (defun sweeprolog-analyze-fragment-font-lock (beg end arg)
   (when-let ((face-fragments (sweeprolog-analyze-fragment-to-faces
@@ -2445,6 +2454,18 @@ resulting list even when found in the current clause."
 (defun sweeprolog--help-echo-for-macro (expansion)
   (format "Macro indicator, expands to (%s)" expansion))
 
+(defun sweeprolog--help-echo-for-declaration-option (option)
+  (pcase option
+    ("incremental"
+     (concat
+      "Incremental declaration "
+      "(tables that depend on this predicate are updated it changes)"))
+    ("volatile"
+     (concat
+      "Volatile declaration "
+      "(predicate excluded from saved program)"))
+    (_ (format "%s predicate property declaration" option))))
+
 (defun sweeprolog-analyze-fragment-help-echo (beg end arg)
   (when-let
       (help-echo
@@ -2510,7 +2531,9 @@ resulting list even when found in the current clause."
          ("rational" "Rational")
          ("dict_function" "Dict function")
          ("dict_return_op" "Dict return operator")
-         ("func_dot" "Dict function dot")))
+         ("func_dot" "Dict function dot")
+         (`("decl_option" . ,option)
+          (sweeprolog--help-echo-for-declaration-option option))))
     (with-silent-modifications
       (put-text-property beg end 'help-echo help-echo))))
 
