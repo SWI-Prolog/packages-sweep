@@ -1519,12 +1519,12 @@ SWI-Prolog, see [[https://www.swi-prolog.org/pldoc/doc_for?object=section(%27pac
 :END:
 
 Beyond documenting your code with =PlDoc= comments as described in
-[[#sweeprolog-pldoc][Documenting Predicates]], you might want to have comments in your source
-code that shows example usage of some predicate.  Creating such
-comments usually involves posting queries in a Prolog top-level,
-copying the queries and their results into the relevant source code
-buffer, and formatting them as comments.  Sweep provides the following
-command to streamline this process:
+[[#sweeprolog-pldoc][Documenting Predicates]], you may want to have comments in your source
+code that demonstrate example usage of some predicate or another.
+Creating such comments usually involves posting queries in a Prolog
+top-level, copying the queries and their results into the relevant
+source code buffer, and formatting them as comments.  Sweep provides
+the following command to streamline this process:
 
 #+FINDEX: sweeprolog-make-example-usage-comment
 - Key: C-c C-% (sweeprolog-make-example-usage-comment) :: Start a
