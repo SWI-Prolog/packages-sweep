@@ -11,6 +11,28 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.18.3 on 2023-06-01
+
+** Semantic highlighting and tooltip info for declaration options
+
+Sweep now highlights declaration options, such as the ~volatile~ keyword in the
+following definition:
+
+#+begin_src prolog
+:- dynamic foo/1 as volatile.
+#+end_src
+
+Declaration options use the new face ~sweeprolog-declaration-option~.
+
+Furthermore, Sweep now adds the ~help-echo~ property to declaration options,
+providing additional information about specific declarations on hover.
+
+** Backward compatibility for ~sweeprolog-make-example-usage-comment~
+
+The new command ~sweeprolog-make-example-usage-comment~, added to Sweep in
+version 0.18.2, can now be used also with Emacs 27.  (The prior version of this
+command relied on an Emacs function that has only been introduced in Emacs 28.)
+
 * Version 0.18.2 on 2023-05-30
 
 ** New command ~sweeprolog-make-example-usage-comment~
