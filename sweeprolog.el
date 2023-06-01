@@ -6502,12 +6502,11 @@ as a comment in the source location where you invoked
     (unless (buffer-live-p source-buffer)
       (user-error "Source buffer for this example session no longer alive"))
     (let ((top-level-buffer (current-buffer))
-          (example (replace-regexp-in-string
-                    (rx "?- " eos) ""
-                    (string-replace
-                     "\n\n" "\n"
-                     (buffer-substring-no-properties (point-min)
-                                                     (point-max)))))
+          (example
+           (thread-last (buffer-string)
+                        (substring-no-properties)
+                        (replace-regexp-in-string "\n\n" "\n")
+                        (replace-regexp-in-string (rx "\n?- " eos) "")))
           (marker sweeprolog-top-level-example-marker))
       (pop-to-buffer source-buffer)
       (unless (string-empty-p example)
