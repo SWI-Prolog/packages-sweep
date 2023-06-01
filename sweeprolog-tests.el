@@ -1803,4 +1803,19 @@ head,
     (sweeprolog--backward-sexp)
     (should (= (point) 4))))
 
+(ert-deftest usage-example-comment ()
+  "Tests adding usage example comments."
+  (with-temp-buffer
+    (sweeprolog-mode)
+    (insert "\nfoo.")
+    (let ((source-buffer (current-buffer)))
+      (sweeprolog-make-example-usage-comment (point-min))
+      (insert "true; false.")
+      (comint-send-input)
+      (accept-process-output nil 1)
+      (sweeprolog-top-level-example-done)
+      (with-current-buffer source-buffer
+        (should (string= (buffer-string)
+                         "% ?- true; false.\n% true\u0020\nfoo."))))))
+
 ;;; sweeprolog-tests.el ends here
