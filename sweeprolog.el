@@ -3567,6 +3567,21 @@ of them signal success by returning non-nil."
     (remove-hook 'sweeprolog-analyze-region-fragment-hook cb t)))
 
 (defun sweeprolog-definition-at-point (&optional point)
+  "Get information about the Prolog definition at POINT.
+
+If POINT is nil, it defaults to point.
+
+If POINT is not inside a clause, return nil.  Otherwise, return a
+list (BEG FUNCTOR ARITY END NECK MODULE).
+
+When the head term of clause is module-qualified, MODULE is the
+name of that module.  If the head is not module-qualified, MODULE
+is nil.  FUNCTOR and ARITY are the functor and arity of predicate
+that the clause is part of, and NECK is the neck operator that it
+uses (e.g. \"-->\" for DCG rules).
+
+BEG and END are buffer positions corresponding to the beginning
+and end positions of the clause."
   (save-excursion
     (when point (goto-char point))
     (let ((functor nil)
