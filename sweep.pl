@@ -792,12 +792,14 @@ sweep_thread_signal([ThreadId|Goal0], _) :-
     term_string(Goal, Goal0),
     thread_signal(ThreadId, Goal).
 
-sweep_local_predicate_export_comment([Path0,F0,A],Comm) :-
+sweep_local_predicate_export_comment([Path0,F0,A,I0],Comm) :-
     atom_string(Path, Path0),
     atom_string(F, F0),
-    doc_comment(_:F/A, Path:_, _Summary, Comment),
+    atom_string(I, I0),
+    compound_name_arguments(PI, I, [F,A]),
+    doc_comment(_:PI, Path:_, _Summary, Comment),
     comment_modes(Comment, Modes),
-    pi_head(F/A, Head),
+    compound_name_arity(Head, F, A),
     member(ModeAndDet, Modes),
     strip_det(ModeAndDet, Head),
     Head =.. [_|Args],
@@ -808,6 +810,7 @@ sweep_local_predicate_export_comment([Path0,F0,A],Comm) :-
                 ]),
     sub_string(Syn0, 6, _, 1, Comm).
 
+strip_det(//(Mode) is _, Mode) :- !.
 strip_det(Mode is _, Mode) :- !.
 strip_det(//(Mode), Mode) :- !.
 strip_det(Mode, Mode).
@@ -973,7 +976,12 @@ sweep_exportable_predicates(Path0, Preds) :-
     findall(D,
             (   xref_defined(Path, D0, _),
                 \+ xref_exported(Path, D0),
-                pi_head(D1, D0),
+                \+ D0 = _:_,
+                pi_head(F/A, D0),
+                (   xref_defined(Path, D0, dcg)
+                ->  B is A - 2, D1 = F//B
+                ;   D1 = F/A
+                ),
                 term_string(D1, D)
             ),
             Preds).

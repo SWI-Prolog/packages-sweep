@@ -4171,9 +4171,9 @@ work."
     (sweeprolog-close-query)
     res))
 
-(defun sweeprolog-local-predicate-export-comment (fun ari)
+(defun sweeprolog-local-predicate-export-comment (fun ari ind)
   (sweeprolog--query-once "sweep" "sweep_local_predicate_export_comment"
-                          (list (buffer-file-name) fun ari)))
+                          (list (buffer-file-name) fun ari ind)))
 
 (defun sweeprolog-exportable-predicates ()
   "Return a list of exportable predicates from the current buffer."
@@ -4197,11 +4197,17 @@ export comment from its PlDoc comment.  Otherwise, prompt for a
 predicate to export providing completion candidates based on the
 non-exported predicates defined in the current buffer."
   (interactive (or (and (not current-prefix-arg)
-                        (when-let ((def (sweeprolog-definition-at-point))
-                                   (fun (cadr def))
-                                   (ari (caddr def)))
-                          (list (concat fun "/" (number-to-string ari))
-                                (sweeprolog-local-predicate-export-comment fun ari))))
+                        (when-let ((def  (sweeprolog-definition-at-point))
+                                   (fun  (nth 1 def))
+                                   (ari  (nth 2 def))
+                                   (neck (nth 4 def))
+                                   (ind  "/"))
+                          (unless (nth 5 def)
+                            (when (string= neck "-->")
+                              (setq ari (- ari 2)
+                                    ind "//"))
+                            (list (concat fun ind (number-to-string ari))
+                                  (sweeprolog-local-predicate-export-comment fun ari ind)))))
                    (list
                     (sweeprolog-read-exportable-predicate)
                     (read-string "Export comment: ")))
