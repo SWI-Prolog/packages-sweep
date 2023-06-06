@@ -3666,9 +3666,7 @@ and end positions of the clause."
 (defun sweeprolog-end-of-next-predicate ()
   (let ((def-at-point (sweeprolog-definition-at-point)))
     (when (or (and def-at-point (<= (point) (nth 3 def-at-point)))
-              (condition-case _
-                  (progn (sweeprolog-forward-predicate)
-                         t)))
+              (ignore-errors (sweeprolog-forward-predicate) t))
       (sweeprolog-end-of-predicate-at-point)
       (point))))
 
