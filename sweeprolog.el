@@ -2034,6 +2034,13 @@ resulting list even when found in the current clause."
   (:weight bold)
   "Declaration options.")
 
+(sweeprolog-defface
+  dcg-string
+  (:inherit font-lock-string-face)
+  (:foreground "navyblue")
+  (:foreground "palegreen")
+  "DCG terminal strings.")
+
 ;;;; Font-lock
 
 (defun sweeprolog-analyze-start-font-lock (beg end)
@@ -2314,7 +2321,9 @@ resulting list even when found in the current clause."
     ("class"
      (list (list beg end (sweeprolog-class-face))))
     (`("decl_option" . ,_)
-     (list (list beg end (sweeprolog-declaration-option-face))))))
+     (list (list beg end (sweeprolog-declaration-option-face))))
+    (`("dcg" . "string")
+     (list (list beg end (sweeprolog-dcg-string-face))))))
 
 (defun sweeprolog-analyze-fragment-font-lock (beg end arg)
   (when-let ((face-fragments (sweeprolog-analyze-fragment-to-faces
