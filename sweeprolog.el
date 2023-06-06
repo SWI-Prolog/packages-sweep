@@ -2542,7 +2542,8 @@ resulting list even when found in the current clause."
          ("dict_return_op" "Dict return operator")
          ("func_dot" "Dict function dot")
          (`("decl_option" . ,option)
-          (sweeprolog--help-echo-for-declaration-option option))))
+          (sweeprolog--help-echo-for-declaration-option option))
+         (`("dcg" . "string") "DCG terminal")))
     (with-silent-modifications
       (put-text-property beg end 'help-echo help-echo))))
 
