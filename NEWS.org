@@ -11,6 +11,18 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.18.4 on 2023-06-06
+
+** Highlighting and tooltip info for string-style DCG terminals
+
+Sweep now highlights and annotates DCG terminals written as quoted
+strings in grammar rule definitions.
+
+** Improved exporting of DCG non-terminals
+
+The command ~sweeprolog-export-predicate~ now exports DCG
+non-terminals as such, using the ~F//N~ notation, instead of ~F/N+2~.
+
 * Version 0.18.3 on 2023-06-01
 
 ** Semantic highlighting and tooltip info for declaration options
