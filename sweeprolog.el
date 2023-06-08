@@ -871,7 +871,7 @@ FLAG and VALUE are specified as strings and read as Prolog terms."
 ;;;; Predicates
 
 (defun sweeprolog-predicates-collection (&optional prefix)
-  "Return a list of prediacte completion candidates matchitng PREFIX."
+  "Return a list of predicate completion candidates matchitng PREFIX."
   (sweeprolog--query-once "sweep" "sweep_predicates_collection" prefix))
 
 ;;;###autoload
@@ -1552,7 +1552,7 @@ resulting list even when found in the current clause."
   (:inherit font-lock-warning-face)
   (:weight bold)
   (:weight bold)
-  "Undefind head terms.")
+  "Undefined head terms.")
 
 (sweeprolog-defface
   head-public
