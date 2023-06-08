@@ -4446,14 +4446,15 @@ certain contexts to maintain conventional Prolog layout."
     (add-hook 'kill-buffer-hook
               (lambda ()
                 (when (timerp sweeprolog--timer)
-                  (cancel-timer sweeprolog--timer)))))
+                  (cancel-timer sweeprolog--timer)))
+              nil t))
   (when sweeprolog-enable-cursor-sensor
     (add-hook 'sweeprolog-analyze-region-fragment-hook
               #'sweeprolog-analyze-fragment-variable nil t)
     (cursor-sensor-mode 1))
   (when (boundp 'context-menu-functions)
     (add-hook 'context-menu-functions
-              #'sweeprolog-context-menu-function))
+              #'sweeprolog-context-menu-function nil t))
   (unless (member 'sweeprolog-hole yank-excluded-properties)
    (setq-local yank-excluded-properties
                (cons 'sweeprolog-hole yank-excluded-properties))))
