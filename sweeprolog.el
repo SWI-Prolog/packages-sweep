@@ -906,7 +906,7 @@ PROJECT (only on Emacs 28 or later)."
   (sweeprolog-xref-project-source-files)
   (sweeprolog--query-once "sweep" "sweep_predicate_references" mfn))
 
-(defun sweeprolog--mfn-to-functor-arity (mfn)
+(defun sweeprolog--pi-to-functor-arity (mfn)
   (pcase (sweeprolog--query-once "system" "term_string" mfn t)
     (`(compound ":"
                 (atom . ,_)
@@ -931,7 +931,7 @@ PROJECT (only on Emacs 28 or later)."
               (project-known-project-roots)))))))
 
 (defun sweeprolog-native-predicate-location (mfn)
-  (let ((functor-arity (sweeprolog--mfn-to-functor-arity mfn)))
+  (let ((functor-arity (sweeprolog--pi-to-functor-arity mfn)))
     (when-let ((default-directory (sweeprolog--swipl-source-directory))
                (match
                 (car (xref-matches-in-files
