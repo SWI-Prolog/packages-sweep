@@ -343,9 +343,9 @@ baz.
     (find-file-literally temp)
     (sweeprolog-mode)
     (should (equal (sweeprolog-predicate-references "test_sweep_find_references:callee/0")
-                   (list (list "caller/0" temp 63 6)
-                         (list "caller/0" temp 76 6)
-                         (list "caller/0" temp 99 6))))))
+                   (list (list "test_sweep_find_references:caller/0" temp 63 6)
+                         (list "test_sweep_find_references:caller/0" temp 76 6)
+                         (list "test_sweep_find_references:caller/0" temp 99 6))))))
 
 (ert-deftest forward-many-holes ()
   "Tests jumping over holes with `sweeprolog-forward-hole'."
@@ -698,10 +698,24 @@ foo(Bar).
     (goto-char (point-max))
     (backward-word)
     (should (equal (sweeprolog-identifier-at-point)
-                   "bar/1"))))
+                   "user:bar/1"))))
+
+(ert-deftest dcg-identifier-at-point ()
+  "Test recognizing DCG grammar rule definitions."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              ":- module(foobarbaz, []).
+foo(Bar) --> bar(Bar).")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (beginning-of-line)
+    (should (equal (sweeprolog-identifier-at-point)
+                   "foobarbaz:foo//1"))))
 
 (ert-deftest definition-at-point ()
-  "Test recognizing predicate defintions."
+  "Test recognizing predicate definitions."
   (let ((temp (make-temp-file "sweeprolog-test"
                               nil
                               "pl"

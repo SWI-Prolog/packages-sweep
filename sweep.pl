@@ -43,7 +43,7 @@
             sweep_predicate_location/2,
             sweep_predicate_apropos/2,
             sweep_predicates_collection/2,
-            sweep_functor_arity_pi/2,
+            sweep_module_functor_arity_pi/2,
             sweep_modules_collection/2,
             sweep_packs_collection/2,
             sweep_pack_install/2,
@@ -269,7 +269,9 @@ sweep_module_path_(Module, Path) :-
 sweep_module_path_(Module, Path) :-
     xref_module(Path, Module), !.
 sweep_module_path_(Module, Path) :-
-    '$autoload':library_index(_, Module, Path0), atom_concat(Path0, '.pl', Path).
+    '$autoload':library_index(_, Module, Path0), atom_concat(Path0, '.pl', Path), !.
+sweep_module_path_(user, _).
+
 
 sweep_predicate_properties(P0, Props) :-
     term_string(P, P0),
@@ -278,9 +280,9 @@ sweep_predicate_properties(P0, Props) :-
 
 sweep_predicate_html_documentation(P0, D) :-
     term_string(P1, P0),
-    (   P1 = M:F/N
+    (   P1 = M:PI
     ->  true
-    ;   P1 = F/N, M = system
+    ;   P1 = PI, M = system
     ),
     (   (   current_module(M)
         ;   xref_module(_, M)
@@ -289,10 +291,10 @@ sweep_predicate_html_documentation(P0, D) :-
     ;   '$autoload':library_index(_, M, Path),
         xref_source(Path, [comments(store)])
     ),
-    (   M == system
-    ->  pldoc_man:load_man_object(F/N, _, _, DOM)
-    ;   doc_comment(M:F/N, Pos, _, Comment),
-        pldoc_html:pred_dom(M:F/N, [], Pos-Comment, DOM)
+    (   pldoc_man:load_man_object(M:PI, _, _, DOM)
+    ;   pldoc_man:load_man_object(PI, _, _, DOM)
+    ;   doc_comment(M:PI, Pos, _, Comment),
+        pldoc_html:pred_dom(M:PI, [], Pos-Comment, DOM)
     ),
     phrase(pldoc_html:html(DOM), HTML),
     with_output_to(string(D), html_write:print_html(HTML)).
@@ -324,23 +326,23 @@ sweep_module_description([M0|P], [M|[P|D]]) :-
 sweep_module_description([M0|P], [M|[P]]) :- atom_string(M0, M).
 
 sweep_predicate_references(MFN, Refs) :-
-    term_string(M:F/N, MFN),
-    pi_head(F/N, H),
+    term_string(M:PI, MFN),
+    pi_head(PI, H),
     findall([B, Path, From, Len],
-            (xref_called(Path0, H, B0, _, Line),
+            ((   xref_called(Path0, H, B0, _, Line)
+             ;   xref_called(Path0, M:H, B0, _, Line)
+             ),
              pi_head(B1, B0),
-             term_string(B1, B),
+             (   B1 = M2:F/N
+             ->  true
+             ;   B1 = F/N,
+                 sweep_module_path_(M2, Path0)
+             ),
+             sweep_module_functor_arity_pi_(M2, F, N, B2),
+             term_string(B2, B),
              atom_string(Path0, Path),
              reference_span(Path0, Line, H, From, Len)),
-            Refs,
-            Tail),
-    findall([B, Path, From, Len],
-            (xref_called(Path0, M:H, B0, _, Line),
-             pi_head(B1, B0),
-             term_string(B1, B),
-             atom_string(Path0, Path),
-             reference_span(Path0, Line, H, From, Len)),
-            Tail).
+            Refs).
 
 :- dynamic current_reference_span/2.
 
@@ -361,31 +363,30 @@ reference_span_(Head, goal_term(_, Goal), Beg0, Len) :-
 reference_span_(_, _, _, _) :- true.
 
 sweep_predicate_location(MFN, [Path|Line]) :-
-    term_string(M:F/N, MFN),
+    term_string(M:PI, MFN),
     !,
-    pi_head(F/N, H),
+    pi_head(PI, H),
     (   sweep_predicate_location_(M, H, Path, Line)
     ->  true
     ;   sweep_predicate_location_(H, Path, Line)
     ).
 sweep_predicate_location(FN, [Path|Line]) :-
-    term_string(F/N, FN),
-    !,
-    pi_head(F/N, H),
+    term_string(PI, FN),
+    pi_head(PI, H),
     sweep_predicate_location_(H, Path, Line).
 
 sweep_predicate_apropos(Query0, Matches) :-
     atom_string(Query, Query0),
     findall([S,Path|Line],
-            (prolog_help:apropos(Query, M:F/N, _, P), P >= 0.3,
-             format(string(S), '~W', [M:F/N, [quoted(true), character_escapes(true)]]),
-             pi_head(F/N, Head),
+            (prolog_help:apropos(Query, M:PI, _, P), P >= 0.3,
+             format(string(S), '~W', [M:PI, [quoted(true), character_escapes(true)]]),
+             catch(pi_head(PI, Head), _, fail),
              sweep_predicate_location_(M, Head, Path, Line)),
             Matches, Tail),
     findall([S,Path],
-            (prolog_help:apropos(Query, F/N, _, P), P >= 0.3,
-             format(string(S), '~W', [F/N, [quoted(true), character_escapes(true)]]),
-             pi_head(F/N, Head),
+            (prolog_help:apropos(Query, PI, _, P), P >= 0.3,
+             format(string(S), '~W', [PI, [quoted(true), character_escapes(true)]]),
+             catch(pi_head(PI, Head), _, fail),
              sweep_predicate_location_(Head, Path, Line)),
             Tail).
 
@@ -481,16 +482,19 @@ sweep_predicate_non_hidden([String|_]) :-
     \+ sub_string(String, _, _, _, ":'$").
 
 sweep_predicate_description(M:F/N, [S|T]) :-
-    sweep_predicate_description_(M, F, N, T),
+    sweep_module_functor_arity_pi_(M, F, N, MFA),
     format(string(S),
            '~W',
-           [M:F/N, [quoted(true), character_escapes(true)]]).
+           [MFA, [quoted(true), character_escapes(true)]]),
+    sweep_predicate_description_(MFA, T).
 
-sweep_predicate_description_(M, F, N, [D]) :-
-    doc_comment(M:F/N, _, D0, _), !, atom_string(D0, D).
-sweep_predicate_description_(_M, F, N, [D]) :-
-    man_object_property(F/N, summary(D0)), !, atom_string(D0, D).
-sweep_predicate_description_(_, _, _, []).
+sweep_predicate_description_(MFA, [D]) :-
+    doc_comment(MFA, _, D0, _), !, atom_string(D0, D).
+sweep_predicate_description_(MFA, [D]) :-
+    man_object_property(MFA, summary(D0)), !, atom_string(D0, D).
+sweep_predicate_description_(_:FA, [D]) :-
+    man_object_property(FA, summary(D0)), !, atom_string(D0, D).
+sweep_predicate_description_(_, []).
 
 sweep_packs_collection(SearchString, Packs) :-
     prolog_pack:query_pack_server(search(SearchString), true(Packs0), []),
@@ -627,10 +631,9 @@ sweep_expand_file_name_(Dir, Spec, Exp) :-
                                    solutions(all),
                                    extensions(['', '.pl'])]).
 
-sweep_path_module([], "user")    :- !.
 sweep_path_module(Path0, Module) :-
     atom_string(Path, Path0),
-    xref_module(Path, Module0),
+    sweep_module_path_(Module0, Path),
     atom_string(Module0, Module).
 
 
@@ -815,32 +818,35 @@ strip_det(Mode is _, Mode) :- !.
 strip_det(//(Mode), Mode) :- !.
 strip_det(Mode, Mode).
 
-sweep_functor_arity_pi([M,F0,A|_], PI) :-
-    !, atom_string(F, F0), term_string(M:F/A, PI).
-sweep_functor_arity_pi([F0,A|Path0], PI) :-
+sweep_module_functor_arity_pi([M0,F0,A], PI) :-
+    atom_string(M, M0),
     atom_string(F, F0),
-    pi_head(F/A, Head),
-    sweep_current_module(M0),
-    (   @(predicate_property(M:Head, visible), M0),
-        \+ @(predicate_property(M:Head, imported_from(_)), M0)
-    ->  T = M:F/A
-    ;   xref_defined(_, Head, imported(Other)), xref_module(Other, M)
-    ->  T = M:F/A
-    ;   string(Path0),
-        atom_string(Path, Path0),
-        xref_defined(Path, Head, _)
-    ->  T = M0:F/A
-    ;   T = F/A
-    ),
-    term_string(T, PI).
+    sweep_module_functor_arity_pi_(M, F, A, PI0),
+    term_string(PI0, PI).
+
+sweep_module_functor_arity_pi_(M, F, A, M:F//B) :-
+    sweep_grammar_rule(M, F, A),
+    !,
+    B is A - 2.
+sweep_module_functor_arity_pi_(M, F, A, M:F/A).
+
+sweep_grammar_rule(M, F, A) :-
+    xref_module(Source, M),
+    pi_head(F/A, H),
+    xref_defined(Source, H, dcg).
+sweep_grammar_rule(M, F, A) :-
+    pi_head(M:F/A, H),
+    predicate_property(H, non_terminal).
 
 sweep_current_module(Module) :-
     sweep_main_thread,
     user:sweep_funcall("buffer-file-name", String),
-    string(String),
-    atom_string(Path, String),
-    sweep_module_path_(Module, Path).
-sweep_current_module(user).
+    (   string(String)
+    ->  atom_string(Path, String),
+        sweep_module_path_(Module, Path)
+    ;   Module = user
+    ).
+
 
 sweep_beginning_of_last_predicate(Start, Next) :-
     sweep_source_id(Path),

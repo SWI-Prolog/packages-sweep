@@ -917,7 +917,17 @@ PROJECT (only on Emacs 28 or later)."
     (`(compound "/"
                 (atom . ,functor)
                 ,arity)
-     (cons functor arity))))
+     (cons functor arity))
+    (`(compound ":"
+                (atom . ,_)
+                (compound "//"
+                          (atom . ,functor)
+                          ,arity))
+     (cons functor (+ arity 2)))
+    (`(compound "//"
+                (atom . ,functor)
+                ,arity)
+     (cons functor (+ arity 2)))))
 
 (defun sweeprolog--swipl-source-directory ()
   (when sweeprolog-swipl-sources
@@ -1031,38 +1041,94 @@ default."
             (cons start (point))))))))
 
 ;;;###autoload
-(defun sweeprolog-find-predicate (mfn)
-  "Jump to the definition of the Prolog predicate MFN.
-MFN must be a string of the form \"M:F/N\" where M is a Prolog
-module name, F is a functor name and N is its arity."
+(defun sweeprolog-find-predicate (mfa)
+  "Jump to the definition of the Prolog predicate MFA.
+MFA should be a string of the form \"M:F/A\" or \"M:F//A\", where
+M is a Prolog module name, F is a functor and A is its arity."
   (interactive (list (sweeprolog-read-predicate)))
-  (if-let ((loc (sweeprolog-predicate-location mfn)))
+  (if-let ((loc (sweeprolog-predicate-location mfa)))
       (let ((path (car loc))
             (line (or (cdr loc) 1)))
         (find-file path)
         (goto-char (point-min))
         (forward-line (1- line)))
-    (user-error "Unable to locate predicate %s" mfn)))
+    (user-error "Unable to locate predicate %s" mfa)))
+
+(defun sweeprolog--fragment-to-mfa (fragment buffer-module)
+  (pcase fragment
+    ((or `("head_term" ,kind ,functor ,arity)
+         `("head"      ,kind ,functor ,arity))
+     (pcase kind
+       ((or "unreferenced"
+            "meta"
+            "exported"
+            "hook"
+            "public"
+            "dynamic"
+            "multifile"
+            "local")
+        (list buffer-module functor arity))
+       ((or "def_iso"
+            "def_swi"
+            "iso"
+            "built_in")
+        (list "system" functor arity))
+       (`("imported" . ,file)
+        (list (sweeprolog-path-module file) functor arity))
+       (`("extern" ,module . ,_)
+        (list module functor arity))))
+    ((or `("goal_term" ,kind ,functor ,arity)
+         `("goal"      ,kind ,functor ,arity))
+     (pcase kind
+       ((or "meta"
+            "hook"
+            "dynamic"
+            "multifile"
+            "local"
+            "undefined"
+            "thread_local"
+            "expanded"
+            "recursion")
+        (list buffer-module functor arity))
+       ((or "def_iso"
+            "def_swi"
+            "iso"
+            "built_in"
+            "foreign")
+        (list "system" functor arity))
+       (`(,(or "imported" "autoload") . ,file)
+        (list (sweeprolog-path-module file) functor arity))
+       (`("extern" ,module . ,_)
+        (list module functor arity))
+       ((or "global"
+            `("global" . ,_))
+        (list "user" functor arity))))))
+
+(defun sweeprolog--mfa-to-pi (module functor arity)
+  (unless (eq functor 'variable)
+    (sweeprolog--query-once "sweep" "sweep_module_functor_arity_pi"
+                            (list module functor arity))))
+
+(defun sweeprolog-path-module (file)
+  (sweeprolog--query-once "sweep" "sweep_path_module" file))
+
+(defun sweeprolog-buffer-module (&optional buffer)
+  (sweeprolog-path-module (buffer-file-name buffer)))
 
 (defun sweeprolog-identifier-at-point (&optional point)
   (when (derived-mode-p 'sweeprolog-mode 'sweeprolog-top-level-mode)
     (setq point (or point (point)))
     (save-excursion
       (goto-char point)
-      (let ((id-at-point nil))
+      (let ((id-at-point nil)
+            (buffer-module (sweeprolog-buffer-module)))
         (sweeprolog-analyze-term-at-point
          (lambda (beg end arg)
            (when (<= beg point end)
-             (pcase arg
-               ((or `("head_term" ,_ ,f ,a)
-                    `("goal_term" ,_ ,f ,a)
-                    `("head" ,_ ,f ,a)
-                    `("goal" ,_ ,f ,a))
-                (setq id-at-point (list f a)))))))
-        (when (and id-at-point
-                   (not (eq (car id-at-point) 'variable)))
-          (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
-                                  (append id-at-point (buffer-file-name))))))))
+             (when-let ((mfa (sweeprolog--fragment-to-mfa arg buffer-module)))
+               (setq id-at-point mfa)))))
+        (when id-at-point
+          (apply #'sweeprolog--mfa-to-pi id-at-point))))))
 
 
 ;;;; Modules
@@ -5615,18 +5681,14 @@ GOAL."
 
 (defun sweeprolog-context-menu-for-predicate (menu tok _beg _end _point)
   "Extend MENU with predicate-related commands if TOK describes one."
-  (pcase tok
-    ((or `("head" ,_ ,f ,a)
-         `("goal" ,_ ,f ,a))
-     (let ((pred (sweeprolog--query-once "sweep" "sweep_functor_arity_pi"
-                                         (append (list f a)
-                                                 (buffer-file-name)))))
-       (setq sweeprolog-context-menu-predicate-at-click pred)
-       (define-key menu [sweeprolog-describe-predicate]
-                   `(menu-item "Describe This Predicate"
-                               sweeprolog-context-menu-describe-predicate
-                               :help ,(format "Describe predicate %s" pred)
-                               :keys "\\[sweeprolog-describe-predicate]"))))))
+  (when-let ((mfa (sweeprolog--fragment-to-mfa tok (sweeprolog-buffer-module)))
+             (pred (apply #'sweeprolog--mfa-to-pi mfa)))
+    (setq sweeprolog-context-menu-predicate-at-click pred)
+    (define-key menu [sweeprolog-describe-predicate]
+                `(menu-item "Describe This Predicate"
+                            sweeprolog-context-menu-describe-predicate
+                            :help ,(format "Describe predicate %s" pred)
+                            :keys "\\[sweeprolog-describe-predicate]"))))
 
 (defun sweeprolog-context-menu-for-module (menu tok _beg _end _point)
   "Extend MENU with module-related commands if TOK describes one."
