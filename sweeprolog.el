@@ -5632,7 +5632,7 @@ GOAL."
   (pcase tok
     (`("module" . ,module)
      (setq sweeprolog-context-menu-module-at-click module)
-     (define-key menu [sweeprolog-predicate-module]
+     (define-key menu [sweeprolog-describe-module]
                  `(menu-item "Describe This Module"
                              sweeprolog-context-menu-describe-module
                              :help ,(format "Describe module %s" module)
