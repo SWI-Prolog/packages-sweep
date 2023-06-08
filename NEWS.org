@@ -11,6 +11,23 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.19.0 on 2023-06-08
+
+** Greatly improved support for DCG grammar rules
+
+This version includes an overhaul of Sweep's treatment of DCG grammar
+rules.  Crucially, commands that suggest the predicate at point as a
+default option now correctly recognize and format grammar rules as
+such.  Furthermore, ~sweeprolog-describe-predicate~ now correctly
+displays the documentation for grammar rules.
+
+** Bug fix in ~context-menu-mode~ integration
+
+In previous versions, Sweep would change the global value of
+~context-menu-functions~ which caused non-Prolog buffers to be
+analyzed as such.  This was never intended, and now Sweep only changes
+~context-menu-functions~ locally in Prolog buffers.
+
 * Version 0.18.4 on 2023-06-06
 
 ** Highlighting and tooltip info for string-style DCG terminals
