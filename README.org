@@ -48,23 +48,23 @@ The different parts of Sweep are structured as follows:
 
 #+CINDEX: sweep-module
 - =sweep.c= defines a dynamic Emacs module which is referred to from
-  Elisp as =sweep-module=. This module is linked against the SWI-Prolog
-  runtime library (=libswipl=) and exposes a subset of the SWI-Prolog C
-  interface to Emacs in the form of Elisp functions (see [[Querying
-  Prolog]]). Notably, =sweep-module= is responsible for translating Elisp
-  objects to Prolog terms and vice versa.
+  Elisp as =sweep-module=.  This module is linked against the
+  SWI-Prolog runtime library (=libswipl=) and exposes a subset of the
+  SWI-Prolog C interface to Emacs in the form of Elisp functions (see
+  [[Querying Prolog]]).  Notably, =sweep-module= is responsible for
+  translating Elisp objects to Prolog terms and vice versa.
 
 #+CINDEX: sweeprolog.el
-- =sweeprolog.el= defines an Elisp library (named simply =sweeprolog=),
-  which builds on top of =sweep-module= to provide user-facing commands
-  and functionality. It is also responsible for loading =sweep-module=.
+- =sweeprolog.el= defines an Elisp library which builds on top of
+  =sweep-module= to provide user-facing commands and functionality.
+  It is also responsible for loading =sweep-module=.
 
 #+CINDEX: sweep.pl
-- =sweep.pl= defines a Prolog module (named, unsurprisingly, Sweep)
-  which is by default arranged by =sweeprolog.el= to be loaded when the
-  embedded Prolog runtime is initialized. It contains predicates that
-  =sweeprolog.el= invoke through =sweep-module= to facilitate its different
-  commands (see [[Finding Prolog code]]).
+- =sweep.pl= defines a Prolog module (named, unsurprisingly, ~sweep~)
+  which is by default arranged by =sweeprolog.el= to be loaded when
+  the embedded Prolog runtime is initialized.  It contains predicates
+  that =sweeprolog.el= invoke through =sweep-module= to facilitate its
+  different commands.
 
 * Installation
 :PROPERTIES:
