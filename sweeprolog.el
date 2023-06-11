@@ -2187,6 +2187,8 @@ resulting list even when found in the current clause."
            (list beg end (sweeprolog-comment-face))))
     (`("head" "unreferenced" . ,_)
      (list (list beg end (sweeprolog-head-unreferenced-face))))
+    (`("head" "undefined" . ,_)
+     (list (list beg end (sweeprolog-head-undefined-face))))
     (`("head" "test" . ,_)
      (list (list beg end (sweeprolog-head-test-face))))
     (`("head" "meta" . ,_)
