@@ -1355,9 +1355,10 @@ resulting list even when found in the current clause."
                  (not (or (sweeprolog--char-uppercase-p first)
                           (= first ?_)))))
       (when-let
-          ((col (sweeprolog--query-once
-                 "sweep" "sweep_predicate_completion_candidates"
-                 (cons (sweeprolog-context-callable-p)
+          ((extra-args (sweeprolog-context-callable-p))
+           (col (sweeprolog--query-once
+                 "sweep" "sweep_heads_collection"
+                 (cons extra-args
                        (buffer-substring-no-properties beg end)))))
         (list beg end col
               :exclusive 'no
@@ -3551,10 +3552,14 @@ of the prefix argument."
       (sweeprolog-forward-hole))))
 
 (defun sweeprolog-insert-clause (functor arity &optional neck module)
-  (let ((point (point))
-        (neck (or neck ":-"))
-        (head-format (sweeprolog--query-once "sweep" "sweep_format_head"
-                                             (cons functor arity))))
+  (let* ((point (point))
+         (neck (or neck ":-"))
+         (mod (or module (sweeprolog-buffer-module)))
+         (head-format (sweeprolog--query-once "sweep" "sweep_format_head"
+                                              (list mod
+                                                    functor
+                                                    arity
+                                                    (if (string= neck "-->") 2 0)))))
     (combine-after-change-calls
       (insert "\n"
               (if module
@@ -3595,7 +3600,7 @@ of the prefix argument."
       (goto-char end)
       (end-of-line)
       (sweeprolog-insert-clause functor
-                                (- arity (if (string= neck "-->") 2 0))
+                                arity
                                 neck
                                 module)
       t)))
@@ -3636,7 +3641,7 @@ of the prefix argument."
       (funcall sweeprolog-new-predicate-location-function
                functor arity neck)
       (sweeprolog-insert-clause functor
-                                (- arity (if (string= neck "-->") 2 0))
+                                arity
                                 neck)
       t)))
 

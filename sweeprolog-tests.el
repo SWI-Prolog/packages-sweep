@@ -714,6 +714,21 @@ foo(Bar) --> bar(Bar).")))
     (should (equal (sweeprolog-identifier-at-point)
                    "foobarbaz:foo//1"))))
 
+(ert-deftest dcg-completion-at-point ()
+  "Test completing DCG grammar rule invocation."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              ":- use_module(library(dcg/high_order)).
+foo(Bar) --> optiona")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (complete-symbol nil)
+    (should (string= (buffer-string)
+                     ":- use_module(library(dcg/high_order)).
+foo(Bar) --> optional(Match, Default)"))))
+
 (ert-deftest definition-at-point ()
   "Test recognizing predicate definitions."
   (let ((temp (make-temp-file "sweeprolog-test"
@@ -894,6 +909,34 @@ foo --> bar.")
                      "
 foo --> bar.
 foo --> Body.
+"))))
+
+
+(ert-deftest dwim-next-clause-dcg-with-pldoc ()
+  "Test completing DCG grammar rule invocation."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+:- module(dcg_completion_at_point_with, []).
+
+%!  foo(+Bar)// is det.
+
+foo(bar) --> baz(bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (sweeprolog-insert-term-dwim)
+    (should (string= (buffer-string)
+                     "
+:- module(dcg_completion_at_point_with, []).
+
+%!  foo(+Bar)// is det.
+
+foo(bar) --> baz(bar).
+foo(Bar) --> Body.
+
 "))))
 
 (ert-deftest dwim-next-clause-ssu ()

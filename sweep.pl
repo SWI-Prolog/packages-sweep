@@ -65,7 +65,7 @@
             sweep_beginning_of_last_predicate/2,
             sweep_atom_collection/2,
             sweep_context_callable/2,
-            sweep_predicate_completion_candidates/2,
+            sweep_heads_collection/2,
             sweep_exportable_predicates/2,
             sweep_interrupt/0,
             sweep_string_to_atom/2,
@@ -429,72 +429,57 @@ sweep_predicate_location_(M, H, Path, Line) :-
     predicate_property(M:H, line_count(Line)),
     atom_string(Path0, Path).
 
+sweep_matching_predicates(S, D, PIs) :-
+    setof(M:F/A, sweep_matching_predicate(S, D, M, F, A), PIs).
 
-sweep_predicates_collection(Sub, Preds) :-
-    findall(M:F/N,
-            ( current_predicate(M:F/N),
-              pi_head(F/N, H),
-              (   M == system
-              ->  true
-              ;   \+ (predicate_property(M:H, imported_from(M1)), M \= M1)
-              )
-            ),
-            Preds0,
-            Tail0),
-    findall(M:F/N,
-            ( '$autoload':library_index(H, M, _),
-              pi_head(F/N, H)
-            ),
-            Tail0,
-            Tail1),
-    findall(M:F/N,
-            ( xref_defined(SourceId, H, local(_)),
-              (   xref_module(SourceId, M)
-              ->  true
-              ;   M = user
-              ),
-              \+ (predicate_property(M:H, imported_from(M1)), M \= M1),
-              pi_head(F/N, H)
-            ),
-            Tail1,
-            Tail),
-    findall(M:F/N,
-            ( xref_defined(_, H, imported(SourceId)),
-              (   xref_module(SourceId, M)
-              ->  true
-              ;   M = user
-              ),
-              pi_head(F/N, H)
-            ),
-            Tail),
-    list_to_set(Preds0, Preds1),
-    maplist(sweep_predicate_description, Preds1, Preds2),
-    include(sweep_predicate_non_hidden, Preds2, Preds3),
-    (   Sub == []
-    ->  Preds = Preds3
-    ;   include(sweep_predicate_matches(Sub), Preds3, Preds)
+sweep_matching_predicate(S, D, M, F, A) :-
+    sweep_known_predicate(M, F, A),
+    once(sub_atom(F, _, _, _, S)),
+    A >= D.
+
+sweep_known_predicate(M, F, A) :-
+    current_predicate(M:F/A),
+    (   M == system
+    ->  true
+    ;   pi_head(F/A, H),
+        \+ (predicate_property(M:H, imported_from(M1)), M \= M1)
     ).
+sweep_known_predicate(M, F, A) :-
+    '$autoload':library_index(H, M, _),
+    pi_head(F/A, H).
+sweep_known_predicate(M, F, A) :-
+    xref_defined(SourceId, H, How),
+    xref_definition_line(How, _),
+    (   xref_module(SourceId, M)
+    ->  true
+    ;   M = user
+    ),
+    pi_head(F/A, H).
 
-sweep_predicate_matches(Sub, [String|_]) :-
-    sub_string(String, _, _, _, Sub).
+sweep_predicates_collection(S0, Ps) :-
+    (   S0 == []
+    ->  S = ""
+    ;   S = S0
+    ),
+    sweep_matching_predicates(S, 0, PIs),
+    maplist(sweep_format_pi, PIs, Ps).
 
-sweep_predicate_non_hidden([String|_]) :-
-    \+ sub_string(String, _, _, _, ":'$").
-
-sweep_predicate_description(M:F/N, [S|T]) :-
+sweep_format_pi(M:F/N, [S|T]) :-
     sweep_module_functor_arity_pi_(M, F, N, MFA),
     format(string(S),
            '~W',
            [MFA, [quoted(true), character_escapes(true)]]),
-    sweep_predicate_description_(MFA, T).
+    (   sweep_predicate_summary(MFA, Summary)
+    ->  atom_string(Summary, T)
+    ;   T = []
+    ).
 
-sweep_predicate_description_(MFA, [D]) :-
-    doc_comment(MFA, _, D0, _), !, atom_string(D0, D).
-sweep_predicate_description_(MFA, [D]) :-
-    man_object_property(MFA, summary(D0)), !, atom_string(D0, D).
-sweep_predicate_description_(_:FA, [D]) :-
-    man_object_property(FA, summary(D0)), !, atom_string(D0, D).
-sweep_predicate_description_(_, []).
+sweep_predicate_summary(MFA, D) :-
+    doc_comment(MFA, _, D, _).
+sweep_predicate_summary(MFA, D) :-
+    man_object_property(MFA, summary(D)).
+sweep_predicate_summary(_:FA, D) :-
+    man_object_property(FA, summary(D)).
 
 sweep_packs_collection(SearchString, Packs) :-
     prolog_pack:query_pack_server(search(SearchString), true(Packs0), []),
@@ -885,27 +870,15 @@ sweep_atom_collection(Sub, Col) :-
             ),
             Col).
 
-sweep_predicate_completion_candidates([D|Sub], Ps) :-
-    integer(D),
-    sweep_current_module(M),
-    findall(H,
-            (   (   @(predicate_property(H, visible), M)
-                ;   xref_defined(_, H, _)
-                ),
-                pi_head(F/N, H),
-                once(sub_atom(F, _, _, _, Sub)),
-                N - D >= 0
-            ),
-            Hs),
-    maplist(sweep_format_predicate(M, D), Hs, Ps).
+sweep_heads_collection([D|Sub], Ps) :-
+    sweep_matching_predicates(Sub, D, PIs),
+    maplist(sweep_format_head_(D), PIs, Ps).
 
-sweep_format_predicate(M0, D, H0, [S|SP]) :-
-    pi_head(F/N0, H0),
-    N is N0 - D,
+sweep_format_head_(D, M:F/A, [S|SP]) :-
+    N is A - D,
     length(NamedArgs, N),
     append(NamedArgs, _, OpenNamedArgs),
-    (   @(predicate_property(H0, implementation_module(M)), M0),
-        predicate_argument_names(M:F/N0, As)
+    (   predicate_argument_names(M:F/A, As)
     ->  maplist(name_variable, As, Vs), OpenNamedArgs = Vs
     ;   maplist(=('$VAR'('_')), NamedArgs)
     ),
@@ -1012,12 +985,21 @@ sweep_file_path_in_library(Path, Spec) :-
     ;   term_string(Spec1, Spec)
     ).
 
+
 predicate_argument_names(M:F/A, Args) :-
-    (   M == system
+    sweep_module_functor_arity_pi_(M, F, A, M:PI),
+    (   predicate_argument_names_from_man(M, PI, Args0)
     ->  true
-    ;   sub_atom(M, 0, 1, _, '$')
+    ;   predicate_argument_names_from_pldoc(M, PI, Args0)),
+    arg(2, PI, N),
+    predicate_argument_names_(N, Args0, Args).
+
+
+predicate_argument_names_from_man(M, PI, Args) :-
+    (   pldoc_man:load_man_object(M:PI, _, _, DOM0)
+    ->  true
+    ;   pldoc_man:load_man_object(PI, _, _, DOM0)
     ),
-    pldoc_man:load_man_object(F/A, _, _, DOM0),
     memberchk(element(dt, _, DOM1), DOM0),
     memberchk(element(a, _, DOM2), DOM1),
     catch(findall(Arg,
@@ -1031,17 +1013,16 @@ predicate_argument_names(M:F/A, Args) :-
                       comma_list(CommaSeparatedArgs, ArgsList),
                       member(Arg, ArgsList)
                   ),
-                  Args0),
+                  Args),
           error(syntax_error(_),_),
-          fail),
-    predicate_argument_names_(A, Args0, Args).
-predicate_argument_names(M:F/A, Args) :-
-    doc_comment(M:F/A, _, _, C),
+          fail).
+
+predicate_argument_names_from_pldoc(M, PI, Args) :-
+    doc_comment(M:PI, _, _, C),
     comment_modes(C, ModeAndDets),
     member(ModeAndDet, ModeAndDets),
     strip_det(ModeAndDet, Head),
-    Head =.. [_|Args0],
-    predicate_argument_names_(A, Args0, Args).
+    Head =.. [_|Args].
 
 predicate_argument_names_(Arity, Args0, Args) :-
     length(Args0, Arity),
@@ -1086,11 +1067,10 @@ dep_import(Path, Kind, PI0) -->
     [[Path, PI, Kind]].
 
 
-sweep_format_head([F0|A], R) :-
+sweep_format_head([M0,F0,A,D], R) :-
+    atom_string(M, M0),
     atom_string(F, F0),
-    pi_head(F/A, H),
-    sweep_current_module(M),
-    sweep_format_predicate(M, 0, H, R).
+    sweep_format_head_(D, M:F/A, R).
 
 sweep_format_term([F0,N,P], [S|SP]) :-
     atom_string(F, F0),
