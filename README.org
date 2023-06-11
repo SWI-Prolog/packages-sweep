@@ -2368,24 +2368,47 @@ press ~C-c C-k~ (~kill-compilation~).
 _Compatibility note_: asynchronous queries use pipe processes that
 require Emacs 28 or later and SWI-Prolog 9.1.4 or later.
 
-* Finding Prolog code
+* Finding Prolog Code
 :PROPERTIES:
 :CUSTOM_ID: finding-prolog-code
 :DESCRIPTION: Commands for locating and opening Prolog files
 :ALT_TITLE: Finding Prolog Code
 :END:
 
-#+FINDEX: sweeprolog-find-module
-Sweep provides the command =M-x sweeprolog-find-module= for
-selecting and jumping to the source code of a loaded or auto-loadable
-Prolog module.  Sweep integrates with Emacs's standard completion API
-to annotate candidate modules in the completion UI with their =PLDoc=
-description when available.
+The following commands let you find and jump to Prolog code from
+anywhere in Emacs:
 
+#+FINDEX: sweeprolog-find-module
+- Command: sweeprolog-find-module :: Prompt for a known Prolog module
+  and find its source code.
 #+FINDEX: sweeprolog-find-predicate
-Along with =M-x sweeprolog-find-module=, Sweep provides the
-command =M-x sweeprolog-find-predicate= jumping to the definition a
-loaded or auto-loadable Prolog predicate.
+- Command: sweeprolog-find-predicate :: Prompt for a known Prolog
+  predicate and find its source code.
+
+~sweeprolog-find-module~ and ~sweeprolog-find-predicate~ prompt you for a
+Prolog identifier (respectively, a module name or a predicate indicator),
+and jump to its source definition.  Sweep integrates with Emacs's standard
+completion API to annotate candidate modules in the completion UI with a
+summary line derived from their documentation, when available.
+
+By default, these commands use the current window to display the selected
+module or predicate.  To have it in another window instead, invoke these
+commands with a prefix argument (e.g. ~C-u M-x sweeprolog-find-predicate~).
+
+#+FINDEX: sweeprolog-read-predicate
+#+VINDEX: sweeprolog-predicate-visible-p-function
+The command ~sweeprolog-find-predicate~ uses the function
+~sweeprolog-read-predicate~ for prompting you to insert a predicate
+indicator in the minibuffer.  This is the standard function that Sweep
+commands use for this purpose, it provides completion candidates based on
+known predicates, and it uses the predicate at point, if any, as the
+default minibuffer argument.  By default, ~sweeprolog-read-predicate~
+includes all predicates that Sweep knows about as completion candidates,
+except for predicate whose functor name begins with ~$~, because that's the
+convention in in SWI-Prolog for internal predicates that are usually of
+little interest to users.  To include also these predicates as completion
+candidates, customize the user option
+~sweeprolog-predicate-visible-p-function~ to ~nil~.
 
 ** Prolog file specification expansion
 :PROPERTIES:
@@ -2466,8 +2489,8 @@ accessed from anywhere with =C-c p t=, which invokes the command
 
 The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
 
-| Key | Command                              | Documentation                     |
-|-----+--------------------------------------+-----------------------------------|
+| Key   | Command                                | Documentation                     |
+|-------+----------------------------------------+-----------------------------------|
 | ~B~   | ~sweeprolog-list-breakpoints~          | [[#breakpoint-menu][Breakpoint Menu]]                   |
 | ~F~   | ~sweeprolog-set-prolog-flag~           | [[*Setting Prolog flags][Setting Prolog Flags]]              |
 | ~P~   | ~sweeprolog-pack-install~              | [[*Installing Prolog packages][Installing Prolog packages]]        |
@@ -2479,7 +2502,7 @@ The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
 | ~h m~ | ~sweeprolog-describe-module~           | [[*Prolog Help][Prolog Help]]                       |
 | ~l~   | ~sweeprolog-load-buffer~               | [[#loading-buffers][Loading Buffers]]                   |
 | ~m~   | ~sweeprolog-find-module~               | [[#finding-prolog-code][Finding Prolog Code]]               |
-| ~p~   | ~sweeprolog-find-predicate~            | [[*Finding Prolog code][Finding Prolog Code]]               |
+| ~p~   | ~sweeprolog-find-predicate~            | [[*Finding Prolog Code][Finding Prolog Code]]               |
 | ~q~   | ~sweeprolog-top-level-send-goal~       | [[#top-level-send-goal][Sending Goals to the Top-level]]    |
 | ~t~   | ~sweeprolog-top-level~                 | [[#prolog-top-level][The Prolog Top-level]]              |
 | ~&~   | ~sweeprolog-async-goal~                | [[#async-query][Executing Prolog Asynchronously]]   |

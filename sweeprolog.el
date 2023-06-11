@@ -236,9 +236,9 @@ the value of this option is used as its path."
   :type 'string
   :group 'sweeprolog)
 
-(defcustom sweeprolog-read-predicate-prompt "Predicate: "
+(defcustom sweeprolog-read-predicate-prompt "Predicate"
   "Prompt used for reading a Prolog predicate name from the minibuffer."
-  :package-version '((sweeprolog . "0.1.0"))
+  :package-version '((sweeprolog . "0.19.1"))
   :type 'string
   :group 'sweeprolog)
 
@@ -422,6 +422,24 @@ use `autoload/2' for all added directives."
   :package-version '((sweeprolog "0.17.0"))
   :type 'boolean
   :group 'sweeprolog)
+
+(defcustom sweeprolog-predicate-visible-p-function #'sweeprolog-predicate-non-hidden-p
+  "Controls how `sweeprolog-read-predicate' filters completion candidates.
+
+This affects commands that read a Prolog predicate indicator in
+the minibuffer, such as \\[sweeprolog-find-predicate]
+and \\[sweeprolog-describe-predicate].
+
+If non-nil, this is a function that takes a single string
+argument, and returns non-nil if that string should be included
+as a completion candidate (i.e. it is not hidden).  If this
+user option is nil, all known predicates are provided as
+completion candidates."
+  :package-version '((sweeprolog "0.19.1"))
+  :type '(choice (const    :tag "Include all predicates" nil)
+                 (const    :tag "Exclude internal hidden predicates"
+                           sweeprolog-predicate-non-hidden-p)
+                 (function :tag "Custom exclusion predicate")))
 
 ;;;; Keymaps
 
@@ -1004,6 +1022,11 @@ Return a cons cell of the functor as a string and the arity."
       (cons functor
             (or arity (read-number (concat functor "/")))))))
 
+(defun sweeprolog-predicate-non-hidden-p (pred)
+  "Return nil if PRED is an internal hidden predicate.
+These are predicates whose functor begin with $."
+  (not (string-match (rx ":'$") pred)))
+
 (defun sweeprolog-read-predicate (&optional prompt)
   "Read a Prolog predicate from the minibuffer with prompt PROMPT.
 If PROMPT is nil, `sweeprolog-read-predicate-prompt' is used by
@@ -1012,14 +1035,20 @@ default."
          (completion-extra-properties
           (list :annotation-function
                 (lambda (key)
-                  (let* ((val (cdr (assoc-string key col))))
-                    (if val
-                        (concat (make-string (- 64 (length key)) ? ) (car val))
-                      nil))))))
-    (completing-read (or prompt sweeprolog-read-predicate-prompt)
-                     col nil nil nil
-                     'sweeprolog-read-predicate-history
-                     (sweeprolog-identifier-at-point))))
+                  (when-let ((val (alist-get key col nil nil #'string=)))
+                    (concat (make-string (- 64 (length key)) ? ) val)))))
+         (default (sweeprolog-identifier-at-point)))
+    (completing-read
+     (concat (or prompt sweeprolog-read-predicate-prompt)
+             (when default
+               (concat " (default " default ")"))
+             ": ")
+     col
+     (when sweeprolog-predicate-visible-p-function
+       (lambda (cand)
+         (funcall sweeprolog-predicate-visible-p-function
+                  (car cand))))
+     nil nil 'sweeprolog-read-predicate-history default)))
 
 (defun sweeprolog-predicate-prefix-boundaries (&optional point)
   (let ((case-fold-search nil))
@@ -1041,18 +1070,27 @@ default."
             (cons start (point))))))))
 
 ;;;###autoload
-(defun sweeprolog-find-predicate (mfa)
-  "Jump to the definition of the Prolog predicate MFA.
-MFA should be a string of the form \"M:F/A\" or \"M:F//A\", where
-M is a Prolog module name, F is a functor and A is its arity."
-  (interactive (list (sweeprolog-read-predicate)))
-  (if-let ((loc (sweeprolog-predicate-location mfa)))
+(defun sweeprolog-find-predicate (pi &optional other-window)
+  "Jump to the definition of the Prolog predicate PI.
+
+PI should be a string of the form \"M:F/A\" or \"M:F//A\", where
+M is a Prolog module name, F is a functor and A is its arity.
+
+If OTHER-WINDOW is non-nil, find it in another window.
+
+Interactively, this command prompts for PI, and OTHER-WINDOW is
+the prefix argument."
+  (interactive (list (sweeprolog-read-predicate)
+                     current-prefix-arg))
+  (if-let ((loc (sweeprolog-predicate-location pi)))
       (let ((path (car loc))
             (line (or (cdr loc) 1)))
-        (find-file path)
+        (if other-window
+            (find-file-other-window path)
+          (find-file path))
         (goto-char (point-min))
         (forward-line (1- line)))
-    (user-error "Unable to locate predicate %s" mfa)))
+    (user-error "Unable to locate predicate %s" pi)))
 
 (defun sweeprolog--fragment-to-mfa (fragment buffer-module)
   (pcase fragment
@@ -1163,7 +1201,8 @@ If OTHER-WINDOW is non-nil, find it in another window.
 
 Interactively, OTHER-WINDOW is the prefix argument and this
 command prompts for MOD."
-  (interactive (list (sweeprolog-read-module-name)))
+  (interactive (list (sweeprolog-read-module-name)
+                     current-prefix-arg))
   (let ((file (sweeprolog-module-path mod)))
     (if other-window
         (find-file-other-window file)
@@ -5084,11 +5123,7 @@ accordingly."
 ;;;###autoload
 (defun sweeprolog-describe-predicate (pred)
   "Display the full documentation for PRED (a Prolog predicate)."
-  (interactive (list (sweeprolog-read-predicate
-                      (concat "Describe predicate"
-                              (when-let ((def (sweeprolog-identifier-at-point)))
-                                (concat " (default " def ")"))
-                              ": "))))
+  (interactive (list (sweeprolog-read-predicate "Describe predicate")))
   (sweeprolog--describe-predicate pred))
 
 (defun sweeprolog--find-predicate-from-symbol (sym)
