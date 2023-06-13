@@ -1228,7 +1228,7 @@ resulting list even when found in the current clause."
   (let* ((beg (save-mark-and-excursion
                 (unless (sweeprolog-at-beginning-of-top-term-p)
                   (sweeprolog-beginning-of-top-term))
-                (max (1- (point)) (point-min))))
+                (point)))
          (end (save-mark-and-excursion
                 (sweeprolog-end-of-top-term)
                 (point)))
@@ -2163,7 +2163,7 @@ resulting list even when found in the current clause."
                     (<= (save-excursion
                           (goto-char sweeprolog--analyze-point)
                           (sweeprolog-beginning-of-top-term)
-                          (1- (point)))
+                          (point))
                         (1+ end) sweeprolog--analyze-point))
                (< (save-excursion
                     (goto-char sweeprolog--analyze-point)
@@ -2708,7 +2708,7 @@ resulting list even when found in the current clause."
                                (<= (save-excursion
                                      (goto-char sweeprolog--analyze-point)
                                      (sweeprolog-beginning-of-top-term)
-                                     (1- (point)))
+                                     (point))
                                    (1+ end) sweeprolog--analyze-point))
                           (< (save-excursion
                                (goto-char sweeprolog--analyze-point)
@@ -2831,8 +2831,6 @@ modified."
       (goto-char beg)
       (unless (sweeprolog-at-beginning-of-top-term-p)
         (sweeprolog-beginning-of-top-term))
-      (unless (bobp)
-        (forward-char -1))
       (let ((start (point)))
         (sweeprolog-end-of-top-term)
         (sweeprolog-analyze-region start (point) "true")))))
@@ -2844,9 +2842,7 @@ modified."
        (goto-char beg)
        (sweeprolog-beginning-of-top-term)
        (unless (bobp)
-         (forward-char -1)
-         (sweeprolog-beginning-of-top-term)
-         (unless (bobp) (forward-char -1)))
+         (sweeprolog-beginning-of-top-term))
        (let ((start (point))
              (cur (point)))
          (while (and (not (eobp))
@@ -3210,30 +3206,41 @@ is the prefix argument."
 
 ;;;; Moving and editing
 
+(defun sweeprolog-beginning-of-top-term-once ()
+  "Move back from point to the beginning of a top term.
+
+When there is no top term that begins before point, move to the
+beginning of the buffer and return nil.  Otherwise, return
+non-nil."
+  (let ((go t)
+        (result nil)
+        (start nil))
+    (while go
+      (if (re-search-backward (rx bol graph) nil t)
+          (cond
+           ((setq start (nth 8 (syntax-ppss))) (goto-char start))
+           ((looking-at (rx (or "%" "/*"))))
+           ((setq go nil result t)))
+        (goto-char (point-min))
+        (setq go nil)))
+    result))
+
 (defun sweeprolog-beginning-of-top-term (&optional arg)
-  (let ((times (or arg 1)))
-    (if (< 0 times)
-        (let ((p (point)))
-          (while (and (< 0 times) (not (bobp)))
-            (setq times (1- times))
-            (when-let ((safe-start (nth 8 (syntax-ppss))))
-              (goto-char safe-start))
-            (unless (and (sweeprolog-at-beginning-of-top-term-p)
-                         (not (= p (point))))
-              (re-search-backward (rx bol graph) nil t)
-              (let ((safe-start (or (nth 8 (syntax-ppss))
-                                    (nth 8 (syntax-ppss (1+ (point)))))))
-                (while (and safe-start (not (bobp)))
-                  (goto-char safe-start)
-                  (if (or (bobp)
-                          (sweeprolog-at-beginning-of-top-term-p))
-                      (setq safe-start nil)
-                    (backward-char)
-                    (re-search-backward (rx bol graph) nil t)
-                    (setq safe-start (or (nth 8 (syntax-ppss))
-                                         (nth 8 (syntax-ppss (1+ (point)))))))))))
-          (not (= p (point))))
-      (sweeprolog-beginning-of-next-top-term (- times)))))
+  "Move to the beginning of the ARGth term before point.
+
+If ARG is negative, Move to the beginning of the ARGth term after
+point instead.
+
+The command `beginning-of-defun' calls this function in
+`sweeprolog-mode' buffers (see `beginning-of-defun-function')."
+  (let ((times (or arg 1))
+        (result nil))
+    (if (> 0 times)
+        (sweeprolog-beginning-of-next-top-term (- times))
+      (while (and (< 0 times) (not (bobp)))
+        (setq times (1- times)
+              result (sweeprolog-beginning-of-top-term-once)))
+      result)))
 
 (defun sweeprolog-beginning-of-next-top-term (&optional times)
   (setq times (or times 1))
@@ -3812,14 +3819,12 @@ the defined predicate and ARI is its arity, or nil if there is no
 predicate definition at or directly above POINT."
   (when-let* ((def (sweeprolog-definition-at-point point)))
     (unless (sweeprolog-at-beginning-of-top-term-p)
-      (sweeprolog-beginning-of-top-term)
-      (backward-char 1))
+      (sweeprolog-beginning-of-top-term))
     (let ((point (point))
           (fun (cadr def))
           (ari (caddr def)))
       (while (and point (not (bobp)))
         (sweeprolog-beginning-of-top-term)
-        (backward-char 1)
         (if-let* ((moved (< (point) point))
                   (ndef (sweeprolog-definition-at-point (point)))
                   (nfun (cadr ndef))
@@ -5474,8 +5479,6 @@ moving point."
     (goto-char point)
     (unless (sweeprolog-at-beginning-of-top-term-p)
       (sweeprolog-beginning-of-top-term))
-    (unless (bobp)
-      (forward-char -1))
     (let ((start (point)))
       (sweeprolog-end-of-top-term)
       (mapcar (lambda (beg-end)
