@@ -361,12 +361,20 @@ non-terminals)."
 
 (defcustom sweeprolog-read-predicate-documentation-function
   #'sweeprolog-read-predicate-documentation-default-function
-  "Function returning information for initial predicate documentation.
+  "Function used for filling in information for predicate documentation.
 
-The function should take two arguments, the functor name and
-arity of the predicate, and return a list of three strings.  The
-first string is the predicate's head template, the second is its
-determinism specification, and the third is a summary line."
+The function should take four arguments, MODULE, FUNCTOR, ARITY
+and NECK, which have the same meaning as in
+`sweeprolog-definition-at-point'.
+
+It should return a list with four elements (MOD HEAD DET SUM),
+where HEAD is a string that contains a template head term for
+calling the documented predicate (e.g. \"foo(+Bar, -Baz)\"), MOD
+is the module name to qualify HEAD with, or nil if the documented
+predicate is local to the current module and shouldn't be
+module-qualified, DET is the determinism specification of the
+predicate, and SUM is the first line of the predicate's
+documentation, acting as a short summary."
   :package-version '((sweeprolog "0.10.1"))
   :type '(choice
           (const
@@ -3814,27 +3822,30 @@ marks the next predicate after the ones already marked."
 (defun sweeprolog-beginning-of-predicate-at-point (&optional point)
   "Find the beginning of the predicate definition at or above POINT.
 
-Return a cons cell (FUN . ARI) where FUN is the functor name of
-the defined predicate and ARI is its arity, or nil if there is no
-predicate definition at or directly above POINT."
-  (when-let* ((def (sweeprolog-definition-at-point point)))
-    (unless (sweeprolog-at-beginning-of-top-term-p)
-      (sweeprolog-beginning-of-top-term))
-    (let ((point (point))
-          (fun (cadr def))
-          (ari (caddr def)))
-      (while (and point (not (bobp)))
-        (sweeprolog-beginning-of-top-term)
-        (if-let* ((moved (< (point) point))
-                  (ndef (sweeprolog-definition-at-point (point)))
-                  (nfun (cadr ndef))
-                  (nari (caddr ndef))
-                  (same (and (string= fun nfun)
-                             (=       ari nari))))
-            (setq point (point))
-          (goto-char point)
-          (setq point nil)))
-      (cons fun ari))))
+If there is no predicate definition at or directly above point,
+return nil.  Otherwise, return a list (MOD FUN ARI NECK), where
+MOD, FUN, ARI and NECK have the same meaning as in
+`sweeprolog-definition-at-point'."
+  (setq point (or point (point)))
+  (goto-char point)
+  (unless (sweeprolog-at-beginning-of-top-term-p)
+    (sweeprolog-beginning-of-top-term))
+  (when-let ((def (sweeprolog-definition-at-point)))
+    (let ((start (point))
+          (go t))
+      (while (and go (sweeprolog-beginning-of-top-term-once))
+        (let ((ndef (sweeprolog-definition-at-point)))
+          (if (and (string= (nth 5 def)
+                            (nth 5 ndef))
+                   (string= (nth 1 def)
+                            (nth 1 ndef))
+                   (= (nth 2 def)
+                      (nth 2 ndef)))
+              (setq start (point)
+                    def ndef)
+            (setq go nil)
+            (goto-char start)))))
+    (list (nth 5 def) (nth 1 def) (nth 2 def) (nth 4 def))))
 
 (defun sweeprolog-format-term-with-holes (functor arity &optional pre)
   (let ((term-format
@@ -3869,18 +3880,25 @@ predicate definition at or directly above POINT."
       term)))
 
 (defun sweeprolog-read-predicate-documentation-with-holes
-    (functor arity)
-  "Use holes for initial documentation for predicate FUNCTOR/ARITY."
-  (list (sweeprolog-format-term-with-holes functor arity)
+    (module functor arity neck)
+  "Use holes for documentation of predicate MODULE:FUNCTOR/ARITY.
+NECK is the neck operator the this predicate uses."
+  (list module
+        (concat (sweeprolog-format-term-with-holes
+                 functor
+                 (- arity (if (string= neck "-->") 2 0)))
+                (if (string= neck "-->") "//" ""))
         (sweeprolog--hole "Det")
         nil))
 
 (defun sweeprolog-read-predicate-documentation-default-function
-    (functor arity)
-  "Prompt for initial documentation for predicate FUNCTOR/ARITY."
+    (module functor arity neck)
+  "Prompt for documentation of the predicate MODULE:FUNCTOR/ARITY.
+NECK is the neck operator the this predicate uses."
   (let ((cur 1)
+        (ari (- arity (if (string= neck "-->") 2 0)))
         (arguments nil))
-    (while (<= cur arity)
+    (while (<= cur ari)
       (let ((num (pcase cur
                    (1 "First")
                    (2 "Second")
@@ -3898,42 +3916,46 @@ predicate definition at or directly above POINT."
                         (?m "multi"     "Succeeds at least once")
                         (?u "undefined" "Undefined")))))
           (summary (read-string "Summary: ")))
-      (list (concat (sweeprolog-format-string-as-atom functor)
+      (list module
+            (concat (sweeprolog-format-string-as-atom functor)
                     (if arguments
                         (concat "("
                                 (mapconcat #'identity arguments ", ")
                                 ")")
-                      ""))
+                      "")
+                    (if (string= neck "-->") "//" ""))
             det
             (and (not (string-empty-p summary))
                  summary)))))
 
-(defun sweeprolog-insert-predicate-documentation (head det sum)
-  (combine-after-change-calls
-    (insert "%!  " head " is " det ".\n"
-            (if sum (concat "%\n%   " sum "\n") "")
-            "\n")
-    (forward-char -2)
-    (fill-paragraph t)))
+(defun sweeprolog-insert-predicate-documentation (module head det sum)
+  (insert
+   (concat "%!  " (when module (concat module ":")) head " is " det "."
+           "\n"
+           (when sum (concat "%\n%   " sum "\n"))
+           "\n"))
+  (forward-char -2)
+  (fill-paragraph t))
 
-(defun sweeprolog-read-predicate-documentation (fun ari)
-  "Return information for initial predicate documentation of FUN/ARI.
+(defun sweeprolog-read-predicate-documentation (mod fun ari neck)
+  "Return information for initial documentation of MOD:FUN/ARI.
+
+NECK is the neck operator the this predicate uses.
 
 Calls the function specified by
 `sweeprolog-read-predicate-documentation-function' to do the
 work."
-  (funcall sweeprolog-read-predicate-documentation-function fun ari))
+  (funcall sweeprolog-read-predicate-documentation-function
+           mod fun ari neck))
 
 (defun sweeprolog-document-predicate-at-point (point)
   "Insert documentation comment for the predicate at or above POINT."
   (interactive "d" sweeprolog-mode)
-  (when-let* ((pred (sweeprolog-beginning-of-predicate-at-point point))
-              (fun (car pred))
-              (ari (cdr pred))
-              (doc (sweeprolog-read-predicate-documentation fun ari)))
-    (sweeprolog-insert-predicate-documentation (car doc)
-                                               (cadr doc)
-                                               (caddr doc))))
+  (pcase (sweeprolog-beginning-of-predicate-at-point point)
+    (`(,mod ,fun ,ari ,neck)
+     (apply #'sweeprolog-insert-predicate-documentation
+            (sweeprolog-read-predicate-documentation mod fun ari neck)))
+    (_ (user-error "No predicate found at point"))))
 
 (defun sweeprolog-token-boundaries (&optional pos)
   (let ((point (or pos (point))))

@@ -1465,13 +1465,12 @@ commands, see [[info:emacs#Comment Commands][Comment Commands in the Emacs manua
   to use for determining the initial contents of documentation
   comments inserted with ~sweeprolog-document-predicate-at-point~.
 #+FINDEX: sweeprolog-read-predicate-documentation-default-function
-- Function: sweeprolog-read-predicate-documentation-default-function functor arity :: Prompt
-  and read from the minibuffer the arguments modes, determinism
-  specification and initial summary for the documentation of the
-  predicate FUNCTOR/ARITY.
+- Function: sweeprolog-read-predicate-documentation-default-function :: Prompt
+  and read from the minibuffer the argument modes, determinism
+  specification and initial summary of the given predicate.
 #+FINDEX: sweeprolog-read-predicate-documentation-with-holes
-- Function: sweeprolog-read-predicate-documentation-with-holes functor arity :: Use
-  holes for the initial documentation of the predicate FUNCTOR/ARITY.
+- Function: sweeprolog-read-predicate-documentation-with-holes :: Use
+  holes for the initial documentation of the given predicate.
 
 Sweep also includes a dedicated command called
 ~sweeprolog-document-predicate-at-point~ for interactively creating

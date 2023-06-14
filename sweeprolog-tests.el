@@ -1291,6 +1291,44 @@ bar :- foo.
 "
                      ))))
 
+(ert-deftest document-predicate ()
+  "Tests documenting a predicate."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "foo(Bar) :- baz(Bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (let ((sweeprolog-read-predicate-documentation-function
+           #'sweeprolog-read-predicate-documentation-with-holes))
+      (sweeprolog-document-predicate-at-point (point)))
+    (should (string= (buffer-string)
+                     "%!  foo(_) is Det.
+
+foo(Bar) :- baz(Bar).
+"))))
+
+(ert-deftest document-non-terminal ()
+  "Tests documenting a DCG non-terminal."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "foo(Bar) --> baz(Bar).
+")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-max))
+    (let ((sweeprolog-read-predicate-documentation-function
+           #'sweeprolog-read-predicate-documentation-with-holes))
+      (sweeprolog-document-predicate-at-point (point)))
+    (should (string= (buffer-string)
+                     "%!  foo(_)// is Det.
+
+foo(Bar) --> baz(Bar).
+"))))
+
 (ert-deftest dwim-define-non-terminal ()
   "Tests defining an undefined DCG non-terminal."
   (with-temp-buffer
