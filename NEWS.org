@@ -11,6 +11,30 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.19.1 on 2023-06-14
+
+** New user option ~sweeprolog-predicate-visible-p-function~
+
+This option specifies a function that is used for filtering completion
+candidates in commands that prompt for a predicate.  By default, it is
+set to a function that hides predicates whose functor begin with the
+character ~$~.
+
+** Further improvements in DCG support
+
+*** DCG completion at point argument names
+
+Sweep is now able to use the argument names from the documentation of
+DCG grammar rules to give more indicative names for holes when
+completing a DCG invocation.
+
+*** Documenting DCGs with ~C-c C-d~
+
+The command ~sweeprolog-document-predicate-at-point~ (~C-c C-d~) now
+correctly handles documenting DCG grammar rules.
+
+** Minor code simplifications and bug fixes
+
 * Version 0.19.0 on 2023-06-08
 
 ** Greatly improved support for DCG grammar rules
