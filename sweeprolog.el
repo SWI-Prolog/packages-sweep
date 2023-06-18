@@ -567,18 +567,18 @@ completion candidates."
            (sweeprolog-definition-at-point)) ]
     [ "Insert Test-set Template"
       sweeprolog-plunit-testset-skeleton
-      (eq major-mode 'sweeprolog-mode) ]
+      (derived-mode-p 'sweeprolog-mode) ]
     [ "Insert Module Template"
       auto-insert
-      (eq major-mode 'sweeprolog-mode) ]
+      (derived-mode-p 'sweeprolog-mode) ]
     [ "Document Predicate"
       sweeprolog-document-predicate-at-point
-      (and (eq major-mode 'sweeprolog-mode)
+      (and (derived-mode-p 'sweeprolog-mode)
            (sweeprolog-definition-at-point)) ]
     [ "Update Autoload Directives" sweeprolog-update-dependencies
-      (eq major-mode 'sweeprolog-mode) ]
+      (derived-mode-p 'sweeprolog-mode) ]
     [ "Infer Indentation Style" sweeprolog-infer-indent-style
-      (eq major-mode 'sweeprolog-mode) ]
+      (derived-mode-p 'sweeprolog-mode) ]
     [ "Search Term" sweeprolog-term-search
       (derived-mode-p 'sweeprolog-mode)]
     [ "Count Holes" sweeprolog-count-holes
@@ -728,9 +728,8 @@ Otherwise set ARGS to nil."
     (fboundp 'split-string-shell-command)
     (split-string-shell-command (read-string "swipl arguments: "))))
   (when-let ((top-levels (seq-filter (lambda (buffer)
-                                       (eq 'sweeprolog-top-level-mode
-                                           (buffer-local-value 'major-mode
-                                                               buffer)))
+                                       (with-current-buffer buffer
+                                         (derived-mode-p 'sweeprolog-top-level-mode)))
                                      (buffer-list))))
     (if (y-or-n-p "Stop running sweep top-level processes?")
         (dolist (buffer top-levels)
@@ -2387,7 +2386,7 @@ resulting list even when found in the current clause."
                (with-silent-modifications
                  (erase-buffer)
                  (insert string " "))
-               (unless (eq major-mode mode) (funcall mode))
+               (unless (derived-mode-p mode) (funcall mode))
                (font-lock-ensure)
                (let ((pos (point-min)) next)
                  (while (setq next (next-property-change pos))
@@ -2970,7 +2969,7 @@ top-level."
   (let ((buf (get-buffer-create (or name "*sweeprolog-top-level*"))))
     (unless (process-live-p (get-buffer-process buf))
       (with-current-buffer buf
-        (unless (eq major-mode 'sweeprolog-top-level-mode)
+        (unless (derived-mode-p 'sweeprolog-top-level-mode)
           (sweeprolog-top-level-mode)))
       (unless (sweeprolog--query-once "sweep" "sweep_accept_top_level_client"
                                       (buffer-name buf))
@@ -2995,7 +2994,7 @@ Interactively, a prefix argument means to prompt for BUFFER-NAME."
   (interactive
    (list (and current-prefix-arg
               (read-buffer "Top-level buffer: "
-                           (if (and (eq major-mode 'sweeprolog-top-level-mode)
+                           (if (and (derived-mode-p 'sweeprolog-top-level-mode)
                                     (null (get-buffer-process
                                            (current-buffer))))
                                (buffer-name)
@@ -3130,16 +3129,16 @@ load the current buffer.  Otherwise, prompt for a `sweeprolog-mode'
 buffer to load."
   (interactive (list
                 (if (and (not current-prefix-arg)
-                         (eq major-mode 'sweeprolog-mode))
+                         (derived-mode-p 'sweeprolog-mode))
                     (current-buffer)
                   (read-buffer "Load buffer: "
-                               (when (eq major-mode 'sweeprolog-mode)
+                               (when (derived-mode-p 'sweeprolog-mode)
                                  (buffer-name))
                                t
                                (lambda (b)
                                  (let ((n (or (and (consp b) (car b)) b)))
                                    (with-current-buffer n
-                                     (eq major-mode 'sweeprolog-mode))))))))
+                                     (derived-mode-p 'sweeprolog-mode))))))))
   (with-current-buffer buffer
     (if (sweeprolog-buffer-loaded-since-last-modification-p)
         (message "Buffer %s already loaded." (buffer-name))
