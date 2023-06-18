@@ -2242,28 +2242,57 @@ the entry corresponding to the wanted top-level (see [[The Top-level
 Menu buffer]]).
 
 For more information about interrupting threads in SWI-Prolog, see
-[[https://www.swi-prolog.org/pldoc/man?section=thread-signal][Signaling threads in the SWI-Prolog manual]].
+[[https://www.swi-prolog.org/pldoc/man?section=thread-signal][Signaling threads]] in the SWI-Prolog manual.
 
-** Top-level history
+** Top-level History
 :PROPERTIES:
 :CUSTOM_ID: top-level-history
 :DESCRIPTION: Accessing previous queries posted to the Prolog top-level
 :ALT_TITLE: Top-level History
 :END:
 
-=sweeprolog-top-level-mode= buffers provide a history of previously user
-inputs, similarly to other =comint-mode= derivatives such as =shell-mode=.
-To insert the last input from the history at the prompt, use =M-p=
-(=comint-previous-input=).  For a full description of history related
-commands, see [[info:emacs#Shell History][Shell History in the Emacs manual]].
+Sweep top-level buffers provide a history of previous user inputs,
+similarly to other ~comint-mode~ derivatives such as ~shell-mode~.  To
+insert the last input from the history at the prompt, use =M-p=
+(~comint-previous-input~).  For a full description of history related
+commands, see [[info:emacs#Shell History][Shell History]] in the Emacs manual.
 
 #+VINDEX: sweeprolog-top-level-min-history-length
+- User Option: sweeprolog-top-level-min-history-length :: Minimum
+  input length to record in the history of Sweep top-levels.
+#+VINDEX: sweeprolog-top-level-persistent-history
+- User Option: sweeprolog-top-level-persistent-history :: Controls if
+  and where Sweep top-level buffers persist their input history.
+
 The Sweep top-level history only records inputs whose length is at
-least =sweeprolog-top-level-min-history-length=.  This user option is set to
-3 by default, and should generally be set to at least 2 to keep the
-history from being clobbered with single-character inputs, which are
-common in the top-level interaction, e.g. =;= as used to invoke
+least ~sweeprolog-top-level-min-history-length~.  This user option is
+set to 3 by default, and should generally be set to at least 2 to keep
+the history from being clobbered with single-character inputs, which
+are common in the top-level interaction, e.g. ~;~ as used to invoke
 backtracking.
+
+Sweep can optionally persist top-level input history.  The user option
+~sweeprolog-top-level-persistent-history~ controls if and where
+top-levels store their history: when this option is non-~nil~, Sweep
+top-level buffers that you create read their input history from a
+persistent history file, and write their history back to it when you
+delete them.  If this option is a string, it is treated as a file
+name, and top-level buffers use that file to persistent their input
+history.  If it's a function, it is called with no arguments and
+should return a file name for the persistent history, or ~nil~ to
+disable persistent history for that top-level buffer.  The file name
+that this user option species can be either absolute or relative, in
+which case it is expanded relative to the default directory of the
+top-level buffer (see [[info:emacs#File Names][File Names]]).  This option can also be a list of
+the form ~(project REL DEF)~, in which case the persistent history
+file that a top-level buffer uses depends on the current project of
+the of that buffer (see [[info:emacs#Projects][Projects]] in the Emacs manual).  If there is no
+current project, the top-level persistent history file is ~DEF~.
+Otherwise, the history file is ~REL~ relative to the project's root
+directory.  You can leave ~DEF~ nil or omit it entirely to disable
+persistent history for top-levels that are not associated with any
+project.  By default, this option is set to ~nil~ which says not to
+keep persistent top-level history.
 
 ** Completion in the top-level
 :PROPERTIES:
@@ -2446,13 +2475,13 @@ the user has the SWI-Prolog sources checked out locally.
 The way Sweep locates the SWI-Prolog sources depends on the user
 option ~sweeprolog-swipl-sources~.  When customized to a string, it is
 taken to be the path to the root directory of the SWI-Prolog source
-code.  If instead ~sweeprolog-swipl-sources~ is set to ~t~ (the default),
-Sweep will try to locate a local checkout of the SWI-Prolog sources
-automatically among known project root directories provided by Emacs's
-built-in ~project-known-project-roots~ from =project.el= (see [[info:emacs#Projects][Projects in
-the Emacs manual]] for more information about =project.el= projects).
-Lastly, setting ~sweeprolog-swipl-sources~ to ~nil~ disables searching for
-definitions of native built-ins.
+code.  If instead ~sweeprolog-swipl-sources~ is set to ~t~ (the
+default), Sweep will try to locate a local checkout of the SWI-Prolog
+sources automatically among known project root directories provided by
+Emacs's built-in ~project-known-project-roots~ from =project.el= (see
+[[info:emacs#Projects][Projects]] in the Emacs manual for more information about =project.el=
+projects).  Lastly, setting ~sweeprolog-swipl-sources~ to ~nil~
+disables searching for definitions of native built-ins.
 
 With ~sweeprolog-swipl-sources~ set, the provided commands for finding
 predicate definitions operate seamlessly on native built-ins to
@@ -2691,17 +2720,6 @@ some improvements remain to be pursued:
   #+end_src
 
   And decide whether or not to apply the fragment.
-
-** Improvements around running Prolog
-:PROPERTIES:
-:CUSTOM_ID: todo-running
-:DESCRIPTION: List of potential enhancements for executing Prolog
-:ALT_TITLE: Running Improvements
-:END:
-
-- Persist top-level history across sessions :: Sweep should persist
-  Prolog top-level histories across invocations of
-  ~sweeprolog-top-level~, ideally also across different Emacs sessions.
 
 ** General improvements
 :PROPERTIES:

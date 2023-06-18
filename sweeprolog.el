@@ -449,6 +449,36 @@ completion candidates."
                            sweeprolog-predicate-non-hidden-p)
                  (function :tag "Custom exclusion predicate")))
 
+(defcustom sweeprolog-top-level-persistent-history nil
+  "Controls if and where top-level buffers store persistent history.
+
+If this option is nil, top-level buffers neither read persistent
+history on start-up nor write it on exit.  Otherwise, this option
+specifies a file name where top-level buffers store their input
+history.
+
+If this is a string FILE, top-level buffers use the file FILE for
+persistent history.  FILE can be either an absolute file name or
+a relative file name, in which case it is expanded relative to
+the `default-directory' of the top-level buffer.  If this is a
+function, it is called with no arguments to produce a string with
+the same meaning.
+
+This option can also be a list of the form (project REL DEF), in
+which case the persistent history file that a top-level buffer
+uses depends on the project that the buffer belongs to, as
+determined by `project-current'.  If the buffer belongs to a
+project, its persistent history file is REL relative to the
+project's root directory.  Otherwise, the persistent history file
+is DEF, which may be nil or omitted to disable persistent history
+for top-level buffers that don't belong to any project."
+  :package-version '((sweeprolog "0.20.0"))
+  :type '(choice (const    :tag "Disable persistent history" nil)
+                 (cons     :tag "File name relative to project root"
+                           (const project) string)
+                 (string   :tag "History file name")
+                 (function :tag "Function returning history file name")))
+
 ;;;; Keymaps
 
 (defvar sweeprolog-mode-map
@@ -2957,6 +2987,34 @@ Interactively, PROJ is the prefix argument."
         (sweeprolog--query-once "sweep" "sweep_colourise_query"
                                 (cons query (marker-position beg)))))))
 
+(defun sweeprolog-top-level-sentinel (proc msg)
+  "Sentinel for Prolog top-level processes.
+
+Calls `comint-write-input-ring' to update the top-level's
+persistent history before calling the default process sentinel
+function with PROC and MSG."
+  (comint-write-input-ring)
+  (internal-default-process-sentinel proc msg))
+
+(defun sweeprolog-top-level-setup-history (buf)
+  "Setup `comint-input-ring-file-name' for top-level buffer BUF."
+  (with-current-buffer buf
+    (setq-local comint-input-ring-file-name
+                (pcase sweeprolog-top-level-persistent-history
+                  ((pred stringp)
+                   sweeprolog-top-level-persistent-history)
+                  ((pred functionp)
+                   (funcall sweeprolog-top-level-persistent-history))
+                  (`(project . ,rel-def)
+                   (if-let ((project (project-current)))
+                       (expand-file-name (car rel-def)
+                                         (project-root project))
+                     (cadr rel-def)))))
+    (comint-read-input-ring t)
+    (set-process-sentinel (get-buffer-process buf)
+                          #'sweeprolog-top-level-sentinel)
+    (add-hook 'kill-buffer-hook #'comint-write-input-ring nil t)))
+
 (defun sweeprolog-top-level-buffer (&optional name)
   "Return a Prolog top-level buffer named NAME.
 
@@ -2980,6 +3038,7 @@ top-level."
                                    sweeprolog-prolog-server-port))
       (unless comint-last-prompt
         (accept-process-output (get-buffer-process buf) 1))
+      (sweeprolog-top-level-setup-history buf)
       (sweeprolog-top-level--populate-thread-id))
     buf))
 
