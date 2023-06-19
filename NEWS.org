@@ -11,6 +11,15 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.20.0 on 2023-06-19
+
+** New user option ~sweeprolog-top-level-persistent-history~
+
+This option controls if and where Sweep top-level buffers store their
+input history persistently.  Persistent history is off by default,
+refer to the "Top-level History" section in the manual for more
+details.
+
 * Version 0.19.1 on 2023-06-14
 
 ** New user option ~sweeprolog-predicate-visible-p-function~
