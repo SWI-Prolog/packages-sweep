@@ -2273,26 +2273,26 @@ backtracking.
 
 Sweep can optionally persist top-level input history.  The user option
 ~sweeprolog-top-level-persistent-history~ controls if and where
-top-levels store their history: when this option is non-~nil~, Sweep
-top-level buffers that you create read their input history from a
-persistent history file, and write their history back to it when you
-delete them.  If this option is a string, it is treated as a file
-name, and top-level buffers use that file to persistent their input
-history.  If it's a function, it is called with no arguments and
-should return a file name for the persistent history, or ~nil~ to
-disable persistent history for that top-level buffer.  The file name
-that this user option species can be either absolute or relative, in
-which case it is expanded relative to the default directory of the
-top-level buffer (see [[info:emacs#File Names][File Names]]).  This option can also be a list of
-the form ~(project REL DEF)~, in which case the persistent history
-file that a top-level buffer uses depends on the current project of
-the of that buffer (see [[info:emacs#Projects][Projects]] in the Emacs manual).  If there is no
-current project, the top-level persistent history file is ~DEF~.
-Otherwise, the history file is ~REL~ relative to the project's root
-directory.  You can leave ~DEF~ nil or omit it entirely to disable
-persistent history for top-levels that are not associated with any
-project.  By default, this option is set to ~nil~ which says not to
-keep persistent top-level history.
+top-levels store their persistent history: when this option is
+non-~nil~, Sweep top-level buffers that you create read their input
+history from a persistent history file, and write their history back
+to it when you delete them.  If this option is a string, it is treated
+as a file name, and top-level buffers use that file to persistent
+their input history.  If it's a function, it is called with no
+arguments and should return either a file name for the persistent
+history, or ~nil~ to disable persistent history for that top-level
+buffer.  The file name that this user option specifies can be either
+absolute or relative, in which case it is expanded relative to the
+default directory of the top-level buffer (see [[info:emacs#File Names][File Names]]).  This
+option can also be a list of the form ~(project REL DEF)~, in which
+case the persistent history file that a top-level buffer uses depends
+on the current project of the of that buffer (see [[info:emacs#Projects][Projects]] in the
+Emacs manual).  If there is no current project, the top-level
+persistent history file is ~DEF~.  Otherwise, the history file is
+~REL~ relative to the project's root directory.  You can leave ~DEF~
+nil or omit it entirely to disable persistent history for top-levels
+that are not associated with any project.  By default, this option is
+set to ~nil~ which says not to keep persistent top-level history.
 
 ** Completion in the top-level
 :PROPERTIES:
