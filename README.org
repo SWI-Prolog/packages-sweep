@@ -32,6 +32,30 @@ from Emacs Lisp (see [[Querying Prolog]]).  Sweep further builds on top of
 this interface and on top of the standard Emacs facilities to provide
 advanced features for developing SWI-Prolog programs in Emacs.
 
+** Main Features
+:PROPERTIES:
+:CUSTOM_ID: main-features
+:DESCRIPTION: Most important features that Sweep provides
+:ALT_TITLE: Main Features
+:END:
+
+Some of the main benefits that Sweep brings to working with Prolog
+code in Emacs are:
+
+- [[#semantic-highlighting][Semantic highlighting]]
+- [[#indentation][Automatic indentation]]
+- [[#term-based-commands][Structural editing and navigation]]
+- [[#sweeprolog-xref][Jumping to predicate definitions and references]]
+- [[#diagnostics][On-the-fly diagnostics]]
+- [[#code-completion][Intelligent code completion]]
+- [[#rename-variable][Refactoring support]]
+- [[#prolog-top-level][Integrated SWI-Prolog top-level]]
+- [[#querying-prolog][Ability to run Prolog queries directly from Emacs Lisp]]
+
+These features and others are documented in the rest of this manual,
+along with many options that Sweep provides for you to customize its
+behavior.
+
 ** High-level Architecture
 :PROPERTIES:
 :CUSTOM_ID: high-level-architecture
@@ -65,6 +89,25 @@ The different parts of Sweep are structured as follows:
   the embedded Prolog runtime is initialized.  It contains predicates
   that =sweeprolog.el= invoke through =sweep-module= to facilitate its
   different commands.
+
+** Comparison with Emacs's built-in Prolog mode
+:PROPERTIES:
+:CUSTOM_ID: alternatives
+:DESCRIPTION: Comparing Sweep with other Prolog Emacs packages
+:ALT_TITLE: Alternatives
+:END:
+
+Emacs has a built-in mode for Prolog code, defined in the library
+=prolog.el= that comes bundled with Emacs.  =prolog.el= aims to work
+with a wide variety of Prolog systems and dialects, unlike Sweep that
+is very tightly integrated with SWI-Prolog specifically.
+
+*If you are working with SWI-Prolog, you'll find Sweep to be far more powerful*
+than the built-in =prolog.el=.  This is because Sweep leverages the Prolog
+parser and other analysis tools that SWI-Prolog itself uses, these give Sweep
+access to highly accurate and rich information about SWI-Prolog code.  If you're
+using another Prolog implementation, you should stick to =prolog.el= as Sweep
+won't work with other Prolog systems.
 
 * Installation
 :PROPERTIES:
@@ -2694,32 +2737,19 @@ some improvements remain to be pursued:
 :ALT_TITLE: Editing Improvements
 :END:
 
-- Inherit user customizations from ~prolog-mode~ :: Sweep should inherit
-  user customizations from the standard =prolog.el= built into Emacs to
-  accommodate users updating their configs to work with Sweep.
-  Ideally, ~sweeprolog-mode~ should be derived from ~prolog-mode~ instead
-  of the generic ~prog-mode~ to inherit user-set hooks and
-  modifications, but careful consideration is required to make sure
-  ~sweeprolog-mode~ overrides all conflicting ~prolog-mode~ features.
-
 - Make predicate completion aware of module-qualification :: predicate
   completion should detect when the prefix it's trying to complete
   starts with a module-qualification ~foo:ba<|>~ and restrict completion
   to matching candidates in the specified module.
 
-- Respect ~font-lock-maximum-decoration~ :: We should take into account
-  the value of ~font-lock-maximum-decoration~ while highlighting
-  ~sweeprolog-mode~ buffers.  This variable conveys the user's preferred
-  degree of highlighting.  A possible approach would be changing
-  ~sweeprolog--colour-term-to-faces~ such that each color fragment in
-  returned list states its target decoration level (i.e. 1, 2 or 3).
-  ~sweeprolog--colourise~ would then compare this target to the value of
-
-  #+begin_src emacs-lisp
-    (font-lock-value-in-major-mode font-lock-maximum-decoration)
-  #+end_src
-
-  And decide whether or not to apply the fragment.
+- Respect ~font-lock-maximum-decoration~ :: We should take into account the
+  value of ~font-lock-maximum-decoration~ while highlighting ~sweeprolog-mode~
+  buffers.  This variable conveys the user's preferred degree of highlighting.
+  A possible approach would be changing ~sweeprolog--colour-term-to-faces~ such
+  that each color fragment in returned list states its target decoration level
+  (i.e. 1, 2 or 3).  ~sweeprolog--colourise~ would then compare this target to
+  the value of ~(font-lock-value-in-major-mode font-lock-maximum-decoration)~
+  and decide whether or not to apply the fragment.
 
 ** General improvements
 :PROPERTIES:
