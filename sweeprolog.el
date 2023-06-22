@@ -4916,7 +4916,9 @@ accordingly."
   (when-let ((pi (sweeprolog-identifier-at-point))
              (docs (sweeprolog--query-once "sweep" "sweep_documentation"
                                            pi)))
-    (funcall cb (car docs) :thing pi :face font-lock-function-name-face)))
+    (funcall cb (car docs)
+             :thing pi
+             :face 'font-lock-function-name-face)))
 
 
 ;;;; Top-level Menu
