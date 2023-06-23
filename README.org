@@ -712,40 +712,48 @@ The minimum idle time to wait before automatically updating semantic
 highlighting can be set via the user option
 ~sweeprolog-analyze-buffer-min-interval~.
 
-#+CINDEX: sweeprolog-faces
-Sweep defines three highlighting /styles/, each containing more than 60
-different faces (named sets of properties that determine the
-appearance of a specific text in Emacs buffers, see also [[info:emacs#Faces][Faces in the
-Emacs manual]]) to signify the specific semantics of each token in a
-Prolog code buffer.
+To view and customize the various faces that Sweep defines and uses, type
+~M-x customize-group RET sweeprolog-faces RET~.  For more information about
+text faces in Emacs, see [[info:emacs#Faces][Faces]].
 
-To view and customize all of the faces defined and used in Sweep, type
-~M-x customize-group RET sweeprolog-faces RET~.
-
-*** Available Styles
+*** PceEmacs Highlighting Emulation
 :PROPERTIES:
-:CUSTOM_ID: highlighting-styles
-:DESCRIPTION: Available highlighting styles
-:ALT_TITLE: Available Styles
+:CUSTOM_ID: pce-theme
+:DESCRIPTION: Custom theme that mimics PceEmacs, the SWI-Prolog built-in editor
+:ALT_TITLE: PceEmacs Theme
 :END:
 
-Sweep comes with three highlighting styles:
+#+CINDEX: PceEmacs theme
+#+CINDEX: theme, PceEmacs
+#+CINDEX: sweeprolog-pce
+Sweep comes with a custom theme, called ~sweeprolog-pce~, that emulates the
+Prolog code highlighting provided by /PceEmacs/, the SWI-Prolog built-in
+Emacs-like editor (see [[https://www.swi-prolog.org/pldoc/man?section=pceemacs][Using the PceEmacs built-in editor]] in the SWI-Prolog
+manual).  If you are starting out with Sweep after coming from PceEmacs,
+enabling this theme may soften your landing by providing a more familiar
+experience.
 
-1. The default style includes faces that mostly inherit from standard
-   Emacs faces commonly used in programming modes.
-2. The ~light~ style mimics the colors used in the SWI-Prolog built-in
-   editor.
-3. The ~dark~ style mimics the colors used in the SWI-Prolog built-in
-   editor in dark mode.
+The ~sweeprolog-pce~ theme only affects faces that Sweep itself defines, so you
+can use it along other themes that you may have enabled.  To enable this theme
+or the current Emacs session, type ~M-x load-theme RET sweeprolog-pce RET~.  To
+enable it for future sessions, add the following to your Emacs configuration:
+
+#+begin_src emacs-lisp
+  (load-theme 'sweeprolog-pce t)
+#+end_src
+
+For more information about custom themes in Emacs, see [[info:emacs#Custom Themes][Custom Themes]].
 
 #+VINDEX: sweeprolog-faces-style
-- User Option: sweeprolog-faces-style :: Style of faces to use for
-  semantic highlighting in ~sweeprolog-mode~ buffers.  Defaults to ~nil~.
-
-To choose a style, customize the user option ~sweeprolog-faces-style~ with
-~M-x customize-option RET sweeprolog-faces-style RET~.  The new style will
-apply to all new ~sweeprolog-mode~ buffers.  To apply the new style to an
-existing buffer, use ~C-x x f~ (~font-lock-update~) in that buffer.
+In versions up to and including 0.20.0, Sweep used to provide a different
+mechanism for emulating the highlighting of PceEmacs that involved customizing
+the user option ~sweeprolog-faces-style~.  When that option was set to ~light~
+or ~dark~, Sweep would use a different sets of faces that mimic the highlighting
+of PceEmacs.  ~sweeprolog-faces-style~ is now deprecated, and you should instead
+use the ~sweeprolog-pce~ theme.  Still, in benefit of users that have
+~sweeprolog-faces-style~ set and expect Sweep to use PceEmacs highlighting,
+Sweep checks if ~sweeprolog-faces-style~ is either ~light~ or ~dark~ when you
+first open a Prolog buffer, and if so it enables the ~sweeprolog-pce~ theme.
 
 *** Highlighting occurrences of a variable
 :PROPERTIES:
@@ -805,8 +813,8 @@ To modify the default associations provided by ~sweeprolog-mode~, type
 ~M-x customize-option RET sweeprolog-qq-mode-alist RET~.
 
 If a quasi-quotation type does not have a matching mode in
-~sweeprolog-qq-mode-alist~, the function ~sweeprolog-qq-content-face~ is
-used to determine a default face for quoted content.
+~sweeprolog-qq-mode-alist~, Sweep highlights the quoted content with the
+~sweeprolog-qq-content~ face.
 
 For more information about quasi-quotations in SWI-Prolog, see
 [[https://www.swi-prolog.org/pldoc/man?section=quasiquotations][library(quasi_quotations) in the SWI-Prolog manual]].

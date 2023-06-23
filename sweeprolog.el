@@ -1420,7 +1420,7 @@ resulting list even when found in the current clause."
                               (- (point) length (- hend))
                               (list
                                'sweeprolog-hole t
-                               'font-lock-face (list (sweeprolog-hole-face))
+                               'font-lock-face (list 'sweeprolog-hole)
                                'rear-nonsticky '(sweeprolog-hole
                                                  cursor-sensor-functions
                                                  font-lock-face)))))))
@@ -1471,718 +1471,519 @@ resulting list even when found in the current clause."
   :package-version '((sweeprolog . "0.3.2"))
   :group 'sweeprolog-faces)
 
-(eval-when-compile
-  (defmacro sweeprolog-defface (name def light dark doc)
-    "Define sweeprolog face FACE with doc DOC."
-    (declare
-     (indent defun)
-     (doc-string 5))
-    (let* ((sn (symbol-name name))
-           (func (intern (concat "sweeprolog-" sn "-face")))
-           (facd (intern (concat "sweeprolog-" sn "-dark")))
-           (facl (intern (concat "sweeprolog-" sn "-light")))
-           (face (intern (concat "sweeprolog-" sn))))
-      `(progn
-         (defface ,facl
-           '((default              . ,light))
-           ,(concat "Light face used to highlight " (downcase doc))
-           :group 'sweeprolog-faces)
-         (defface ,facd
-           '((default              . ,dark))
-           ,(concat "Dark face used to highlight " (downcase doc))
-           :group 'sweeprolog-faces)
-         (defface ,face
-           '((default              . ,def))
-           ,(concat "Face used to highlight " (downcase doc))
-           :group 'sweeprolog-faces)
-         (defun ,func ()
-           ,(concat "Return the face used to highlight " (downcase doc))
-           (pcase sweeprolog-faces-style
-             ('light ',facl)
-             ('dark  ',facd)
-             (_      ',face)))))))
-
-(sweeprolog-defface
-  function
-  (:inherit font-lock-function-name-face)
-  (:foreground "blue")
-  (:foreground "cyan")
-  "Arithmetic functions.")
-
-(sweeprolog-defface
-  no-function
-  (:inherit font-lock-warning-face)
-  (:foreground "red")
-  (:foreground "red")
-  "Unknown arithmetic functions.")
-
-(sweeprolog-defface
- functor
- (:inherit font-lock-function-name-face)
- (:foreground "navyblue")
- (:foreground "darkcyan")
- "Functors.")
-
-(sweeprolog-defface
-  arity
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "darkcyan")
-  "Arities.")
-
-(sweeprolog-defface
-  predicate-indicator
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "darkcyan")
-  "Predicate indicators.")
-
-(sweeprolog-defface
-  built-in
-  (:inherit font-lock-keyword-face)
-  (:foreground "blue")
-  (:foreground "cyan")
-  "Built in predicate calls.")
-
-(sweeprolog-defface
-  neck
-  (:inherit font-lock-preprocessor-face)
-  (:weight bold)
-  (:weight bold)
-  "Necks.")
-
-(sweeprolog-defface
-  goal
-  (:inherit font-lock-function-name-face)
-  (:inherit font-lock-function-name-face)
-  (:inherit font-lock-function-name-face)
-  "Unspecified predicate goals.")
-
-(sweeprolog-defface
-  string
-  (:inherit font-lock-string-face)
-  (:foreground "navyblue")
-  (:foreground "palegreen")
-  "Strings.")
-
-(sweeprolog-defface
-  comment
-  (:inherit font-lock-comment-face)
-  (:foreground "darkgreen")
-  (:foreground "green")
-  "Comments.")
-
-(sweeprolog-defface
-  head-built-in
-  (:background "orange" :weight bold)
-  (:background "orange" :weight bold)
-  (:background "orange" :weight bold)
-  "Built-in predicate definitons.")
-
-(sweeprolog-defface
- method
-  (:weight bold)
-  (:weight bold)
-  (:weight bold)
-  "PCE classes.")
-
-(sweeprolog-defface
-  class
-  (:underline t)
-  (:underline t)
-  (:underline t)
-  "PCE classes.")
-
-(sweeprolog-defface
-  no-file
-  (:foreground "red")
-  (:foreground "red")
-  (:foreground "red")
-  "Non-existsing file specifications.")
-
-(sweeprolog-defface
-  head-local
-  (:inherit font-lock-builtin-face)
-  (:weight bold)
-  (:weight bold)
-  "Local predicate definitions.")
-
-(sweeprolog-defface
-  head-meta
-  (:inherit font-lock-preprocessor-face)
-  nil nil
-  "Meta predicate definitions.")
-
-(sweeprolog-defface
-  head-dynamic
-  (:inherit font-lock-constant-face)
-  (:foreground "magenta" :weight bold)
-  (:foreground "magenta" :weight bold)
-  "Dynamic predicate definitions.")
-
-(sweeprolog-defface
-  head-multifile
-  (:inherit font-lock-type-face)
-  (:foreground "navyblue" :weight bold)
-  (:foreground "palegreen" :weight bold)
-  "Multifile predicate definitions.")
-
-(sweeprolog-defface
-  head-extern
-  (:inherit font-lock-type-face)
-  (:foreground "blue" :weight bold)
-  (:foreground "cyan" :weight bold)
-  "External predicate definitions.")
-
-(sweeprolog-defface
-  head-test
-  (:inherit font-lock-preprocessor-face)
-  (:foreground "#01bdbd" :weight bold)
-  (:foreground "#01bdbd" :weight bold)
-  "Unreferenced predicate definitions.")
-
-(sweeprolog-defface
-  head-unreferenced
-  (:inherit font-lock-warning-face)
-  (:foreground "red" :weight bold)
-  (:foreground "red" :weight bold)
-  "Unreferenced predicate definitions.")
-
-(sweeprolog-defface
-  head-exported
-  (:inherit font-lock-builtin-face)
-  (:foreground "blue" :weight bold)
-  (:foreground "cyan" :weight bold)
-  "Exported predicate definitions.")
-
-(sweeprolog-defface
-  head-hook
-  (:inherit font-lock-type-face)
-  (:foreground "blue" :underline t)
-  (:foreground "cyan" :underline t)
-  "Hook definitions.")
-
-(sweeprolog-defface
-  head-iso
-  (:inherit font-lock-keyword-face)
-  (:background "orange" :weight bold)
-  (:background "orange" :weight bold)
-  "ISO specified predicate definitions.")
-
-(sweeprolog-defface
-  head-def-iso
-  (:inherit font-lock-builtin-face)
-  (:foreground "blue" :weight bold)
-  (:foreground "cyan" :weight bold)
-  "Built-in ISO specified predicate definitions.")
-
-(sweeprolog-defface
-  head-def-swi
-  (:inherit font-lock-builtin-face)
-  (:foreground "blue" :weight bold)
-  (:foreground "cyan" :weight bold)
-  "Built-in SWI-Prolog predicate definitions.")
-
-(sweeprolog-defface
-  head-imported
-  (:inherit font-lock-function-name-face)
-  (:foreground "darkgoldenrod4" :weight bold)
-  (:foreground "darkgoldenrod4" :weight bold)
-  "Imported head terms.")
-
-(sweeprolog-defface
-  head-undefined
-  (:inherit font-lock-warning-face)
-  (:weight bold)
-  (:weight bold)
-  "Undefined head terms.")
-
-(sweeprolog-defface
-  head-public
-  (:inherit font-lock-builtin-face)
-  (:foreground "#016300" :weight bold)
-  (:foreground "#016300" :weight bold)
-  "Public definitions.")
-
-(sweeprolog-defface
-  head-constraint
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "palegreen")
-  "Constraint definitions.")
-
-(sweeprolog-defface
-  meta-spec
-  (:inherit font-lock-preprocessor-face)
-  (:inherit font-lock-preprocessor-face)
-  (:inherit font-lock-preprocessor-face)
-  "Meta argument specifiers.")
-
-(sweeprolog-defface
-  recursion
-  (:inherit font-lock-builtin-face)
-  (:underline t)
-  (:underline t)
-  "Recursive calls.")
-
-(sweeprolog-defface
-  local
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "darkcyan")
-  "Local predicate calls.")
-
-(sweeprolog-defface
-  expanded
-  (:inherit font-lock-preprocessor-face)
-  (:foreground "blue" :underline t)
-  (:foreground "cyan" :underline t)
-  "Expanded predicate calls.")
-
-(sweeprolog-defface
-  autoload
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "darkcyan")
-  "Autoloaded predicate calls.")
-
-(sweeprolog-defface
-  imported
-  (:inherit font-lock-function-name-face)
-  (:foreground "blue")
-  (:foreground "cyan")
-  "Imported predicate calls.")
-
-(sweeprolog-defface
-  extern
-  (:inherit font-lock-function-name-face)
-  (:foreground "blue" :underline t)
-  (:foreground "cyan" :underline t)
-  "External predicate calls.")
-
-(sweeprolog-defface
-  foreign
-  (:inherit font-lock-keyword-face)
-  (:foreground "darkturquoise")
-  (:foreground "darkturquoise")
-  "Foreign predicate calls.")
-
-(sweeprolog-defface
-  meta
-  (:inherit font-lock-type-face)
-  (:foreground "red4")
-  (:foreground "red4")
-  "Meta predicate calls.")
-
-(sweeprolog-defface
-  undefined
-  (:inherit font-lock-warning-face)
-  (:foreground "red")
-  (:foreground "orange")
-  "Undefined predicate calls.")
-
-(sweeprolog-defface
-  thread-local
-  (:inherit font-lock-constant-face)
-  (:foreground "magenta" :underline t)
-  (:foreground "magenta" :underline t)
-  "Thread local predicate calls.")
-
-(sweeprolog-defface
-  not-callable
-  (:inherit font-lock-warning-face)
-  (:background "orange")
-  (:background "orange")
-  "Terms that are not callable.")
-
-(sweeprolog-defface
-  constraint
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "palegreen")
-  "Constraint calls.")
-
-(sweeprolog-defface
-  global
-  (:inherit font-lock-keyword-face)
-  (:foreground "magenta")
-  (:foreground "darkcyan")
-  "Global predicate calls.")
-
-(sweeprolog-defface
-  multifile
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "palegreen")
-  "Multifile predicate calls.")
-
-(sweeprolog-defface
-  dynamic
-  (:inherit font-lock-constant-face)
-  (:foreground "magenta")
-  (:foreground "magenta")
-  "Dynamic predicate calls.")
-
-(sweeprolog-defface
-  undefined-import
-  (:inherit font-lock-warning-face)
-  (:foreground "red")
-  (:foreground "red")
-  "Undefined imports.")
-
-(sweeprolog-defface
-  html-attribute
-  (:inherit font-lock-function-name-face)
-  (:foreground "magenta4")
-  (:foreground "magenta4")
-  "HTML attributes.")
-
-(sweeprolog-defface
-  html-call
-  (:inherit font-lock-keyword-face)
-  (:foreground "magenta4" :weight bold)
-  (:foreground "magenta4" :weight bold)
-  "HTML calls.")
-
-(sweeprolog-defface
-  option-name
-  (:inherit font-lock-constant-face)
-  (:foreground "#3434ba")
-  (:foreground "#3434ba")
-  "Option names.")
-
-(sweeprolog-defface
-  no-option-name
-  (:inherit font-lock-warning-face)
-  (:foreground "red")
-  (:foreground "orange")
-  "Non-existent option names.")
-
-(sweeprolog-defface
-  flag-name
-  (:inherit font-lock-constant-face)
-  (:foreground "blue")
-  (:foreground "cyan")
-  "Flag names.")
-
-(sweeprolog-defface
-  no-flag-name
-  (:inherit font-lock-warning-face)
-  (:foreground "red")
-  (:foreground "red")
-  "Non-existent flag names.")
-
-(sweeprolog-defface
-  qq-type
-  (:inherit font-lock-type-face)
-  (:weight bold)
-  (:weight bold)
-  "Quasi-quotation types.")
-
-(sweeprolog-defface
-  qq-sep
-  (:inherit font-lock-type-face)
-  (:weight bold)
-  (:weight bold)
-  "Quasi-quotation separators.")
-
-(sweeprolog-defface
-  qq-open
-  (:inherit font-lock-type-face)
-  (:weight bold)
-  (:weight bold)
-  "Quasi-quotation open sequences.")
-
-(sweeprolog-defface
-  qq-content
-  nil
-  (:foreground "red4")
-  (:foreground "red4")
-  "Quasi-quotation content.")
-
-(sweeprolog-defface
-  qq-close
-  (:inherit font-lock-type-face)
-  (:weight bold)
-  (:weight bold)
-  "Quasi-quotation close sequences.")
-
-(sweeprolog-defface
-  op-type
-  (:inherit font-lock-type-face)
-  (:foreground "blue")
-  (:foreground "cyan")
-  "Operator types.")
-
-(sweeprolog-defface
-  dict-tag
-  (:inherit font-lock-constant-face)
-  (:weight bold)
-  (:weight bold)
-  "Dict tags.")
-
-(sweeprolog-defface
-  dict-key
-  (:inherit font-lock-keyword-face)
-  (:weight bold)
-  (:weight bold)
-  "Dict keys.")
-
-(sweeprolog-defface
-  dict-sep
-  (:inherit font-lock-keyword-face)
-  (:weight bold)
-  (:weight bold)
-  "Dict separators.")
-
-(sweeprolog-defface
-  dict-return-op
-  (:inherit font-lock-preprocessor-face)
-  (:foreground "blue")
-  (:foreground "cyan")
-  "Dict return operators.")
-
-(sweeprolog-defface
-  dict-function
-  (:inherit font-lock-function-name-face)
-  (:foreground "navyblue")
-  (:foreground "darkcyan")
-  "Dict functions.")
-
-(sweeprolog-defface
-  func-dot
-  (:inherit font-lock-preprocessor-face)
-  (:weight bold)
-  (:weight bold)
-  "Dict function dots.")
-
-(sweeprolog-defface
-  file
-  (:inherit button)
-  (:foreground "blue" :underline t)
-  (:foreground "cyan" :underline t)
-  "File specifiers.")
-
-(sweeprolog-defface
-  file-no-depend
-  (:inherit font-lock-warning-face)
-  (:foreground "blue" :underline t :background "pink")
-  (:foreground "cyan" :underline t :background "pink")
-  "Unused file specifiers.")
-
-(sweeprolog-defface
-  unused-import
-  (:inherit font-lock-warning-face)
-  (:foreground "blue" :background "pink")
-  (:foreground "cyan" :background "pink")
-  "Unused imports.")
-
-(sweeprolog-defface
-  identifier
-  (:inherit font-lock-type-face)
-  (:weight bold)
-  (:weight bold)
-  "Identifiers.")
-
-(sweeprolog-defface
-  hook
-  (:inherit font-lock-preprocessor-face)
-  (:foreground "blue" :underline t)
-  (:foreground "cyan" :underline t)
-  "Hooks.")
-
-(sweeprolog-defface
-  module
-  (:inherit font-lock-type-face)
-  (:foreground "darkslateblue")
-  (:foreground "lightslateblue")
-  "Module names.")
-
-(sweeprolog-defface
-  singleton
-  (:inherit font-lock-warning-face)
-  (:foreground "red4" :weight bold)
-  (:foreground "orangered1" :weight bold)
-  "Singletons.")
-
-(sweeprolog-defface
-  fullstop
-  (:inherit font-lock-negation-char-face)
-  (:inherit font-lock-negation-char-face)
-  (:inherit font-lock-negation-char-face)
-  "Fullstops.")
-
-(sweeprolog-defface
-  nil
-  (:inherit font-lock-keyword-face)
-  (:inherit font-lock-keyword-face)
-  (:inherit font-lock-keyword-face)
-  "The empty list.")
-
-(sweeprolog-defface
-  variable-at-point
-  (:underline t)
-  (:underline t)
-  (:underline t)
-  "Variables.")
-
-(sweeprolog-defface
-  variable
-  (:inherit font-lock-variable-name-face)
-  (:foreground "red4")
-  (:foreground "orangered1")
-  "Variables.")
-
-(sweeprolog-defface
-  ext-quant
-  (:inherit font-lock-keyword-face)
-  (:inherit font-lock-keyword-face)
-  (:inherit font-lock-keyword-face)
-  "Existential quantifiers.")
-
-(sweeprolog-defface
-  keyword
-  (:inherit font-lock-keyword-face)
-  (:foreground "blue")
-  (:foreground "cyan")
-  "Control constructs.")
-
-(sweeprolog-defface
-  control
-  (:inherit font-lock-keyword-face)
-  (:inherit font-lock-keyword-face)
-  (:inherit font-lock-keyword-face)
-  "Control constructs.")
-
-(sweeprolog-defface
-  atom
-  (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
-  "Atoms.")
-
-(sweeprolog-defface
-  int
-  (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
-  "Integers.")
-
-(sweeprolog-defface
-  float
-  (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
-  (:inherit font-lock-constant-face)
-  "Floats.")
-
-(sweeprolog-defface
-  rational
-  (:inherit font-lock-constant-face)
-  (:foreground "steelblue")
-  (:foreground "steelblue")
-  "Rationals.")
-
-(sweeprolog-defface
-  chars
-  (:inherit font-lock-constant-face)
-  (:foreground "navyblue")
-  (:foreground "palegreen")
-  "Chars.")
-
-(sweeprolog-defface
-  codes
-  (:inherit font-lock-constant-face)
-  (:foreground "navyblue")
-  (:foreground "palegreen")
-  "Codes.")
-
-(sweeprolog-defface
-  error
-  (:inherit font-lock-warning-face)
-  (:background "orange")
-  (:background "orange")
-  "Unspecified errors.")
-
-(sweeprolog-defface
-  type-error
-  (:inherit font-lock-warning-face)
-  (:background "orange")
-  (:background "orange")
-  "Type errors.")
-
-(sweeprolog-defface
-  instantiation-error
-  (:inherit font-lock-warning-face)
-  (:background "orange")
-  (:background "orange")
-  "Instantiation errors.")
-
-(sweeprolog-defface
-  syntax-error
-  (:inherit error)
-  (:background "orange")
-  (:background "orange")
-  "Syntax errors.")
-
-(sweeprolog-defface around-syntax-error nil nil nil
-  "Text around a syntax error.")
-
-(sweeprolog-defface clause nil nil nil
-  "Predicate clauses.")
-
-(sweeprolog-defface grammar-rule nil nil nil
-  "DCG grammar rules.")
-
-(sweeprolog-defface term nil nil nil
-  "Top terms.")
-
-(sweeprolog-defface body nil nil nil
-  "Clause and query bodies.")
-
-(sweeprolog-defface directive nil nil nil
-  "Directives.")
-
-(sweeprolog-defface
-  string-comment
-  (:inherit font-lock-doc-face)
-  (:inherit font-lock-doc-face :foreground "darkgreen")
-  (:inherit font-lock-doc-face :foreground "green")
-  "String comments.")
-
-(sweeprolog-defface
-  structured-comment
-  (:inherit font-lock-doc-face)
-  (:inherit font-lock-doc-face :foreground "darkgreen")
-  (:inherit font-lock-doc-face :foreground "green")
-  "Structured comments.")
-
-(sweeprolog-defface
-  hole
-  (:box t)
-  (:box t)
-  (:box t)
-  "Holes.")
-
-(sweeprolog-defface
-  macro
-  (:inherit font-lock-preprocessor-face)
-  (:foreground "blue" :underline t)
-  (:foreground "cyan" :underline t)
-  "Macros.")
-
-(sweeprolog-defface
-  declaration-option
-  (:weight bold)
-  (:weight bold)
-  (:weight bold)
-  "Declaration options.")
-
-(sweeprolog-defface
-  dcg-string
-  (:inherit font-lock-string-face)
-  (:foreground "navyblue")
-  (:foreground "palegreen")
-  "DCG terminal strings.")
+(make-obsolete-variable
+ 'sweeprolog-faces-style
+ (concat
+  "This option is deprecated and will be removed "
+  "in a future version of Sweep.  "
+  "To emulate the color scheme of PceEmacs, use the "
+  "`sweeprolog-pce' custom theme instead.")
+ "Sweep version 0.21.0")
+
+(defface sweeprolog-function
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog arithmetic functions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-no-function
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog unknown arithmetic functions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-functor
+  '((t :inherit font-lock-function-name-face))
+ "Face used to highlight Prolog functors."
+ :group 'sweeprolog-faces)
+
+(defface sweeprolog-arity
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog arities."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-predicate-indicator
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog predicate indicators."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-built-in
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog built in predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-neck
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog necks."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-goal
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog unspecified predicate goals."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-string
+  '((t :inherit font-lock-string-face))
+  "Face used to highlight Prolog strings."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-comment
+  '((t :inherit font-lock-comment-face))
+  "Face used to highlight Prolog comments."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-built-in
+  '((t :background "orange" :weight bold))
+  "Face used to highlight Prolog built-in predicate definitons."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-method
+  '((t :weight bold))
+  "Face used to highlight Prolog pce classes."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-class
+  '((t :underline t))
+  "Face used to highlight Prolog pce classes."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-no-file
+  '((t :foreground "red"))
+  "Face used to highlight Prolog non-existsing file specifications."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-local
+  '((t :inherit font-lock-builtin-face))
+  "Face used to highlight Prolog local predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-meta
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog meta predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-dynamic
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog dynamic predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-multifile
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog multifile predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-extern
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog external predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-test
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog unreferenced predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-unreferenced
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog unreferenced predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-exported
+  '((t :inherit font-lock-builtin-face))
+  "Face used to highlight Prolog exported predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-hook
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog hook definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-iso
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog iso specified predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-def-iso
+  '((t :inherit font-lock-builtin-face))
+  "Face used to highlight Prolog built-in ISO specified predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-def-swi
+  '((t :inherit font-lock-builtin-face))
+  "Face used to highlight Prolog built-in SWI-Prolog predicate definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-imported
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog imported head terms."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-undefined
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog undefined head terms."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-public
+  '((t :inherit font-lock-builtin-face))
+  "Face used to highlight Prolog public definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-head-constraint
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog constraint definitions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-meta-spec
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog meta argument specifiers."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-recursion
+  '((t :inherit font-lock-builtin-face))
+  "Face used to highlight Prolog recursive calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-local
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog local predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-expanded
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog expanded predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-autoload
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog autoloaded predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-imported
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog imported predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-extern
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog external predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-foreign
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog foreign predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-meta
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog meta predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-undefined
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog undefined predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-thread-local
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog thread local predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-not-callable
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog terms that are not callable."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-constraint
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog constraint calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-global
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog global predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-multifile
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog multifile predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-dynamic
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog dynamic predicate calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-undefined-import
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog undefined imports."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-html-attribute
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog html attributes."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-html-call
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog html calls."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-option-name
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog option names."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-no-option-name
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog non-existent option names."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-flag-name
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog flag names."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-no-flag-name
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog non-existent flag names."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-qq-type
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog quasi-quotation types."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-qq-sep
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog quasi-quotation separators."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-qq-open
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog quasi-quotation open sequences."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-qq-content
+  '((t))
+  "Face used to highlight Prolog quasi-quotation content."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-qq-close
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog quasi-quotation close sequences."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-op-type
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog operator types."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-dict-tag
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog dict tags."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-dict-key
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog dict keys."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-dict-sep
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog dict separators."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-dict-return-op
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog dict return operators."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-dict-function
+  '((t :inherit font-lock-function-name-face))
+  "Face used to highlight Prolog dict functions."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-func-dot
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog dict function dots."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-file
+  '((t :inherit button))
+  "Face used to highlight Prolog file specifiers."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-file-no-depend
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog unused file specifiers."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-unused-import
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog unused imports."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-identifier
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog identifiers."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-hook
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog hooks."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-module
+  '((t :inherit font-lock-type-face))
+  "Face used to highlight Prolog module names."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-singleton
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog singletons."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-fullstop
+  '((t :inherit font-lock-negation-char-face))
+  "Face used to highlight Prolog fullstops."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-nil
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog the empty list."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-variable-at-point
+  '((t :underline t))
+  "Face used to highlight Prolog variables."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-variable
+  '((t :inherit font-lock-variable-name-face))
+  "Face used to highlight Prolog variables."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-ext-quant
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog existential quantifiers."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-keyword
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog control constructs."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-control
+  '((t :inherit font-lock-keyword-face))
+  "Face used to highlight Prolog control constructs."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-atom
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog atoms."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-int
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog integers."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-float
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog floats."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-rational
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog rationals."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-chars
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog chars."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-codes
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight Prolog character codes."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-error
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog unspecified errors."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-type-error
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog type errors."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-instantiation-error
+  '((t :inherit font-lock-warning-face))
+  "Face used to highlight Prolog instantiation errors."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-syntax-error
+  '((t :inherit error))
+  "Face used to highlight Prolog syntax errors."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-around-syntax-error
+  '((t))
+  "Face used to highlight text around a syntax error."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-clause
+  '((t))
+  "Face used to highlight Prolog predicate clauses."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-grammar-rule
+  '((t))
+  "Face used to highlight Prolog DCG grammar rules."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-term
+  '((t))
+  "Face used to highlight Prolog top terms."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-body
+  '((t))
+  "Face used to highlight Prolog clause and query bodies."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-directive
+  '((t))
+  "Face used to highlight Prolog directives."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-string-comment
+  '((t :inherit font-lock-doc-face))
+  "Face used to highlight Prolog string comments."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-structured-comment
+  '((t :inherit font-lock-doc-face))
+  "Face used to highlight Prolog structured comments."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-hole
+  '((t :box t))
+  "Face used to highlight Prolog holes."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-macro
+  '((t :inherit font-lock-preprocessor-face))
+  "Face used to highlight Prolog macros."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-declaration-option
+  '((t :weight bold))
+  "Face used to highlight Prolog declaration options."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-dcg-string
+  '((t :inherit font-lock-string-face))
+  "Face used to highlight Prolog DCG terminal strings."
+  :group 'sweeprolog-faces)
 
 ;;;; Font-lock
 
@@ -2209,96 +2010,96 @@ resulting list even when found in the current clause."
                     (goto-char sweeprolog--analyze-point)
                     (sweeprolog-beginning-of-next-top-term) (point))
                   (point-max)))
-           (sweeprolog-syntax-error-face))
-      (sweeprolog-around-syntax-error-face)))
+           'sweeprolog-syntax-error)
+      'sweeprolog-around-syntax-error))
 
 (defun sweeprolog-analyze-fragment-to-faces (beg end arg)
   (pcase arg
     (`("comment" . "structured")
      (list (list beg end nil)
-           (list beg end (sweeprolog-structured-comment-face))))
+           (list beg end 'sweeprolog-structured-comment)))
     (`("comment" . "string")
      (list (list beg end nil)
-           (list beg end (sweeprolog-string-comment-face))))
+           (list beg end 'sweeprolog-string-comment)))
     (`("comment" . ,_)
      (list (list beg end nil)
-           (list beg end (sweeprolog-comment-face))))
+           (list beg end 'sweeprolog-comment)))
     (`("head" "unreferenced" . ,_)
-     (list (list beg end (sweeprolog-head-unreferenced-face))))
+     (list (list beg end 'sweeprolog-head-unreferenced)))
     (`("head" "undefined" . ,_)
-     (list (list beg end (sweeprolog-head-undefined-face))))
+     (list (list beg end 'sweeprolog-head-undefined)))
     (`("head" "test" . ,_)
-     (list (list beg end (sweeprolog-head-test-face))))
+     (list (list beg end 'sweeprolog-head-test)))
     (`("head" "meta" . ,_)
-     (list (list beg end (sweeprolog-head-meta-face))))
+     (list (list beg end 'sweeprolog-head-meta)))
     (`("head" "def_iso" . ,_)
-     (list (list beg end (sweeprolog-head-def-iso-face))))
+     (list (list beg end 'sweeprolog-head-def-iso)))
     (`("head" "def_swi" . ,_)
-     (list (list beg end (sweeprolog-head-def-swi-face))))
+     (list (list beg end 'sweeprolog-head-def-swi)))
     (`("head" "iso" . ,_)
-     (list (list beg end (sweeprolog-head-iso-face))))
+     (list (list beg end 'sweeprolog-head-iso)))
     (`("head" "exported" . ,_)
-     (list (list beg end (sweeprolog-head-exported-face))))
+     (list (list beg end 'sweeprolog-head-exported)))
     (`("head" "hook" . ,_)
-     (list (list beg end (sweeprolog-head-hook-face))))
+     (list (list beg end 'sweeprolog-head-hook)))
     (`("head" "built_in" . ,_)
-     (list (list beg end (sweeprolog-head-built-in-face))))
+     (list (list beg end 'sweeprolog-head-built-in)))
     (`("head" ("imported" . ,_) . ,_)
-     (list (list beg end (sweeprolog-head-imported-face))))
+     (list (list beg end 'sweeprolog-head-imported)))
     (`("head" ("extern" . ,_) . ,_)
-     (list (list beg end (sweeprolog-head-extern-face))))
+     (list (list beg end 'sweeprolog-head-extern)))
     (`("head" "public" . ,_)
-     (list (list beg end (sweeprolog-head-public-face))))
+     (list (list beg end 'sweeprolog-head-public)))
     (`("head" "dynamic" . ,_)
-     (list (list beg end (sweeprolog-head-dynamic-face))))
+     (list (list beg end 'sweeprolog-head-dynamic)))
     (`("head" "multifile" . ,_)
-     (list (list beg end (sweeprolog-head-multifile-face))))
+     (list (list beg end 'sweeprolog-head-multifile)))
     (`("head" "local" . ,_)
-     (list (list beg end (sweeprolog-head-local-face))))
+     (list (list beg end 'sweeprolog-head-local)))
     (`("head" "constraint" . ,_)
-     (list (list beg end (sweeprolog-head-constraint-face))))
+     (list (list beg end 'sweeprolog-head-constraint)))
     (`("goal" ("autoload" . ,_) . ,_)
-     (list (list beg end (sweeprolog-autoload-face))))
+     (list (list beg end 'sweeprolog-autoload)))
     (`("goal" "expanded" . ,_)
-     (list (list beg end (sweeprolog-expanded-face))))
+     (list (list beg end 'sweeprolog-expanded)))
     (`("goal" "recursion" . ,_)
-     (list (list beg end (sweeprolog-recursion-face))))
+     (list (list beg end 'sweeprolog-recursion)))
     (`("goal" "meta"      . ,_)
-     (list (list beg end (sweeprolog-meta-face))))
+     (list (list beg end 'sweeprolog-meta)))
     (`("goal" "built_in"  . ,_)
-     (list (list beg end (sweeprolog-built-in-face))))
+     (list (list beg end 'sweeprolog-built-in)))
     (`("goal" "undefined" . ,_)
-     (list (list beg end (sweeprolog-undefined-face))))
+     (list (list beg end 'sweeprolog-undefined)))
     (`("goal" "global" . ,_)
-     (list (list beg end (sweeprolog-global-face))))
+     (list (list beg end 'sweeprolog-global)))
     (`("goal" "not_callable" . ,_)
-     (list (list beg end (sweeprolog-not-callable-face))))
+     (list (list beg end 'sweeprolog-not-callable)))
     (`("goal" "dynamic" . ,_)
-     (list (list beg end (sweeprolog-dynamic-face))))
+     (list (list beg end 'sweeprolog-dynamic)))
     (`("goal" "foreign" . ,_)
-     (list (list beg end (sweeprolog-foreign-face))))
+     (list (list beg end 'sweeprolog-foreign)))
     (`("goal" "multifile" . ,_)
-     (list (list beg end (sweeprolog-multifile-face))))
+     (list (list beg end 'sweeprolog-multifile)))
     (`("goal" "thread_local" . ,_)
-     (list (list beg end (sweeprolog-thread-local-face))))
+     (list (list beg end 'sweeprolog-thread-local)))
     (`("goal" ("extern" . ,_) . ,_)
-     (list (list beg end (sweeprolog-extern-face))))
+     (list (list beg end 'sweeprolog-extern)))
     (`("goal" ("imported" . ,_) . ,_)
-     (list (list beg end (sweeprolog-imported-face))))
+     (list (list beg end 'sweeprolog-imported)))
     (`("goal" ("global" . ,_) . ,_)
-     (list (list beg end (sweeprolog-global-face))))
+     (list (list beg end 'sweeprolog-global)))
     (`("goal" "local" . ,_)
-     (list (list beg end (sweeprolog-local-face))))
+     (list (list beg end 'sweeprolog-local)))
     (`("goal" "constraint" . ,_)
-     (list (list beg end (sweeprolog-constraint-face))))
+     (list (list beg end 'sweeprolog-constraint)))
     (`("macro" . ,_)
-     (list (list beg end (sweeprolog-macro-face))))
+     (list (list beg end 'sweeprolog-macro)))
     ("expanded"
-     (list (list beg end (sweeprolog-expanded-face))))
+     (list (list beg end 'sweeprolog-expanded)))
     ("instantiation_error"
-     (list (list beg end (sweeprolog-instantiation-error-face))))
+     (list (list beg end 'sweeprolog-instantiation-error)))
     (`("type_error" . ,_)
-     (list (list beg end (sweeprolog-type-error-face))))
+     (list (list beg end 'sweeprolog-type-error)))
     (`("syntax_error" ,_ ,eb ,ee)
      (let ((eb (min eb beg))
            (ee (max ee end)))
@@ -2317,59 +2118,59 @@ resulting list even when found in the current clause."
            (let ((face (sweeprolog-maybe-syntax-error-face end)))
              (cons (list beg cur nil)
                    (append (list (list eb ee nil)
-                                 (list eb ee (sweeprolog-around-syntax-error-face))
+                                 (list eb ee 'sweeprolog-around-syntax-error)
                                  (list beg end face))
                            ws)))))))
     ("unused_import"
-     (list (list beg end (sweeprolog-unused-import-face))))
+     (list (list beg end 'sweeprolog-unused-import)))
     ("undefined_import"
-     (list (list beg end (sweeprolog-undefined-import-face))))
+     (list (list beg end 'sweeprolog-undefined-import)))
     ("error"
-     (list (list beg end (sweeprolog-error-face))))
+     (list (list beg end 'sweeprolog-error)))
     ("keyword"
-     (list (list beg end (sweeprolog-keyword-face))))
+     (list (list beg end 'sweeprolog-keyword)))
     ("html_attribute"
-     (list (list beg end (sweeprolog-html-attribute-face))))
+     (list (list beg end 'sweeprolog-html-attribute)))
     ("html"
-     (list (list beg end (sweeprolog-html-call-face))))
+     (list (list beg end 'sweeprolog-html-call)))
     ("dict_tag"
-     (list (list beg end (sweeprolog-dict-tag-face))))
+     (list (list beg end 'sweeprolog-dict-tag)))
     ("dict_key"
-     (list (list beg end (sweeprolog-dict-key-face))))
+     (list (list beg end 'sweeprolog-dict-key)))
     ("dict_sep"
-     (list (list beg end (sweeprolog-dict-sep-face))))
+     (list (list beg end 'sweeprolog-dict-sep)))
     ("dict_function"
-     (list (list beg end (sweeprolog-dict-function-face))))
+     (list (list beg end 'sweeprolog-dict-function)))
     ("dict_return_op"
-     (list (list beg end (sweeprolog-dict-return-op-face))))
+     (list (list beg end 'sweeprolog-dict-return-op)))
     ("func_dot"
-     (list (list beg end (sweeprolog-func-dot-face))))
+     (list (list beg end 'sweeprolog-func-dot)))
     ("meta"
-     (list (list beg end (sweeprolog-meta-spec-face))))
+     (list (list beg end 'sweeprolog-meta-spec)))
     ("flag_name"
-     (list (list beg end (sweeprolog-flag-name-face))))
+     (list (list beg end 'sweeprolog-flag-name)))
     ("no_flag_name"
-     (list (list beg end (sweeprolog-flag-name-face))))
+     (list (list beg end 'sweeprolog-flag-name)))
     ("ext_quant"
-     (list (list beg end (sweeprolog-ext-quant-face))))
+     (list (list beg end 'sweeprolog-ext-quant)))
     ("atom"
-     (list (list beg end (sweeprolog-atom-face))))
+     (list (list beg end 'sweeprolog-atom)))
     ("float"
-     (list (list beg end (sweeprolog-float-face))))
+     (list (list beg end 'sweeprolog-float)))
     ("rational"
-     (list (list beg end (sweeprolog-rational-face))))
+     (list (list beg end 'sweeprolog-rational)))
     ("int"
-     (list (list beg end (sweeprolog-int-face))))
+     (list (list beg end 'sweeprolog-int)))
     ("singleton"
-     (list (list beg end (sweeprolog-singleton-face))))
+     (list (list beg end 'sweeprolog-singleton)))
     ("option_name"
-     (list (list beg end (sweeprolog-option-name-face))))
+     (list (list beg end 'sweeprolog-option-name)))
     ("no_option_name"
-     (list (list beg end (sweeprolog-no-option-name-face))))
+     (list (list beg end 'sweeprolog-no-option-name)))
     ("control"
-     (list (list beg end (sweeprolog-control-face))))
+     (list (list beg end 'sweeprolog-control)))
     ("var"
-     (list (list beg end (sweeprolog-variable-face))))
+     (list (list beg end 'sweeprolog-variable)))
     ("fullstop"
      (save-excursion
        (goto-char (min end (point-max)))
@@ -2383,28 +2184,28 @@ resulting list even when found in the current clause."
          (skip-chars-forward " \t\n")
          (push (list cur (point) nil) ws)
          (cons (list beg end nil)
-               (cons (list beg end (sweeprolog-fullstop-face))
+               (cons (list beg end 'sweeprolog-fullstop)
                      ws)))))
     ("functor"
-     (list (list beg end (sweeprolog-functor-face))))
+     (list (list beg end 'sweeprolog-functor)))
     ("arity"
-     (list (list beg end (sweeprolog-arity-face))))
+     (list (list beg end 'sweeprolog-arity)))
     ("predicate_indicator"
-     (list (list beg end (sweeprolog-predicate-indicator-face))))
+     (list (list beg end 'sweeprolog-predicate-indicator)))
     ("chars"
-     (list (list beg end (sweeprolog-chars-face))))
+     (list (list beg end 'sweeprolog-chars)))
     ("codes"
-     (list (list beg end (sweeprolog-codes-face))))
+     (list (list beg end 'sweeprolog-codes)))
     ("string"
-     (list (list beg end (sweeprolog-string-face))))
+     (list (list beg end 'sweeprolog-string)))
     (`("module" . ,_)
-     (list (list beg end (sweeprolog-module-face))))
+     (list (list beg end 'sweeprolog-module)))
     ("neck"
-     (list (list beg end (sweeprolog-neck-face))))
+     (list (list beg end 'sweeprolog-neck)))
     (`("hook" . ,_)
-     (list (list beg end (sweeprolog-hook-face))))
+     (list (list beg end 'sweeprolog-hook)))
     ("hook"
-     (list (list beg end (sweeprolog-hook-face))))
+     (list (list beg end 'sweeprolog-hook)))
     (`("qq_content" . ,type)
      (let ((mode (cdr (assoc-string type sweeprolog-qq-mode-alist))))
        (if (and mode (fboundp mode))
@@ -2428,47 +2229,47 @@ resulting list even when found in the current clause."
                    (setq pos next)))
                (set-buffer-modified-p nil)
                res))
-         (list (list beg end (sweeprolog-qq-content-face))))))
+         (list (list beg end 'sweeprolog-qq-content)))))
     ("qq_type"
-     (list (list beg end (sweeprolog-qq-type-face))))
+     (list (list beg end 'sweeprolog-qq-type)))
     ("qq_sep"
-     (list (list beg end (sweeprolog-qq-sep-face))))
+     (list (list beg end 'sweeprolog-qq-sep)))
     ("qq_open"
-     (list (list beg end (sweeprolog-qq-open-face))))
+     (list (list beg end 'sweeprolog-qq-open)))
     ("qq_close"
-     (list (list beg end (sweeprolog-qq-close-face))))
+     (list (list beg end 'sweeprolog-qq-close)))
     ("identifier"
-     (list (list beg end (sweeprolog-identifier-face))))
+     (list (list beg end 'sweeprolog-identifier)))
     (`("file" . ,_)
-     (list (list beg end (sweeprolog-file-face))))
+     (list (list beg end 'sweeprolog-file)))
     (`("file_no_depend" . ,_)
-     (list (list beg end (sweeprolog-file-no-depend-face))))
+     (list (list beg end 'sweeprolog-file-no-depend)))
     ("function"
-     (list (list beg end (sweeprolog-function-face))))
+     (list (list beg end 'sweeprolog-function)))
     ("no_function"
-     (list (list beg end (sweeprolog-no-function-face))))
+     (list (list beg end 'sweeprolog-no-function)))
     ("nofile"
-     (list (list beg end (sweeprolog-no-file-face))))
+     (list (list beg end 'sweeprolog-no-file)))
     ("op_type"
-     (list (list beg end (sweeprolog-op-type-face))))
+     (list (list beg end 'sweeprolog-op-type)))
     ("directive"
-     (list (list beg end nil) (list beg end (sweeprolog-directive-face))))
+     (list (list beg end nil) (list beg end 'sweeprolog-directive)))
     ("body"
-     (list (list beg end nil) (list beg end (sweeprolog-body-face))))
+     (list (list beg end nil) (list beg end 'sweeprolog-body)))
     ("clause"
-     (list (list beg end nil) (list beg end (sweeprolog-clause-face))))
+     (list (list beg end nil) (list beg end 'sweeprolog-clause)))
     ("term"
-     (list (list beg end nil) (list beg end (sweeprolog-term-face))))
+     (list (list beg end nil) (list beg end 'sweeprolog-term)))
     ("grammar_rule"
-     (list (list beg end nil) (list beg end (sweeprolog-grammar-rule-face))))
+     (list (list beg end nil) (list beg end 'sweeprolog-grammar-rule)))
     ("method"
-     (list (list beg end nil) (list beg end (sweeprolog-method-face))))
+     (list (list beg end nil) (list beg end 'sweeprolog-method)))
     ("class"
-     (list (list beg end (sweeprolog-class-face))))
+     (list (list beg end 'sweeprolog-class)))
     (`("decl_option" . ,_)
-     (list (list beg end (sweeprolog-declaration-option-face))))
+     (list (list beg end 'sweeprolog-declaration-option)))
     (`("dcg" . "string")
-     (list (list beg end (sweeprolog-dcg-string-face))))))
+     (list (list beg end 'sweeprolog-dcg-string)))))
 
 (defun sweeprolog-analyze-fragment-font-lock (beg end arg)
   (when-let ((face-fragments (sweeprolog-analyze-fragment-to-faces
@@ -2498,7 +2299,7 @@ resulting list even when found in the current clause."
                     (hend (cdr hole)))
                 (font-lock--add-text-property hbeg hend
                                               'font-lock-face
-                                              (sweeprolog-hole-face)
+                                              'sweeprolog-hole
                                               (current-buffer)
                                               nil)
                 (goto-char hend)
@@ -2525,7 +2326,7 @@ resulting list even when found in the current clause."
               file
               (mapconcat (lambda (pi)
                            (propertize pi 'face
-                                       (sweeprolog-predicate-indicator-face)))
+                                       'sweeprolog-predicate-indicator))
                          preds ", ")))))
 
 (defun sweeprolog--help-echo-for-unused-dependency (file)
@@ -2942,7 +2743,7 @@ variable at point, if any."
                (font-lock--add-text-property beg
                                              end
                                              'font-lock-face
-                                             (sweeprolog-variable-at-point-face)
+                                             'sweeprolog-variable-at-point
                                              (current-buffer) nil))))))))))
 
 (defun sweeprolog-cursor-sensor-functions (var)
@@ -2973,6 +2774,11 @@ Interactively, PROJ is the prefix argument."
         (flymake-show-buffer-diagnostics))
     (user-error "Flymake is not active in the current buffer")))
 
+;;;###autoload
+(when load-file-name
+  (add-to-list 'custom-theme-load-path
+               (file-name-as-directory
+                (file-name-directory load-file-name))))
 
 ;;;; Top-level
 
@@ -3161,7 +2967,11 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
             (lambda ()
               (when (timerp sweeprolog-top-level-timer)
                 (cancel-timer sweeprolog-top-level-timer)))
-            nil t))
+            nil t)
+  (when (and (member sweeprolog-faces-style '(light dark))
+             (not (custom-theme-enabled-p 'sweeprolog-pce)))
+    (load-theme 'sweeprolog-pce t)
+    (setq sweeprolog-faces-style nil)))
 
 (defun sweeprolog-buffer-load-time (&optional buffer)
   (setq buffer (or buffer (current-buffer)))
@@ -3601,7 +3411,7 @@ of the prefix argument."
                        (- (point) length (- hend))
                        (list
                         'sweeprolog-hole t
-                        'font-lock-face (list (sweeprolog-hole-face))
+                        'font-lock-face (list 'sweeprolog-hole)
                         'rear-nonsticky '(sweeprolog-hole
                                           cursor-sensor-functions
                                           font-lock-face))))))))))
@@ -3654,7 +3464,7 @@ of the prefix argument."
                  (- (point) length (- hend))
                  (list
                   'sweeprolog-hole t
-                  'font-lock-face (list (sweeprolog-hole-face))
+                  'font-lock-face (list 'sweeprolog-hole)
                   'rear-nonsticky '(sweeprolog-hole
                                     cursor-sensor-functions
                                     font-lock-face)))))))))
@@ -3930,7 +3740,7 @@ MOD, FUN, ARI and NECK have the same meaning as in
                hbeg hend
                (list
                 'sweeprolog-hole t
-                'font-lock-face (list (sweeprolog-hole-face))
+                'font-lock-face (list 'sweeprolog-hole)
                 'rear-nonsticky '(sweeprolog-hole
                                   cursor-sensor-functions
                                   font-lock-face))
@@ -4653,8 +4463,12 @@ certain contexts to maintain conventional Prolog layout."
     (add-hook 'context-menu-functions
               #'sweeprolog-context-menu-function nil t))
   (unless (member 'sweeprolog-hole yank-excluded-properties)
-   (setq-local yank-excluded-properties
-               (cons 'sweeprolog-hole yank-excluded-properties))))
+    (setq-local yank-excluded-properties
+                (cons 'sweeprolog-hole yank-excluded-properties)))
+  (when (and (member sweeprolog-faces-style '(light dark))
+             (not (custom-theme-enabled-p 'sweeprolog-pce)))
+    (load-theme 'sweeprolog-pce t)
+    (setq sweeprolog-faces-style nil)))
 
 
 ;;;; Skeletons and auto-insert
@@ -6084,7 +5898,7 @@ is the name of the variable at point, if any."
     (cons vars var-at-point)))
 
 (defun sweeprolog--format-variable (var)
-  (propertize var 'face (sweeprolog-variable-face)))
+  (propertize var 'face 'sweeprolog-variable))
 
 (defvar sweeprolog-read-new-variable--existing-vars nil)
 (defvar-local sweeprolog-read-new-variable--warned nil)
@@ -6579,7 +6393,7 @@ instead."
                                (if line (number-to-string line) "")
                                (propertize pred
                                            'face
-                                           (sweeprolog-predicate-indicator-face))
+                                           'sweeprolog-predicate-indicator)
                                (number-to-string clause)
                                (or cond "")))))
           (sweeprolog-current-breakpoints)))
