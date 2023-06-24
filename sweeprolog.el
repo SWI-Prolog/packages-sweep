@@ -815,46 +815,6 @@ the order of the arguments is reversed."
 
 ;;;; Prolog messages
 
-(defface sweeprolog-debug-prefix
-  '((default :inherit shadow))
-  "Face used to highlight the \"DEBUG\" message prefix."
-  :group 'sweeprolog-faces)
-
-(defvar sweeprolog-debug-prefix-face 'sweeprolog-debug-prefix
-  "Name of the face used to highlight the \"DEBUG\" message prefix.")
-
-(defface sweeprolog-debug-topic
-  '((default :inherit shadow))
-  "Face used to highlight the topic in debug messages."
-  :group 'sweeprolog-faces)
-
-(defvar sweeprolog-debug-topic-face 'sweeprolog-debug-topic
-  "Name of the face used to highlight the topic in debug messages.")
-
-(defface sweeprolog-info-prefix
-  '((default :inherit default))
-  "Face used to highlight the \"INFO\" message prefix."
-  :group 'sweeprolog-faces)
-
-(defvar sweeprolog-info-prefix-face 'sweeprolog-info-prefix
-  "Name of the face used to highlight the \"INFO\" message prefix.")
-
-(defface sweeprolog-warning-prefix
-  '((default :inherit font-lock-warning-face))
-  "Face used to highlight the \"WARNING\" message prefix."
-  :group 'sweeprolog-faces)
-
-(defvar sweeprolog-warning-prefix-face 'sweeprolog-warning-prefix
-  "Name of the face used to highlight the \"WARNING\" message prefix.")
-
-(defface sweeprolog-error-prefix
-  '((default :inherit error))
-  "Face used to highlight the \"ERROR\" message prefix."
-  :group 'sweeprolog-faces)
-
-(defvar sweeprolog-error-prefix-face 'sweeprolog-error-prefix
-  "Name of the face used to highlight the \"ERROR\" message prefix.")
-
 (defun sweeprolog-view-messages ()
   "View the log of recent Prolog messages."
   (interactive)
@@ -875,19 +835,19 @@ the order of the arguments is reversed."
           (`("debug" . ,topic)
            (insert (propertize "DEBUG" 'face sweeprolog-debug-prefix-face))
            (insert "[")
-           (insert (propertize topic 'face sweeprolog-debug-topic-face))
+           (insert (propertize topic 'face 'sweeprolog-debug-topic))
            (insert "]: ")
            (insert content))
           ("informational"
-           (insert (propertize "INFO" 'face sweeprolog-info-prefix-face))
+           (insert (propertize "INFO" 'face 'sweeprolog-info-prefix))
            (insert ": ")
            (insert content))
           ("warning"
-           (insert (propertize "WARNING" 'face sweeprolog-warning-prefix-face))
+           (insert (propertize "WARNING" 'face 'sweeprolog-warning-prefix))
            (insert ": ")
            (insert content))
           ("error"
-           (insert (propertize "ERROR" 'face sweeprolog-error-prefix-face))
+           (insert (propertize "ERROR" 'face 'sweeprolog-error-prefix))
            (insert ": ")
            (insert content))))
       (newline))))
@@ -1480,509 +1440,540 @@ resulting list even when found in the current clause."
   "`sweeprolog-pce' custom theme instead.")
  "Sweep version 0.21.0")
 
+(defface sweeprolog-debug-prefix
+  '((t :inherit shadow))
+  "Face for highlighting the \"DEBUG\" message prefix."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-debug-topic
+  '((t :inherit shadow))
+  "Face for highlighting the topic in debug messages."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-info-prefix
+  '((t :inherit default))
+  "Face for highlighting the \"INFO\" message prefix."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-warning-prefix
+  '((t :inherit font-lock-warning-face))
+  "Face for highlighting the \"WARNING\" message prefix."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-error-prefix
+  '((t :inherit error))
+  "Face for highlighting the \"ERROR\" message prefix."
+  :group 'sweeprolog-faces)
+
 (defface sweeprolog-function
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog arithmetic functions."
+  "Face for highlighting Prolog arithmetic functions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-no-function
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog unknown arithmetic functions."
+  "Face for highlighting Prolog unknown arithmetic functions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-functor
   '((t :inherit font-lock-function-name-face))
- "Face used to highlight Prolog functors."
+ "Face for highlighting Prolog functors."
  :group 'sweeprolog-faces)
 
 (defface sweeprolog-arity
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog arities."
+  "Face for highlighting Prolog arities."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-predicate-indicator
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog predicate indicators."
+  "Face for highlighting Prolog predicate indicators."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-built-in
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog built in predicate calls."
+  "Face for highlighting Prolog built in predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-neck
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog necks."
+  "Face for highlighting Prolog necks."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-goal
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog unspecified predicate goals."
+  "Face for highlighting Prolog unspecified predicate goals."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-string
   '((t :inherit font-lock-string-face))
-  "Face used to highlight Prolog strings."
+  "Face for highlighting Prolog strings."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-comment
   '((t :inherit font-lock-comment-face))
-  "Face used to highlight Prolog comments."
+  "Face for highlighting Prolog comments."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-built-in
   '((t :background "orange" :weight bold))
-  "Face used to highlight Prolog built-in predicate definitons."
+  "Face for highlighting Prolog built-in predicate definitons."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-method
   '((t :weight bold))
-  "Face used to highlight Prolog pce classes."
+  "Face for highlighting Prolog pce classes."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-class
   '((t :underline t))
-  "Face used to highlight Prolog pce classes."
+  "Face for highlighting Prolog pce classes."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-no-file
   '((t :foreground "red"))
-  "Face used to highlight Prolog non-existsing file specifications."
+  "Face for highlighting Prolog non-existsing file specifications."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-local
   '((t :inherit font-lock-builtin-face))
-  "Face used to highlight Prolog local predicate definitions."
+  "Face for highlighting Prolog local predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-meta
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog meta predicate definitions."
+  "Face for highlighting Prolog meta predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-dynamic
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog dynamic predicate definitions."
+  "Face for highlighting Prolog dynamic predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-multifile
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog multifile predicate definitions."
+  "Face for highlighting Prolog multifile predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-extern
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog external predicate definitions."
+  "Face for highlighting Prolog external predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-test
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog unreferenced predicate definitions."
+  "Face for highlighting Prolog unreferenced predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-unreferenced
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog unreferenced predicate definitions."
+  "Face for highlighting Prolog unreferenced predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-exported
   '((t :inherit font-lock-builtin-face))
-  "Face used to highlight Prolog exported predicate definitions."
+  "Face for highlighting Prolog exported predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-hook
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog hook definitions."
+  "Face for highlighting Prolog hook definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-iso
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog iso specified predicate definitions."
+  "Face for highlighting Prolog iso specified predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-def-iso
   '((t :inherit font-lock-builtin-face))
-  "Face used to highlight Prolog built-in ISO specified predicate definitions."
+  "Face for highlighting Prolog built-in ISO specified predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-def-swi
   '((t :inherit font-lock-builtin-face))
-  "Face used to highlight Prolog built-in SWI-Prolog predicate definitions."
+  "Face for highlighting Prolog built-in SWI-Prolog predicate definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-imported
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog imported head terms."
+  "Face for highlighting Prolog imported head terms."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-undefined
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog undefined head terms."
+  "Face for highlighting Prolog undefined head terms."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-public
   '((t :inherit font-lock-builtin-face))
-  "Face used to highlight Prolog public definitions."
+  "Face for highlighting Prolog public definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-head-constraint
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog constraint definitions."
+  "Face for highlighting Prolog constraint definitions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-meta-spec
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog meta argument specifiers."
+  "Face for highlighting Prolog meta argument specifiers."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-recursion
   '((t :inherit font-lock-builtin-face))
-  "Face used to highlight Prolog recursive calls."
+  "Face for highlighting Prolog recursive calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-local
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog local predicate calls."
+  "Face for highlighting Prolog local predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-expanded
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog expanded predicate calls."
+  "Face for highlighting Prolog expanded predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-autoload
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog autoloaded predicate calls."
+  "Face for highlighting Prolog autoloaded predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-imported
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog imported predicate calls."
+  "Face for highlighting Prolog imported predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-extern
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog external predicate calls."
+  "Face for highlighting Prolog external predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-foreign
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog foreign predicate calls."
+  "Face for highlighting Prolog foreign predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-meta
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog meta predicate calls."
+  "Face for highlighting Prolog meta predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-undefined
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog undefined predicate calls."
+  "Face for highlighting Prolog undefined predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-thread-local
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog thread local predicate calls."
+  "Face for highlighting Prolog thread local predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-not-callable
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog terms that are not callable."
+  "Face for highlighting Prolog terms that are not callable."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-constraint
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog constraint calls."
+  "Face for highlighting Prolog constraint calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-global
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog global predicate calls."
+  "Face for highlighting Prolog global predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-multifile
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog multifile predicate calls."
+  "Face for highlighting Prolog multifile predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-dynamic
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog dynamic predicate calls."
+  "Face for highlighting Prolog dynamic predicate calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-undefined-import
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog undefined imports."
+  "Face for highlighting Prolog undefined imports."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-html-attribute
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog html attributes."
+  "Face for highlighting Prolog html attributes."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-html-call
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog html calls."
+  "Face for highlighting Prolog html calls."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-option-name
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog option names."
+  "Face for highlighting Prolog option names."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-no-option-name
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog non-existent option names."
+  "Face for highlighting Prolog non-existent option names."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-flag-name
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog flag names."
+  "Face for highlighting Prolog flag names."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-no-flag-name
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog non-existent flag names."
+  "Face for highlighting Prolog non-existent flag names."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-qq-type
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog quasi-quotation types."
+  "Face for highlighting Prolog quasi-quotation types."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-qq-sep
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog quasi-quotation separators."
+  "Face for highlighting Prolog quasi-quotation separators."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-qq-open
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog quasi-quotation open sequences."
+  "Face for highlighting Prolog quasi-quotation open sequences."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-qq-content
   '((t))
-  "Face used to highlight Prolog quasi-quotation content."
+  "Face for highlighting Prolog quasi-quotation content."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-qq-close
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog quasi-quotation close sequences."
+  "Face for highlighting Prolog quasi-quotation close sequences."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-op-type
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog operator types."
+  "Face for highlighting Prolog operator types."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-dict-tag
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog dict tags."
+  "Face for highlighting Prolog dict tags."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-dict-key
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog dict keys."
+  "Face for highlighting Prolog dict keys."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-dict-sep
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog dict separators."
+  "Face for highlighting Prolog dict separators."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-dict-return-op
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog dict return operators."
+  "Face for highlighting Prolog dict return operators."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-dict-function
   '((t :inherit font-lock-function-name-face))
-  "Face used to highlight Prolog dict functions."
+  "Face for highlighting Prolog dict functions."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-func-dot
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog dict function dots."
+  "Face for highlighting Prolog dict function dots."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-file
   '((t :inherit button))
-  "Face used to highlight Prolog file specifiers."
+  "Face for highlighting Prolog file specifiers."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-file-no-depend
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog unused file specifiers."
+  "Face for highlighting Prolog unused file specifiers."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-unused-import
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog unused imports."
+  "Face for highlighting Prolog unused imports."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-identifier
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog identifiers."
+  "Face for highlighting Prolog identifiers."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-hook
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog hooks."
+  "Face for highlighting Prolog hooks."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-module
   '((t :inherit font-lock-type-face))
-  "Face used to highlight Prolog module names."
+  "Face for highlighting Prolog module names."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-singleton
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog singletons."
+  "Face for highlighting Prolog singletons."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-fullstop
   '((t :inherit font-lock-negation-char-face))
-  "Face used to highlight Prolog fullstops."
+  "Face for highlighting Prolog fullstops."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-nil
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog the empty list."
+  "Face for highlighting the Prolog empty list."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-variable-at-point
   '((t :underline t))
-  "Face used to highlight Prolog variables."
+  "Face for highlighting Prolog variables."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-variable
   '((t :inherit font-lock-variable-name-face))
-  "Face used to highlight Prolog variables."
+  "Face for highlighting Prolog variables."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-ext-quant
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog existential quantifiers."
+  "Face for highlighting Prolog existential quantifiers."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-keyword
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog control constructs."
+  "Face for highlighting Prolog control constructs."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-control
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight Prolog control constructs."
+  "Face for highlighting Prolog control constructs."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-atom
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog atoms."
+  "Face for highlighting Prolog atoms."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-int
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog integers."
+  "Face for highlighting Prolog integers."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-float
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog floats."
+  "Face for highlighting Prolog floats."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-rational
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog rationals."
+  "Face for highlighting Prolog rationals."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-chars
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog chars."
+  "Face for highlighting Prolog chars."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-codes
   '((t :inherit font-lock-constant-face))
-  "Face used to highlight Prolog character codes."
+  "Face for highlighting Prolog character codes."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-error
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog unspecified errors."
+  "Face for highlighting Prolog unspecified errors."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-type-error
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog type errors."
+  "Face for highlighting Prolog type errors."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-instantiation-error
   '((t :inherit font-lock-warning-face))
-  "Face used to highlight Prolog instantiation errors."
+  "Face for highlighting Prolog instantiation errors."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-syntax-error
   '((t :inherit error))
-  "Face used to highlight Prolog syntax errors."
+  "Face for highlighting Prolog syntax errors."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-around-syntax-error
   '((t))
-  "Face used to highlight text around a syntax error."
+  "Face for highlighting text around a syntax error."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-clause
   '((t))
-  "Face used to highlight Prolog predicate clauses."
+  "Face for highlighting Prolog predicate clauses."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-grammar-rule
   '((t))
-  "Face used to highlight Prolog DCG grammar rules."
+  "Face for highlighting Prolog DCG grammar rules."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-term
   '((t))
-  "Face used to highlight Prolog top terms."
+  "Face for highlighting Prolog top terms."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-body
   '((t))
-  "Face used to highlight Prolog clause and query bodies."
+  "Face for highlighting Prolog clause and query bodies."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-directive
   '((t))
-  "Face used to highlight Prolog directives."
+  "Face for highlighting Prolog directives."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-string-comment
   '((t :inherit font-lock-doc-face))
-  "Face used to highlight Prolog string comments."
+  "Face for highlighting Prolog string comments."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-structured-comment
   '((t :inherit font-lock-doc-face))
-  "Face used to highlight Prolog structured comments."
+  "Face for highlighting Prolog structured comments."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-hole
   '((t :box t))
-  "Face used to highlight Prolog holes."
+  "Face for highlighting Prolog holes."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-macro
   '((t :inherit font-lock-preprocessor-face))
-  "Face used to highlight Prolog macros."
+  "Face for highlighting Prolog macros."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-declaration-option
   '((t :weight bold))
-  "Face used to highlight Prolog declaration options."
+  "Face for highlighting Prolog declaration options."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-dcg-string
   '((t :inherit font-lock-string-face))
-  "Face used to highlight Prolog DCG terminal strings."
+  "Face for highlighting Prolog DCG terminal strings."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-breakpoint
+  '((((background light)) :background "lightgreen")
+    (((background dark))  :background "darkgreen"))
+  "Face for highlighting Prolog breakpoints."
   :group 'sweeprolog-faces)
 
 ;;;; Font-lock
@@ -6275,19 +6266,10 @@ prompt with \"Breakpoint: \"."
       (with-current-buffer buf
         (sweeprolog-analyze-term (car range))))))
 
-(defface sweeprolog-breakpoint-face
-  '((((background light)) :background "lightgreen")
-    (t                    :background "darkgreen"))
-  "Face used to highlight Prolog breakpoints."
-  :group 'sweeprolog-faces)
-
-(defvar sweeprolog-breakpoint-face 'sweeprolog-breakpoint-face
-  "Face to use for highlighting Prolog breakpoints.")
-
 (defun sweeprolog--highlight-breakpoint (beg end)
   (font-lock--add-text-property beg end
                                 'font-lock-face
-                                sweeprolog-breakpoint-face
+                                'sweeprolog-breakpoint
                                 (current-buffer)
                                 nil))
 
