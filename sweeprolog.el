@@ -2141,7 +2141,7 @@ resulting list even when found in the current clause."
     ("flag_name"
      (list (list beg end 'sweeprolog-flag-name)))
     ("no_flag_name"
-     (list (list beg end 'sweeprolog-flag-name)))
+     (list (list beg end 'sweeprolog-no-flag-name)))
     ("ext_quant"
      (list (list beg end 'sweeprolog-ext-quant)))
     ("atom"
