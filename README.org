@@ -748,12 +748,13 @@ For more information about custom themes in Emacs, see [[info:emacs#Custom Theme
 In versions up to and including 0.20.0, Sweep used to provide a different
 mechanism for emulating the highlighting of PceEmacs that involved customizing
 the user option ~sweeprolog-faces-style~.  When that option was set to ~light~
-or ~dark~, Sweep would use a different sets of faces that mimic the highlighting
+or ~dark~, Sweep would use different sets of faces that mimic the highlighting
 of PceEmacs.  ~sweeprolog-faces-style~ is now deprecated, and you should instead
 use the ~sweeprolog-pce~ theme.  Still, in benefit of users that have
 ~sweeprolog-faces-style~ set and expect Sweep to use PceEmacs highlighting,
 Sweep checks if ~sweeprolog-faces-style~ is either ~light~ or ~dark~ when you
-first open a Prolog buffer, and if so it enables the ~sweeprolog-pce~ theme.
+first open a Prolog buffer, and if so it simply enables the ~sweeprolog-pce~
+theme to get the same effect.
 
 *** Highlighting occurrences of a variable
 :PROPERTIES:
