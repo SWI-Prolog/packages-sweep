@@ -1184,21 +1184,54 @@ the prefix argument."
 FILE is the file name of MODULE and DESC is its description, or nil."
   (sweeprolog--query-once "sweep" "sweep_module_annotation" module))
 
-(defun sweeprolog-module-minibuffer-annotation (module)
-  "Annotation function for module completion candidates.
-
-Return a string used to annotate MODULE."
+(defun sweeprolog-module-minibuffer-annotation-1 (module pad)
+  "Return a string used to annotate MODULE while padding to PAD."
   (let* ((width (string-width module))
          (file-desc (sweeprolog-module-annotation module))
          (file (car file-desc))
          (desc (cdr file-desc)))
-    (concat
-     (make-string
-      (+ (max (- (or sweeprolog--module-max-width width) width) 0) 2)
-      ?\s)
-     (when file (concat file (when desc (concat ": "))))
-     (replace-regexp-in-string (rx "library(" (+ graph) "): ") ""
-                               (or desc "")))))
+    (propertize
+     (concat
+      (make-string
+       (+ (- sweeprolog--module-max-width width) 2)
+       ?\s)
+      (when file (concat file
+                         (when desc (concat ": "))))
+      (replace-regexp-in-string (rx "library(" (+ graph) "): ") ""
+                                (or desc "")))
+     'face 'sweeprolog-structured-comment)))
+
+(defun sweeprolog-module-minibuffer-annotation (module)
+  "Annotation function for module completion candidates.
+
+Return a string used to annotate MODULE."
+  (sweeprolog-module-minibuffer-annotation-1 module
+                                             (or sweeprolog--module-max-width
+                                                 (string-width module))))
+
+(defun sweeprolog-module-minibuffer-affixation (completions)
+  "Affixation function for module completion candidates.
+
+Map COMPLETIONS to a list of elements (CAND PRE SUF), where CAND
+is a candidate string, PRE is a prefix string to display before
+the candidate and SUF is its suffix to display after it."
+  (when completions
+    (let ((module-max-width (seq-max (mapcar #'string-width
+                                             completions))))
+      (mapcar (lambda (cand)
+                (list cand ""
+                      (sweeprolog-module-minibuffer-annotation-1
+                       cand module-max-width)))
+              completions))))
+
+(defun sweeprolog-module-minibuffer-group (completion transform)
+  "Grouping function for module completion candidates.
+
+See (info \"(elisp)Programmed Completion\") for the meaning of
+COMPLETION and TRANSFORM."
+  (if transform
+      completion
+    (sweeprolog--query-once "sweep" "sweep_module_class" completion)))
 
 (defun sweeprolog-module-p (mod)
   "Return non-nil if MOD is a known Prolog module."
@@ -1218,7 +1251,9 @@ STRING, PREDICATE and ACTION."
     '(metadata
       .
       ((category            . sweeprolog-module)
-       (annotation-function . sweeprolog-module-minibuffer-annotation))))
+       (annotation-function . sweeprolog-module-minibuffer-annotation)
+       (affixation-function . sweeprolog-module-minibuffer-affixation)
+       (group-function      . sweeprolog-module-minibuffer-group))))
    (t (complete-with-action action
                             (sweeprolog-modules-collection string)
                             string

@@ -89,7 +89,8 @@
             sweep_breakpoint_file/2,
             sweep_expand_macro/2,
             sweep_module_annotation/2,
-            sweep_is_module/2
+            sweep_is_module/2,
+            sweep_module_class/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -259,6 +260,10 @@ sweep_documentation_modes([mode(Mode0, Args)|_], OneLiner, Docs) :-
 sweep_documentation_modes([_|T], OneLiner, Docs) :-
     sweep_documentation_modes(T, OneLiner, Docs).
 
+sweep_module_class(M0, C) :-
+    atom_string(M, M0),
+    module_property(M, class(C0)),
+    atom_string(C0, C).
 
 sweep_module_path(ModuleName, Path) :-
     atom_string(Module, ModuleName),
