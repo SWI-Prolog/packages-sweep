@@ -1168,27 +1168,72 @@ the prefix argument."
 
 ;;;; Modules
 
-(defun sweeprolog-modules-collection ()
-  (sweeprolog--query-once "sweep" "sweep_modules_collection" nil))
+(defvar-local sweeprolog--module-max-width nil)
 
-(defun sweeprolog-module-path (mod)
-  (sweeprolog--query-once "sweep" "sweep_module_path" mod))
+(defun sweeprolog-modules-collection (&optional before after)
+  "Return Prolog modules with names including BEFORE and AFTER in order."
+  (when-let ((col (sweeprolog--query-once "sweep" "sweep_modules_collection"
+                                          (cons before after))))
+    (setq sweeprolog--module-max-width
+          (seq-max (mapcar #'string-width col)))
+    col))
+
+(defun sweeprolog-module-annotation (module)
+  "Return a cons cell (FILE . DESC) for MODULE.
+
+FILE is the file name of MODULE and DESC is its description, or nil."
+  (sweeprolog--query-once "sweep" "sweep_module_annotation" module))
+
+(defun sweeprolog-module-minibuffer-annotation (module)
+  "Annotation function for module completion candidates.
+
+Return a string used to annotate MODULE."
+  (let* ((width (string-width module))
+         (file-desc (sweeprolog-module-annotation module))
+         (file (car file-desc))
+         (desc (cdr file-desc)))
+    (concat
+     (make-string
+      (+ (max (- (or sweeprolog--module-max-width width) width) 0) 2)
+      ?\s)
+     (when file (concat file (when desc (concat ": "))))
+     (replace-regexp-in-string (rx "library(" (+ graph) "): ") ""
+                               (or desc "")))))
+
+(defun sweeprolog-module-p (mod)
+  "Return non-nil if MOD is a known Prolog module."
+  (not (null (sweeprolog--query-once "sweep" "sweep_is_module" mod))))
+
+(defun sweeprolog-module-completion-table (string predicate action)
+  "Programmed completion function for prolog modules.
+
+See (info \"(elisp)Programmed Completion\") for the meaning of
+STRING, PREDICATE and ACTION."
+  (cond
+   ((eq action 'lambda)
+    (and (sweeprolog-module-p string)
+         (or (null predicate)
+             (funcall predicate string))))
+   ((eq action 'metadata)
+    '(metadata
+      .
+      ((category            . sweeprolog-module)
+       (annotation-function . sweeprolog-module-minibuffer-annotation))))
+   (t (complete-with-action action
+                            (sweeprolog-modules-collection string)
+                            string
+                            predicate))))
 
 (defun sweeprolog-read-module-name ()
   "Read a Prolog module name from the minibuffer, with completion."
-  (let* ((col (sweeprolog-modules-collection))
-         (completion-extra-properties
-          (list :annotation-function
-                (lambda (key)
-                  (let* ((val (cdr (assoc-string key col)))
-                         (pat (car val))
-                         (des (cdr val)))
-                    (concat (make-string (max 0 (- 32 (length key))) ? )
-                            (if des
-                                (concat pat (make-string (max 0 (- 80 (length pat))) ? ) des)
-                              pat)))))))
-    (completing-read sweeprolog-read-module-prompt col nil nil nil
-                     'sweeprolog-read-module-history)))
+  (completing-read sweeprolog-read-module-prompt
+                   #'sweeprolog-module-completion-table
+                   nil nil nil
+                   'sweeprolog-read-module-history))
+
+(defun sweeprolog-module-path (mod)
+  "Return the name of the file that defining the Prolog module MOD."
+  (sweeprolog--query-once "sweep" "sweep_module_path" mod))
 
 ;;;###autoload
 (defun sweeprolog-find-module (mod &optional other-window)
@@ -1200,10 +1245,11 @@ Interactively, OTHER-WINDOW is the prefix argument and this
 command prompts for MOD."
   (interactive (list (sweeprolog-read-module-name)
                      current-prefix-arg))
-  (let ((file (sweeprolog-module-path mod)))
-    (if other-window
-        (find-file-other-window file)
-      (find-file file))))
+  (if-let ((file (sweeprolog-module-path mod)))
+      (if other-window
+          (find-file-other-window file)
+        (find-file file))
+    (user-error "Module %s is not defined in a source file!" mod)))
 
 
 ;;;; Completion at point

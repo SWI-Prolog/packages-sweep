@@ -87,7 +87,9 @@
             sweep_current_breakpoints_in_region/2,
             sweep_breakpoint_range/2,
             sweep_breakpoint_file/2,
-            sweep_expand_macro/2
+            sweep_expand_macro/2,
+            sweep_module_annotation/2,
+            sweep_is_module/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -313,17 +315,54 @@ sweep_module_html_documentation(M0, D) :-
     phrase(pldoc_html:html(DOM), HTML),
     with_output_to(string(D), html_write:print_html(HTML)).
 
-sweep_modules_collection([], Modules) :-
-    findall([M|P], ( module_property(M, file(P0)), atom_string(P0, P) ), Modules0, Tail),
-    setof([M|P], P0^N^('$autoload':library_index(N, M, P0), string_concat(P0, ".pl", P) ), Tail),
-    list_to_set(Modules0, Modules1),
-    maplist(sweep_module_description, Modules1, Modules).
+sweep_modules_collection([Bef|Aft], Ms) :-
+    setof(M, sweep_known_module(M), Ms0),
+    include(sweep_matching_module(Bef,Aft), Ms0, Ms1),
+    maplist(atom_string, Ms1, Ms).
 
-sweep_module_description([M0|P], [M|[P|D]]) :-
-   doc_comment(M0:module(D0), _, _, _),
-   atom_string(M0, M),
-   atom_string(D0, D).
-sweep_module_description([M0|P], [M|[P]]) :- atom_string(M0, M).
+sweep_matching_module([], Aft, Mod) :-
+    !,
+    sweep_matching_module_(Aft, 0, Mod).
+sweep_matching_module(Bef, Aft, Mod) :-
+    once(sub_atom(Mod, N, L, _, Bef)),
+    M is N + L,
+    sweep_matching_module_(Aft, M, Mod).
+
+sweep_matching_module_([], _, _) :- !.
+sweep_matching_module_(A, N, M) :-
+    sub_atom(M, B, _, _, A),
+    B >= N,
+    !.
+
+sweep_module_annotation(M0, [P|D]) :-
+    atom_string(M, M0),
+    (   sweep_module_path_(M, P0), nonvar(P0)
+    ->  sweep_file_path_in_library(P0, P)
+    ;   P = []
+    ),
+    (   sweep_module_description_(M, P0, D0)
+    ->  atom_string(D0, D)
+    ;   D = []
+    ).
+
+sweep_known_module(M) :-
+    current_module(M).
+sweep_known_module(M) :-
+    xref_module(_, M).
+sweep_known_module(M) :-
+    '$autoload':library_index(_, M, _).
+
+sweep_is_module(M0, _) :-
+    atom_string(M, M0),
+    once(sweep_known_module(M)).
+
+sweep_module_description_(M, _, D) :-
+    doc_comment(M:module(D), _,_,_).
+sweep_module_description_(_, P, D) :-
+    xref_comment(P, D, _).
+sweep_module_description_(M, _, D) :-
+    atom_concat('sec:', M, S),
+    man_object_property(section(_, _, S, _), summary(D)).
 
 sweep_predicate_references(MFN, Refs) :-
     term_string(M:PI, MFN),
