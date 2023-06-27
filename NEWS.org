@@ -11,6 +11,36 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.21.0 on 2023-06-27
+
+** New ~sweeprolog-pce~ custom theme
+
+This version of Sweep adds a custom theme called ~sweeprolog-pce~ that
+mimics the highlighting of SWI-Prolog's built-in editor, PceEmacs.
+This theme obsoletes the "faces styles" feature that Sweep provided
+thus far for the purpose of emulating PceEmacs highlighting.
+
+For backward compatibility, the user option ~sweeprolog-faces-style~
+is retained for the next few versions.  Also, if you have
+~sweeprolog-faces-style~ set to ~light~ or ~dark~, Sweep tries to
+respect that by enabling the ~sweeprolog-pce~ theme for you when you
+first open a Prolog buffer, which should achieve the same result of
+mimicking PceEmacs highlighting.
+
+** Descriptions for module completion candidates
+
+Commands that read a Prolog module name in the minibuffer now provide
+enhanced information about completion candidates.  Namely, the
+annotation for documented modules now also includes the module's one
+line description.
+
+** ~C-x 4 a~ in Prolog buffers finds the predicate indicator at point
+
+Sweep now defines a dedicated ~add-log-current-defun-function~ for
+~sweeprolog-mode~ buffers.  This allows ~C-x 4 a~ and related commands
+to correctly identify the predicate definition at point for inclusion
+in commit messages and change log entries.
+
 * Version 0.20.0 on 2023-06-19
 
 ** New user option ~sweeprolog-top-level-persistent-history~
