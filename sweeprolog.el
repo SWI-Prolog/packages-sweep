@@ -4429,6 +4429,8 @@ certain contexts to maintain conventional Prolog layout."
   (setq-local adaptive-fill-regexp "[ \t]*")
   (setq-local fill-indent-according-to-mode t)
   (setq-local comment-multi-line t)
+  (setq-local add-log-current-defun-function
+              #'sweeprolog-add-log-current-defun)
   (setq-local mode-line-process
               '(:eval
                 (when (sweeprolog-buffer-loaded-since-last-modification-p)
@@ -6594,6 +6596,23 @@ as a comment in the source buffer at starting at POINT."
           header-line-format (substitute-command-keys
                               (format "`\\<sweeprolog-top-level-example-mode-map>\\[sweeprolog-top-level-example-done]' to quit and write contents as a comment in buffer %s" (buffer-name (marker-buffer marker)))))
     (sweeprolog-top-level-example-mode)))
+
+(defun sweeprolog-add-log-current-defun ()
+  "Return the indicator of the predicate defined at point, or nil.
+
+This function is used as a `add-log-current-defun-function' in
+`sweeprolog-mode' buffers."
+  (when-let ((def (sweeprolog-definition-at-point)))
+    (let ((fun  (nth 1 def))
+          (ari  (nth 2 def))
+          (neck (nth 4 def))
+          (ind  "/")
+          (mod (nth 5 def)))
+      (when (string= neck "-->")
+        (setq ari (- ari 2)
+              ind "//"))
+      (concat (when mod (concat mod ":"))
+              fun ind (number-to-string ari)))))
 
 ;;;; Footer
 

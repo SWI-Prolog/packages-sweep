@@ -1913,4 +1913,26 @@ head,
         (should (string= (buffer-string)
                          "% ?- true; false.\n% true\u0020\nfoo."))))))
 
+(ert-deftest add-log-current-defun ()
+  "Tests getting the predicate indicator at point."
+  (let ((temp (make-temp-file "sweeprolog-test"
+                              nil
+                              "pl"
+                              "
+foo(Bar) :-  baz(Bar).
+foo(Bar) --> baz(Bar).
+f:o(Bar) :-  baz(Bar).
+f:o(Bar) --> baz(Bar).")))
+    (find-file-literally temp)
+    (sweeprolog-mode)
+    (goto-char (point-min))
+    (forward-word)
+    (should (string= (add-log-current-defun) "foo/1"))
+    (forward-line)
+    (should (string= (add-log-current-defun) "foo//1"))
+    (forward-line)
+    (should (string= (add-log-current-defun) "f:o/1"))
+    (forward-line)
+    (should (string= (add-log-current-defun) "f:o//1"))))
+
 ;;; sweeprolog-tests.el ends here
