@@ -833,7 +833,7 @@ the order of the arguments is reversed."
             (content (cdr message)))
         (pcase kind
           (`("debug" . ,topic)
-           (insert (propertize "DEBUG" 'face sweeprolog-debug-prefix-face))
+           (insert (propertize "DEBUG" 'face 'sweeprolog-debug-prefix))
            (insert "[")
            (insert (propertize topic 'face 'sweeprolog-debug-topic))
            (insert "]: ")
