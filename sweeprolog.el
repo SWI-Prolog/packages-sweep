@@ -1288,86 +1288,86 @@ command prompts for MOD."
 
 ;;;; Completion at point
 
-(defvar sweeprolog-completion-at-point-functions
-  '(sweeprolog-atom-completion-at-point
-    sweeprolog-predicate-completion-at-point
-    sweeprolog-variable-completion-at-point))
+(defun sweeprolog-completion-at-point ()
+  "Completion-at-point function for Prolog code.
 
-(defun sweeprolog-atoms-collection (&optional sub)
-  "Return a list of atom completion candidates matchitng SUB."
-  (sweeprolog--query-once "sweep" "sweep_atom_collection" sub))
+Sweep adds this function to `completion-at-point-functions' in
+Prolog buffers."
+  (let ((ppss (syntax-ppss)))
+    (pcase (nth 3 ppss)
+      (?\'
+       ;; point is inside a quoted atom/functor
+       (sweeprolog--quoted-atom-or-functor-completion-at-point (nth 8 ppss)))
+      (?\"
+       ;; point is inside a string
+       (sweeprolog--string-completion-at-point ppss))
+      ('nil (if (nth 4 ppss)
+                ;; point is inside a comment
+                (sweeprolog--comment-completion-at-point ppss)
+              (sweeprolog--completion-at-point))))))
 
-(defun sweeprolog-local-variables-collection (&rest exclude)
-  "Return a list of variable names that occur in the current clause.
+(defun sweeprolog-variable-start-char-p (char)
+  (sweeprolog--query-once "sweep" "sweep_variable_start_code" char))
 
-EXCLUDE is a list of variables name to be excluded from the
-resulting list even when found in the current clause."
-  (let* ((beg (save-mark-and-excursion
-                (unless (sweeprolog-at-beginning-of-top-term-p)
-                  (sweeprolog-beginning-of-top-term))
-                (point)))
-         (end (save-mark-and-excursion
-                (sweeprolog-end-of-top-term)
-                (point)))
-         (vars nil))
-    (save-excursion
-      (goto-char beg)
-      (save-match-data
-        (while (search-forward-regexp (rx bow (or "_" upper)
-                                          (* alnum))
-                                      end t)
-          (unless (nth 8 (syntax-ppss))
-            (let ((match (match-string-no-properties 0)))
-              (unless (or (member match exclude)
-                          (member match vars))
-                (push (match-string-no-properties 0) vars)))))))
-    vars))
-
-(defun sweeprolog--char-uppercase-p (char)
-  (if (fboundp 'char-uppercase-p)
-      (char-uppercase-p char)
-    (cond ((unicode-property-table-internal 'lowercase)
-           (characterp (get-char-code-property char 'lowercase)))
-          ((and (>= char ?A) (<= char ?Z))))))
-
-(defun sweeprolog-variable-completion-at-point ()
-  "Prolog variable name completion backend for `completion-at-point'."
-  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
-             (beg (car bounds))
-             (end (cdr bounds)))
-    (when (and (<= beg (point) end)
-               (let ((first (char-after beg)))
-                 (or (sweeprolog--char-uppercase-p first)
-                     (= first ?_))))
-      (when-let ((col (sweeprolog-local-variables-collection
-                       (buffer-substring-no-properties beg end))))
-        (list beg end col
-              :exclusive 'no
-              :annotation-function
-              (lambda (_) " Var"))))))
-
-(defun sweeprolog-atom-completion-at-point ()
-  "Prolog atom name completion backend for `completion-at-point'."
-  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
-             (beg (car bounds))
-             (end (cdr bounds)))
-    (when (and (<= beg (point) end)
-               (let ((first (char-after beg)))
-                 (not (or (sweeprolog--char-uppercase-p first)
-                          (= first ?_)))))
-      (when-let ((sub (buffer-substring-no-properties beg end))
-                 (col (seq-filter (lambda (atom)
-                                    (not (string= atom sub)))
-                                  (sweeprolog-atoms-collection sub))))
-        (list beg end col
-              :exclusive 'no
-              :annotation-function
-              (lambda (_) " atom"))))))
-
-(defun sweeprolog--parse-context (&optional point)
+(defun sweeprolog-count-arguments-forward (&optional pos)
   (save-excursion
+    (if pos
+        (goto-char pos)
+      (setq pos (point)))
+    (if (pcase (sweeprolog-next-token-boundaries)
+          (`(close ,beg ,_)
+           (= (char-after beg) ?\))))
+        0
+      (let ((result 1))
+        (while (progn
+                 (ignore-error scan-error
+                   (sweeprolog--forward-term 999))
+                 (and (< pos (point))
+                      (pcase (sweeprolog-next-token-boundaries)
+                        (`(operator ,obeg ,oend)
+                         (string=
+                          ","
+                          (buffer-substring-no-properties obeg
+                                                          oend))))))
+          (forward-char 1)
+          (setq pos (point))
+          (cl-incf result))
+        result))))
+
+(defun sweeprolog--end-of-quote (bound)
+  (save-excursion
+    (let ((go t)
+          (res nil)
+          (pos (point)))
+      (while go
+        (if (re-search-forward (rx (or "\\" "'")) bound t)
+            (if (= (char-before) ?\')
+                (setq res (point)
+                      go nil)
+              (forward-char))
+          (goto-char pos)
+          (setq go nil)))
+      res)))
+
+(defun sweeprolog--qualyfing-module (pos)
+  (pcase (sweeprolog-last-token-boundaries pos)
+    (`(operator ,beg ,end)
+     (when (string= (buffer-substring-no-properties beg end) ":")
+       (pcase (sweeprolog-last-token-boundaries beg)
+         (`(string ,sbeg ,send)
+          (when (= (char-after sbeg) ?\')
+            (buffer-substring-no-properties sbeg send)))
+         (`(symbol ,sbeg ,send)
+          (unless (sweeprolog-variable-start-char-p (char-after sbeg))
+            (buffer-substring-no-properties sbeg send))))))))
+
+
+(defun sweeprolog--parse-context (&optional pos)
+  (setq pos (or pos (point)))
+  (save-excursion
+    (goto-char pos)
     (sweeprolog-backward-term 0)
-    (let ((pos (or point (point)))
+    (let ((pos )
           (commas 0)
           (context nil))
       (while
@@ -1417,56 +1417,316 @@ resulting list even when found in the current clause."
                  (setq commas 0)))))))
       context)))
 
-(defun sweeprolog-context-callable-p ()
-  "Check if point is in a position where a goal should appear."
+(defun sweeprolog-context-callable-p (&optional point)
+  "Check if POINT is in a position where a goal should appear."
   (sweeprolog--query-once "sweep" "sweep_context_callable"
-                          (sweeprolog--parse-context)))
+                          (sweeprolog--parse-context point)))
 
-(defun sweeprolog-predicate-completion-at-point ()
-  "Prolog predicate completion backend for `completion-at-point'."
-  (when-let ((bounds (bounds-of-thing-at-point 'symbol))
-             (beg (car bounds))
-             (end (cdr bounds)))
-    (when (and (<= beg (point) end)
-               (let ((first (char-after beg)))
-                 (not (or (sweeprolog--char-uppercase-p first)
-                          (= first ?_)))))
-      (when-let
-          ((extra-args (sweeprolog-context-callable-p))
-           (col (sweeprolog--query-once
-                 "sweep" "sweep_heads_collection"
-                 (cons extra-args
-                       (buffer-substring-no-properties beg end)))))
-        (list beg end col
-              :exclusive 'no
-              :annotation-function
-              (lambda (_) " Predicate")
-              :exit-function
-              (lambda (string status)
-                (pcase status
-                  ('finished
-                   (pcase (cdr (assoc-string string col))
-                     (`(compound
-                        "term_position"
-                        0 ,length
-                        ,_fbeg ,_fend
-                        ,holes)
-                      (with-silent-modifications
-                        (dolist (hole holes)
-                          (pcase hole
-                            (`(compound "-" ,hbeg ,hend)
-                             (add-text-properties
-                              (- (point) length (- hbeg))
-                              (- (point) length (- hend))
-                              (list
-                               'sweeprolog-hole t
-                               'font-lock-face (list 'sweeprolog-hole)
-                               'rear-nonsticky '(sweeprolog-hole
-                                                 cursor-sensor-functions
-                                                 font-lock-face)))))))
-                      (backward-char length)
-                      (sweeprolog-forward-hole)))))))))))
+(defun sweeprolog-local-variables-collection (&rest exclude)
+  "Return a list of variable names that occur in the current clause.
 
+EXCLUDE is a list of variables name to be excluded from the
+resulting list even when found in the current clause."
+  (let* ((case-fold-search nil)
+         (beg (save-mark-and-excursion
+                (unless (sweeprolog-at-beginning-of-top-term-p)
+                  (sweeprolog-beginning-of-top-term))
+                (point)))
+         (end (save-mark-and-excursion
+                (sweeprolog-end-of-top-term)
+                (point)))
+         (vars nil))
+    (save-excursion
+      (goto-char beg)
+      (save-match-data
+        (while (search-forward-regexp (rx bow (or "_" upper)
+                                          (* alnum))
+                                      end t)
+          (unless (nth 8 (syntax-ppss))
+            (let ((match (match-string-no-properties 0)))
+              (unless (or (member match exclude)
+                          (member match vars))
+                (push (match-string-no-properties 0) vars)))))))
+    vars))
+
+(defun sweeprolog-predicate-completion-candidates (beg end cxt)
+  (let ((col (sweeprolog--query-once
+              "sweep" "sweep_heads_collection"
+              (list cxt
+                    (sweeprolog--qualyfing-module beg)
+                    (buffer-substring-no-properties beg (point))
+                    (buffer-substring-no-properties (point) end)))))
+    (list beg end col
+          :exclusive 'no
+          :annotation-function (lambda (_) " Predicate functor")
+          :exit-function
+          (lambda (string status)
+            (pcase status
+              ('finished
+               (pcase (cdr (assoc-string string col))
+                 (`(compound
+                    "term_position"
+                    0 ,length
+                    ,_fbeg ,_fend
+                    ,holes)
+                  (with-silent-modifications
+                    (dolist (hole holes)
+                      (pcase hole
+                        (`(compound "-" ,hbeg ,hend)
+                         (add-text-properties
+                          (- (point) length (- hbeg))
+                          (- (point) length (- hend))
+                          (list
+                           'sweeprolog-hole t
+                           'font-lock-face (list 'sweeprolog-hole)
+                           'rear-nonsticky '(sweeprolog-hole
+                                             cursor-sensor-functions
+                                             font-lock-face)))))))
+                  (backward-char length)
+                  (sweeprolog-forward-hole)))))))))
+
+(defun sweeprolog-compound-completion-candidates (beg end)
+  (let ((col (sweeprolog--query-once
+              "sweep" "sweep_functors_collection"
+              (cons (buffer-substring-no-properties beg (point))
+                    (buffer-substring-no-properties (point) end)))))
+    (list beg end col
+          :exclusive 'no
+          :annotation-function (lambda (_) " Compound")
+          :exit-function
+          (lambda (string status)
+            (pcase status
+              ('finished
+               (pcase (cdr (assoc-string string col))
+                 (`(compound
+                    "term_position"
+                    0 ,length
+                    ,_fbeg ,_fend
+                    ,holes)
+                  (with-silent-modifications
+                    (dolist (hole holes)
+                      (pcase hole
+                        (`(compound "-" ,hbeg ,hend)
+                         (add-text-properties
+                          (- (point) length (- hbeg))
+                          (- (point) length (- hend))
+                          (list
+                           'sweeprolog-hole t
+                           'font-lock-face (list 'sweeprolog-hole)
+                           'rear-nonsticky '(sweeprolog-hole
+                                             cursor-sensor-functions
+                                             font-lock-face)))))))
+                  (backward-char length)
+                  (sweeprolog-forward-hole)))))))))
+
+(defun sweeprolog-predicate-functor-completion-candidates (beg end ari cxt)
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_head_functors_collection"
+         (list ari cxt
+               (sweeprolog--qualyfing-module beg)
+               (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Predicate functor")))
+
+(defun sweeprolog-compound-functor-completion-candidates (beg end ari)
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_compound_functors_collection"
+         (list ari
+               (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Functor")))
+
+(defun sweeprolog--atom-or-functor-completion-at-point (beg end)
+  "Return completion candidates for the atom or functor between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- bar-!-"
+  (let* ((cxt (sweeprolog-context-callable-p beg))
+         (open-paren (char-after end))
+         (fnc (and open-paren (= open-paren ?\()
+                   (sweeprolog-count-arguments-forward (1+ end)))))
+    (if cxt
+        (if fnc
+            (sweeprolog-predicate-functor-completion-candidates beg end fnc cxt)
+          (sweeprolog-predicate-completion-candidates beg end cxt))
+      (if fnc
+          (sweeprolog-compound-functor-completion-candidates beg end fnc)
+        (sweeprolog-compound-completion-candidates beg end)))))
+
+(defun sweeprolog--variable-completion-at-point (beg end)
+  "Return completion candidates for the variable between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(Bar, Baz) :- member(Ba-!-"
+  (list beg end
+        (sweeprolog-local-variables-collection
+         (buffer-substring-no-properties beg end))
+        :exclusive 'no
+        :annotation-function
+        (lambda (_) " Var")))
+
+(defun sweeprolog--quoted-atom-or-functor-completion-at-point (beg)
+  "Return completion candidates for the quoted atom starting at BEG.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- \\='$bar-!-baz\\='("
+  (let* ((end (or (sweeprolog--end-of-quote (line-end-position))
+                  (point))))
+    (sweeprolog--atom-or-functor-completion-at-point beg end)))
+
+(defun sweeprolog--string-completion-at-point (&rest _)
+  "Return completion candidates for the Prolog string at point.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- bar(\"baz-!-"
+  nil)
+
+(defun sweeprolog--comment-completion-at-point (&rest _)
+  "Return completion candidates for the Prolog comment at point.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    % foo
+    % bar-!-"
+  nil)
+
+(defun sweeprolog--after-atom-or-variable-completion-at-point (&rest _)
+  "Return completion candidates after a Prolog atom or variable.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- bar -!-"
+  nil)
+
+(defun sweeprolog--after-operator-completion-at-point (&rest _)
+  "Return completion candidates after a Prolog operator.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(Bar) :- Bar = -!-"
+  nil)
+
+(defun sweeprolog--first-term-completion-at-point (&rest _)
+  "Return completion candidates at the beginning of a Prolog buffer."
+  nil)
+
+(defun sweeprolog--after-term-completion-at-point (&rest _)
+  "Return completion candidates after a Prolog term.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(Bar) :- baz(Bar) -!-"
+  nil)
+
+(defun sweeprolog--after-curly-brace-completion-at-point (&rest _)
+  "Return completion candidates after a curly brace.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(Bar) --> baz, {-!-"
+  nil)
+
+(defun sweeprolog--first-dict-argument-completion-at-point (&rest _)
+  "Return completion candidates for the first Prolog dictionary key.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(Bar) :- Bar = baz{-!-"
+  nil)
+
+(defun sweeprolog--first-list-argument-completion-at-point (&rest _)
+  "Return completion candidates for the list argument at point.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- member(X, [-!-"
+  nil)
+
+(defun sweeprolog--term-completion-at-point (&rest _)
+  "Return Prolog term at-point completion candidates.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- bar, (-!-"
+  nil)
+
+(defun sweeprolog--after-quoted-functor-completion-at-point (&rest _)
+  "Return completion candidates for the compound term at point.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- \\='$Bar\\='(-!-"
+  nil)
+
+(defun sweeprolog--after-functor-completion-at-point (&rest _)
+  "Return completion candidates for the compound term at point.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- bar(-!-"
+  nil)
+
+(defun sweeprolog--operator-completion-at-point (&rest _)
+  "Return completion candidates for the Prolog operator at point.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo :- 123 =-!- 100 + 20 + 3"
+  nil)
+
+(defun sweeprolog--completion-at-point ()
+  "Return completion candidates for the Prolog code at point.
+
+Used for `completion-at-point' candidates when point is not
+inside a comment, string or quoted atom."
+  (if (bobp)
+      (sweeprolog--first-term-completion-at-point)
+    (pcase (char-syntax (char-before))
+      ((or ?w ?_)
+       (let ((symbol-beg (save-excursion
+                           (skip-syntax-backward "w_")
+                           (point)))
+             (symbol-end (save-excursion
+                           (skip-syntax-forward "w_")
+                           (point))))
+         (if (sweeprolog-variable-start-char-p (char-after symbol-beg))
+             (sweeprolog--variable-completion-at-point symbol-beg
+                                                      symbol-end)
+           (sweeprolog--atom-or-functor-completion-at-point symbol-beg
+                                                           symbol-end))))
+      (?. (sweeprolog--operator-completion-at-point))
+      (?\( (pcase (char-before)
+             (?\( (when-let ((prev (char-before (1- (point)))))
+                    (pcase (char-syntax prev)
+                      ((or ?w ?_)
+                       (sweeprolog--after-functor-completion-at-point))
+                      (?\"
+                       (when (= prev ?\')
+                         (sweeprolog--after-quoted-functor-completion-at-point)))
+                      (_ (sweeprolog--term-completion-at-point)))))
+             (?\[ (sweeprolog--first-list-argument-completion-at-point))
+             (?\{ (when-let ((prev (char-before (1- (point)))))
+                    (pcase (char-syntax prev)
+                      ((or ?w ?_)
+                       (sweeprolog--first-dict-argument-completion-at-point))
+                      (_ (sweeprolog--after-curly-brace-completion-at-point)))))))
+      ((or ?\) ?\") (sweeprolog--after-term-completion-at-point))
+      (?\s (pcase (sweeprolog-last-token-boundaries)
+             ('nil (sweeprolog--first-term-completion-at-point))
+             (`(open ,_ ,_) (sweeprolog--term-completion-at-point))
+             (`(functor ,_ ,_) (sweeprolog--after-functor-completion-at-point))
+             (`(operator ,obeg ,oend) (sweeprolog--after-operator-completion-at-point obeg oend))
+             (`(symbol ,obeg ,oend) (sweeprolog--after-atom-or-variable-completion-at-point obeg oend))
+             (`(close ,_ ,_) (sweeprolog--after-term-completion-at-point))
+             (`(string ,_ ,_) (sweeprolog--after-term-completion-at-point)))))))
 
 ;;;; Packages
 
@@ -3024,8 +3284,7 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
               comint-delimiter-argument-list '(?,)
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
-  (dolist (capf sweeprolog-completion-at-point-functions)
-    (add-hook 'completion-at-point-functions capf nil t))
+  (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point nil t)
   (setq sweeprolog-top-level-timer (run-with-idle-timer 0.2 t #'sweeprolog-colourise-query (current-buffer)))
   (add-hook 'kill-buffer-hook
             (lambda ()
@@ -4507,8 +4766,7 @@ certain contexts to maintain conventional Prolog layout."
     (setq sweeprolog--analyze-buffer-duration (float-time (time-since time))))
   (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
   (add-hook 'file-name-at-point-functions #'sweeprolog-file-at-point nil t)
-  (dolist (capf sweeprolog-completion-at-point-functions)
-    (add-hook 'completion-at-point-functions capf nil t))
+  (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point nil t)
   (when sweeprolog-analyze-buffer-on-idle
     (setq sweeprolog--timer
           (run-with-idle-timer
@@ -5499,8 +5757,7 @@ moving point."
   (minibuffer-with-setup-hook
       (lambda ()
         (set-syntax-table sweeprolog-mode-syntax-table)
-        (dolist (capf sweeprolog-completion-at-point-functions)
-          (add-hook 'completion-at-point-functions capf nil t)))
+        (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point nil t))
     (read-from-minibuffer prompt nil
                           sweeprolog-read-goal-map nil
                           'sweeprolog-read-goal-history

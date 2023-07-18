@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.22.0 in development
+
+** New in-buffer completion implementation
+
+This version of Sweep includes an overhaul of the way the ~completion-at-point~
+command (~C-M-i~) works in ~sweeprolog-mode~ buffers.  Sweep now performs a more
+refined analysis of the code around point when you invoke ~completion-at-point~
+to determine what kind of completion candidates to provide.  This results in the
+following improvements:
+
+- Completion now works also for quoted atoms and functors
+- Completion now avoids inserting parentheses and arguments after completing a
+  compound term when the opening parenthesis is already in place before you
+  invoke ~completion-at-point~
+- Completion now takes into account the qualifying module (if any) when
+  completing predicate calls, and suggests only predicates defined in that
+  module
+
 * Version 0.21.0 on 2023-06-27
 
 ** New ~sweeprolog-pce~ custom theme

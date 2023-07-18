@@ -402,7 +402,7 @@ test() :- TestBody.
 
 /** <module> "))))
 
-(ert-deftest complete-atom ()
+(ert-deftest complete-compound ()
   "Tests completing atoms."
   (let ((temp (make-temp-file "sweeprolog-test"
                               nil
@@ -418,7 +418,7 @@ baz(Baz) :- Baz = opa
     (call-interactively #'completion-at-point)
     (should (string= (buffer-string)
                      "
-baz(Baz) :- Baz = opaque
+baz(Baz) :- Baz = opaque(_)
 "
                      ))))
 
@@ -527,6 +527,125 @@ baz(Baz) :- bar(B).
 baz(Baz) :- bar(Baz).
 "
                      ))))
+
+(defmacro sweeprolog-deftest (name _ doc text &rest body)
+  "Define Sweep test NAME with docstring DOC.
+
+The test runs BODY in a `sweeprolog-mode' buffer with initial
+contents TEXT.
+
+The second argument is ignored."
+  (declare (doc-string 3) (indent 2))
+  `(ert-deftest ,(intern (concat "sweeprolog-tests-" (symbol-name name))) ()
+     ,doc
+     (let ((temp (make-temp-file "sweeprolog-test"
+                                 nil
+                                 "pl"
+                                 ,text))
+           (enable-flymake-flag sweeprolog-enable-flymake)
+           (inhibit-message t))
+       (setq-default sweeprolog-enable-flymake nil)
+       (find-file-literally temp)
+       (sweeprolog-mode)
+       (goto-char (point-min))
+       (search-forward "-!-" nil t)
+       (delete-char -3)
+       ,@body
+       (set-buffer-modified-p nil)
+       (kill-buffer)
+       (sweeprolog-restart)
+       (setq-default sweeprolog-enable-flymake enable-flymake-flag))))
+
+(sweeprolog-deftest cap-variable ()
+  "Completion at point for variable names."
+  "baz(Baz) :- bar(B-!-)."
+  (should (pcase (sweeprolog-completion-at-point)
+            (`(17 18 ("Baz") . ,_) t))))
+
+(sweeprolog-deftest cap-local-predicate ()
+  "Completion at point for local predicates."
+  "%!  foobar(+Baz) is det.
+
+foobar(Baz) :- baz(Baz).
+baz(Baz) :- fooba-!-"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 64 (nth 0 cap)))
+    (should (= 69 (nth 1 cap)))
+    (should (equal '(("foobar(Baz)" compound "term_position" 0 11 0 6 ((compound "-" 7 10))))
+                   (nth 2 cap)))))
+
+(sweeprolog-deftest cap-autoloaded-predicate ()
+  "Completion at point for remote predicates."
+  "%!  foobar(+Baz) is det.
+
+foobar(Baz) :- baz(Baz).
+baz(Baz) :- lists:memberc-!-"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 70 (nth 0 cap)))
+    (should (= 77 (nth 1 cap)))
+    (should (equal '(("memberchk(Elem, List)" compound "term_position" 0 21 0 9 ((compound "-" 10 14) (compound "-" 16 20))))
+                   (nth 2 cap)))))
+
+(sweeprolog-deftest cap-compound ()
+  "Completion at point for compound terms."
+  "foobar(bar).
+
+foobar(Baz) :- Baz = foob-!-"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 36 (nth 0 cap)))
+    (should (= 40 (nth 1 cap)))
+    (should (equal '(("foobar(_)" compound "term_position" 0 9 0 6 ((compound "-" 7 8))))
+                   (nth 2 cap)))))
+
+(sweeprolog-deftest cap-compound-with-arity ()
+  "Completion at point for compound terms of a given arity."
+  "foobar(Baz) :- Baz = tabl-!-tate(a,b,c)"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 22 (nth 0 cap)))
+    (should (= 30 (nth 1 cap)))
+    (should (equal '("table_cell_state" "table_state") (nth 2 cap)))))
+
+(sweeprolog-deftest cap-local-predicate-functor ()
+  "Completion at point for predicate functors."
+  "%!  foobar(+Baz) is det.
+
+foobar(Baz) :- baz(Baz).
+baz(Baz) :- fooba-!-("
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 64 (nth 0 cap)))
+    (should (= 69 (nth 1 cap)))
+    (should (equal '("foobar") (nth 2 cap)))))
+
+(sweeprolog-deftest cap-compound-functor ()
+  "Completion at point for compound term functors."
+  "foobar(bar).
+
+foobar(Baz) :- Baz = foob-!-("
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 36 (nth 0 cap)))
+    (should (= 40 (nth 1 cap)))
+    (should (equal '("foobar") (nth 2 cap)))))
+
+(sweeprolog-deftest cap-quoted-compound-functor ()
+  "Completion at point for quoted functors."
+  "foobar('Baz baz'(bar)).
+
+foobar(Baz) :- Baz = 'Baz -!-'("
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 47 (nth 0 cap)))
+    (should (= 53 (nth 1 cap)))
+    (should (equal '("'Baz baz'") (nth 2 cap)))))
+
+(sweeprolog-deftest cap-quoted-compound ()
+  "Completion at point for compounds with a quoted functor."
+  "foobar('Baz baz'(bar)).
+
+foobar(Baz) :- Baz = 'Baz -!-"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 47 (nth 0 cap)))
+    (should (= 52 (nth 1 cap)))
+    (should (equal '(("'Baz baz'(_)" compound "term_position" 0 12 0 9 ((compound "-" 10 11))))
+                   (nth 2 cap)))))
 
 (ert-deftest mark-predicate ()
   "Test marking predicate definition."

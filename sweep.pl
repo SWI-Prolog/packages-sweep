@@ -63,7 +63,6 @@
             sweep_xref_source/2,
             sweep_beginning_of_next_predicate/2,
             sweep_beginning_of_last_predicate/2,
-            sweep_atom_collection/2,
             sweep_context_callable/2,
             sweep_heads_collection/2,
             sweep_exportable_predicates/2,
@@ -90,7 +89,11 @@
             sweep_expand_macro/2,
             sweep_module_annotation/2,
             sweep_is_module/2,
-            sweep_module_class/2
+            sweep_module_class/2,
+            sweep_variable_start_code/2,
+            sweep_head_functors_collection/2,
+            sweep_functors_collection/2,
+            sweep_compound_functors_collection/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -473,13 +476,27 @@ sweep_predicate_location_(M, H, Path, Line) :-
     predicate_property(M:H, line_count(Line)),
     atom_string(Path0, Path).
 
-sweep_matching_predicates(S, D, PIs) :-
-    setof(M:F/A, sweep_matching_predicate(S, D, M, F, A), PIs).
+sweep_matching_predicates(Bef, Aft, D, M, PIs) :-
+    setof(M:F/A, sweep_matching_predicate(Bef, Aft, D, M, F, A), PIs).
 
-sweep_matching_predicate(S, D, M, F, A) :-
+sweep_matching_predicate(Bef, Aft, D, M, F, A) :-
     sweep_known_predicate(M, F, A),
-    once(sub_atom(F, _, _, _, S)),
+    sweep_predicate_matches_(Bef, Aft, F),
     A >= D.
+
+sweep_predicate_matches_([], Aft, F) :-
+    !,
+    sweep_predicate_matches_aft(Aft, 0, F).
+sweep_predicate_matches_(Bef, Aft, F) :-
+    once(sub_string(F, N, L, _, Bef)),
+    M is N + L,
+    sweep_predicate_matches_aft(Aft, M, F).
+
+sweep_predicate_matches_aft([], _, _) :- !.
+sweep_predicate_matches_aft(A, N, M) :-
+    sub_atom(M, B, _, _, A),
+    B >= N,
+    !.
 
 sweep_known_predicate(M, F, A) :-
     current_predicate(M:F/A),
@@ -505,7 +522,7 @@ sweep_predicates_collection(S0, Ps) :-
     ->  S = ""
     ;   S = S0
     ),
-    sweep_matching_predicates(S, 0, PIs),
+    sweep_matching_predicates([], S, 0, _, PIs),
     maplist(sweep_format_pi, PIs, Ps).
 
 sweep_format_pi(M:F/N, [S|T]) :-
@@ -906,24 +923,71 @@ sweep_source_id(Path) :-
     string(Path0),
     atom_string(Path, Path0).
 
-sweep_atom_collection(Sub, Col) :-
-    findall(S,
-            (   current_atom(A),
-                atom_string(A, S),
-                once(sub_string(S, _, _, _, Sub))
-            ),
-            Col).
+sweep_functors_collection([Bef|Aft], Ps) :-
+    setof(F, sweep_matching_functor(Bef, Aft, F), Ps0),
+    maplist(sweep_format_compound, Ps0, Ps).
 
-sweep_heads_collection([D|Sub], Ps) :-
-    sweep_matching_predicates(Sub, D, PIs),
+sweep_format_compound(F/A, [S|SP]) :-
+    pi_head(F/A, H),
+    length(NamedArgs, A),
+    maplist(=('$VAR'('_')), NamedArgs),
+    H =.. [F|NamedArgs],
+    term_string(H, S, [quoted(true),
+                       character_escapes(true),
+                       spacing(next_argument),
+                       numbervars(true)]),
+    term_string(_, S, [subterm_positions(SP)]),
+    !.
+
+sweep_matching_functor(Bef, Aft, F/A) :-
+    current_functor(F, A),
+    atom(F),
+    term_string(F, S),
+    sweep_matching_atom(Bef, Aft, S).
+
+sweep_compound_functors_collection([Arity,Bef,Aft], Fs) :-
+    setof(F, sweep_matching_functor(Bef, Aft, F/Arity), Fs0),
+    maplist(term_string, Fs0, Fs).
+
+sweep_matching_atom([], Aft, Atom) :-
+    !,
+    sweep_matching_atom_(Aft, 0, Atom).
+sweep_matching_atom(Bef, Aft, Atom) :-
+    once(sub_string(Atom, N, L, _, Bef)),
+    M is N + L,
+    sweep_matching_atom_(Aft, M, Atom).
+
+sweep_matching_atom_([], _, _) :- !.
+sweep_matching_atom_(A, N, M) :-
+    sub_string(M, B, _, _, A),
+    B >= N,
+    !.
+
+sweep_head_functors_collection([Arity,D,M0,Bef,Aft], Fs) :-
+    (   M0 = []
+    ->  true
+    ;   term_string(M, M0)
+    ),
+    sweep_matching_predicates(Bef, Aft, D, M, PIs0),
+    include({Arity}/[_:_/Arity]>>true, PIs0, PIs),
+    maplist([_:Functor/_, Functor]>>true, PIs, Fs0),
+    maplist(term_string, Fs0, Fs).
+
+sweep_heads_collection([D,M0,Bef,Aft], Ps) :-
+    (   M0 = []
+    ->  true
+    ;   term_string(M, M0)
+    ),
+    sweep_matching_predicates(Bef, Aft, D, M, PIs),
     maplist(sweep_format_head_(D), PIs, Ps).
 
 sweep_format_head_(D, M:F/A, [S|SP]) :-
     N is A - D,
     length(NamedArgs, N),
     append(NamedArgs, _, OpenNamedArgs),
-    (   predicate_argument_names(M:F/A, As)
-    ->  maplist(name_variable, As, Vs), OpenNamedArgs = Vs
+    (   predicate_argument_names(M:F/A, As, Extra)
+    ->  maplist(name_variable, As, Vs),
+        append(Vs, Extra, OpenNamedArgs)
     ;   maplist(=('$VAR'('_')), NamedArgs)
     ),
     !,
@@ -1030,7 +1094,11 @@ sweep_file_path_in_library(Path, Spec) :-
     ).
 
 
-predicate_argument_names(M:F/A, Args) :-
+predicate_argument_names(M:F/A, Args, Extra) :-
+    (   sweep_grammar_rule(M, F, A)
+    ->  Extra = [_,_]
+    ;   Extra = []
+    ),
     sweep_module_functor_arity_pi_(M, F, A, M:PI),
     (   predicate_argument_names_from_man(M, PI, Args0)
     ->  true
@@ -1137,7 +1205,7 @@ sweep_current_functors(A0, Col) :-
     findall([F|A],
             (   current_functor(F0, A),
                 atom(F0),
-                atom_string(F0, F)
+                term_string(F0, F)
             ),
             Col).
 
@@ -1348,3 +1416,5 @@ sweep_expand_macro(String0, String) :-
     functor(Term0, '#', 1),
     macros:expand_macros(M, Term0, Term, Pos0, _, _, _),
     term_string(Term, String, [variable_names(Vs), module(M)]).
+
+sweep_variable_start_code(C, _) :- code_type(C, prolog_var_start).
