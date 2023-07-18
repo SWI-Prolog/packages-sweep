@@ -5442,7 +5442,7 @@ moving point."
   "Keymap used by `sweeprolog-goal-term'.")
 
 (defun sweeprolog-terms-at-point (&optional point)
-  "Return boundarines of Prolog terms at POINT, innermost first."
+  "Return boundaries of Prolog terms at POINT, innermost first."
   (setq point (or point (point)))
   (save-excursion
     (goto-char point)
