@@ -111,7 +111,10 @@
 :- use_module(library(prolog_pack)).
 :- use_module(library(prolog_deps)).
 :- use_module(library(dcg/high_order)).
+
+:- if(exists_source(library(macros))).
 :- use_module(library(macros)).
+:- endif.
 
 :- if(exists_source(library(help))).
 :- use_module(library(help)).
