@@ -1193,7 +1193,7 @@ FILE is the file name of MODULE and DESC is its description, or nil."
     (propertize
      (concat
       (make-string
-       (+ (- sweeprolog--module-max-width width) 2)
+       (+ (- pad width) 2)
        ?\s)
       (when file (concat file
                          (when desc (concat ": "))))
