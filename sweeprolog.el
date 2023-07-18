@@ -1249,11 +1249,10 @@ STRING, PREDICATE and ACTION."
              (funcall predicate string))))
    ((eq action 'metadata)
     '(metadata
-      .
-      ((category            . sweeprolog-module)
-       (annotation-function . sweeprolog-module-minibuffer-annotation)
-       (affixation-function . sweeprolog-module-minibuffer-affixation)
-       (group-function      . sweeprolog-module-minibuffer-group))))
+      (category            . sweeprolog-module)
+      (annotation-function . sweeprolog-module-minibuffer-annotation)
+      (affixation-function . sweeprolog-module-minibuffer-affixation)
+      (group-function      . sweeprolog-module-minibuffer-group)))
    (t (complete-with-action action
                             (sweeprolog-modules-collection string)
                             string
