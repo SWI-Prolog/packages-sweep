@@ -9,6 +9,35 @@
                                   (setq-local indent-tabs-mode nil
                                               inhibit-message t)))
 
+(defmacro sweeprolog-deftest (name _ doc text &rest body)
+  "Define Sweep test NAME with docstring DOC.
+
+The test runs BODY in a `sweeprolog-mode' buffer with initial
+contents TEXT.
+
+The second argument is ignored."
+  (declare (doc-string 3) (indent 2))
+  `(ert-deftest ,(intern (concat "sweeprolog-tests-" (symbol-name name))) ()
+     ,doc
+     (let ((temp (make-temp-file "sweeprolog-test"
+                                 nil
+                                 "pl"
+                                 ,text))
+           (enable-flymake-flag sweeprolog-enable-flymake)
+           (inhibit-message t))
+       (setq-default sweeprolog-enable-flymake nil)
+       (find-file-literally temp)
+       (sweeprolog-mode)
+       (goto-char (point-min))
+       (when (search-forward "-!-" nil t)
+         (delete-char -3))
+       (unwind-protect
+           (progn . ,body)
+         (set-buffer-modified-p nil)
+         (kill-buffer)
+         (sweeprolog-restart)
+         (setq-default sweeprolog-enable-flymake enable-flymake-flag)))))
+
 (defconst sweeprolog-tests-greeting
   "Hello from Elisp from Prolog from Elisp from Prolog from Elisp!")
 
@@ -26,8 +55,8 @@
 (ert-deftest elisp->prolog->elisp->prolog->elisp ()
   "Tests calling Elisp from Prolog from Elisp from Prolog from Elisp."
   (should (equal (sweeprolog--open-query "user" "user"
-                                        "sweep_funcall"
-                                        "sweeprolog-tests-greet")
+                                         "sweep_funcall"
+                                         "sweeprolog-tests-greet")
                  t))
   (should (equal (sweeprolog-next-solution) (cons '! sweeprolog-tests-greeting)))
   (should (equal (sweeprolog-cut-query) t)))
@@ -59,104 +88,80 @@
   (should (equal (sweeprolog-next-solution) nil))
   (should (equal (sweeprolog-cut-query) t)))
 
-(ert-deftest beginning-of-next-top-term ()
+(sweeprolog-deftest beginning-of-next-top-term ()
   "Test finding the beginning of the next top term."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 foo(Bar) :- bar.
 foo(Baz) :- baz.
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-min))
-    (should (sweeprolog-beginning-of-next-top-term))
-    (should (= (point) 2))
-    (should (sweeprolog-beginning-of-next-top-term))
-    (should (= (point) 19))
-    (should (not (sweeprolog-beginning-of-next-top-term)))
-    (should (= (point) 19))))
+"
+  (should (sweeprolog-beginning-of-next-top-term))
+  (should (= (point) 2))
+  (should (sweeprolog-beginning-of-next-top-term))
+  (should (= (point) 19))
+  (should (not (sweeprolog-beginning-of-next-top-term)))
+  (should (= (point) 19)))
 
-(ert-deftest help-echo-for-dependency ()
+(sweeprolog-deftest help-echo-for-dependency ()
   "Test that the `help-echo' property is set correctly."
-  (let ((temp (make-temp-file "sweeprolog-help-echo-text"
-                              nil
-                              "pl"
-                              "
+  "
 :- use_module(library(lists)).
 
 foo(Foo, Bar) :- flatten(Bar, Baz), member(Foo, Baz).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char 24)
-    (should (string-match "Dependency on .*, resolves calls to flatten/2, member/2"
-                          (help-at-pt-kbd-string)))))
+"
+  (goto-char 24)
+  (should (string-match "Dependency on .*, resolves calls to flatten/2, member/2"
+                        (help-at-pt-kbd-string))))
 
-(ert-deftest terms-at-point ()
+(sweeprolog-deftest terms-at-point ()
   "Test `sweeprolog-term-search'."
-  (let ((temp (make-temp-file "sweeprolog-terms-at-point-test"
-                              nil
-                              "pl"
-                              "
+  "
 recursive(Var) :-
     (   true
     ->  recursive(Bar)
     ;   var(Baz)
     *-> Bar is foo
     ).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (should (equal (sweeprolog-terms-at-point 81)
-                '("Bar"
-                  "Bar is foo"
-                  "var(Baz)
+"
+  (should (equal (sweeprolog-terms-at-point 81)
+                 '("Bar"
+                   "Bar is foo"
+                   "var(Baz)
     *-> Bar is foo" "true
     ->  recursive(Bar)
     ;   var(Baz)
     *-> Bar is foo"
-    "recursive(Var) :-
+                   "recursive(Var) :-
     (   true
     ->  recursive(Bar)
     ;   var(Baz)
     *-> Bar is foo
-    )")))))
+    )"))))
 
 (ert-deftest predicate-location ()
   "Test `sweeprolog-predicate-location'."
   (should (sweeprolog-predicate-location "memory_file:new_memory_file/1")))
 
-(ert-deftest term-search ()
+(sweeprolog-deftest term-search ()
   "Test `sweeprolog-term-search'."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 bar(bar(bar), bar{bar:bar}, [bar,bar|bar]).
 foo([Bar|Baz]).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-min))
-    (sweeprolog-term-search "bar")
-    (should (= (point) 10))
-    (sweeprolog-term-search "bar")
-    (should (= (point) 24))
-    (sweeprolog-term-search "bar")
-    (should (= (point) 31))
-    (sweeprolog-term-search "bar")
-    (should (= (point) 35))
-    (sweeprolog-term-search "bar")
-    (should (= (point) 39))))
+"
+  (goto-char (point-min))
+  (sweeprolog-term-search "bar")
+  (should (= (point) 10))
+  (sweeprolog-term-search "bar")
+  (should (= (point) 24))
+  (sweeprolog-term-search "bar")
+  (should (= (point) 31))
+  (sweeprolog-term-search "bar")
+  (should (= (point) 35))
+  (sweeprolog-term-search "bar")
+  (should (= (point) 39)))
 
-(ert-deftest beginning-of-next-top-term-header ()
+(sweeprolog-deftest beginning-of-next-top-term-header ()
   "Test finding the beginning of the first top term."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "/*
+  "/*
     Author:        Eshel Yaron
     E-mail:        eshel@swi-prolog.org
     Copyright (c)  2022, SWI-Prolog Solutions b.v.
@@ -192,145 +197,115 @@ foo([Bar|Baz]).
 foobar :- baz.
 */
 
-:- module(mod")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-min))
-    (should (sweeprolog-beginning-of-next-top-term))
-    (should (= (point) 1509))
-    (should (not (sweeprolog-beginning-of-next-top-term)))
-    (should (= (point) 1509))))
+:- module(mod"
+  (goto-char (point-min))
+  (should (sweeprolog-beginning-of-next-top-term))
+  (should (= (point) 1509))
+  (should (not (sweeprolog-beginning-of-next-top-term)))
+  (should (= (point) 1509)))
 
-(ert-deftest font-lock ()
+(sweeprolog-deftest font-lock ()
   "Test semantic highlighting of Prolog code."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              ":- module(foo, [foo/1]).
+  ":- module(foo, [foo/1]).
 
 foo(Foo) :- bar.
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (should (equal (get-text-property (+ (point-min) 1)
-                                      'font-lock-face)
-                   '(sweeprolog-neck
-                     sweeprolog-directive)))
-    (should (equal (get-text-property (+ (point-min) 2)
-                                      'font-lock-face)
-                   '(sweeprolog-directive)))
-    (should (equal (get-text-property (+ (point-min) 3)
-                                      'font-lock-face)
-                   '(sweeprolog-built-in
-                     sweeprolog-body)))
-    (should (equal (get-text-property (+ (point-min) 9)
-                                      'font-lock-face)
-                   '(sweeprolog-body)))
-    (should (equal (get-text-property (+ (point-min) 10)
-                                      'font-lock-face)
-                   '(sweeprolog-identifier
-                     sweeprolog-body)))
-    (should (equal (get-text-property (+ (point-min) 13)
-                                      'font-lock-face)
-                   '(sweeprolog-body)))
-    (should (equal (get-text-property (+ (point-min) 16)
-                                      'font-lock-face)
-                   '(sweeprolog-local
-                     sweeprolog-body)))
-    (should (equal (get-text-property (+ (point-min) 23)
-                                      'font-lock-face)
-                   '(sweeprolog-fullstop)))
-    (should (equal (get-text-property (+ (point-min) 26)
-                                      'font-lock-face)
-                   '(sweeprolog-head-exported
-                     sweeprolog-clause)))
-    (should (equal (get-text-property (+ (point-min) 31)
-                                      'font-lock-face)
-                   '(sweeprolog-singleton
-                     sweeprolog-clause)))
-    (should (equal (get-text-property (+ (point-min) 39)
-                                      'font-lock-face)
-                   '(sweeprolog-undefined
-                     sweeprolog-body)))))
+"
+  (should (equal (get-text-property (+ (point-min) 1)
+                                    'font-lock-face)
+                 '(sweeprolog-neck
+                   sweeprolog-directive)))
+  (should (equal (get-text-property (+ (point-min) 2)
+                                    'font-lock-face)
+                 '(sweeprolog-directive)))
+  (should (equal (get-text-property (+ (point-min) 3)
+                                    'font-lock-face)
+                 '(sweeprolog-built-in
+                   sweeprolog-body)))
+  (should (equal (get-text-property (+ (point-min) 9)
+                                    'font-lock-face)
+                 '(sweeprolog-body)))
+  (should (equal (get-text-property (+ (point-min) 10)
+                                    'font-lock-face)
+                 '(sweeprolog-identifier
+                   sweeprolog-body)))
+  (should (equal (get-text-property (+ (point-min) 13)
+                                    'font-lock-face)
+                 '(sweeprolog-body)))
+  (should (equal (get-text-property (+ (point-min) 16)
+                                    'font-lock-face)
+                 '(sweeprolog-local
+                   sweeprolog-body)))
+  (should (equal (get-text-property (+ (point-min) 23)
+                                    'font-lock-face)
+                 '(sweeprolog-fullstop)))
+  (should (equal (get-text-property (+ (point-min) 26)
+                                    'font-lock-face)
+                 '(sweeprolog-head-exported
+                   sweeprolog-clause)))
+  (should (equal (get-text-property (+ (point-min) 31)
+                                    'font-lock-face)
+                 '(sweeprolog-singleton
+                   sweeprolog-clause)))
+  (should (equal (get-text-property (+ (point-min) 39)
+                                    'font-lock-face)
+                 '(sweeprolog-undefined
+                   sweeprolog-body))))
 
-(ert-deftest yank-hole ()
+(sweeprolog-deftest yank-hole ()
   "Test killing and yanking a hole as a plain variable."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (sweeprolog-insert-term-with-holes ":-" 2)
-    (should (get-text-property (point-min) 'sweeprolog-hole))
-    (call-interactively #'kill-region)
-    (call-interactively #'yank)
-    (should (not (get-text-property (point-min) 'sweeprolog-hole)))))
+  ""
+  (sweeprolog-insert-term-with-holes ":-" 2)
+  (should (get-text-property (point-min) 'sweeprolog-hole))
+  (call-interactively #'kill-region)
+  (call-interactively #'yank)
+  (should (not (get-text-property (point-min) 'sweeprolog-hole))))
 
-(ert-deftest insert-term-with-holes ()
+(sweeprolog-deftest insert-term-with-holes ()
   "Test `sweeprolog-insert-term-with-holes'."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (sweeprolog-insert-term-with-holes ":-" 2)
-    (call-interactively #'kill-region)
-    (sweeprolog-insert-term-with-holes "foo" 3)
-    (call-interactively #'kill-region)
-    (sweeprolog-insert-term-with-holes "bar" 0)
-    (call-interactively #'kill-region)
-    (sweeprolog-insert-term-with-holes ";" 2)
-    (call-interactively #'kill-region)
-    (sweeprolog-insert-term-with-holes "->" 2)
-    (should (string= (buffer-string)
-                     "foo(bar, (_->_;_), _):-_."))))
+  ""
+  (sweeprolog-insert-term-with-holes ":-" 2)
+  (call-interactively #'kill-region)
+  (sweeprolog-insert-term-with-holes "foo" 3)
+  (call-interactively #'kill-region)
+  (sweeprolog-insert-term-with-holes "bar" 0)
+  (call-interactively #'kill-region)
+  (sweeprolog-insert-term-with-holes ";" 2)
+  (call-interactively #'kill-region)
+  (sweeprolog-insert-term-with-holes "->" 2)
+  (should (string= (buffer-string)
+                   "foo(bar, (_->_;_), _):-_.")))
 
-(ert-deftest rename-variable ()
+(sweeprolog-deftest rename-variable ()
   "Tests renaming varialbes."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "foo(Bar,Baz) :- spam(Baz,Bar).")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-min))
-    (sweeprolog-rename-variable "Bar" "Spam")
-    (sweeprolog-rename-variable "Baz" "Bar")
-    (sweeprolog-rename-variable "Spam" "Baz")
-    (should (string= (buffer-string)
-                     "foo(Baz,Bar) :- spam(Bar,Baz)."))))
+  "foo(Bar,Baz) :- spam(Baz,Bar)."
+  (goto-char (point-min))
+  (sweeprolog-rename-variable "Bar" "Spam")
+  (sweeprolog-rename-variable "Baz" "Bar")
+  (sweeprolog-rename-variable "Spam" "Baz")
+  (should (string= (buffer-string)
+                   "foo(Baz,Bar) :- spam(Bar,Baz).")))
 
-(ert-deftest increment-variable ()
+(sweeprolog-deftest increment-variable ()
   "Tests renaming varialbes."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 foo(Bar0,Bar) :-
     spam(Bar0,Bar1),
     bar(Bar1,Bar2),
     baz(Bar2, Bar).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (1+ (point-min)))
-    (sweeprolog-increment-numbered-variables 1 (point) "Bar1")
-    (should (string= (buffer-string)
-                     "
+"
+  (goto-char (1+ (point-min)))
+  (sweeprolog-increment-numbered-variables 1 (point) "Bar1")
+  (should (string= (buffer-string)
+                   "
 foo(Bar0,Bar) :-
     spam(Bar0,Bar2),
     bar(Bar2,Bar3),
     baz(Bar3, Bar).
-"))))
+")))
 
-(ert-deftest find-references ()
+(sweeprolog-deftest find-references ()
   "Tests `sweeprolog-predicate-references'."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              ":- module(test_sweep_find_references, [caller/0]).
+  ":- module(test_sweep_find_references, [caller/0]).
 
 caller :- callee, baz, callee.
 caller :- baz, callee, baz.
@@ -339,128 +314,99 @@ callee.
 
 baz.
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (should (equal (sweeprolog-predicate-references "test_sweep_find_references:callee/0")
-                   (list (list "test_sweep_find_references:caller/0" temp 63 6)
-                         (list "test_sweep_find_references:caller/0" temp 76 6)
-                         (list "test_sweep_find_references:caller/0" temp 99 6))))))
+  (should (equal (sweeprolog-predicate-references "test_sweep_find_references:callee/0")
+                 (list (list "test_sweep_find_references:caller/0" temp 63 6)
+                       (list "test_sweep_find_references:caller/0" temp 76 6)
+                       (list "test_sweep_find_references:caller/0" temp 99 6)))))
 
-(ert-deftest forward-many-holes ()
+(sweeprolog-deftest forward-many-holes ()
   "Tests jumping over holes with `sweeprolog-forward-hole'."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "\n"
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-min))
-    (sweeprolog-insert-term-with-holes ":-" 2)
-    (deactivate-mark)
-    (goto-char (point-max))
-    (sweeprolog-insert-term-with-holes ":-" 2)
-    (goto-char (point-min))
-    (should (= (sweeprolog-count-holes) 4))
-    (sweeprolog-forward-hole 2)
-    (should (= (point) 5))
-    (sweeprolog-forward-hole -1)
-    (should (= (point) 2))
-    (sweeprolog-forward-hole -2)
-    (should (= (point) 8))))
+  "\n"
+  (goto-char (point-min))
+  (sweeprolog-insert-term-with-holes ":-" 2)
+  (deactivate-mark)
+  (goto-char (point-max))
+  (sweeprolog-insert-term-with-holes ":-" 2)
+  (goto-char (point-min))
+  (should (= (sweeprolog-count-holes) 4))
+  (sweeprolog-forward-hole 2)
+  (should (= (point) 5))
+  (sweeprolog-forward-hole -1)
+  (should (= (point) 2))
+  (sweeprolog-forward-hole -2)
+  (should (= (point) 8)))
 
-(ert-deftest plunit-testset-skeleton ()
+(sweeprolog-deftest plunit-testset-skeleton ()
   "Tests inserting PlUnit test-set blocks."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (sweeprolog-plunit-testset-skeleton "foo")
-    (should (string= (buffer-string)
-                     ":- begin_tests(foo).
+  ""
+  (sweeprolog-plunit-testset-skeleton "foo")
+  (should (string= (buffer-string)
+                   ":- begin_tests(foo).
 
 test() :- TestBody.
 
 :- end_tests(foo).
 "
-                     ))))
+                   )))
 
-(ert-deftest auto-insert-module-header ()
+(sweeprolog-deftest auto-insert-module-header ()
   "Tests inserting Prolog module header with `auto-insert'."
-  (find-file-literally (expand-file-name "sweeprolog_test_auto_insert.pl"
-                                         temporary-file-directory))
-  (sweeprolog-mode)
+  ""
   (let ((auto-insert-query nil))
     (call-interactively #'auto-insert))
   (let ((end (point)))
     (beginning-of-line -1)
     (should (string= (buffer-substring-no-properties (point) end)
-                     ":- module(sweeprolog_test_auto_insert, []).
+                     (concat ":- module("
+                             (sweeprolog-format-string-as-atom (file-name-base (buffer-file-name)))
+                             ", []).
 
-/** <module> "))))
+/** <module> ")))))
 
-(ert-deftest complete-compound ()
+(sweeprolog-deftest complete-compound ()
   "Tests completing atoms."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 baz(Baz) :- Baz = opa
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-char)
-    (call-interactively #'completion-at-point)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (backward-char)
+  (call-interactively #'completion-at-point)
+  (should (string= (buffer-string)
+                   "
 baz(Baz) :- Baz = opaque(_)
 "
-                     ))))
+                   )))
 
-(ert-deftest complete-non-terminal ()
+(sweeprolog-deftest complete-non-terminal ()
   "Tests completing DCG non-terminals."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 barbaz --> foo.
 
 foo --> barb"
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (call-interactively #'completion-at-point)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (call-interactively #'completion-at-point)
+  (should (string= (buffer-string)
+                   "
 barbaz --> foo.
 
 foo --> barbaz"
 
-                     ))
-    (insert ".\n\nfoo => barb")
-    (call-interactively #'completion-at-point)
-    (should (string= (buffer-string)
-                     "
+                   ))
+  (insert ".\n\nfoo => barb")
+  (call-interactively #'completion-at-point)
+  (should (string= (buffer-string)
+                   "
 barbaz --> foo.
 
 foo --> barbaz.
 
 foo => barbaz(_, _)"
 
-                     ))))
+                   )))
 
-(ert-deftest complete-predicate-with-args ()
+(sweeprolog-deftest complete-predicate-with-args ()
   "Tests completing predicate calls."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 :- module(foobarbaz, []).
 
 %!  foobarbaz(:Bar, ?Baz:integer) is det.
@@ -469,14 +415,11 @@ foobarbaz(_, 5) :- spam.
 
 spam :- foobarb
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-char)
-    (call-interactively #'completion-at-point)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (backward-char)
+  (call-interactively #'completion-at-point)
+  (should (string= (buffer-string)
+                   "
 :- module(foobarbaz, []).
 
 %!  foobarbaz(:Bar, ?Baz:integer) is det.
@@ -485,76 +428,36 @@ foobarbaz(_, 5) :- spam.
 
 spam :- foobarbaz(Bar, Baz)
 "
-                     ))))
+                   )))
 
-(ert-deftest complete-predicate ()
+(sweeprolog-deftest complete-predicate ()
   "Tests completing predicate calls."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 baz(Baz) :- findall(X, b_g
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-char)
-    (call-interactively #'completion-at-point)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (backward-char)
+  (call-interactively #'completion-at-point)
+  (should (string= (buffer-string)
+                   "
 baz(Baz) :- findall(X, b_getval(Name, Value)
 "
-                     ))))
+                   )))
 
-(ert-deftest complete-variable ()
+(sweeprolog-deftest complete-variable ()
   "Tests completing variable names."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 baz(Baz) :- bar(B).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (forward-word)
-    (call-interactively #'completion-at-point)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (backward-word)
+  (forward-word)
+  (call-interactively #'completion-at-point)
+  (should (string= (buffer-string)
+                   "
 baz(Baz) :- bar(Baz).
 "
-                     ))))
-
-(defmacro sweeprolog-deftest (name _ doc text &rest body)
-  "Define Sweep test NAME with docstring DOC.
-
-The test runs BODY in a `sweeprolog-mode' buffer with initial
-contents TEXT.
-
-The second argument is ignored."
-  (declare (doc-string 3) (indent 2))
-  `(ert-deftest ,(intern (concat "sweeprolog-tests-" (symbol-name name))) ()
-     ,doc
-     (let ((temp (make-temp-file "sweeprolog-test"
-                                 nil
-                                 "pl"
-                                 ,text))
-           (enable-flymake-flag sweeprolog-enable-flymake)
-           (inhibit-message t))
-       (setq-default sweeprolog-enable-flymake nil)
-       (find-file-literally temp)
-       (sweeprolog-mode)
-       (goto-char (point-min))
-       (search-forward "-!-" nil t)
-       (delete-char -3)
-       ,@body
-       (set-buffer-modified-p nil)
-       (kill-buffer)
-       (sweeprolog-restart)
-       (setq-default sweeprolog-enable-flymake enable-flymake-flag))))
+                   )))
 
 (sweeprolog-deftest cap-variable ()
   "Completion at point for variable names."
@@ -647,12 +550,9 @@ foobar(Baz) :- Baz = 'Baz -!-"
     (should (equal '(("'Baz baz'(_)" compound "term_position" 0 12 0 9 ((compound "-" 10 11))))
                    (nth 2 cap)))))
 
-(ert-deftest mark-predicate ()
+(sweeprolog-deftest mark-predicate ()
   "Test marking predicate definition."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 :- module(baz, []).
 
 
@@ -669,19 +569,13 @@ baz(_) :- false.
 
 bar(Bar) :- baz(Bar).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (call-interactively #'sweeprolog-mark-predicate)
-    (should (= (point) 24))
-    (should (= (mark) 104))))
+  (call-interactively #'sweeprolog-mark-predicate)
+  (should (= (point) 24))
+  (should (= (mark) 104)))
 
-(ert-deftest export-predicate-with-comment-header ()
+(sweeprolog-deftest export-predicate-with-comment-header ()
   "Test exporting a predicate after a comment header."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "/*
+  "/*
 Sed id ligula quis est convallis tempor.  Nam vestibulum accumsan
 nisl.  Sed diam.  Pellentesque tristique imperdiet tortor.  Fusce
 sagittis, libero non molestie mollis, magna orci ultrices dolor,
@@ -692,14 +586,12 @@ at vulputate neque nulla lacinia eros.
 %!  foo(+Bar) is det.
 
 foo(Bar) :- bar(Bar).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (call-interactively #'sweeprolog-export-predicate)
-    (should (equal (buffer-string)
-                              "/*
+"
+  (goto-char (point-max))
+  (backward-word)
+  (call-interactively #'sweeprolog-export-predicate)
+  (should (equal (buffer-string)
+                 "/*
 Sed id ligula quis est convallis tempor.  Nam vestibulum accumsan
 nisl.  Sed diam.  Pellentesque tristique imperdiet tortor.  Fusce
 sagittis, libero non molestie mollis, magna orci ultrices dolor,
@@ -711,41 +603,33 @@ at vulputate neque nulla lacinia eros.
 %!  foo(+Bar) is det.
 
 foo(Bar) :- bar(Bar).
-"))))
+")))
 
-(ert-deftest export-predicate ()
+(sweeprolog-deftest export-predicate ()
   "Test exporting a predicate."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 :- module(sweeprolog_test_export_predicate, []).
 
 %!  foo(+Bar) is det.
 
 foo(Bar) :- bar(Bar).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (call-interactively #'sweeprolog-export-predicate)
-    (should (equal (buffer-string)
-                   "
+"
+  (goto-char (point-max))
+  (backward-word)
+  (call-interactively #'sweeprolog-export-predicate)
+  (should (equal (buffer-string)
+                 "
 :- module(sweeprolog_test_export_predicate, [foo/1  % +Bar
                                             ]).
 
 %!  foo(+Bar) is det.
 
 foo(Bar) :- bar(Bar).
-"))))
+")))
 
-(ert-deftest export-predicate-with-op ()
+(sweeprolog-deftest export-predicate-with-op ()
   "Test exporting a predicate in presence of an exported operator."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 :- module(tester,
           [ instantiate_test_template/4,  % +In,+Replacement,-Dict,-Map
             op(200, fy, @)		  % @name
@@ -754,14 +638,12 @@ foo(Bar) :- bar(Bar).
 %!  foo(+Bar) is det.
 
 foo(Bar).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (call-interactively #'sweeprolog-export-predicate)
-    (should (equal (buffer-string)
-                  "
+"
+  (goto-char (point-max))
+  (backward-word)
+  (call-interactively #'sweeprolog-export-predicate)
+  (should (equal (buffer-string)
+                 "
 :- module(tester,
           [ instantiate_test_template/4, % +In,+Replacement,-Dict,-Map
             foo/1,                       % +Bar
@@ -772,14 +654,11 @@ foo(Bar).
 
 foo(Bar).
 "
-                  ))))
+                 )))
 
-(ert-deftest export-predicate-with-only-op ()
+(sweeprolog-deftest export-predicate-with-only-op ()
   "Test exporting a predicate in presence of only exported operators."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              ".pl"
-                              "
+  "
 :- module(tester,
           [ op(200, fy, @)		  % @name
           ]).
@@ -787,14 +666,12 @@ foo(Bar).
 %!  foo(+Bar) is det.
 
 foo(Bar).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (call-interactively #'sweeprolog-export-predicate)
-    (should (equal (buffer-string)
-                  "
+"
+  (goto-char (point-max))
+  (backward-word)
+  (call-interactively #'sweeprolog-export-predicate)
+  (should (equal (buffer-string)
+                 "
 :- module(tester,
           [ foo/1,         % +Bar
             op(200, fy, @) % @name
@@ -804,69 +681,46 @@ foo(Bar).
 
 foo(Bar).
 "
-                  ))))
+                 )))
 
-(ert-deftest identifier-at-point ()
+(sweeprolog-deftest identifier-at-point ()
   "Test recognizing predicate invocations."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "foo(Bar) :- bar(Bar).")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (should (equal (sweeprolog-identifier-at-point)
-                   "user:bar/1"))))
+  "foo(Bar) :- bar(Bar)."
+  (goto-char (point-max))
+  (backward-word)
+  (should (equal (sweeprolog-identifier-at-point)
+                 "user:bar/1")))
 
-(ert-deftest dcg-identifier-at-point ()
+(sweeprolog-deftest dcg-identifier-at-point ()
   "Test recognizing DCG grammar rule definitions."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              ":- module(foobarbaz, []).
-foo(Bar) --> bar(Bar).")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (beginning-of-line)
-    (should (equal (sweeprolog-identifier-at-point)
-                   "foobarbaz:foo//1"))))
+  ":- module(foobarbaz, []).
+foo(Bar) --> bar(Bar)."
+  (goto-char (point-max))
+  (beginning-of-line)
+  (should (equal (sweeprolog-identifier-at-point)
+                 "foobarbaz:foo//1")))
 
-(ert-deftest dcg-completion-at-point ()
+(sweeprolog-deftest dcg-completion-at-point ()
   "Test completing DCG grammar rule invocation."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              ":- use_module(library(dcg/high_order)).
-foo(Bar) --> optiona")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (complete-symbol nil)
-    (should (string= (buffer-string)
-                     ":- use_module(library(dcg/high_order)).
-foo(Bar) --> optional(Match, Default)"))))
+  ":- use_module(library(dcg/high_order)).
+foo(Bar) --> optiona"
+  (goto-char (point-max))
+  (complete-symbol nil)
+  (should (string= (buffer-string)
+                   ":- use_module(library(dcg/high_order)).
+foo(Bar) --> optional(Match, Default)")))
 
-(ert-deftest definition-at-point ()
+(sweeprolog-deftest definition-at-point ()
   "Test recognizing predicate definitions."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "foo(Bar) :- bar(Bar).")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (should (equal (sweeprolog-definition-at-point)
-                   '(1 "foo" 1 21 ":-" nil)))))
+  "foo(Bar) :- bar(Bar)."
+  (goto-char (point-max))
+  (backward-word)
+  (should (equal (sweeprolog-definition-at-point)
+                 '(1 "foo" 1 21 ":-" nil))))
 
-(ert-deftest syntax-errors ()
+(sweeprolog-deftest syntax-errors ()
   "Test clearing syntax error face after errors are fixed."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(baz, []).
 
 
@@ -884,171 +738,131 @@ baz(Baz) :- Bar, Baz.
 bar(Bar) :- baz(Bar).
 
 % comment before eob...
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-min))
-    (search-forward ".\n" nil t)
-    (replace-match ",,\n" nil t)
-    (delete-char -3)
-    (redisplay)
-    (insert ".")
-    (redisplay)
-    (should (= (point-max)
-               (prop-match-end
-                (text-property-search-forward
-                 'font-lock-face
-                 '(sweeprolog-syntax-error
-                   sweeprolog-around-syntax-error)))))))
+"
+  (goto-char (point-min))
+  (search-forward ".\n" nil t)
+  (replace-match ",,\n" nil t)
+  (delete-char -3)
+  (redisplay)
+  (insert ".")
+  (redisplay)
+  (should (= (point-max)
+             (prop-match-end
+              (text-property-search-forward
+               'font-lock-face
+               '(sweeprolog-syntax-error
+                 sweeprolog-around-syntax-error))))))
 
-(ert-deftest file-at-point ()
+(sweeprolog-deftest file-at-point ()
   "Test recognizing file specifications."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              ":- use_module(library(lists)).")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word)
-    (let ((fsap (sweeprolog-file-at-point)))
-      (should fsap)
-      (should (string= "lists" (file-name-base fsap))))))
+  ":- use_module(library(lists))."
+  (goto-char (point-max))
+  (backward-word)
+  (let ((fsap (sweeprolog-file-at-point)))
+    (should fsap)
+    (should (string= "lists" (file-name-base fsap)))))
 
-(ert-deftest dwim-next-clause-fact ()
+(sweeprolog-deftest dwim-next-clause-fact ()
   "Tests inserting a new clause after a fact."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
-foo.")
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+  "
+foo.-!-"
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 foo.
 foo :- Body.
-"))))
+")))
 
-(ert-deftest dwim-next-clause-module-qualified-dcg ()
+(sweeprolog-deftest dwim-next-clause-module-qualified-dcg ()
   "Tests inserting new module-qualified DCG non-terminal."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 spam:foo --> bar.
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 spam:foo --> bar.
 spam:foo --> Body.
 
 "
-                     ))))
+                   )))
 
-(ert-deftest dwim-next-clause-args ()
+(sweeprolog-deftest dwim-next-clause-args ()
   "Tests inserting new clause with arguments."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 %!  foo(+Bar) is det.
 
 foo(bar) :- bar.
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                              "
+  (goto-char (point-max))
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 %!  foo(+Bar) is det.
 
 foo(bar) :- bar.
 foo(Bar) :- Body.
 
-"))))
+")))
 
-(ert-deftest dwim-next-clause-module-qualified ()
+(sweeprolog-deftest dwim-next-clause-module-qualified ()
   "Tests inserting new module-qualified clause."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 spam:foo :- bar.
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 spam:foo :- bar.
 spam:foo :- Body.
 
 "
-                     ))))
+                   )))
 
-(ert-deftest dwim-next-clause-prolog-message ()
+(sweeprolog-deftest dwim-next-clause-prolog-message ()
   "Tests inserting new `prolog:message/1' clause."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 prolog:message(foo(bar, Baz, Spam)) -->
     [ 'baz: ~D spam: ~w'-[Baz, Spam] ].
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 prolog:message(foo(bar, Baz, Spam)) -->
     [ 'baz: ~D spam: ~w'-[Baz, Spam] ].
 prolog:message(_) --> Body.
 
 "
-                     ))))
+                   )))
 
-(ert-deftest dwim-next-clause-dcg ()
+(sweeprolog-deftest dwim-next-clause-dcg ()
   "Tests inserting a non-terminal with `sweeprolog-insert-term-dwim'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
-foo --> bar.")
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+  "
+foo --> bar.-!-"
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 foo --> bar.
 foo --> Body.
-"))))
+")))
 
 
-(ert-deftest dwim-next-clause-dcg-with-pldoc ()
+(sweeprolog-deftest dwim-next-clause-dcg-with-pldoc ()
   "Test completing DCG grammar rule invocation."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(dcg_completion_at_point_with, []).
 
 %!  foo(+Bar)// is det.
 
 foo(bar) --> baz(bar).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+"
+  (goto-char (point-max))
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 :- module(dcg_completion_at_point_with, []).
 
 %!  foo(+Bar)// is det.
@@ -1056,40 +870,33 @@ foo(bar) --> baz(bar).
 foo(bar) --> baz(bar).
 foo(Bar) --> Body.
 
-"))))
+")))
 
-(ert-deftest dwim-next-clause-ssu ()
+(sweeprolog-deftest dwim-next-clause-ssu ()
   "Tests inserting an SSU rule with `sweeprolog-insert-term-dwim'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
-foo => bar.")
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+  "
+foo => bar.-!-"
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 foo => bar.
 foo => Body.
-"))))
+")))
 
-(ert-deftest dwim-next-clause ()
+(sweeprolog-deftest dwim-next-clause ()
   "Tests inserting a new clause with `sweeprolog-insert-term-dwim'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
-foo :- bar.")
-    (sweeprolog-insert-term-dwim)
-    (should (string= (buffer-string)
-                     "
+  "
+foo :- bar.-!-"
+  (sweeprolog-insert-term-dwim)
+  (should (string= (buffer-string)
+                   "
 foo :- bar.
 foo :- Body.
-"))))
+")))
 
-(ert-deftest update-dependencies-no-autoload ()
+(sweeprolog-deftest update-dependencies-no-autoload ()
   "Tests adding a use_module/2 directive."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1098,12 +905,9 @@ foo :- Body.
 
 bar(X) :- arithmetic_function(X).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (call-interactively #'sweeprolog-update-dependencies)
-    (should (string= (buffer-string)
-                              "
+  (call-interactively #'sweeprolog-update-dependencies)
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 :- use_module(library(arithmetic), [arithmetic_function/1]).
 
@@ -1112,14 +916,11 @@ bar(X) :- arithmetic_function(X).
 */
 
 bar(X) :- arithmetic_function(X).
-"))))
+")))
 
-(ert-deftest append-dependencies ()
+(sweeprolog-deftest append-dependencies ()
   "Tests making implicit autoloads explicit with existing directive."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1132,12 +933,9 @@ bar(X) :- arithmetic_function(X).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- permutation(X, [1,2,3]).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (call-interactively #'sweeprolog-update-dependencies)
-    (should (string= (buffer-string)
-                     "
+  (call-interactively #'sweeprolog-update-dependencies)
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1151,14 +949,11 @@ bar(X) :- permutation(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- permutation(X, [1,2,3]).
 "
-                     ))))
+                   )))
 
-(ert-deftest update-dependencies-without-inference ()
+(sweeprolog-deftest update-dependencies-without-inference ()
   "Tests setting `sweeprolog-dependency-directive' to `autoload'."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1171,13 +966,10 @@ bar(X) :- permutation(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- maplist(X, [1,2,3]).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (let ((sweeprolog-dependency-directive 'autoload))
-     (call-interactively #'sweeprolog-update-dependencies))
-    (should (string= (buffer-string)
-                     "
+  (let ((sweeprolog-dependency-directive 'autoload))
+    (call-interactively #'sweeprolog-update-dependencies))
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1191,14 +983,11 @@ bar(X) :- maplist(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- maplist(X, [1,2,3]).
 "
-                     ))))
+                   )))
 
-(ert-deftest update-dependencies-without-inference-2 ()
+(sweeprolog-deftest update-dependencies-without-inference-2 ()
   "Tests setting `sweeprolog-dependency-directive' to `use-module'."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1208,13 +997,10 @@ bar(X) :- maplist(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- maplist(X, [1,2,3]).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (let ((sweeprolog-dependency-directive 'use-module))
-     (call-interactively #'sweeprolog-update-dependencies))
-    (should (string= (buffer-string)
-                     "
+  (let ((sweeprolog-dependency-directive 'use-module))
+    (call-interactively #'sweeprolog-update-dependencies))
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 :- use_module(library(apply), [maplist/2]).
 :- use_module(library(lists), [member/2]).
@@ -1226,14 +1012,11 @@ bar(X) :- maplist(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- maplist(X, [1,2,3]).
 "
-                     ))))
+                   )))
 
-(ert-deftest update-dependencies-with-use-module ()
+(sweeprolog-deftest update-dependencies-with-use-module ()
   "Tests updating dependencies in presence of use_module directives."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1246,12 +1029,9 @@ bar(X) :- maplist(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- maplist(X, [1,2,3]).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (call-interactively #'sweeprolog-update-dependencies)
-    (should (string= (buffer-string)
-                     "
+  (call-interactively #'sweeprolog-update-dependencies)
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1265,14 +1045,11 @@ bar(X) :- maplist(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 bar(X) :- maplist(X, [1,2,3]).
 "
-                     ))))
+                   )))
 
-(ert-deftest update-dependencies-autoload-from-package ()
+(sweeprolog-deftest update-dependencies-autoload-from-package ()
   "Tests making implicit autoloads from a package explicit."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1281,12 +1058,9 @@ bar(X) :- maplist(X, [1,2,3]).
 
 bar(X) :- http_open(X, X, X).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (call-interactively #'sweeprolog-update-dependencies)
-    (should (string= (buffer-string)
-                     "
+  (call-interactively #'sweeprolog-update-dependencies)
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 :- autoload(library(http/http_open), [http_open/3]).
 
@@ -1295,14 +1069,11 @@ bar(X) :- http_open(X, X, X).
 */
 
 bar(X) :- http_open(X, X, X).
-"))))
+")))
 
-(ert-deftest update-dependencies ()
+(sweeprolog-deftest update-dependencies ()
   "Tests making implicit autoloads explicit."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 :- module(foo, [bar/1]).
 
 /** <module> Foo
@@ -1311,12 +1082,9 @@ bar(X) :- http_open(X, X, X).
 
 bar(X) :- member(X, [1,2,3]).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (call-interactively #'sweeprolog-update-dependencies)
-    (should (string= (buffer-string)
-                     "
+  (call-interactively #'sweeprolog-update-dependencies)
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 :- autoload(library(lists), [member/2]).
 
@@ -1327,12 +1095,12 @@ bar(X) :- member(X, [1,2,3]).
 bar(X) :- member(X, [1,2,3]).
 "
 
-                     ))
-    (goto-char (point-max))
-    (insert "bar(X) :- permutation(X, [1,2,3]).")
-    (call-interactively #'sweeprolog-update-dependencies)
-    (should (string= (buffer-string)
-                     "
+                   ))
+  (goto-char (point-max))
+  (insert "bar(X) :- permutation(X, [1,2,3]).")
+  (call-interactively #'sweeprolog-update-dependencies)
+  (should (string= (buffer-string)
+                   "
 :- module(foo, [bar/1]).
 :- autoload(library(lists), [member/2, permutation/2]).
 
@@ -1341,182 +1109,150 @@ bar(X) :- member(X, [1,2,3]).
 */
 
 bar(X) :- member(X, [1,2,3]).
-bar(X) :- permutation(X, [1,2,3])."))))
+bar(X) :- permutation(X, [1,2,3]).")))
 
-(ert-deftest dwim-define-nested-phrase ()
+(sweeprolog-deftest dwim-define-nested-phrase ()
   "Tests complex undefined predicate scenario."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 foo --> {baz, phrase(bar, Baz)}.
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word 2)
-    (sweeprolog-insert-term-dwim)
-    (call-interactively #'kill-region)
-    (insert "foo")
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (backward-word 2)
+  (sweeprolog-insert-term-dwim)
+  (call-interactively #'kill-region)
+  (insert "foo")
+  (should (string= (buffer-string)
+                   "
 foo --> {baz, phrase(bar, Baz)}.
 
 bar --> foo.
 "
-                     ))))
+                   )))
 
-(ert-deftest dwim-define-phrase-non-terminal ()
+(sweeprolog-deftest dwim-define-phrase-non-terminal ()
   "Tests defining an undefined DCG non-terminal from a clause."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 foo :- phrase(bar, Baz).
 "
-                              )))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (backward-word 2)
-    (sweeprolog-insert-term-dwim)
-    (call-interactively #'kill-region)
-    (insert "foo")
-    (should (string= (buffer-string)
-                     "
+  (goto-char (point-max))
+  (backward-word 2)
+  (sweeprolog-insert-term-dwim)
+  (call-interactively #'kill-region)
+  (insert "foo")
+  (should (string= (buffer-string)
+                   "
 foo :- phrase(bar, Baz).
 
 bar --> foo.
 "
-                     ))))
+                   )))
 
-(ert-deftest dwim-define-braces-predicate ()
+(sweeprolog-deftest dwim-define-braces-predicate ()
   "Tests defining an undefined predicate from a DCG non-terminal."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 foo --> {bar}.
-")
-    (backward-word)
-    (sweeprolog-insert-term-dwim)
-    (call-interactively #'kill-region)
-    (insert "foo")
-    (should (string= (buffer-string)
-                     "
+-!-"
+  (backward-word)
+  (sweeprolog-insert-term-dwim)
+  (call-interactively #'kill-region)
+  (insert "foo")
+  (should (string= (buffer-string)
+                   "
 foo --> {bar}.
 
 bar :- foo.
 "
-                     ))))
+                   )))
 
-(ert-deftest document-predicate ()
+(sweeprolog-deftest document-predicate ()
   "Tests documenting a predicate."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "foo(Bar) :- baz(Bar).
-")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (let ((sweeprolog-read-predicate-documentation-function
-           #'sweeprolog-read-predicate-documentation-with-holes))
-      (sweeprolog-document-predicate-at-point (point)))
-    (should (string= (buffer-string)
-                     "%!  foo(_) is Det.
+  "foo(Bar) :- baz(Bar).
+"
+  (goto-char (point-max))
+  (let ((sweeprolog-read-predicate-documentation-function
+         #'sweeprolog-read-predicate-documentation-with-holes))
+    (sweeprolog-document-predicate-at-point (point)))
+  (should (string= (buffer-string)
+                   "%!  foo(_) is Det.
 
 foo(Bar) :- baz(Bar).
-"))))
-
-(ert-deftest document-non-terminal ()
-  "Tests documenting a DCG non-terminal."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "foo(Bar) --> baz(Bar).
 ")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-max))
-    (let ((sweeprolog-read-predicate-documentation-function
-           #'sweeprolog-read-predicate-documentation-with-holes))
-      (sweeprolog-document-predicate-at-point (point)))
-    (should (string= (buffer-string)
-                     "%!  foo(_)// is Det.
+
+(sweeprolog-deftest document-non-terminal ()
+  "Tests documenting a DCG non-terminal."
+  "foo(Bar) --> baz(Bar).
+"
+  (goto-char (point-max))
+  (let ((sweeprolog-read-predicate-documentation-function
+         #'sweeprolog-read-predicate-documentation-with-holes))
+    (sweeprolog-document-predicate-at-point (point)))
+  (should (string= (buffer-string)
+                   "%!  foo(_)// is Det.
 
 foo(Bar) --> baz(Bar).
-"))))
+")))
 
-(ert-deftest dwim-define-non-terminal ()
+(sweeprolog-deftest dwim-define-non-terminal ()
   "Tests defining an undefined DCG non-terminal."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 foo --> bar.
-")
-    (backward-word)
-    (sweeprolog-insert-term-dwim)
-    (call-interactively #'kill-region)
-    (insert "foo")
-    (should (string= (buffer-string)
-                     "
+-!-"
+  (backward-word)
+  (sweeprolog-insert-term-dwim)
+  (call-interactively #'kill-region)
+  (insert "foo")
+  (should (string= (buffer-string)
+                   "
 foo --> bar.
 
 bar --> foo.
 "
-                     ))))
+                   )))
 
-(ert-deftest dwim-define-predicate ()
+(sweeprolog-deftest dwim-define-predicate ()
   "Tests defining a new predicate with `sweeprolog-insert-term-dwim'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 foo :- bar.
-")
-    (backward-word)
-    (sweeprolog-insert-term-dwim)
-    (call-interactively #'kill-region)
-    (insert "foo")
-    (should (string= (buffer-string)
-                     "
+-!-"
+  (backward-word)
+  (sweeprolog-insert-term-dwim)
+  (call-interactively #'kill-region)
+  (insert "foo")
+  (should (string= (buffer-string)
+                   "
 foo :- bar.
 
 bar :- foo.
 "
-                     ))))
+                   )))
 
 
-(ert-deftest dwim-define-predicate-above ()
+(sweeprolog-deftest dwim-define-predicate-above ()
   "Tests adherence to `sweeprolog-new-predicate-location-function'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 %!  foo is det.
 
 foo :- bar.
-")
-    (backward-word)
-    (let ((sweeprolog-new-predicate-location-function
-           #'sweeprolog-new-predicate-location-above-current))
-      (sweeprolog-insert-term-dwim))
-    (call-interactively #'kill-region)
-    (insert "foo")
-    (should (string= (buffer-string)
-                     "
+-!-"
+  (backward-word)
+  (let ((sweeprolog-new-predicate-location-function
+         #'sweeprolog-new-predicate-location-above-current))
+    (sweeprolog-insert-term-dwim))
+  (call-interactively #'kill-region)
+  (insert "foo")
+  (should (string= (buffer-string)
+                   "
 bar :- foo.
 
 %!  foo is det.
 
 foo :- bar.
 "
-                     ))))
+                   )))
 
-(ert-deftest end-of-top-term-with-univ ()
+(sweeprolog-deftest end-of-top-term-with-univ ()
   "Tests detecting the fullstop in presence of `=..'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 html_program_section(Section, Dict) -->
     { _{module:M, options:Options} :< Dict,
       Content = Dict.get(Section),
@@ -1532,17 +1268,14 @@ html_program_section(Section, Dict) -->
         html_query(M:Content, Options)
     ;   sequence(predicate_r(M:Options), Content)
     ).
-")
-    (goto-char (point-min))
-    (sweeprolog-end-of-top-term)
-    (should (= (point) 466))))
+"
+  (goto-char (point-min))
+  (sweeprolog-end-of-top-term)
+  (should (= (point) 466)))
 
-
-(ert-deftest fullstop-detection ()
+(sweeprolog-deftest fullstop-detection ()
   "Tests detecting the fullstop in presence of confusing comments."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 scasp_and_show(Q, Model, Tree) :-
     scasp_mode(M0, T0),
     setup_call_cleanup(
@@ -1551,88 +1284,80 @@ scasp_and_show(Q, Model, Tree) :-
         ;   false                       % make always nondet.
         ),
         set_scasp_mode(M0, T0)).
-")
-    (goto-char (point-min))
-    (sweeprolog-end-of-top-term)
-    (should (= (point) 252))))
+"
+  (goto-char (point-min))
+  (sweeprolog-end-of-top-term)
+  (should (= (point) 252)))
 
-(ert-deftest beginning-of-predicate-definition-near-bob ()
+(sweeprolog-deftest beginning-of-predicate-definition-near-bob ()
   "Test finding the beginning of the first predicate definition."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "foo :- bar.")
-    (goto-char (point-min))
-    (sweeprolog-beginning-of-predicate-at-point)
-    (should (= (point) (point-min)))))
+  "foo :- bar."
+  (goto-char (point-min))
+  (sweeprolog-beginning-of-predicate-at-point)
+  (should (= (point) (point-min))))
 
-(ert-deftest align-spacs-in-line-comment ()
+(sweeprolog-deftest align-spaces-in-line-comment ()
   "Test using `sweeprolog-align-spaces' in a line comment."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 %!  foo is det.
 %
-%")
-    (sweeprolog-align-spaces)
-    (should (string= (buffer-string)
-                     "
+%-!-"
+  (sweeprolog-align-spaces)
+  (should (string= (buffer-string)
+                   "
 %!  foo is det.
 %
-%   "))))
+%   ")))
 
-(ert-deftest auto-fill-pldoc-comments ()
+(sweeprolog-deftest auto-fill-pldoc-comments ()
   "Test writing PlDoc comments with `auto-fill-mode' enable."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (auto-fill-mode)
-    (seq-do (lambda (c)
-              (let ((last-command-event c))
-                (call-interactively #'self-insert-command)))
-            "
+  ""
+  (auto-fill-mode)
+  (seq-do (lambda (c)
+            (let ((last-command-event c))
+              (call-interactively #'self-insert-command)))
+          "
 %!  foobar is det.
 %
 %   Nam vestibulum accumsan nisl.  Donec pretium posuere tellus.  Aenean in sem ac leo mollis blandit.  Nam a sapien.  Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.
 "
-            )
-    (should (string= (buffer-string)
-                     "
+          )
+  (should (string= (buffer-string)
+                   "
 %!  foobar is det.
 %
 %   Nam vestibulum accumsan nisl.  Donec pretium posuere tellus.
 %   Aenean in sem ac leo mollis blandit.  Nam a sapien.  Proin quam
 %   nisl, tincidunt et, mattis eget, convallis nec, purus.
-"))))
+")))
 
-(ert-deftest electric-layout ()
+(sweeprolog-deftest electric-layout ()
   "Test `sweeprolog-electric-layout-mode'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (sweeprolog-electric-layout-mode)
-    (seq-do (lambda (c)
-              (let ((last-command-event c))
-                (call-interactively #'self-insert-command)))
-            "
+  ""
+  (sweeprolog-electric-layout-mode)
+  (seq-do (lambda (c)
+            (let ((last-command-event c))
+              (call-interactively #'self-insert-command)))
+          "
 foobar :-
 (bar
 ;baz
 ->spam
 ).
 ")
-    (should (string= (buffer-string)
-                     "
+  (should (string= (buffer-string)
+                   "
 foobar :-
     (   bar
     ;   baz
     ->  spam
     ).
 "
-                     ))))
+                   )))
 
-(ert-deftest end-of-top-term-with-other-symbols ()
+(sweeprolog-deftest end-of-top-term-with-other-symbols ()
   "Tests detecting the fullstop in presence of `.=.'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 loop_term(I, Arity, Goal1, Goal2) :-
     I =< Arity,
     arg(I, Goal1, A),
@@ -1643,64 +1368,59 @@ loop_term(I, Arity, Goal1, Goal2) :-
         I2 is I+1,
         loop_term(I2, Arity, Goal1, Goal2)
     ).
-")
-    (goto-char (point-min))
-    (sweeprolog-end-of-top-term)
-    (should (= (point) 232))))
+"
+  (goto-char (point-min))
+  (sweeprolog-end-of-top-term)
+  (should (= (point) 232)))
 
-(ert-deftest beginning-of-next-top-term-at-last-clause ()
+(sweeprolog-deftest beginning-of-next-top-term-at-last-clause ()
   "Test finding the beginning of next top term when there isn't one."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 test_bindings(Name-Value) -->
     ['    '~w = ~p'-[Name-Value] ]..
-")
-    (goto-char 43)
-    (backward-delete-char 1)
-    (end-of-line)
-    (backward-delete-char 1)
-    (should (string= (buffer-string) "
+"
+  (goto-char 43)
+  (backward-delete-char 1)
+  (end-of-line)
+  (backward-delete-char 1)
+  (should (string= (buffer-string) "
 test_bindings(Name-Value) -->
     ['    ~w = ~p'-[Name-Value] ].
 "
-                     ))))
+                   )))
 
-(ert-deftest infer-indent-style ()
+(sweeprolog-deftest infer-indent-style ()
   "Test inferring indentation style from buffer contents."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 foo :-
-  bar.")
-    (sweeprolog-infer-indent-style)
-    (should (= sweeprolog-indent-offset 2))
-    (should (not indent-tabs-mode)))
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
-foo :-
-\tbar.")
-    (sweeprolog-infer-indent-style)
-    (should (= sweeprolog-indent-offset tab-width))
-    (should indent-tabs-mode)))
+  bar.-!-"
+  (sweeprolog-infer-indent-style)
+  (should (= sweeprolog-indent-offset 2))
+  (should (not indent-tabs-mode)))
 
-(ert-deftest custom-indentation ()
+(sweeprolog-deftest infer-indent-style-tab ()
+  "Test inferring tab indentation from buffer contents."
+  "
+foo :-
+\tbar.-!-"
+  (sweeprolog-infer-indent-style)
+  (should (= sweeprolog-indent-offset tab-width))
+  (should indent-tabs-mode))
+
+(sweeprolog-deftest custom-indentation ()
   "Test forcefully setting custom indentation levels."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "
+  "
 foo :-
     repeat,
       bar,
-      baz")
-    (call-interactively #'indent-for-tab-command)
-    (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                     "
+      baz-!-"
+  (call-interactively #'indent-for-tab-command)
+  (should (string= (buffer-substring-no-properties (point-min) (point-max))
+                   "
 foo :-
     repeat,
       bar,
-      baz"))))
+      baz")))
 
 (defun sweeprolog-test-indentation (given expected)
   (with-temp-buffer
@@ -2005,53 +1725,44 @@ head,
     body.
 "))
 
-(ert-deftest forward-sexp-with-adjacent-operators ()
+(sweeprolog-deftest forward-sexp-with-adjacent-operators ()
   "Tests detecting the fullstop in presence of `.=.'."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "a,+b.")
-    (goto-char (point-min))
-    (sweeprolog--forward-sexp)
-    (should (= (point) 2))
-    (goto-char (point-max))
-    (sweeprolog--backward-sexp)
-    (should (= (point) 4))))
+  "a,+b."
+  (goto-char (point-min))
+  (sweeprolog--forward-sexp)
+  (should (= (point) 2))
+  (goto-char (point-max))
+  (sweeprolog--backward-sexp)
+  (should (= (point) 4)))
 
-(ert-deftest usage-example-comment ()
+(sweeprolog-deftest usage-example-comment ()
   "Tests adding usage example comments."
-  (with-temp-buffer
-    (sweeprolog-mode)
-    (insert "\nfoo.")
-    (let ((source-buffer (current-buffer)))
-      (sweeprolog-make-example-usage-comment (point-min))
-      (insert "true; false.")
-      (comint-send-input)
-      (accept-process-output nil 1)
-      (sweeprolog-top-level-example-done)
-      (with-current-buffer source-buffer
-        (should (string= (buffer-string)
-                         "% ?- true; false.\n% true\u0020\nfoo."))))))
+  "\nfoo."
+  (let ((source-buffer (current-buffer)))
+    (sweeprolog-make-example-usage-comment (point-min))
+    (insert "true; false.")
+    (comint-send-input)
+    (accept-process-output nil 1)
+    (sweeprolog-top-level-example-done)
+    (with-current-buffer source-buffer
+      (should (string= (buffer-string)
+                       "% ?- true; false.\n% true\u0020\nfoo.")))))
 
-(ert-deftest add-log-current-defun ()
+(sweeprolog-deftest add-log-current-defun ()
   "Tests getting the predicate indicator at point."
-  (let ((temp (make-temp-file "sweeprolog-test"
-                              nil
-                              "pl"
-                              "
+  "
 foo(Bar) :-  baz(Bar).
 foo(Bar) --> baz(Bar).
 f:o(Bar) :-  baz(Bar).
-f:o(Bar) --> baz(Bar).")))
-    (find-file-literally temp)
-    (sweeprolog-mode)
-    (goto-char (point-min))
-    (forward-word)
-    (should (string= (add-log-current-defun) "foo/1"))
-    (forward-line)
-    (should (string= (add-log-current-defun) "foo//1"))
-    (forward-line)
-    (should (string= (add-log-current-defun) "f:o/1"))
-    (forward-line)
-    (should (string= (add-log-current-defun) "f:o//1"))))
+f:o(Bar) --> baz(Bar)."
+  (goto-char (point-min))
+  (forward-word)
+  (should (string= (add-log-current-defun) "foo/1"))
+  (forward-line)
+  (should (string= (add-log-current-defun) "foo//1"))
+  (forward-line)
+  (should (string= (add-log-current-defun) "f:o/1"))
+  (forward-line)
+  (should (string= (add-log-current-defun) "f:o//1")))
 
 ;;; sweeprolog-tests.el ends here
