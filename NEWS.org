@@ -11,7 +11,7 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
-* Version 0.22.0 in development
+* Version 0.22.0 on 2023-07-20
 
 ** New in-buffer completion implementation
 
