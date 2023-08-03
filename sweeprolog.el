@@ -541,7 +541,6 @@ for top-level buffers that don't belong to any project."
     map)
   "Local keymap for `sweeprolog-top-level-menu-mode' buffers.")
 
-;;;###autoload
 (defvar sweeprolog-help-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "m" #'sweeprolog-describe-module)
@@ -549,7 +548,6 @@ for top-level buffers that don't belong to any project."
     map)
   "Keymap for `sweeprolog' help commands.")
 
-;;;###autoload
 (defvar sweeprolog-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "B" #'sweeprolog-list-breakpoints)
