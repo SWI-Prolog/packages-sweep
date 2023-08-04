@@ -548,6 +548,9 @@ for top-level buffers that don't belong to any project."
     map)
   "Keymap for `sweeprolog' help commands.")
 
+;;;###autoload (autoload 'sweeprolog-help-prefix-map "sweeprolog" nil t 'keymap)
+(defalias 'sweeprolog-help-prefix-map sweeprolog-help-prefix-map)
+
 (defvar sweeprolog-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "B" #'sweeprolog-list-breakpoints)
@@ -566,6 +569,9 @@ for top-level buffers that don't belong to any project."
     (define-key map "&" #'sweeprolog-async-goal)
     map)
   "Keymap for `sweeprolog' global commands.")
+
+;;;###autoload (autoload 'sweeprolog-prefix-map "sweeprolog" nil t 'keymap)
+(defalias 'sweeprolog-prefix-map sweeprolog-prefix-map)
 
 (defvar sweeprolog-forward-hole-on-tab-mode-map
   (let ((map (make-sparse-keymap)))

@@ -2561,7 +2561,7 @@ keybinding for several useful Sweep commands.  By default,
 to a prefix key, e.g. =C-c p=, use:
 
 #+begin_src emacs-lisp
-  (keymap-global-set "C-c p" sweeprolog-prefix-map)
+  (keymap-global-set "C-c p" 'sweeprolog-prefix-map)
 #+end_src
 
 As an example, with the above binding the Sweep top-level can be
