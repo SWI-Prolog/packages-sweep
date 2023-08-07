@@ -2677,7 +2677,7 @@ patches, improvement suggestions, and general feedback.
 
 For a list of known desired improvements in Sweep, see [[*Things to do][Things to do]].
 
-** Setting up sweep for local development
+** Setting up Sweep for local development
 :PROPERTIES:
 :CUSTOM_ID: development-setup
 :DESCRIPTION: Instructions for preparing a local development environment for working on sweep
@@ -2718,14 +2718,17 @@ achieved with the following command executed in
 :PROPERTIES:
 :CUSTOM_ID: submitting-patches
 :DESCRIPTION: Commands for contacting the maintainers of this project
-:ALT_TITLE: Submitting Patches
+:ALT_TITLE: Bug Reports
 :END:
 
-The best way to get in touch with the Sweep maintainers is via [[https://lists.sr.ht/~eshel/dev][the
-sweep mailing list]].
+The best way to get in touch with the Sweep maintainers is via [[https://lists.sr.ht/~eshel/dev][the Sweep
+mailing list]].
 
 #+FINDEX: sweeprolog-submit-bug-report
-The command ~M-x sweeprolog-submit-bug-report~ can be used to easily
+- Command: sweeprolog-submit-bug-report :: Report a bug in Sweep to
+  the maintainers via mail.
+
+You can use the command ~M-x sweeprolog-submit-bug-report~ to easily
 contact the Sweep maintainers from within Emacs.  This command opens a
 new buffer with a message template ready to be sent to the Sweep
 mailing list.

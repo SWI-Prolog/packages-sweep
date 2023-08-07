@@ -648,8 +648,9 @@ for top-level buffers that don't belong to any project."
     "--"
     [ "Reset Sweep" sweeprolog-restart t ]
     [ "View Messages" sweeprolog-view-messages t ]
-    [ "Read the Sweep Manual" sweeprolog-info-manual t]
-    [ "Sweep News" sweeprolog-view-news t]))
+    [ "Read the Sweep Manual" sweeprolog-info-manual t ]
+    [ "Sweep News" sweeprolog-view-news t ]
+    [ "Report Bug" sweeprolog-submit-bug-report t ]))
 
 
 ;;;; Local variables
@@ -6908,6 +6909,40 @@ This function is used as a `add-log-current-defun-function' in
               ind "//"))
       (concat (when mod (concat mod ":"))
               fun ind (number-to-string ari)))))
+
+
+;;;; Bug Reports
+
+(defvar reporter-prompt-for-summary-p)
+
+(defun sweeprolog-submit-bug-report ()
+  "Report a bug in Sweep to the maintainers via mail."
+  (interactive)
+  (require 'reporter)
+  (let ((version
+         (with-current-buffer (find-file-noselect
+                               (expand-file-name "sweeprolog.el"
+                                                 sweeprolog--directory))
+           (package-get-version)))
+        (reporter-prompt-for-summary-p t))
+    (reporter-submit-bug-report
+     "Sweep Development <~eshel/dev@lists.sr.ht>"
+     (format "Sweep v%s" version)
+     '(sweeprolog--directory
+       sweeprolog--initialized
+       sweeprolog-init-args
+       sweeprolog-swipl-path
+       sweeprolog-libswipl-path
+       system-configuration-features)
+     nil nil
+     (propertize " "
+                 'display
+                 (propertize
+                  "Insert your bug report below.
+If possible, specify where you got Emacs, SWI-Prolog and Sweep,
+and include a recipe for reproducing your issue.
+[This line and the above text are not included in your report.]"
+                  'face 'italic)))))
 
 ;;;; Footer
 
