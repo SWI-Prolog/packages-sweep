@@ -230,6 +230,11 @@ customization options.
 You can also view an HTML version of this manual online at
 [[https://eshelyaron.com/sweep.html]].
 
+To learn about recent changes and new features in Sweep, check out the NEWS file
+that comes with Sweep.  You can open it with the command ~sweeprolog-view-news~:
+
+- Command: sweeprolog-view-news :: View the Sweep NEWS file.
+
 * Prolog Initialization and Cleanup
 :PROPERTIES:
 :CUSTOM_ID: prolog-init
@@ -2547,7 +2552,7 @@ commands include:
 - ~s~ (~help-view-source~) in the =*Help*= buffer produced by ~M-x
   sweeprolog-describe-predicate~ (see [[#prolog-help][Prolog Help]]).
 
-* Quick access to sweep commands
+* Quick access to Sweep commands
 :PROPERTIES:
 :CUSTOM_ID: quick-command-access
 :DESCRIPTION: Keymap for useful commands that can be invoked from any buffer
@@ -2555,38 +2560,38 @@ commands include:
 :END:
 
 #+VINDEX: sweeprolog-prefix-map
-Sweep defines a keymap called =sweeprolog-prefix-map= which provides
-keybinding for several useful Sweep commands.  By default,
-=sweeprolog-prefix-map= itself is not bound to any key.  To bind it globally
-to a prefix key, e.g. =C-c p=, use:
+Sweep defines a keymap called ~sweeprolog-prefix-map~ that provides global
+keybindings for several useful Sweep commands.  By default,
+~sweeprolog-prefix-map~ itself is not bound to any key.  To bind it to ~C-c p~,
+add the following to your Emacs configuration:
 
 #+begin_src emacs-lisp
   (keymap-global-set "C-c p" 'sweeprolog-prefix-map)
 #+end_src
 
-As an example, with the above binding the Sweep top-level can be
-accessed from anywhere with =C-c p t=, which invokes the command
-=sweeprolog-top-level=.
+~C-c p~ is the recommended binding for ~sweeprolog-prefix-map~, but you're free
+to pick any key sequence you like.  As an example, with the above binding you
+can access the Sweep top-level from anywhere with ~C-c p t~.
 
-The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
+The full list of keybindings in ~sweeprolog-prefix-map~, assuming the
+recommended key binding, is given below:
 
-| Key   | Command                                | Documentation                     |
-|-------+----------------------------------------+-----------------------------------|
-| ~B~   | ~sweeprolog-list-breakpoints~          | [[#breakpoint-menu][Breakpoint Menu]]                   |
-| ~F~   | ~sweeprolog-set-prolog-flag~           | [[*Setting Prolog flags][Setting Prolog Flags]]              |
-| ~P~   | ~sweeprolog-pack-install~              | [[*Installing Prolog packages][Installing Prolog packages]]        |
-| ~R~   | ~sweeprolog-restart~                   | [[#prolog-init][Prolog Initialization and Cleanup]] |
-| ~T~   | ~sweeprolog-list-top-levels~           | [[#top-level-menu][The Top-level Menu Buffer]]         |
-| ~X~   | ~sweeprolog-xref-project-source-files~ | [[#sweeprolog-xref][Definitions and References]]        |
-| ~e~   | ~sweeprolog-view-messages~             | [[#prolog-messages][Examining Prolog Messages]]         |
-| ~h p~ | ~sweeprolog-describe-predicate~        | [[#prolog-help][Prolog Help]]                       |
-| ~h m~ | ~sweeprolog-describe-module~           | [[*Prolog Help][Prolog Help]]                       |
-| ~l~   | ~sweeprolog-load-buffer~               | [[#loading-buffers][Loading Buffers]]                   |
-| ~m~   | ~sweeprolog-find-module~               | [[#finding-prolog-code][Finding Prolog Code]]               |
-| ~p~   | ~sweeprolog-find-predicate~            | [[*Finding Prolog Code][Finding Prolog Code]]               |
-| ~q~   | ~sweeprolog-top-level-send-goal~       | [[#top-level-send-goal][Sending Goals to the Top-level]]    |
-| ~t~   | ~sweeprolog-top-level~                 | [[#prolog-top-level][The Prolog Top-level]]              |
-| ~&~   | ~sweeprolog-async-goal~                | [[#async-query][Executing Prolog Asynchronously]]   |
+- Key: C-c p m (sweeprolog-find-module) :: See [[#finding-prolog-code][Finding Prolog Code]].
+- Key: C-c p p (sweeprolog-find-predicate) :: See [[#finding-prolog-code][Finding Prolog Code]].
+- Key: C-c p t (sweeprolog-top-level) :: See [[#prolog-top-level][The Prolog Top-Level]].
+- Key: C-c p q (sweeprolog-top-level-send-goal) :: See [[#top-level-send-goal][Sending Goals to the Top-level]].
+- Key: C-c p l (sweeprolog-load-buffer) :: See [[#loading-buffers][Loading Buffers]].
+- Key: C-c p & (sweeprolog-async-goal) :: See [[#async-query][Executing Prolog Asynchronously]].
+- Key: C-c p B (sweeprolog-list-breakpoints) :: See [[#breakpoint-menu][Breakpoint Menu]].
+- Key: C-c p P (sweeprolog-pack-install) :: See [[#prolog-packages][Installing Prolog Packages]].
+- Key: C-c p R (sweeprolog-restart) :: See [[#prolog-init][Prolog Initialization and Cleanup]].
+- Key: C-c p F (sweeprolog-set-prolog-flag) :: See [[#prolog-flags][Setting Prolog flags]].
+- Key: C-c p T (sweeprolog-list-top-levels) :: See [[#top-level-menu][The Top-level Menu buffer]].
+- Key: C-c p X (sweeprolog-xref-project-source-files) :: See [[#sweeprolog-xref][Definitions and References]].
+- Key: C-c p h m (sweeprolog-describe-module) :: See [[#prolog-help][Prolog Help]].
+- Key: C-c p h p (sweeprolog-describe-predicate) :: See [[#prolog-help][Prolog Help]].
+- Key: C-c p h e (sweeprolog-view-messages) :: See [[#prolog-messages][Examining Prolog messages]].
+- Key: C-c p h n (sweeprolog-view-news) :: See [[#discovering-sweep][Discovering Sweep]].
 
 * Examining Prolog messages
 :PROPERTIES:
@@ -2597,22 +2602,22 @@ The full list of keybindings in ~sweeprolog-prefix-map~ is given below:
 
 #+CINDEX: messages
 #+VINDEX: sweeprolog-messages-buffer-name
-Messages emitted by the embedded Prolog are redirected by Sweep to a
-dedicated Emacs buffer.  By default, the Sweep messages buffer is
-named =*sweep Messages*=.  To instruct Sweep to use another buffer name
-instead, type =M-x customize-option RET sweeprolog-messages-buffer-name RET=
-and set the option to a suitable value.
+Sweep redirects messages that the embedded Prolog runtime emits to a
+dedicated Emacs buffer.  By default, the Sweep messages buffer is named
+=*sweep Messages*=.  To instruct Sweep to use another buffer name
+instead, customize the user option ~sweeprolog-messages-buffer-name~ to
+a suitable value.
 
-The Sweep messages buffer uses the minor mode =compilation-minor-mode=,
-which allows for jumping to source locations indicated in errors and
-warning directly from the corresponding message in the Sweep messages
-buffer.  For more information about the features enabled by
-=compilation-minor-mode=, see [[info:emacs#Compilation Mode][Compilation Mode in the Emacs manual]].
+In,The Sweep messages buffer enables the minor mode
+~compilation-minor-mode~ ([[info:emacs#Compilation Mode][Compilation Mode]]).  This let's you jump to
+source locations that appear in errors and warning by clicking on them.
 
 #+FINDEX: sweeprolog-view-messages
-Sweep includes the command =sweeprolog-view-messages= for quickly switching
-to the Sweep messages buffer.  This command is bound by default in
-=sweeprolog-prefix-map= to the =e= key (see [[Quick access to sweep commands]]).
+- Command: sweeprolog-view-messages :: Display the Sweep messages buffer.
+
+You can use the command ~sweeprolog-view-messages~ to display the Sweep
+messages buffer.  This command is bound to ~e~ in
+~sweeprolog-prefix-map~ ([[#quick-command-access][Quick access to Sweep commands]]).
 
 * Setting Prolog flags
 :PROPERTIES:
@@ -2652,7 +2657,7 @@ Evaluating =A = "foo"= again exhibits the different interpretation:
 A = [102, 111, 111].
 #+end_src
 
-* Installing Prolog packages
+* Installing Prolog Packages
 :PROPERTIES:
 :CUSTOM_ID: prolog-packages
 :DESCRIPTION: Commands for installing SWI-Prolog add-ons
@@ -2668,7 +2673,6 @@ following command:
 This command prompts from a pack name, with completion, and installs it
 or upgrades it to the latest available version.  (See also [[https://www.swi-prolog.org/pldoc/man?section=packs][Packs]] in the
 SWI-Prolog manual.)
-
 
 * Contributing
 :PROPERTIES:

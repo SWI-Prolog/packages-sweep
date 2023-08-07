@@ -554,6 +554,8 @@ pack completion candidates."
   (let ((map (make-sparse-keymap)))
     (define-key map "m" #'sweeprolog-describe-module)
     (define-key map "p" #'sweeprolog-describe-predicate)
+    (define-key map "e" #'sweeprolog-view-messages)
+    (define-key map "n" #'sweeprolog-view-news)
     map)
   "Keymap for `sweeprolog' help commands.")
 
@@ -568,8 +570,7 @@ pack completion candidates."
     (define-key map "R" #'sweeprolog-restart)
     (define-key map "T" #'sweeprolog-list-top-levels)
     (define-key map "X" #'sweeprolog-xref-project-source-files)
-    (define-key map "e" #'sweeprolog-view-messages)
-    (define-key map "h" sweeprolog-help-prefix-map)
+    (define-key map "h" 'sweeprolog-help-prefix-map)
     (define-key map "l" #'sweeprolog-load-buffer)
     (define-key map "m" #'sweeprolog-find-module)
     (define-key map "p" #'sweeprolog-find-predicate)
