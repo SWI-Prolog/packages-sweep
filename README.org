@@ -2659,11 +2659,16 @@ A = [102, 111, 111].
 :ALT_TITLE: Prolog Packages
 :END:
 
+You can install SWI-Prolog add-ons, also known as /packs/, with the
+following command:
+
 #+FINDEX: sweeprolog-pack-install
-The command =M-x sweeprolog-pack-install= can be used to install
-or upgrade a SWI-Prolog =pack=. When selecting a =pack= to install, the
-completion candidates are annotated with description and the version
-of each package.
+- Command: sweeprolog-pack-install :: Install or upgrade a Prolog pack.
+
+This command prompts from a pack name, with completion, and installs it
+or upgrades it to the latest available version.  (See also [[https://www.swi-prolog.org/pldoc/man?section=packs][Packs]] in the
+SWI-Prolog manual.)
+
 
 * Contributing
 :PROPERTIES:

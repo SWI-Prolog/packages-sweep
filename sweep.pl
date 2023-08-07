@@ -555,8 +555,9 @@ sweep_pack_info(pack(Name0, _, Desc0, Version0, URLS0), [Name, Desc, Version, UR
     atom_string(Version0, Version),
     maplist(atom_string, URLS0, URLS).
 
-sweep_pack_install(PackName, []) :-
-    atom_string(Pack, PackName), pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
+sweep_pack_install(PackName, true) :-
+    atom_string(Pack, PackName),
+    pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
 
 sweep_colourise_query([String|Offset], _) :-
     prolog_colourise_query(String, module(sweep), sweep_handle_fragment_(Offset)).

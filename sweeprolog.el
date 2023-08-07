@@ -479,6 +479,15 @@ for top-level buffers that don't belong to any project."
                  (string   :tag "History file name")
                  (function :tag "Function returning history file name")))
 
+(defcustom sweeprolog-pack-description-max-width 80
+  "Maximum pack description width to display during completion.
+
+This is an integer specifying a string width at which
+`sweeprolog-pack-install' truncates pack descriptions annotating
+pack completion candidates."
+  :package-version '((sweeprolog "0.22.2"))
+  :type 'integer)
+
 ;;;; Keymaps
 
 (defvar sweeprolog-mode-map
@@ -1741,16 +1750,28 @@ inside a comment, string or quoted atom."
 (defun sweeprolog-read-pack-name ()
   "Read a Prolog pack name from the minibuffer, with completion."
   (let* ((col (sweeprolog-packs-collection))
+         (max-pack (seq-max (mapcar #'string-width (mapcar #'car col))))
+         (max-desc (min sweeprolog-pack-description-max-width
+                        (seq-max (mapcar #'string-width
+                                         (mapcar #'cadr col)))))
          (completion-extra-properties
           (list :annotation-function
-                (lambda (key)
-                  (let* ((val (cdr (assoc-string key col)))
-                         (des (car val))
-                         (ver (cadr val)))
-                    (concat (make-string (max 0 (- 32 (length key))) ? )
-                            (if des
-                                (concat ver (make-string (max 0 (- 16 (length ver))) ? ) des)
-                              ver)))))))
+                (lambda (pack)
+                  (message pack)
+                  (let* ((info (alist-get pack col nil nil #'string=))
+                         (des (car info))
+                         (ver (cadr info)))
+                    (concat
+                     (propertize " " 'display
+                                 `(space :align-to
+                                         ,(+ 2 max-pack)))
+                     (truncate-string-to-width
+                      des sweeprolog-pack-description-max-width
+                      nil nil t)
+                     (propertize " " 'display
+                                 `(space :align-to
+                                         ,(+ 2 max-pack 2 max-desc)))
+                     ver))))))
     (completing-read sweeprolog-read-pack-prompt col)))
 
 ;;;###autoload
