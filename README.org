@@ -2608,7 +2608,7 @@ dedicated Emacs buffer.  By default, the Sweep messages buffer is named
 instead, customize the user option ~sweeprolog-messages-buffer-name~ to
 a suitable value.
 
-In,The Sweep messages buffer enables the minor mode
+The Sweep messages buffer enables the minor mode
 ~compilation-minor-mode~ ([[info:emacs#Compilation Mode][Compilation Mode]]).  This let's you jump to
 source locations that appear in errors and warning by clicking on them.
 
@@ -2616,7 +2616,7 @@ source locations that appear in errors and warning by clicking on them.
 - Command: sweeprolog-view-messages :: Display the Sweep messages buffer.
 
 You can use the command ~sweeprolog-view-messages~ to display the Sweep
-messages buffer.  This command is bound to ~e~ in
+messages buffer.  This command is bound to ~h e~ in
 ~sweeprolog-prefix-map~ ([[#quick-command-access][Quick access to Sweep commands]]).
 
 * Setting Prolog flags
