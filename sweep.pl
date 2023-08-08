@@ -179,7 +179,7 @@ sweep_current_prolog_flags(Sub, Flags) :-
              term_string(Value0, Value)),
             Flags).
 
-sweep_set_prolog_flag([Flag0|Value0], []) :-
+sweep_set_prolog_flag([Flag0|Value0], true) :-
     atom_string(Flag, Flag0),
     term_string(Value, Value0),
     set_prolog_flag(Flag, Value).
