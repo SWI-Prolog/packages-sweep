@@ -109,15 +109,14 @@ Prolog token as returned from `sweeprolog-last-token-boundaries'.")
 (defcustom sweeprolog-swipl-sources t
   "Location of the SWI-Prolog source code root directory.
 
-When non-nil, the function `sweeprolog-predicate-location' will
-attempt to find the C definitions of SWI-Prolog native built-in
+When non-nil, the function `sweeprolog-predicate-location'
+attempts to find the C definitions of SWI-Prolog native built-in
 predicates.
 
 The value of this option can be a string, in which case it should
-be a path to the SWI-Prolog source code root directory.  Any
-other non-nil value instructs `sweeprolog-predicate-location' to
-try and find the SWI-Prolog sources among known project roots
-obtained from `project-known-project-roots', which see."
+be the name of the SWI-Prolog source code root directory.  Any
+other non-nil value says to try and find the SWI-Prolog sources
+among the directories that `project-known-project-roots' returns."
   :package-version '((sweeprolog . "0.7.1"))
   :type '(choice (const  :tag "Detect"  t)
                  (string :tag "Manual")

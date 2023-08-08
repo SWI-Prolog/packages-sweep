@@ -933,8 +933,8 @@ the cursor:
        ^
 #+end_src
 
-Calling ~M-x sweeprolog-align-spaces~ will insert three spaces, to yield
-the expected layout:
+Calling ~M-x sweeprolog-align-spaces~ inserts three spaces, to yield the
+expected layout:
 
 #+begin_src prolog
   foo :-
@@ -1323,8 +1323,8 @@ Prolog file buffer with the common directive ~use_module/1~:
   :- use_module(library(lists)).
 #+end_src
 
-With point in any position inside ~library(lists)~, typing ~C-c C-o~ will
-open the =lists.pl= file in the Prolog library.
+With point in any position inside ~library(lists)~, typing ~C-c C-o~
+opens the =lists.pl= file in the Prolog library.
 
 Sweep also extends Emacs's ~file-name-at-point-functions~ hook with the
 function ~sweeprolog-file-at-point~ that returns the resolved Prolog
@@ -1690,7 +1690,7 @@ export list of the current module, use the command ~C-c C-e~
 (~sweeprolog-export-predicate~).  If the current predicate is documented
 with a =PlDoc= comment, a comment with the predicate's mode is added
 after the predicate name in the export list.  If point is not near a
-predicate definition, calling ~sweeprolog-export-predicate~ will prompt
+predicate definition, calling ~sweeprolog-export-predicate~ prompts
 for a predicate to export, providing completion candidates based on
 the non-exported predicates defined in the current buffer.  To force
 prompting for a predicate, invoke ~sweeprolog-export-predicate~ with a
@@ -2206,12 +2206,12 @@ This is the only Sweep feature that should be avoided in such cases.
 
 Any number of top-levels can be created and used concurrently, each in
 its own buffer.  If a top-level buffer already exists, =sweeprolog-top-level=
-will simply open it by default.  To create another one or more
+simply opens it by default.  To create another one or more
 top-level buffers, run =sweeprolog-top-level= with a prefix argument
 (i.e. =C-u M-x sweeprolog-top-level-mode=) to choose a different buffer name.
 Alternatively, run the command =C-x x u= (or =M-x rename-uniquely=) in the
 buffer called =*sweeprolog-top-level*= and then run =M-x sweeprolog-top-level=
-again.  This will change the name of the original top-level buffer to
+again.  This changes the name of the original top-level buffer to
 something like =*sweeprolog-top-level*<2>= and allow the new top-level to
 claim the buffer name =*sweeprolog-top-level*=.
 
@@ -2230,7 +2230,7 @@ table that includes information and statistics for each top-level.
 
 #+FINDEX: sweeprolog-list-top-levels
 To open the Top-level Menu buffer, use the command ~M-x
-sweeprolog-list-top-levels~.  By default, the buffer is will be named
+sweeprolog-list-top-levels~.  By default, the buffer is called
 =*sweep Top-levels*=.
 
 The Top-level Menu buffer uses a special major mode named
@@ -2373,20 +2373,18 @@ more information see [[info:emacs#Symbol Completion][Symbol Completion in the Em
 :END:
 
 Many standard SWI-Prolog facilities generate messages that refer to
-specific source code locations.  For example, loading a Prolog file
-that contains singleton variables into the top-level will produce
-warning messages pointing to the starting line of the clauses where
-the singleton variables occur.  If you enable
-~compilation-shell-minor-mode~ in the top-level buffer, Emacs recognizes
-the Prolog messages that refer to source locations and provides
-convenient commands for visiting such source locations from the
-top-level buffer.  For more information about
-~compilation-shell-minor-mode~, see [[info:emacs#Compilation Mode][Compilation Mode]] in the Emacs
-manual.
+specific source code locations.  For example, loading a Prolog file that
+contains singleton variables into the top-level produces warning
+messages pointing to the starting line of the clauses where the
+singleton variables occur.  If you enable ~compilation-shell-minor-mode~
+in the top-level buffer, Emacs recognizes the Prolog messages that refer
+to source locations and provides convenient commands for visiting such
+source locations from the top-level buffer.  For more information about
+~compilation-shell-minor-mode~, see [[info:emacs#Compilation Mode][Compilation Mode]].
 
 To use ~compilation-shell-minor-mode~ automatically in all top-level
-buffers, you can arrange for it to be enabled as part of the
-~sweeprolog-top-level-mode~ hook, as follows:
+buffers, you can arrange for the ~sweeprolog-top-level-mode~ hook to
+enable it as follows:
 
 #+begin_src emacs-lisp
   (add-hook 'sweeprolog-top-level-mode-hook
@@ -2401,11 +2399,15 @@ buffers, you can arrange for it to be enabled as part of the
 :ALT_TITLE: Send to Top-level
 :END:
 
-#+FINDEX: sweeprolog-top-level-send-goal
 You can send a goal to execute in a Prolog top-level from any buffer
-with the command ~M-x sweeprolog-top-level-send-goal~.  This command
-prompts for a Prolog goal in the minibuffer, executes it in a
-top-level buffer and displays that buffer if it's not already visible.
+with the command ~M-x sweeprolog-top-level-send-goal~.
+
+#+FINDEX: sweeprolog-top-level-send-goal
+- Key: C-c C-q (sweeprolog-top-level-send-goal) :: Execute a Prolog goal
+  in a top-level buffer and display that buffer.
+
+This command prompts for a Prolog goal in the minibuffer, executes it in
+a top-level buffer and displays that buffer if it's not already visible.
 While inserting the goal in the minibuffer, you can use ~TAB~ (or ~C-i~)
 to get completion suggestions.
 
@@ -2461,7 +2463,7 @@ require Emacs 28 or later and SWI-Prolog 9.1.4 or later.
 :ALT_TITLE: Finding Prolog Code
 :END:
 
-The following commands let you find and jump to Prolog code from
+The following commands let you jump to a piece of Prolog code from
 anywhere in Emacs:
 
 #+FINDEX: sweeprolog-find-module
@@ -2503,15 +2505,15 @@ candidates, customize the user option
 :ALT_TITLE: File Spec Expansion
 :END:
 
-Sweep defines a handler for the Emacs function =expand-file-name= that
-recognizes Prolog file specifications, such as =library(lists)=, and
-expands them to their corresponding absolute paths.  This means that
-one can use Prolog file specifications with Emacs's standard =find-file=
-(=C-x C-f=) to locate Prolog resources directly.
+Sweep defines a handler for the Emacs function ~expand-file-name~ that
+recognizes Prolog file specifications, such as ~library(lists)~, and
+expands them to their corresponding absolute paths.  This means that you
+can use Prolog file specifications with Emacs's standard ~find-file~
+(~C-x C-f~) to locate Prolog resources directly.
 
-For example, typing =C-x C-f library(pldoc/doc_man)= will open the
-source of the =pldoc_man= module from the Prolog library, and likewise
-=C-x C-f pack(.)= will open the Prolog packages directory.
+For example, typing ~C-x C-f library(pldoc/doc_man)~ opens the source of
+the ~pldoc_man~ module from the Prolog library, and ~C-x C-f pack(.)~
+opens the Prolog packages directory.
 
 ** Built-in Native Predicates
 :PROPERTIES:
@@ -2530,29 +2532,29 @@ native built-ins, and can find and jump to their definitions in C when
 the user has the SWI-Prolog sources checked out locally.
 
 #+VINDEX: sweeprolog-swipl-sources
+- User Option: sweeprolog-swipl-sources :: Location of the SWI-Prolog
+  source code root directory.
+
 The way Sweep locates the SWI-Prolog sources depends on the user
-option ~sweeprolog-swipl-sources~.  When customized to a string, it is
-taken to be the path to the root directory of the SWI-Prolog source
-code.  If instead ~sweeprolog-swipl-sources~ is set to ~t~ (the
-default), Sweep will try to locate a local checkout of the SWI-Prolog
-sources automatically among known project root directories provided by
-Emacs's built-in ~project-known-project-roots~ from =project.el= (see
-[[info:emacs#Projects][Projects]] in the Emacs manual for more information about =project.el=
-projects).  Lastly, setting ~sweeprolog-swipl-sources~ to ~nil~
-disables searching for definitions of native built-ins.
+option ~sweeprolog-swipl-sources~.  Setting it to ~nil~ disables
+searching for definitions of native built-ins altogether.  To point
+Sweep to the root directory of the SWI-Prolog source code, set
+~sweeprolog-swipl-sources~ to the name of that directory.  Any
+non-~nil~ non-string value says to try and locate a checkout of the
+SWI-Prolog sources among known project root directories (Sweep
+consults Emacs's built-in ~project-known-project-roots~ to find your
+project roots, see also [[info:emacs#Projects][Projects]] in the Emacs manual).
 
 With ~sweeprolog-swipl-sources~ set, the provided commands for finding
 predicate definitions operate seamlessly on native built-ins to
-display their C definitions in ~c-mode~ buffers (see [[info:ccmode#Top][the Emacs CC Mode
-manual]] for information about working with C code in Emacs).  These
-commands include:
+display their C definitions.  These commands include:
 - ~M-x sweeprolog-find-predicate~,
-- ~M-.~ (~xref-find-definitions~) in ~sweeprolog-mode~ buffers (see
-  [[#sweeprolog-xref][Definitions and References]]), and
-- ~s~ (~help-view-source~) in the =*Help*= buffer produced by ~M-x
-  sweeprolog-describe-predicate~ (see [[#prolog-help][Prolog Help]]).
+- ~M-.~ (~xref-find-definitions~) in ~sweeprolog-mode~
+  buffers ([[#sweeprolog-xref][Definitions and References]]), and
+- ~s~ (~help-view-source~) in the =*Help*= buffer produced by
+  ~M-x sweeprolog-describe-predicate~ ([[#prolog-help][Prolog Help]]).
 
-* Quick access to Sweep commands
+* Quick Access to Sweep Commands
 :PROPERTIES:
 :CUSTOM_ID: quick-command-access
 :DESCRIPTION: Keymap for useful commands that can be invoked from any buffer
@@ -2585,15 +2587,15 @@ recommended key binding, is given below:
 - Key: C-c p B (sweeprolog-list-breakpoints) :: See [[#breakpoint-menu][Breakpoint Menu]].
 - Key: C-c p P (sweeprolog-pack-install) :: See [[#prolog-packages][Installing Prolog Packages]].
 - Key: C-c p R (sweeprolog-restart) :: See [[#prolog-init][Prolog Initialization and Cleanup]].
-- Key: C-c p F (sweeprolog-set-prolog-flag) :: See [[#prolog-flags][Setting Prolog flags]].
+- Key: C-c p F (sweeprolog-set-prolog-flag) :: See [[#prolog-flags][Setting Prolog Flags]].
 - Key: C-c p T (sweeprolog-list-top-levels) :: See [[#top-level-menu][The Top-level Menu buffer]].
 - Key: C-c p X (sweeprolog-xref-project-source-files) :: See [[#sweeprolog-xref][Definitions and References]].
 - Key: C-c p h m (sweeprolog-describe-module) :: See [[#prolog-help][Prolog Help]].
 - Key: C-c p h p (sweeprolog-describe-predicate) :: See [[#prolog-help][Prolog Help]].
-- Key: C-c p h e (sweeprolog-view-messages) :: See [[#prolog-messages][Examining Prolog messages]].
+- Key: C-c p h e (sweeprolog-view-messages) :: See [[#prolog-messages][Examining Prolog Messages]].
 - Key: C-c p h n (sweeprolog-view-news) :: See [[#discovering-sweep][Discovering Sweep]].
 
-* Examining Prolog messages
+* Examining Prolog Messages
 :PROPERTIES:
 :CUSTOM_ID: prolog-messages
 :DESCRIPTION: Messages emitted in the embedded Prolog runtime and how to display them
@@ -2617,9 +2619,9 @@ source locations that appear in errors and warning by clicking on them.
 
 You can use the command ~sweeprolog-view-messages~ to display the Sweep
 messages buffer.  This command is bound to ~h e~ in
-~sweeprolog-prefix-map~ ([[#quick-command-access][Quick access to Sweep commands]]).
+~sweeprolog-prefix-map~ ([[#quick-command-access][Quick Access to Sweep Commands]]).
 
-* Setting Prolog flags
+* Setting Prolog Flags
 :PROPERTIES:
 :CUSTOM_ID: prolog-flags
 :DESCRIPTION: Commands for modifying the configuration of the embedded Prolog runtime by setting Prolog flags
@@ -2627,20 +2629,26 @@ messages buffer.  This command is bound to ~h e~ in
 :END:
 
 #+CINDEX: prolog flags
+SWI-Prolog has a set of /flags/ that let you examine and configure the
+Prolog execution runtime.  You can set Prolog flags from Emacs directly
+with the following command:
+
 #+FINDEX: sweeprolog-set-prolog-flag
-The command =M-x sweeprolog-set-prolog-flag= can be used to interactively
-configure the embedded Prolog execution environment by changing the
-values of Prolog flags.  This command first prompts the user for a
-Prolog flag to set, with completion candidates annotated with their
-current values as Prolog flags, and then prompts for a string that
-will be read as a Prolog term and set as the value of the chosen flag.
-For more information on Prolog flags in SWI-Prolog see [[https://www.swi-prolog.org/pldoc/man?section=flags][Environment
+- Command: sweeprolog-set-prolog-flag :: Set the value of a Prolog flag.
+
+This command let's you interactively configure the embedded Prolog
+execution environment by changing the values of Prolog flags.  It
+prompts you for a Prolog flag, with completion candidates annotated with
+their current values.  Then, it prompts again for a Prolog term and sets
+the flag's value to that term.
+
+For more information about Prolog flags in SWI-Prolog, see [[https://www.swi-prolog.org/pldoc/man?section=flags][Environment
 Control in the SWI-Prolog manual]].
 
 As an example, the Prolog flag =double_quotes= controls the
 interpretation of double quotes in Prolog code.  By default,
-=double_quotes= is set to =string=, so e.g. ="foo"= is read as a SWI-Prolog
-string as we can easily validate in the Sweep top-level:
+=double_quotes= is set to =string=, so e.g. ="foo"= is read as a
+SWI-Prolog string as we can easily validate in the Sweep top-level:
 
 #+begin_src prolog
 ?- A = "foo".
@@ -2656,6 +2664,11 @@ Evaluating =A = "foo"= again exhibits the different interpretation:
 ?- A = "foo".
 A = [102, 111, 111].
 #+end_src
+
+Note that some flags have a thread-local value, and
+~sweeprolog-set-prolog-flag~ always operates only on the main thread.
+To set flags in an existing top-level thread, use the predicate
+~set_prolog_flag/2~ directly in that top-level.
 
 * Installing Prolog Packages
 :PROPERTIES:
