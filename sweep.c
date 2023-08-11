@@ -37,7 +37,15 @@
 #include <stdio.h>
 #include <string.h>
 
-int plugin_is_GPL_compatible;
+#if HAVE_DECLSPEC
+#define EXPORT __declspec(dllexport)
+#elif HAVE_VISIBILITY_ATTRIBUTE
+#define EXPORT __attribute__((visibility("default")))
+#else
+#define EXPORT
+#endif
+
+EXPORT int plugin_is_GPL_compatible;
 
 struct sweep_env {
   term_t      output_term;
@@ -618,7 +626,7 @@ static void provide(emacs_env *env, const char *feature) {
   env->funcall(env, Qprovide, 1, (emacs_value[]){Qfeat});
 }
 
-int
+EXPORT int
 emacs_module_init (struct emacs_runtime *runtime)
 {
   emacs_env *env = runtime->get_environment (runtime);
