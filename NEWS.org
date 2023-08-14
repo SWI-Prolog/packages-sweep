@@ -11,6 +11,19 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.22.2 on 2023-08-14
+
+** Fix potential crash due to a collision between Xwidgets and XPCE
+
+This version fixes an issue that could cause Emacs to crash during
+certain Sweep operations if Emacs is built with Xwidgets and
+SWI-Prolog is built with XPCE.
+
+** Fix feedback in ~sweeprolog-set-prolog-flag~ and ~sweeprolog-set-pack-install~
+
+In previous versions, these commands could report failure even when they in fact
+succeeded.  This version fixes the feedback these commands provide.
+
 * Version 0.22.1 on 2023-08-07
 
 ** New command ~sweeprolog-submit-bug-report~
