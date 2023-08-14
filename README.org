@@ -268,27 +268,32 @@ its customization options in Sweep:
 #+FINDEX: sweeprolog-restart
 - Command: sweeprolog-restart :: Restart the embedded Prolog runtime.
 
-In Sweep, Prolog initialization is done via
-the C-implemented =sweeprolog-initialize= Elisp function defined in
-=sweep-module=.  =sweeprolog-initialize= takes one or more arguments, which
-must all be strings, and initializes the embedded Prolog as if it were
-invoked externally in a command line with the given strings as command
-line arguments, where the first argument to =sweeprolog-initialize=
-corresponds to =argv[0]=.
+In Sweep, Prolog initialization is done via the C-implemented
+~sweeprolog-initialize~ Elisp function defined in ~sweep-module~.
+~sweeprolog-initialize~ takes one or more string arguments and
+initializes the embedded Prolog as if it were invoked externally in a
+command line with the given strings as command line arguments, where
+the first argument to ~sweeprolog-initialize~ corresponds to
+~argv[0]~.
 
 Sweep loads and initializes Prolog on-demand at the first invocation
-of a command that requires the embedded Prolog.  The arguments used to
-initialize Prolog are then determined by the value of the user-option
-~sweeprolog-init-args~ which the user is free to extend with e.g.:
+of a command that requires the embedded Prolog.  The user option
+~sweeprolog-init-args~ says which arguments to pass to Prolog
+initialization.  Its value is a list of strings that you can extend if
+you want to pass specific command line flags SWI-Prolog.  For example,
+to limit the embedded Prolog stack to 512 MB, add the following to
+your Emacs configuration:
 
 #+begin_src emacs-lisp
-  (add-to-list 'sweeprolog-init-args "--stack-limit=512m")
+  (with-eval-after-load 'sweeprolog
+    (push "--stack-limit=512m" sweeprolog-init-args))
 #+end_src
 
 #+CINDEX: sweep Prolog flag
 The default value of ~sweeprolog-init-args~ is set to load the Prolog
-helper library =sweep.pl= and to create a boolean Prolog flag Sweep, set
-to ~true~, which indicates to SWI-Prolog that it is running under Sweep.
+helper library =sweep.pl= and to create a boolean Prolog flag called
+~sweep~ with value ~true~.  You can check for this flag in Prolog code
+to detect at runtime that you're running under Sweep.
 
 #+CINDEX: command line arguments
 It is also possible to specify initialization arguments to SWI-Prolog

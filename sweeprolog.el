@@ -284,16 +284,35 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
                          " regardless of the value of this option.")
                         "sweeprolog version 0.7.2")
 
-(defcustom sweeprolog-init-args (list "-q"
-                                      "--no-signals"
-                                      "-g"
-                                      "create_prolog_flag(sweep,true,[access(read_only),type(boolean)])"
-                                      "-l"
-                                      (expand-file-name
-                                       "sweep.pl"
-                                       sweeprolog--directory))
+(defcustom sweeprolog-init-args
+  (append
+   (when (and (featurep 'xwidget-internal)
+              (when-let (swipl (or sweeprolog-swipl-path
+                                   (executable-find "swipl")))
+                (<= 90114               ; first SWI-Prolog version to
+                                        ; hide XPCE private symbols
+                    (string-to-number
+                     (with-output-to-string
+                       (with-current-buffer standard-output
+                         (call-process swipl
+                                       nil '(t nil) nil
+                                       "-g"
+                                       "current_prolog_flag(version, V), writeln(V)"
+                                       "-t" "halt")))))))
+     ;; Disable XPCE if Emacs has been built with Xwidgets to
+     ;; workaround a potential crash due to symbol collision
+     ;; (see https://github.com/SWI-Prolog/swipl-devel/issues/1188).
+     '("--pce=false"))
+   (list "-q"
+         "--no-signals"
+         "-g"
+         "create_prolog_flag(sweep,true,[access(read_only),type(boolean)])"
+         "-l"
+         (expand-file-name
+          "sweep.pl"
+          sweeprolog--directory)))
   "List of strings used as initialization arguments for Prolog."
-  :package-version '((sweeprolog "0.5.2"))
+  :package-version '((sweeprolog "0.22.2"))
   :type '(repeat string)
   :group 'sweeprolog)
 
