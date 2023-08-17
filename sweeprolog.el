@@ -3017,17 +3017,15 @@ modified."
   (interactive (list t))
   (when (or force sweeprolog--buffer-modified)
     (sweeprolog-xref-buffer)
-    (save-restriction
-      (widen)
-      (let  ((sweeprolog--analyze-point (point)))
+    (without-restriction
+      (let ((sweeprolog--analyze-point (point)))
         (sweeprolog-analyze-region (point-min) (point-max))))
     (setq sweeprolog--buffer-modified nil)))
 
 (defun sweeprolog--buffer-string (filename)
   (when-let ((buf (find-buffer-visiting filename)))
     (with-current-buffer buf
-      (save-restriction
-        (widen)
+      (without-restriction
         (buffer-substring-no-properties
          (point-min)
          (point-max))))))
@@ -4593,8 +4591,7 @@ non-exported predicates defined in the current buffer."
                     (sweeprolog-read-exportable-predicate)
                     (read-string "Export comment: ")))
                sweeprolog-mode)
-  (save-restriction
-    (widen)
+  (without-restriction
     (save-excursion
       (goto-char (point-min))
       (unless (or (sweeprolog-at-beginning-of-top-term-p)
