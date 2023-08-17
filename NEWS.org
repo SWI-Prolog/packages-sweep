@@ -11,6 +11,16 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.23.0 on 2023-08-18
+
+** Sweep now requires Compat, the forward-compatibility library for Elisp
+
+This version introduces a dependency of Sweep on Compat, the
+forward-compatibility library for Elisp available from GNU ELPA.
+Compat provides implementations of newer Elisp functions and features
+for older Emacs versions, and Sweep now makes use of it for improved
+backward compatibility and ease of maintenance.
+
 * Version 0.22.2 on 2023-08-14
 
 ** Fix potential crash due to a collision between Xwidgets and XPCE
