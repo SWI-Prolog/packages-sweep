@@ -144,7 +144,7 @@ notices with the module header."
 (defcustom sweeprolog-indent-offset 4
   "Number of columns to indent with in `sweeprolog-mode' buffers."
   :package-version '((sweeprolog . "0.3.1"))
-  :type 'integer
+  :type 'natnum
   :group 'sweeprolog)
 
 (defcustom sweeprolog-qq-mode-alist '(("graphql"    . graphql-mode)
@@ -182,7 +182,7 @@ This makes the first invocation of \\[cycle-spacing] in
 (defcustom sweeprolog-analyze-buffer-max-size 100000
   "Maximum buffer size to analyze on idle."
   :package-version '((sweeprolog . "0.8.2"))
-  :type 'integer
+  :type 'natnum
   :group 'sweeprolog)
 
 (make-obsolete-variable 'sweeprolog-colourise-buffer-max-size
@@ -505,7 +505,7 @@ This is an integer specifying a string width at which
 `sweeprolog-pack-install' truncates pack descriptions annotating
 pack completion candidates."
   :package-version '((sweeprolog "0.22.2"))
-  :type 'integer)
+  :type 'natnum)
 
 ;;;; Keymaps
 
