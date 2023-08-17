@@ -509,111 +509,113 @@ pack completion candidates."
 
 ;;;; Keymaps
 
-(defvar sweeprolog-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-b") #'sweeprolog-set-breakpoint)
-    (define-key map (kbd "C-c C-c") #'sweeprolog-analyze-buffer)
-    (define-key map (kbd "C-c C-d") #'sweeprolog-document-predicate-at-point)
-    (define-key map (kbd "C-c C-e") #'sweeprolog-export-predicate)
-    (define-key map (kbd "C-c TAB") #'sweeprolog-forward-hole)
-    (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
-    (define-key map (kbd "C-c <backtab>") #'sweeprolog-backward-hole)
-    (define-key map (kbd "C-c C-S-i") #'sweeprolog-backward-hole)
-    (define-key map (kbd "C-c C-l") #'sweeprolog-load-buffer)
-    (define-key map (kbd "C-c C-m") #'sweeprolog-insert-term-with-holes)
-    (define-key map (kbd "C-c C-o") #'sweeprolog-find-file-at-point)
-    (define-key map (kbd "C-c C-q") #'sweeprolog-top-level-send-goal)
-    (define-key map (kbd "C-c C-r") #'sweeprolog-rename-variable)
-    (define-key map (kbd "C-c C-s") #'sweeprolog-term-search)
-    (define-key map (kbd "C-c C-t") #'sweeprolog-top-level)
-    (define-key map (kbd "C-c C-u") #'sweeprolog-update-dependencies)
-    (define-key map (kbd "C-c C-`")
-                (if (fboundp 'flymake-show-buffer-diagnostics) ;; Flymake 1.2.1+
-                    #'sweeprolog-show-diagnostics
-                  #'flymake-show-diagnostics-buffer))
-    (define-key map (kbd "C-c C-&") #'sweeprolog-async-goal)
-    (define-key map (kbd "C-c C-%") #'sweeprolog-make-example-usage-comment)
-    (define-key map (kbd "C-c C--") #'sweeprolog-decrement-numbered-variables)
-    (define-key map (kbd "C-c C-+") #'sweeprolog-increment-numbered-variables)
-    (define-key map (kbd "C-M-^")   #'kill-backward-up-list)
-    (define-key map (kbd "C-M-m")   #'sweeprolog-insert-term-dwim)
-    (define-key map (kbd "M-p")     #'sweeprolog-backward-predicate)
-    (define-key map (kbd "M-n")     #'sweeprolog-forward-predicate)
-    (define-key map (kbd "M-h")     #'sweeprolog-mark-predicate)
-    map)
-  "Keymap for `sweeprolog-mode'.")
+(defvar-keymap sweeprolog-mode-map
+  :doc "Keymap for `sweeprolog-mode'."
+  "C-c C-b" #'sweeprolog-set-breakpoint
+  "C-c C-c" #'sweeprolog-analyze-buffer
+  "C-c C-d" #'sweeprolog-document-predicate-at-point
+  "C-c C-e" #'sweeprolog-export-predicate
+  "C-c TAB" #'sweeprolog-forward-hole
+  "C-c C-i" #'sweeprolog-forward-hole
+  "C-c <backtab>" #'sweeprolog-backward-hole
+  "C-c C-S-i" #'sweeprolog-backward-hole
+  "C-c C-l" #'sweeprolog-load-buffer
+  "C-c C-m" #'sweeprolog-insert-term-with-holes
+  "C-c C-o" #'sweeprolog-find-file-at-point
+  "C-c C-q" #'sweeprolog-top-level-send-goal
+  "C-c C-r" #'sweeprolog-rename-variable
+  "C-c C-s" #'sweeprolog-term-search
+  "C-c C-t" #'sweeprolog-top-level
+  "C-c C-u" #'sweeprolog-update-dependencies
+  "C-c C-`"  (if (fboundp 'flymake-show-buffer-diagnostics) ;; Flymake 1.2.1+
+                 #'sweeprolog-show-diagnostics
+               #'flymake-show-diagnostics-buffer)
+  "C-c C-&" #'sweeprolog-async-goal
+  "C-c C-%" #'sweeprolog-make-example-usage-comment
+  "C-c C--" #'sweeprolog-decrement-numbered-variables
+  "C-c C-+" #'sweeprolog-increment-numbered-variables
+  "C-M-^"   #'kill-backward-up-list
+  "C-M-m"   #'sweeprolog-insert-term-dwim
+  "M-p"     #'sweeprolog-backward-predicate
+  "M-n"     #'sweeprolog-forward-predicate
+  "M-h"     #'sweeprolog-mark-predicate)
 
-(defvar sweeprolog-forward-hole-repeat-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "TAB") #'sweeprolog-forward-hole)
-    (define-key map (kbd "C-i") #'sweeprolog-forward-hole)
-    (define-key map (kbd "<backtab>") #'sweeprolog-backward-hole)
-    (define-key map (kbd "C-S-i") #'sweeprolog-backward-hole)
-    (define-key map (kbd "C-m") #'sweeprolog-insert-term-with-holes)
-    map)
-  "Repeat map for \\[sweeprolog-forward-hole].")
+(defvar-keymap sweeprolog-forward-hole-repeat-map
+  :doc "Repeat map for \\[sweeprolog-forward-hole]."
+  :repeat t
+  "TAB"       #'sweeprolog-forward-hole
+  "C-i"       #'sweeprolog-forward-hole
+  "<backtab>" #'sweeprolog-backward-hole
+  "C-S-i"     #'sweeprolog-backward-hole
+  "C-m"       #'sweeprolog-insert-term-with-holes)
 
-(defvar sweeprolog-top-level-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") #'sweeprolog-top-level-signal-current)
-    (define-key map (kbd "C-c C-i") #'sweeprolog-forward-hole)
-    map)
-  "Keymap for `sweeprolog-top-level-mode'.")
+(defvar-keymap sweeprolog-top-level-mode-map
+  :doc "Keymap for `sweeprolog-top-level-mode'."
+  "C-c C-c" #'sweeprolog-top-level-signal-current
+  "C-c C-i" #'sweeprolog-forward-hole)
 
-(defvar sweeprolog-top-level-menu-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET") #'sweeprolog-top-level-menu-go-to)
-    (define-key map (kbd "k")   #'sweeprolog-top-level-menu-kill)
-    (define-key map (kbd "t")   #'sweeprolog-top-level-menu-new)
-    (define-key map (kbd "s")   #'sweeprolog-top-level-menu-signal)
-    map)
-  "Local keymap for `sweeprolog-top-level-menu-mode' buffers.")
+(defvar-keymap sweeprolog-top-level-menu-mode-map
+  :doc "Local keymap for `sweeprolog-top-level-menu-mode' buffers."
+  "RET" #'sweeprolog-top-level-menu-go-to
+  "k"   #'sweeprolog-top-level-menu-kill
+  "t"   #'sweeprolog-top-level-menu-new
+  "s"   #'sweeprolog-top-level-menu-signal)
 
-(defvar sweeprolog-help-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "m" #'sweeprolog-describe-module)
-    (define-key map "p" #'sweeprolog-describe-predicate)
-    (define-key map "e" #'sweeprolog-view-messages)
-    (define-key map "n" #'sweeprolog-view-news)
-    map)
-  "Keymap for `sweeprolog' help commands.")
+(defvar-keymap sweeprolog-help-prefix-map
+  :doc "Keymap for `sweeprolog' help commands."
+  "m" #'sweeprolog-describe-module
+  "p" #'sweeprolog-describe-predicate
+  "e" #'sweeprolog-view-messages
+  "n" #'sweeprolog-view-news)
 
 ;;;###autoload (autoload 'sweeprolog-help-prefix-map "sweeprolog" nil t 'keymap)
 (defalias 'sweeprolog-help-prefix-map sweeprolog-help-prefix-map)
 
-(defvar sweeprolog-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "B" #'sweeprolog-list-breakpoints)
-    (define-key map "F" #'sweeprolog-set-prolog-flag)
-    (define-key map "P" #'sweeprolog-pack-install)
-    (define-key map "R" #'sweeprolog-restart)
-    (define-key map "T" #'sweeprolog-list-top-levels)
-    (define-key map "X" #'sweeprolog-xref-project-source-files)
-    (define-key map "h" 'sweeprolog-help-prefix-map)
-    (define-key map "l" #'sweeprolog-load-buffer)
-    (define-key map "m" #'sweeprolog-find-module)
-    (define-key map "p" #'sweeprolog-find-predicate)
-    (define-key map "q" #'sweeprolog-top-level-send-goal)
-    (define-key map "t" #'sweeprolog-top-level)
-    (define-key map "&" #'sweeprolog-async-goal)
-    map)
-  "Keymap for `sweeprolog' global commands.")
+(defvar-keymap sweeprolog-prefix-map
+  :doc "Keymap for `sweeprolog' global commands."
+  "B" #'sweeprolog-list-breakpoints
+  "F" #'sweeprolog-set-prolog-flag
+  "P" #'sweeprolog-pack-install
+  "R" #'sweeprolog-restart
+  "T" #'sweeprolog-list-top-levels
+  "X" #'sweeprolog-xref-project-source-files
+  "h" 'sweeprolog-help-prefix-map
+  "l" #'sweeprolog-load-buffer
+  "m" #'sweeprolog-find-module
+  "p" #'sweeprolog-find-predicate
+  "q" #'sweeprolog-top-level-send-goal
+  "t" #'sweeprolog-top-level
+  "&" #'sweeprolog-async-goal)
 
 ;;;###autoload (autoload 'sweeprolog-prefix-map "sweeprolog" nil t 'keymap)
 (defalias 'sweeprolog-prefix-map sweeprolog-prefix-map)
 
-(defvar sweeprolog-forward-hole-on-tab-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "TAB") #'sweeprolog-indent-or-forward-hole)
-    map)
-  "Keymap for moving to next hole with TAB.")
+(defvar-keymap sweeprolog-forward-hole-on-tab-mode-map
+  :doc "Keymap for moving to next hole with TAB."
+  "TAB" #'sweeprolog-indent-or-forward-hole)
 
-(defvar sweeprolog-top-level-example-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-b") #'sweeprolog-top-level-example-display-source)
-    (define-key map (kbd "C-c C-q") #'sweeprolog-top-level-example-done)
-    map)
-  "Keymap for example top-level buffer.")
+(defvar-keymap sweeprolog-top-level-example-mode-map
+  :doc "Keymap for example top-level buffer."
+  "C-c C-b" #'sweeprolog-top-level-example-display-source
+  "C-c C-q" #'sweeprolog-top-level-example-done)
+
+(defvar-keymap sweeprolog-term-search-map
+  :doc "Transient keymap activated after `sweeprolog-term-search'."
+  "C-g" #'sweeprolog-term-search-abort
+  "C-m" #'sweeprolog-term-search-delete-overlays
+  "C-r" #'sweeprolog-term-search-repeat-backward
+  "C-s" #'sweeprolog-term-search-repeat-forward)
+
+(defvar-keymap sweeprolog-read-term-map
+  :doc "Keymap used by `sweeprolog-read-term'."
+  :parent minibuffer-local-map
+  "C-m" #'sweeprolog-read-term-try
+  "C-j" #'sweeprolog-read-term-try)
+
+(defvar-keymap sweeprolog-read-goal-map
+  :doc "Keymap used by `sweeprolog-goal-term'."
+  :parent sweeprolog-read-term-map
+  "C-i" #'completion-at-point)
 
 ;;;; Menu bar
 
@@ -3690,20 +3692,6 @@ See also `sweeprolog-backward-hole'."
       (setq deactivate-mark nil)
       (push-mark (car hole) t t))))
 
-(put 'sweeprolog-backward-hole
-     'repeat-map
-     'sweeprolog-forward-hole-repeat-map)
-
-(put 'sweeprolog-forward-hole
-     'repeat-map
-     'sweeprolog-forward-hole-repeat-map)
-
-(put 'sweeprolog-insert-term-with-holes
-     'repeat-map
-     'sweeprolog-forward-hole-repeat-map)
-
-(put 'sweeprolog-insert-term-dwim 'undo-inhibit-region t)
-
 (defun sweeprolog--hole (&optional string)
   (propertize (or string "_")
               'sweeprolog-hole t
@@ -5673,15 +5661,6 @@ properly."
   (sweeprolog-term-search-delete-overlays)
   (signal 'quit nil))
 
-(defvar sweeprolog-term-search-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-g") #'sweeprolog-term-search-abort)
-    (define-key map (kbd "C-m") #'sweeprolog-term-search-delete-overlays)
-    (define-key map (kbd "C-r") #'sweeprolog-term-search-repeat-backward)
-    (define-key map (kbd "C-s") #'sweeprolog-term-search-repeat-forward)
-    map)
-  "Transient keymap activated after `sweeprolog-term-search'.")
-
 (defun sweeprolog-term-search-in-buffer (term &optional goal buffer)
   "Search for Prolog term TERM satisfying GOAL in buffer BUFFER.
 
@@ -5729,21 +5708,6 @@ moving point."
         (goto-char error-point)
         (minibuffer-message "Invalid Prolog term"))
     (exit-minibuffer)))
-
-(defvar sweeprolog-read-term-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map minibuffer-local-map)
-    (define-key map (kbd "C-m") #'sweeprolog-read-term-try)
-    (define-key map (kbd "C-j") #'sweeprolog-read-term-try)
-    map)
-  "Keymap used by `sweeprolog-read-term'.")
-
-(defvar sweeprolog-read-goal-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map sweeprolog-read-term-map)
-    (define-key map (kbd "C-i") #'completion-at-point)
-    map)
-  "Keymap used by `sweeprolog-goal-term'.")
 
 (defun sweeprolog-terms-at-point (&optional point)
   "Return boundaries of Prolog terms at POINT, innermost first."
