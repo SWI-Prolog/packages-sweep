@@ -1070,10 +1070,8 @@ default."
                     (concat (make-string (- 64 (length key)) ? ) val)))))
          (default (sweeprolog-identifier-at-point)))
     (completing-read
-     (concat (or prompt sweeprolog-read-predicate-prompt)
-             (when default
-               (concat " (default " default ")"))
-             ": ")
+     (format-prompt (or prompt sweeprolog-read-predicate-prompt)
+                    default)
      col
      (when sweeprolog-predicate-visible-p-function
        (lambda (cand)
@@ -4848,9 +4846,7 @@ valid Prolog atom."
   (let* ((fn (buffer-file-name))
          (def (when fn (file-name-base fn))))
     (sweeprolog-format-string-as-atom
-     (read-string (concat "Test set name"
-                          (when def (concat " (default " def ")"))
-                          ": ")
+     (read-string (format-prompt "Test set name" def)
                   nil nil def)))
   ":- begin_tests(" str ").\n\n"
   "test(" _ ") :- " (sweeprolog--hole "TestBody") ".\n\n"
@@ -6322,11 +6318,9 @@ EXISTING-VARS is a list of existing variable names (strings)."
                                               "occurrences"
                                               n))))))))
     (completing-read
-     (concat
-      (or prompt "Rename variable")
-      (when default
-        (concat " (default " (sweeprolog--format-variable default) ")"))
-      ": ")
+     (format-prompt "Rename variable"
+                    (when default
+                      (sweeprolog--format-variable default)))
      occurrences nil t nil nil default)))
 
 (defun sweeprolog-rename-variable (&optional old new point verbose)
@@ -6582,9 +6576,7 @@ prompt with \"Breakpoint: \"."
                 (lambda (key)
                   (alist-get key col nil nil #'string=)))))
     (string-to-number
-     (completing-read (concat (or prompt "Breakpoint")
-                              (when def (concat " (default " (car def) ")"))
-                              ": ")
+     (completing-read (format-prompt (or prompt "Breakpoint") def)
                       col nil t nil nil def))))
 
 (defun sweeprolog-read-breakpoint-condition ()
