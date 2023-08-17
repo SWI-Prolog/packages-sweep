@@ -745,21 +745,19 @@ pack completion candidates."
                      sweeprolog--directory)))
       (unless (file-readable-p sweep-pl)
         (error "Missing file `sweep.pl' in `sweeprolog' directory"))
-      (if-let ((lines (save-match-data
-                        (split-string
-                         (with-output-to-string
-                           (with-current-buffer standard-output
-                             (call-process
-                              (or sweeprolog-swipl-path "swipl")
-                              nil '(t nil) nil
-                              "-q" "-g" "write_sweep_module_location"
-                              "-t" "halt"
-                              sweep-pl)))
-                         "\n" t))))
-          (mapc #'sweeprolog--load-module lines)
-        (error (concat "Failed to locate `sweep-module'. "
-                       "Make sure SWI-Prolog is installed "
-                       "and up to date"))))))
+      (let* ((success nil)
+             (lines (process-lines-handling-status
+                     (or sweeprolog-swipl-path "swipl")
+                     (lambda (status)
+                       (setq success (= status 0)))
+                     "-q" "-g" "write_sweep_module_location"
+                     "-t" "halt"
+                     sweep-pl)))
+        (if (and success lines)
+            (mapc #'sweeprolog--load-module lines)
+          (error (concat "Failed to locate `sweep-module'. "
+                         "Make sure SWI-Prolog is installed "
+                         "and up to date")))))))
 
 (defun sweeprolog-ensure-initialized ()
   (sweeprolog--ensure-module)
