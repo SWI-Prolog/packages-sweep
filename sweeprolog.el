@@ -1609,7 +1609,7 @@ Used for `completion-at-point' candidates in cases such as:
 Used for `completion-at-point' candidates in cases such as:
 
     foo :- \\='$bar-!-baz\\='("
-  (let* ((end (or (sweeprolog--end-of-quote (line-end-position))
+  (let* ((end (or (sweeprolog--end-of-quote (pos-eol))
                   (point))))
     (sweeprolog--atom-or-functor-completion-at-point beg end)))
 
@@ -3554,7 +3554,7 @@ The command `beginning-of-defun' calls this function in
                                               "." "/" ":" "<" "=" ">"
                                               "?" "@" "\\" "^" "~")
                                           "." (or white "\n"))
-                                      (line-beginning-position))))
+                                      (pos-bol))))
                   (not (eobp)))
         (while (and (nth 8 (syntax-ppss)) (not (eobp)))
           (forward-char))
@@ -4625,7 +4625,7 @@ non-exported predicates defined in the current buffer."
         (if target-position
             (save-excursion
               (goto-char target-position)
-              (let ((pos (- (point-max) (line-end-position))))
+              (let ((pos (- (point-max) (pos-eol))))
                 (combine-after-change-calls
                   (if exported-operator
                       (progn
@@ -4669,7 +4669,7 @@ distanced from the beginning of the previous by a multiple of
 four columns, which accommodates the convetional alignment for
 if-then-else constructs and other common layouts in SWI-Prolog."
   (interactive "" sweeprolog-mode)
-  (let ((bol (line-beginning-position)))
+  (let ((bol (pos-bol)))
     (if (nth 4 (syntax-ppss))
         (combine-after-change-calls
           (delete-horizontal-space)
@@ -4700,7 +4700,7 @@ if-then-else constructs and other common layouts in SWI-Prolog."
 This function is added to ‘post-self-insert-hook’ by
 `sweeprolog-electric-layout-mode'."
   (if (nth 8 (syntax-ppss))
-      (when (member (buffer-substring-no-properties (line-beginning-position)
+      (when (member (buffer-substring-no-properties (pos-bol)
                                                     (point))
                     '("%%" "%!"))
         (insert "  "))
@@ -4891,7 +4891,7 @@ accordingly."
           (unless offset
             (save-excursion
               (goto-char beg)
-              (let ((prefix (buffer-substring (line-beginning-position)
+              (let ((prefix (buffer-substring (pos-bol)
                                               (point))))
                 (save-match-data
                   (cond
@@ -4946,7 +4946,7 @@ accordingly."
     (goto-char fbeg)
     (sweeprolog-backward-term (1- pre))
     (let ((go t)
-          (line-beg (line-beginning-position)))
+          (line-beg (pos-bol)))
       (while go
         (pcase (sweeprolog-last-token-boundaries)
           ((or `(operator ,lbeg ,lend)
@@ -4982,7 +4982,7 @@ accordingly."
                                          (= (char-syntax (char-before)) ?_)))
                             (when (save-excursion
                                     (forward-char)
-                                    (skip-syntax-forward " " (line-end-position))
+                                    (skip-syntax-forward " " (pos-eol))
                                     (eolp))
                               (skip-syntax-backward "w_")))
                           (current-column))
@@ -5078,7 +5078,7 @@ accordingly."
                    (line (cdr entry)))
                (goto-char (point-min))
                (forward-line (1- line))
-               (cons car (line-beginning-position))))
+               (cons car (pos-bol))))
            (sweeprolog--query-once "sweep" "sweep_imenu_index"
                                    (buffer-file-name))))
 
