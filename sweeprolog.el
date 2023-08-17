@@ -1471,9 +1471,9 @@ resulting list even when found in the current clause."
     (save-excursion
       (goto-char beg)
       (save-match-data
-        (while (search-forward-regexp (rx bow (or "_" upper)
-                                          (* alnum))
-                                      end t)
+        (while (re-search-forward (rx bow (or "_" upper)
+                                      (* alnum))
+                                  end t)
           (unless (nth 8 (syntax-ppss))
             (let ((match (match-string-no-properties 0)))
               (unless (or (member match exclude)
@@ -5190,35 +5190,6 @@ accordingly."
   (interactive)
   (view-file (expand-file-name "NEWS.org" sweeprolog--directory)))
 
-(defun sweeprolog--buttonize (string callback data)
-  (if (fboundp 'buttonize)
-      (buttonize string callback data)
-    (if (fboundp 'button-buttonize)
-        (button-buttonize string callback data)
-      (propertize string
-                  'face 'button
-                  'button t
-                  'follow-link t
-                  'category t
-                  'button-data data
-                  'keymap button-map
-                  'action callback))))
-
-(defun sweeprolog--buttonize-region (start end callback data)
-  (if (fboundp 'buttonize-region)
-      (buttonize-region start end callback data)
-    (add-text-properties start end
-                         (list 'font-lock-face 'button
-                               'mouse-face 'highlight
-                               'help-echo nil
-                               'button t
-                               'follow-link t
-                               'category t
-                               'button-data data
-                               'keymap button-map
-                               'action callback))
-    (add-face-text-property start end 'button t)))
-
 (defun sweeprolog-render-html-span (dom)
   (if (string= "fn-text" (dom-attr dom 'class))
       (progn (insert " ")
@@ -5239,7 +5210,7 @@ accordingly."
                               "/"
                               (one-or-more digit) eos)
                           target)
-        (sweeprolog--buttonize-region start
+        (buttonize-region start
                                       (point)
                                       #'sweeprolog-describe-predicate
                                       target)))
@@ -5251,14 +5222,14 @@ accordingly."
             (let ((dir (file-name-directory path))
                   (base (file-name-base path)))
               (when (string= dir "/pldoc/doc/_SWI_/library/")
-                (sweeprolog--buttonize-region start
+                (buttonize-region start
                                               (point)
                                               #'find-file
                                               (concat "library(" base ")")))))
            ((string= path "/pldoc/man")
             (pcase (url-parse-query-string query)
               (`(("predicate" ,pred))
-               (sweeprolog--buttonize-region start
+               (buttonize-region start
                                              (point)
                                              #'sweeprolog-describe-predicate
                                              pred))))))))))
@@ -5297,10 +5268,10 @@ accordingly."
                           :type   'swi-prolog-module
                           :file   path))
               (if page
-                  (insert (sweeprolog--buttonize mod #'sweeprolog-find-module mod)
+                  (insert (buttonize mod #'sweeprolog-find-module mod)
                           " is a SWI-Prolog module.\n\n"
                           page)
-                (insert (sweeprolog--buttonize mod #'sweeprolog-find-module mod)
+                (insert (buttonize mod #'sweeprolog-find-module mod)
                         " is an undocumented SWI-Prolog module.")))
           (insert mod " is not documented as a SWI-Prolog module."))))))
 
@@ -5369,7 +5340,7 @@ accordingly."
                          (list :symbol (intern pred)
                                :type   'swi-prolog-predicate
                                :file   path))
-                   (insert (sweeprolog--buttonize pred #'sweeprolog-find-predicate pred)
+                   (insert (buttonize pred #'sweeprolog-find-predicate pred)
                            (if page
                                (concat " is a SWI-Prolog predicate.\n\n"
                                        page)
