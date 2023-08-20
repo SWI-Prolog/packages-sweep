@@ -6286,7 +6286,7 @@ EXISTING-VARS is a list of existing variable names (strings)."
                                               "occurrences"
                                               n))))))))
     (completing-read
-     (format-prompt "Rename variable"
+     (format-prompt (or prompt "Rename variable")
                     (when default
                       (sweeprolog--format-variable default)))
      occurrences nil t nil nil default)))
