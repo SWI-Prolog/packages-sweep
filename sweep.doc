@@ -31,31 +31,24 @@
 
 \section{Installation}
 \label{sec:sweep-installation}
+Installing Sweep requires:
 
-The \texttt{sweeprolog} Elisp package is available on NonGNU ELPA, to
-install \texttt{sweeprolog} simply open Emacs and type \texttt{M-x
-  package-install RET sweeprolog RET}.
+\begin{itemize}
+\item Emacs 27 or later, and
+\item SWI-Prolog 8.5.18 or later.
+\end{itemize}
 
-An alternative to installing from ELPA is to get the Elisp library
-from the \texttt{sweep} Git repository:
+Sweep is available from NonGNU ELPA, to install it simply type in
+Emacs \texttt{M-x package-install RET sweeprolog RET}.
 
-\begin{enumerate}
-\item Clone the \texttt{sweep} repository:
-  \begin{code}
-    git clone https://git.sr.ht/~eshel/sweep
-  \end{code}
+Note that in Emacs prior to version 28, you need to explicitly enable
+NonGNU ELPA by adding something like the following to your Emacs
+configuration:
 
-  Or:
-
-  \begin{code}
-    git clone https://github.com/SWI-Prolog/packages-sweep sweep
-  \end{code}
-
-\item Add \texttt{sweep} to Emacs' \texttt{load-path}:
-  \begin{code}
-    (add-to-list 'load-path "/path/to/sweep")
-  \end{code}
-\end{enumerate}
+\begin{code}
+  (with-eval-after-load 'package
+    (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+\end{code}
 
 \section{Getting started}
 \label{sec:sweep-getting-started}
@@ -66,23 +59,10 @@ Emacs:
   (require 'sweeprolog)
 \end{code}
 
-All set!  \texttt{sweeprolog} automatically loads
-\texttt{sweep-module} and initializes the embedded SWI-Prolog runtime.
-For a full description of the different features of \texttt{sweep},
-see \href{https://eshelyaron.com/sweep.html}{the \texttt{sweep}
-  manual}.
-
-\textit{Important note for Linux users}: prior to version 29, Emacs
-would load dynamic modules in a way that is not fully compatible with
-the way the SWI-Prolog native library, \texttt{libswipl}, loads its
-own native extensions.  This may lead to \texttt{sweep} failing after
-loading \texttt{sweep-module}.  To work around this issue, users
-running Emacs 28 or earlier on Linux can start Emacs with
-\texttt{libswipl} loaded upfront via \texttt{LD_PRELOAD}, for example:
-
-\begin{code}
-  LD_PRELOAD=/usr/local/lib/libswipl.so emacs
-\end{code}
+All set!  You can now use Sweep for Prolog development and for
+integrating Prolog into your Emacs Lisp code.  For a full description
+of the different features of \texttt{sweep}, see
+\href{https://eshelyaron.com/sweep.html}{the Sweep manual}.
 
 \printindex
 
