@@ -18,12 +18,11 @@
 \maketitle
 
 \begin{abstract}
-  \texttt{sweep} is an embedding of SWI-Prolog in GNU Emacs.  It
-  provides an interface for executing Prolog queries and consuming
-  their results from Emacs Lisp.  \texttt{sweep} further builds on top
-  of this interface and on top of the standard Emacs facilities to
-  provide advanced features for developing SWI-Prolog programs in
-  Emacs.
+  Sweep is an embedding of SWI-Prolog in GNU Emacs.  It provides an
+  interface for executing Prolog queries and consuming their results
+  from Emacs Lisp.  Sweep further builds on top of this interface and
+  on top of the standard Emacs facilities to provide advanced features
+  for developing SWI-Prolog programs in Emacs.
 \end{abstract}
 
 \pagebreak
@@ -61,7 +60,7 @@ Emacs:
 
 All set!  You can now use Sweep for Prolog development and for
 integrating Prolog into your Emacs Lisp code.  For a full description
-of the different features of \texttt{sweep}, see
+of the different features of Sweep, see
 \href{https://eshelyaron.com/sweep.html}{the Sweep manual}.
 
 \printindex
