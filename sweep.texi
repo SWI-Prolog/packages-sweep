@@ -1,0 +1,3291 @@
+\input texinfo    @c -*- texinfo -*-
+@c %**start of header
+@setfilename sweep.info
+@settitle Sweep: SWI-Prolog Embedded in Emacs
+@documentencoding UTF-8
+@documentlanguage en
+@set MAINTAINERSITE @uref{https://eshelyaron.com,maintainer webpage}
+@set MAINTAINER Eshel Yaron
+@set MAINTAINEREMAIL @email{me@eshelyaron.com}
+@set MAINTAINERCONTACT @uref{mailto:me@eshelyaron.com,contact the maintainer}
+@c %**end of header
+
+@copying
+This manual is for Sweep (version 0.23.0), which provides an embedded
+SWI-Prolog runtime inside of Emacs along with an advanced SWI-Prolog
+development environment.
+
+Copyright @copyright{} 2022-2023 Eshel Yaron.
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+@end quotation
+@end copying
+
+@dircategory Emacs
+@direntry
+* Sweep: (sweep).       SWI-Prolog Embedded in Emacs.
+@end direntry
+
+@finalout
+@titlepage
+@title Sweep: SWI-Prolog Embedded in Emacs
+@author Eshel Yaron (@email{me@@eshelyaron.com})
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top Sweep: SWI-Prolog Embedded in Emacs
+
+This manual is for Sweep (version 0.23.0), which provides an embedded
+SWI-Prolog runtime inside of Emacs along with an advanced SWI-Prolog
+development environment.
+
+@end ifnottex
+
+@menu
+* Overview::                     Major mode for reading and writing Prolog
+* Installation::                 Intructions for installing sweep
+* Getting Started::              First steps with sweep
+* Discovering Sweep::            Tips for finding out about Sweep features
+* Initialization::               Functions for starting and stopping the embedded Prolog runtime
+* Querying Prolog::              Functions for invoking Prolog predicates and consuming their results
+* Editing Prolog Code::          Major mode for reading and writing Prolog
+* Prolog Help::                  Commands for displaying detailed Prolog documentation
+* The Prolog Top-level::         Executing Prolog queries in a REPL-like interface
+* Async Queries::                Running goals in seperate threads, redirecting their output to Emacs buffers
+* Finding Prolog Code::          Commands for locating and opening Prolog files
+* Quick Access Keymap::          Keymap for useful commands that can be invoked from any buffer
+* Prolog Messages::              Messages emitted in the embedded Prolog runtime and how to display them
+* Prolog Flags::                 Commands for modifying the configuration of the embedded Prolog runtime by setting Prolog flags
+* Prolog Packages::              Commands for installing SWI-Prolog add-ons
+* Contributing::                 Information for users and hackers looking to get involved in the development of this project
+* Things To Do::                 Breakdown of topics that deserve more attention
+* Indices::
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+Overview
+
+* Main Features::                Most important features that Sweep provides
+* Architecture::                 Overall structure of this project
+* Alternatives::                 Comparing Sweep with other Prolog Emacs packages
+
+Querying Prolog
+
+* Elisp to Prolog::              How sweep translates Emacs Lisp to Prolog
+* Prolog to Elisp::              How sweep translates Prolog to Emacs Lisp
+* Example Query::                Counting solutions for a Prolog predicate in Elisp
+* Call Back to Elisp::           Special predicates for calling back to Emacs from Prolog
+
+Editing Prolog Code
+
+* Indentation::                  How sweep indents Prolog code
+* Highlighting::                 Rich fontification for Prolog code
+* Hover for Help::               Display description of Prolog tokens by hovering with the mouse
+* Code Layout::                  Commands for aligning Prolog code without having to count spaces
+* Term-based Editing::           Commands that recognize and operate on Prolog terms
+* Holes::                        Commands for finding and filling holes for interactive term insertion
+* Cross References::             Commands for finding cross-references for Prolog predicates
+* Predicate Boundaries::         Commands operating on a Prolog predicate definition as a single unit
+* File Specifications::          Commands for jumping to files that appear in Prolog code
+* Loading Buffers::              Commands for loading Prolog predicates from the current buffer
+* Setting Breakpoints::          Commands for setting breakpoints in Prolog buffers
+* Creating New Modules::         Commands for populating new Prolog modules with predefined contents
+* Documenting Code::             Commands for adding documentation to Prolog predicate definitions
+* Usage Comments::               Commands for inserting comments that show example usage of your code
+* Showing Prolog Docs::          Commands for showing documentation for Prolog predicates
+* Showing Errors::               Commands for finding errors in Prolog code
+* Exporting Predicates::         Commands for adding Prolog predicates to their module's export list
+* Code Completion::              Auto-completion commands for Prolog code
+* Insert Term DWIM::             Commands for smart insertion of Prolog terms based on the surrounding context
+* Writing Tests::                Commands that facilitate writing Prolog unit tests
+* Code Dependencies::            Commands for managing dependencies of Prolog source files on each other
+* Term Search::                  Search for Prolog terms matching with a given structure
+* Context Menu::                 Right-click on Prolog code to open contextual menus
+* Renaming Variables::           Replacing occurrences of one Prolog variable with another
+* Numbered Variables::           Commands for managing numbers in names of related variables
+* Macro Expansion::              Commands for expanding SWI-Prolog macros
+
+Indentation
+
+* Indentation Rules::            The intented indentation scenaria
+
+Highlighting
+
+* PceEmacs Theme::               Custom theme that mimics PceEmacs, the SWI-Prolog built-in editor
+* Highlight Variables::          Commands for emphasizing all occurrences of a Prolog variable
+* Quasi-Quotation::              Delegating fontification of quasi-quoted contents to other Emacs major modes
+
+Code Layout
+
+* Aligning Spaces::              Commands for adjusting whitespace according to Prolog conventions
+* Electric Layout mode::         Minor mode for automatically adjusting whitespace
+
+Holes
+
+* Terms with Holes::             Write Prolog one term at a time, not one character at a time
+* Jumping to Holes::             Commands for going to the next hole in the buffer
+* Filling Holes::                Filling holes in Prolog terms
+* Highlighting Holes::           Options for highlighting holes
+
+Setting Breakpoints
+
+* Breakpoint Menu::              Special mode for managing breakpoints
+
+The Prolog Top-level
+
+* Multiple Top-levels::          Creating and handling multiple Prolog top-level buffers
+* Top-level Menu::               A special buffer for operating on active top-levels
+* Top-level Signaling::          Commands for interrupting running Prolog top-levels
+* Top-level History::            Accessing previous queries posted to the Prolog top-level
+* Top-level Completion::         Commands for completing partiat Prolog predicate names
+* Follow Messages::              Minor mode for visiting source locations in printed messages
+* Send to Top-level::            Commands for sending goals to the be executed in the Top-level
+
+Finding Prolog Code
+
+* File Spec Expansion::          Integration with standard Emacs file-finding commands
+* Native Predicates::            Finding and jumping to definitions of built-in SWI-Prolog predicates defined in C
+
+Contributing
+
+* Developing Sweep::             Instructions for preparing a local development environment for working on sweep
+* Bug Reports::                  Commands for contacting the maintainers of this project
+
+Things To Do
+
+* Editing Improvements::         List of potential enhancements for reading and writing Prolog
+* General Improvements::         List of potentially useful new features
+
+Indices
+
+* Function Index::
+* Variable Index::
+* Keystroke Index::
+* Concept Index::
+
+@end detailmenu
+@end menu
+
+@node Overview
+@chapter Overview
+
+@cindex Sweep
+Sweep is an embedding of SWI-Prolog in Emacs.  It provides an
+interface for executing Prolog queries and consuming their results
+from Emacs Lisp (@pxref{Querying Prolog}).  Sweep further builds on
+top of this interface and on top of the standard Emacs facilities to
+provide advanced features for developing SWI-Prolog programs in Emacs.
+
+@menu
+* Main Features::                Most important features that Sweep provides
+* Architecture::                 Overall structure of this project
+* Alternatives::                 Comparing Sweep with other Prolog Emacs packages
+@end menu
+
+@node Main Features
+@chapter Main Features
+
+Some of the main benefits that Sweep brings to working with Prolog
+code in Emacs are:
+
+@itemize
+@item
+@ref{Highlighting, , Semantic highlighting}
+@item
+@ref{Indentation, , Automatic indentation}
+@item
+@ref{Term-based Editing, , Structural editing and navigation}
+@item
+@ref{Cross References, , Jumping to predicate definitions and references}
+@item
+@ref{Showing Errors, , On-the-fly diagnostics}
+@item
+@ref{Code Completion, , Intelligent code completion}
+@item
+@ref{Renaming Variables, , Refactoring support}
+@item
+@ref{The Prolog Top-level, , Integrated SWI-Prolog top-level}
+@item
+@ref{Querying Prolog, , Ability to run Prolog queries directly from Emacs Lisp}
+@end itemize
+
+These features and others are documented in the rest of this manual,
+along with many options that Sweep provides for you to customize its
+behavior.
+
+@node Architecture
+@chapter High-level Architecture
+
+@cindex architecture, of Sweep
+@cindex design, of Sweep
+@cindex Sweep architecture
+@cindex Sweep design
+Sweep uses the C interfaces of both SWI-Prolog and Emacs Lisp to
+create a dynamically loaded Emacs module that contains the SWI-Prolog
+runtime.  As such, Sweep has parts written in C, in Prolog and in
+Emacs Lisp.
+
+The different parts of Sweep are structured as follows:
+
+@cindex sweep-module
+@cindex sweep.c
+@itemize
+@item
+@file{sweep.c} defines a dynamic Emacs module which is referred to
+from Elisp as @code{sweep-module}.  This module is linked against the
+SWI-Prolog runtime library (@file{libswipl}) and exposes a subset of
+the SWI-Prolog C interface to Emacs in the form of Elisp functions
+(@pxref{Querying Prolog}).  Notably, @code{sweep-module} is
+responsible for translating Elisp objects to Prolog terms and vice
+versa.
+@end itemize
+
+@cindex sweeprolog.el
+@itemize
+@item
+@file{sweeprolog.el} defines an Elisp library which builds on top of
+@code{sweep-module} to provide user-facing commands and functionality.
+It is also responsible for loading @code{sweep-module} the first time
+you do something that involves interacting with Prolog.
+@end itemize
+
+@cindex sweep.pl
+@itemize
+@item
+@file{sweep.pl} defines a Prolog module (named, unsurprisingly,
+@code{sweep}) which is by default arranged by @file{sweeprolog.el} to
+be loaded when the embedded Prolog runtime is initialized.  It
+contains predicates that @file{sweeprolog.el} invokes through
+@code{sweep-module} to facilitate its different commands.
+@end itemize
+
+@node Alternatives
+@chapter Comparison with Emacs's built-in Prolog mode
+
+Emacs has a built-in mode for Prolog code, defined in the library
+@file{prolog.el} that comes bundled with Emacs.  @file{prolog.el} aims
+to work with a wide variety of Prolog systems and dialects, unlike
+Sweep that is very tightly integrated with SWI-Prolog specifically.
+
+@strong{If you are working with SWI-Prolog, you'll find Sweep to be
+far more powerful} than the built-in @file{prolog.el}.  This is
+because Sweep leverages the Prolog parser and other analysis tools
+that SWI-Prolog itself uses, which give it access to highly accurate
+and rich information about SWI-Prolog code.  If you're using another
+Prolog implementation, you should stick to @file{prolog.el} as Sweep
+only supports SWI-Prolog.
+
+@node Installation
+@chapter Installation
+
+@cindex requirements
+Installing Sweep requires:
+
+@itemize
+@item
+Emacs 27 or later, and
+@item
+SWI-Prolog 8.5.18 or later.
+@end itemize
+
+@cindex install
+Sweep is available from NonGNU ELPA, to install it simply type in
+Emacs @kbd{M-x package-install @key{RET} sweeprolog @key{RET}}.
+
+Note that in Emacs prior to version 28, you need to explicitly enable
+NonGNU ELPA by adding something like the following to your Emacs
+configuration:
+
+@lisp
+(with-eval-after-load 'package
+  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+@end lisp
+
+@cindex update
+@cindex upgrade
+To upgrade Sweep to a newer version, do @kbd{M-x package-upgrade
+@key{RET} sweeprolog @key{RET}}.
+
+@node Getting Started
+@chapter Getting Started
+
+@cindex configuration
+After installing the @code{sweeprolog} Elisp library, load it into
+Emacs:
+
+@lisp
+(require 'sweeprolog)
+@end lisp
+
+@vindex sweeprolog-swipl-path
+Sweep tries to find SWI-Prolog by looking for the @command{swipl}
+executable in the directories listed in the Emacs variable
+@code{exec-path}.  When Emacs is started from a shell, it initializes
+@code{exec-path} from the shell's @env{PATH} environment variable
+which normally includes the location of @command{swipl} in common
+SWI-Prolog installations.  If Emacs doesn't find the @command{swipl}
+executable via @code{exec-path}, you can tell Sweep where to find it
+by setting the variable @code{sweeprolog-swipl-path} to point to it:
+
+@lisp
+(setq sweeprolog-swipl-path "/path/to/swipl")
+@end lisp
+
+All set!  You can now use Sweep for Prolog development (@pxref{Editing
+Prolog Code, , Editing Prolog code}) and for integrating Prolog into
+your Emacs Lisp code (@pxref{Querying Prolog}).  In the next section
+(@pxref{Discovering Sweep}) you'll find some useful tips for learning
+to work with Sweep.
+
+@emph{Important note for Linux users:} prior to version 29, Emacs
+would load dynamic modules in a way that is not fully compatible with
+the way the SWI-Prolog native library, @file{libswipl}, loads its own
+native extensions.  This may lead to Sweep failing after loading
+@code{sweep-module} (@pxref{Architecture, , High-level Architecture}).
+If you're running Emacs 28 or earlier on Linux, you can workaround
+this issue by starting Emacs with @file{libswipl} loaded upfront via
+@env{LD_PRELOAD}, for example:
+
+@example shell
+LD_PRELOAD=/usr/local/lib/libswipl.so emacs
+@end example
+
+@node Discovering Sweep
+@chapter Discovering Sweep
+
+Sweep comes with many useful commands and features for working with
+SWI-Prolog.  This section lists suggested ways for you to get to know
+the provided commands and make the most out of Sweep.
+
+The main documentation resource for Sweep is this very manual.  It
+describes almost every command and customization option that Sweep
+provides.  Since Sweep includes many features, describing all them
+makes this manual longer then you'd probably want to read upfront.
+Instead it's recommended that you skim this manual to get an idea of
+the available features, and then return to it as a reference during
+your work with Sweep.
+
+To open this manual from within Emacs, type @kbd{C-h i} (@code{info})
+to open the Info reader, followed by @kbd{d m sweep @key{RET}} to go
+to the top Info directory and select the Sweep manual.  Sweep also
+provides a convenient command for opening the manual:
+
+@findex sweeprolog-info-manual
+@deffn Command sweeprolog-info-manual
+Display the Sweep manual in Info.
+@end deffn
+
+To open the relevant part of the manual for a specific command that
+you want to learn more about, type @kbd{C-h F} followed by the name of
+that command.  For example, typing @kbd{C-h F sweeprolog-info-manual
+@key{RET}} brings up this manual section in Info.  If the command
+you're interested in is bound to a key sequence, you can go to its
+Info node by typing @kbd{C-h K} followed by the key sequence that
+invokes it.
+
+Other than the text in this manual, Sweep commands and user options
+have Elisp documentation strings that describe them individually.  The
+various Emacs Help commands (@kbd{C-h k}, @kbd{C-h f}, @kbd{C-h v},
+etc.) display these documentation strings in a dedicated Help buffer
+(@pxref{Help,,,emacs,}).  From the Help buffer, you can jump to the
+relevant Info node typing @kbd{i} (@code{help-goto-info}) to read more
+about related commands and customization options.
+
+You can also view an HTML version of this manual online at
+@uref{https://eshelyaron.com/sweep.html}.
+
+To learn about recent changes and new features in Sweep, check out the
+NEWS file that comes with Sweep.  You can open it with the command
+@code{sweeprolog-view-news}:
+
+@findex sweeprolog-view-news
+@deffn Command sweeprolog-view-news
+View the Sweep NEWS file.
+@end deffn
+
+@node Initialization
+@chapter Prolog Initialization and Cleanup
+
+The embedded SWI-Prolog runtime must be initialized before it can
+start executing queries.  Initializing Prolog is usually taken care of
+by Sweep when you first use a command that requires running some
+Prolog code.  This section elaborates about Prolog initialization and
+its customization options in Sweep:
+
+@defun sweeprolog-initialize prog @r{@b{&rest}} args
+Initialize the embedded Prolog runtime.  @var{prog} should be the path
+to the @command{swipl} executable, and @var{args} should be a list of
+command line arguments for @command{swipl}.  Sweep initializes Prolog
+as if it was started from the command line as @code{@var{prog}
+@var{args}}.
+@end defun
+
+@defun sweeprolog-handle-command-line-args
+Enable support for the Sweep specific @option{--swipl-args} Emacs
+command line flag.  This flag can be used to specify additional Prolog
+initialization arguments for Sweep to use when initializing Prolog
+on-demand, directly from Emacs's command line invocation.
+@end defun
+
+@defopt sweeprolog-init-args
+List of strings used as initialization arguments for Prolog.  Sweep
+uses these as the @var{args} argument of @code{sweeprolog-initialize}
+when it initializes Prolog on-demand.
+@end defopt
+
+@findex sweeprolog-restart
+@deffn Command sweeprolog-restart
+Restart the embedded Prolog runtime.
+@end deffn
+
+In Sweep, Prolog initialization is done via the C-implemented
+@code{sweeprolog-initialize} Elisp function defined in
+@code{sweep-module}.  @code{sweeprolog-initialize} takes one or more
+string arguments and initializes the embedded Prolog as if it were
+invoked externally in a command line with the given strings as command
+line arguments, where the first argument to
+@code{sweeprolog-initialize} corresponds to @code{argv[0]}.
+
+Sweep loads and initializes Prolog on-demand at the first invocation
+of a command that requires the embedded Prolog.  The user option
+@code{sweeprolog-init-args} says which arguments to pass to Prolog
+initialization.  Its value is a list of strings that you can extend if
+you want to pass specific command line flags SWI-Prolog.  For example,
+to limit the embedded Prolog stack to 512 MB, add the following to
+your Emacs configuration:
+
+@lisp
+(with-eval-after-load 'sweeprolog
+  (push "--stack-limit=512m" sweeprolog-init-args))
+@end lisp
+
+@cindex sweep Prolog flag
+The default value of @code{sweeprolog-init-args} is set to load the
+Prolog helper library @file{sweep.pl} and to create a boolean Prolog
+flag called @code{sweep} with value @code{true}.  You can check for
+this flag in Prolog code to detect at runtime that you're running
+under Sweep.
+
+@cindex command line arguments
+It is also possible to specify initialization arguments to SWI-Prolog
+by passing them as command line arguments to Emacs, which can be
+convenient when using Emacs and Sweep as an alternative for the common
+shell-based interaction with SWI-Prolog.  This is achieved by adding
+the flag @option{--swipl-args} followed by any number of arguments
+intended for SWI-Prolog, with a single semicolon (@code{;}) argument
+marking the end of the SWI-Prolog arguments, after which further
+arguments are processed by Emacs as usual (see @ref{Emacs
+Invocation,,,emacs,} for more information about Emacs's command line
+options), for example:
+
+@example shell
+emacs --some-emacs-option --swipl-args -l foobar.pl \; --more-emacs-options
+@end example
+
+In order for Sweep to be able to handle Emacs's command line
+arguments, you must call @code{sweeprolog-handle-command-line-args}
+before Emacs processes the @option{--swipl-args} argument.  You can do
+this, for example, by calling it from the command line right before
+@option{--swipl-args}:
+
+@example
+emacs -f sweeprolog-handle-command-line-args --swipl-args -l foobar.pl \;
+@end example
+
+You can reset the embedded Prolog runtime using the command
+@code{sweeprolog-restart}.  This command cleans up the the Prolog
+state and resources, and starts it anew.  When you call it with a
+prefix argument (@kbd{C-u M-x sweeprolog-restart @key{RET}}), it prompts for
+additional initialization arguments to pass to the embedded Prolog
+runtime on startup.
+
+@node Querying Prolog
+@chapter Querying Prolog
+
+This section describes a set of Elisp functions that let you invoke
+Prolog queries and interact with the embedded Prolog runtime:
+
+@defun sweeprolog-open-query cxt mod functor input reverse
+@anchor{Definition of sweeprolog-open-query}
+Query the Prolog predicate @code{@var{mod}:@var{functor}/2} in the
+context of the module @var{cxt}.  Convert @var{input} to a Prolog
+term and use it as the first argument, unless @var{reverse} is
+non-@code{nil}, in which can use @var{input} as the second argument.
+The other argument is called the @dfn{output argument} of the query,
+it is expected to be unified with some output that the query wants to
+return to Elisp.  The output argument can be retrieved with
+@code{sweeprolog-next-solution}.  This function always returns
+@code{t} when its arguments are valid, otherwise it returns
+@code{nil}.
+@end defun
+
+@defun sweeprolog-next-solution
+@anchor{Definition of sweeprolog-next-solution}
+Return the next solution of the last Prolog query.  Return a cons cell
+@code{(@var{det} . @var{output})} if the query succeeded, where
+@var{det} is the symbol @code{!} if no choice points remain and
+@code{t} otherwise, and @var{output} is the output argument of the
+query converted to an Elisp S-expression.  If there are no more
+solutions, return @code{nil} instead.  If a Prolog exception was
+thrown, return a cons cell @code{(exception . @var{exp})} where
+@var{exp} is the exception term converted to Elisp.
+@end defun
+
+@defun sweeprolog-cut-query
+Cut the last Prolog query.  This releases any resources reserved for
+it and makes further calls to @code{sweeprolog-next-solution} invalid
+until you open a new query.
+@end defun
+
+@defun sweeprolog-close-query
+Close the last Prolog query.  Similar to @code{sweeprolog-cut-query}
+expect that any unifications created by the last query are dropped.
+@end defun
+
+Sweep provides the Elisp function @samp{sweeprolog-open-query} for
+invoking Prolog predicates.  The predicate you invoke via this
+function must be of arity two, and it will be called in mode
+@code{p(+In, -Out)}---the predicate should treat the first argument as
+input and expect a variable as the second argument, which it should
+unify with some output.  This restriction is placed in order to
+facilitate a natural calling convention between Elisp, a functional
+language, and Prolog, a logical one.
+
+The @code{sweeprolog-open-query} function takes five arguments, the
+first three are strings which denote:
+@itemize
+@item
+The name of the Prolog context module from which to execute the query,
+@item
+The name of the module in which the invoked predicate is defined, and
+@item
+The name of the predicate to call.
+@end itemize
+
+The fourth argument to @code{sweeprolog-open-query} is converted into
+a Prolog term and used as the first argument of the predicate
+(@pxref{Elisp to Prolog}).  The fifth argument is an optional
+@dfn{reverse flag}---when this flag is set to non-@code{nil}, the
+order of the arguments is reversed such that the predicate is called
+in mode @code{p(-Out, +In)} rather than @code{p(+In, -Out)}.
+
+To examine th results of a Prolog query, use the function
+@code{sweeprolog-next-solution}.  If the query succeeded,
+@code{sweeprolog-next-solution} returns a cons cell whose @code{car}
+is either the symbol @code{!} when the success was deterministic or
+@code{t} otherwise, and the @code{cdr} is the current value of the
+second (output) Prolog argument converted to an Elisp object
+(@pxref{Prolog to Elisp}).  If the query failed,
+@code{sweeprolog-next-solution} returns nil.
+
+Sweep only executes one Prolog query at a given time, so you need to
+close close queries that you open with @code{sweeprolog-open-query}
+before opening new ones.  When no more solutions are available for the
+current query (@code{sweeprolog-next-solution} returns @code{nil}), or
+when you're otherwise not interested in more solutions, you must close
+the query with either @code{sweeprolog-cut-query} or
+@code{sweeprolog-close-query}. Both of these functions close the
+current query, but @code{sweeprolog-close-query} also destroys any
+Prolog bindings that it created.
+
+@menu
+* Elisp to Prolog::              How sweep translates Emacs Lisp to Prolog
+* Prolog to Elisp::              How sweep translates Prolog to Emacs Lisp
+* Example Query::                Counting solutions for a Prolog predicate in Elisp
+* Call Back to Elisp::           Special predicates for calling back to Emacs from Prolog
+@end menu
+
+@node Elisp to Prolog
+@section Conversion of Elisp objects to Prolog terms
+
+Sweep converts Elisp objects into Prolog terms to allow the Elisp
+programmers to specify arguments for Prolog predicates invocations
+(@pxref{Definition of sweeprolog-open-query}).  Seeing as some Elisp
+objects, like Elisp compiled functions, wouldn't be as useful for
+passing to Prolog as others, Sweep only converts Elisp objects of
+certain types to Prolog, namely Sweep currently converts @emph{trees
+of strings and numbers}:
+
+@itemize
+@item
+Elisp strings are converted to equivalent Prolog strings.
+@item
+Elisp integers are converted to equivalent Prolog integers.
+@item
+Elisp floats are converted to equivalent Prolog floats.
+@item
+The Elisp nil object is converted to the Prolog empty list @samp{[]}.
+@item
+Elisp cons cells are converted to Prolog lists whose head and tail
+are the Prolog representations of the @samp{car} and the @samp{cdr} of the cons.
+@end itemize
+
+@node Prolog to Elisp
+@section Conversion of Prolog terms to Elisp objects
+
+Sweep converts Prolog terms into Elisp object to allow efficient
+processing of Prolog query results in Elisp (@pxref{Definition of
+sweeprolog-next-solution}).
+
+@itemize
+@item
+Prolog strings are converted to equivalent Elisp strings.
+@item
+Prolog integers are converted to equivalent Elisp integers.
+@item
+Prolog floats are converted to equivalent Elisp floats.
+@item
+A Prolog atom @code{foo} is converted to a cons cell @code{(atom . "foo")}.
+@item
+The Prolog empty list @code{[]} is converted to the Elisp @code{nil} object.
+@item
+Prolog lists are converted to Elisp cons cells whose @code{car} and @code{cdr} are
+the representations of the head and the tail of the list.
+@item
+Prolog compounds are converted to list whose first element is the
+symbol @code{compound}. The second element is a string denoting the
+functor name of the compound, and the rest of the elements are the
+arguments of the compound in their Elisp representation.
+@item
+All other Prolog terms (variables, blobs and dicts) are currently
+represented in Elisp only by their type:
+@itemize
+@item
+Prolog variables are converted to the symbol @code{variable},
+@item
+Prolog blobs are converted to the symbol @code{blob}, and
+@item
+Prolog dicts are converted to the symbol @code{dict}.
+@end itemize
+@end itemize
+
+@node Example Query
+@section Counting solutions for a Prolog predicate in Elisp
+
+Below is an example usage of the Sweep interface for calling Prolog.
+It shows an invocation of the non-deterministic predicate
+@code{lists:permutation/2} directly from an function Elisp that counts
+the number of different permutations of the list @code{(1 2 3 4 5)}:
+
+@lisp
+(sweeprolog-open-query "user" "lists" "permutation" '(1 2 3 4 5))
+(let ((num 0)
+      (sol (sweeprolog-next-solution)))
+  (while sol
+    (setq num (1+ num))
+    (setq sol (sweeprolog-next-solution)))
+  (sweeprolog-close-query)
+  num)
+@end lisp
+
+@node Call Back to Elisp
+@section Calling Elisp function inside Prolog queries
+
+Sweep defines the foreign Prolog predicates @code{sweep_funcall/2} and
+@code{sweep_funcall/3}, that you can use for calling Elisp functions
+from Prolog code.  You can only call these predicates in the context
+of a Prolog query initiated by @code{sweeprolog-open-query}, meaning
+that they only work in the main Prolog thread (which is also Emacs's
+main thread).  The first argument to these predicates is a Prolog
+string holding the name of the Elisp function to call.  The last
+argument to these predicates is unified with the return value of the
+Elisp function, represented as a Prolog term (@pxref{Elisp to
+Prolog}).  @code{sweep_funcall/3} converts its second argument to an
+Elisp object (@pxref{Prolog to Elisp}) and passes it as a sole
+argument to the Elisp function it invokes.  The @code{sweep_funcall/2}
+variant invokes the Elisp function without any arguments.
+
+@node Editing Prolog Code
+@chapter Editing Prolog code
+
+@cindex Sweep Prolog mode
+@cindex sweeprolog-mode
+@cindex major mode for Prolog, sweeprolog-mode
+@cindex Prolog major mode, sweeprolog-mode
+Sweep includes a dedicated major mode for reading and editing Prolog
+code---Sweep Prolog mode, or simply @code{sweeprolog-mode}.
+
+@findex sweeprolog-mode
+@deffn Command sweeprolog-mode
+Enable the Sweep Prolog major mode for reading and editing SWI-Prolog
+code in the current buffer.
+@end deffn
+
+@defvar sweeprolog-mode-hook
+Hook run after entering Sweep Prolog mode.  @xref{Hooks,,,emacs,}, for
+more information about major mode hooks in Emacs.
+@end defvar
+
+To activate this mode in a buffer, type @kbd{M-x sweeprolog-mode
+@key{RET}}.  To instruct Emacs to always open Prolog files in Sweep
+Prolog mode, modify the Emacs variable @code{auto-mode-alist}
+accordingly:
+
+@lisp
+(add-to-list 'auto-mode-alist '("\\.plt?\\'"  . sweeprolog-mode))
+@end lisp
+
+@xref{Choosing Modes,,,emacs,}, for more information about how Emacs
+chooses a major mode to use when you visit a file.
+
+To list all of the commands available in a Sweep Prolog mode buffer,
+type @kbd{C-h m} (@code{describe-mode}).  When Menu Bar mode is
+enabled, you can run many of these commands via the Sweep menu.  For
+more information about Menu Bar mode, @pxref{Menu Bars,,,emacs,}.
+
+@menu
+* Indentation::                  How sweep indents Prolog code
+* Highlighting::                 Rich fontification for Prolog code
+* Hover for Help::               Display description of Prolog tokens by hovering with the mouse
+* Code Layout::                  Commands for aligning Prolog code without having to count spaces
+* Term-based Editing::           Commands that recognize and operate on Prolog terms
+* Holes::                        Commands for finding and filling holes for interactive term insertion
+* Cross References::             Commands for finding cross-references for Prolog predicates
+* Predicate Boundaries::         Commands operating on a Prolog predicate definition as a single unit
+* File Specifications::          Commands for jumping to files that appear in Prolog code
+* Loading Buffers::              Commands for loading Prolog predicates from the current buffer
+* Setting Breakpoints::          Commands for setting breakpoints in Prolog buffers
+* Creating New Modules::         Commands for populating new Prolog modules with predefined contents
+* Documenting Code::             Commands for adding documentation to Prolog predicate definitions
+* Usage Comments::               Commands for inserting comments that show example usage of your code
+* Showing Prolog Docs::          Commands for showing documentation for Prolog predicates
+* Showing Errors::               Commands for finding errors in Prolog code
+* Exporting Predicates::         Commands for adding Prolog predicates to their module's export list
+* Code Completion::              Auto-completion commands for Prolog code
+* Insert Term DWIM::             Commands for smart insertion of Prolog terms based on the surrounding context
+* Writing Tests::                Commands that facilitate writing Prolog unit tests
+* Code Dependencies::            Commands for managing dependencies of Prolog source files on each other
+* Term Search::                  Search for Prolog terms matching with a given structure
+* Context Menu::                 Right-click on Prolog code to open contextual menus
+* Renaming Variables::           Replacing occurrences of one Prolog variable with another
+* Numbered Variables::           Commands for managing numbers in names of related variables
+* Macro Expansion::              Commands for expanding SWI-Prolog macros
+@end menu
+
+@node Indentation
+@section Indentation
+
+@cindex indentation
+Sweep Prolog mode uses a bespoke @dfn{indentation engine} to determine
+the appropriate indentation of each line of Prolog code.  The
+indentation engine analyses the syntactic context of a given line and
+decides how far it should be indented based on a set of
+@dfn{indentation rules}.
+
+@table @kbd
+@kindex TAB @r{(Sweep Prolog mode)}
+@kindex C-i @r{(Sweep Prolog mode)}
+@findex indent-for-tab-command
+@item @key{TAB}
+@itemx C-i
+Indent the current line.  If the region is active, indent all the
+lines within it (@code{indent-for-tab-command}).
+@end table
+
+@defun sweeprolog-indent-line
+Indent the current line according to SWI-Prolog conventions.  This
+function is used as the value of @code{indent-line-function} in Sweep
+Prolog mode buffers.
+@end defun
+
+@findex sweeprolog-infer-indent-style
+@deffn Command sweeprolog-infer-indent-style
+Infer the @dfn{indentation style} of the current buffer from its
+contents.
+@end deffn
+
+@defopt sweeprolog-indent-offset
+Number of columns to indent nested code to in Sweep Prolog mode buffers.
+@end defopt
+
+The entry point of the indentation engine is the function
+@code{sweeprolog-indent-line} which takes no arguments and indents the
+line at point.  Sweep Prolog mode cooperates with the standard Emacs
+interface for indentation by arranging for
+@code{sweeprolog-indent-line} to be called whenever a line should be
+indented, notably when you press @code{TAB}.  For a full description
+of the available commands and options that pertain to indentation,
+@xref{Indentation,,,emacs,}.
+
+@cindex indentation style
+@vindex indent-tabs-mode
+The user option @code{sweeprolog-indent-offset} specifies how many
+columns Sweep keeps empty between every level of indentation.  The
+standard Emacs variable @code{indent-tabs-mode} determines if
+indentation can use tabs or only spaces.  You may sometimes want to
+adjust these options to match the indentation style used in an
+existing Prolog codebase.  The command
+@code{sweeprolog-infer-indent-style} can do that for you by analyzing
+the contents of the current buffer and updating the buffer-local
+values of @code{sweeprolog-indent-offset} and @code{indent-tabs-mode}
+accordingly.  Consider adding @code{sweeprolog-infer-indent-style} to
+@code{sweeprolog-mode-hook} to have it set up the indentation style
+automatically in all Sweep Prolog mode buffers:
+
+@lisp
+(add-hook 'sweeprolog-mode-hook #'sweeprolog-infer-indent-style)
+@end lisp
+
+@menu
+* Indentation Rules::            The intented indentation scenaria
+@end menu
+
+@node Indentation Rules
+@subsection Indentation rules
+
+Sweep Prolog mode indents lines according to the following rules:
+
+@enumerate
+@item
+If the current line starts inside a string or a multi-line comment,
+do not indent.
+@item
+If the current line starts with a top term, do not indent.
+@item
+If the current line starts with a closing parenthesis and the
+matching opening parenthesis is part of a functor, indent to the
+column of the opening parenthesis if any arguments appear on the
+same line as the functor, otherwise indent to the start of the
+functor.
+
+This rule yields the following layouts:
+
+@example prolog
+some_functor(
+    some_arg
+).
+
+some_functor( some_arg
+            ).
+@end example
+
+@item
+If the current line is the first non-comment line of a clause body,
+indent to the starting column of the head term plus the value of the
+user option @code{sweeprolog-indent-offset} (by default, four extra
+columns).
+
+As an example, this rule yields the following layouts when
+@code{sweeprolog-indent-offset} is set to the default value of four
+columns:
+
+@example prolog
+some_functor(arg1, arg2) :-
+    body_term.
+
+asserta( some_functor(arg1, arg2) :-
+             body_term
+       ).
+@end example
+
+@item
+If the current line starts with the right hand side operand of an
+infix operator, indent to the starting column of the first operand
+in the chain of infix operators of the same precedence.
+
+This rule yields the following layouts:
+
+@example prolog
+head :- body1, body2, body3,
+        body4, body5.
+
+A is 1 * 2 ^ 3 * 4 *
+     5.
+
+A is 1 * 2 + 3 * 4 *
+             5.
+@end example
+
+@item
+If the last non-comment line ends with a functor and its opening
+parenthesis, indent to the starting column of the functor plus
+@code{sweeprolog-indent-offset}.
+
+This rule yields the following layout:
+
+@example prolog
+some_functor(
+    arg1, ...
+@end example
+
+@item
+If the last non-comment line ends with a prefix operator, indent to
+starting column of the operator plus @code{sweeprolog-indent-offset}.
+
+This rule yields the following layout:
+
+@example prolog
+:- multifile
+       predicate/3.
+@end example
+@end enumerate
+
+@node Highlighting
+@section Semantic Highlighting
+
+@cindex fontification
+@cindex highlighting
+@cindex syntax highlighting
+@cindex semantic highlighting
+Sweep Prolog mode highlights Prolog code through the standard Emacs
+@code{font-lock} system (@pxref{Font Lock,,,emacs,}).  Sweep Prolog
+mode highlights different tokens in Prolog code according to their
+semantics, determined through static analysis that Sweep performs on
+demand.  When you first open a buffer in Sweep Prolog mode, its entire
+contents are analyzed to collect and cache cross reference data, and
+Sweep highlight all of the code in the buffer accordingly.  In
+contrast, while you edit and move around the buffer, Sweep uses a
+faster, local analysis for updating the semantic highlighting in
+response to changes in the buffer.
+
+@table @kbd
+@kindex C-c C-c @r{(Sweep Prolog mode)}
+@findex sweeprolog-analyze-buffer
+@item C-c C-c
+Analyze the current buffer and update cross-references
+(@code{sweeprolog-analyze-buffer}).
+@end table
+
+@defopt sweeprolog-analyze-buffer-on-idle
+Whether to analyze @code{sweeprolog-mode} buffers on idle.  Defaults
+to @code{t}.
+@end defopt
+
+@defopt sweeprolog-analyze-buffer-max-size
+Maximum number of characters in a Sweep Prolog mode buffer to analyze
+on idle.  Larger buffers are not analyzed on idle.  Defaults to
+100,000 characters.
+@end defopt
+
+@defopt sweeprolog-analyze-buffer-min-interval
+Minimum number of idle seconds to wait before analyzing a
+@code{sweeprolog-mode} buffer.  Defaults to 1.5.
+@end defopt
+
+At any point in a @code{sweeprolog-mode} buffer, you can use the
+command @code{C-c C-c} (@kbd{M-x sweeprolog-analyze-buffer}) to update
+the cross reference cache and highlight the buffer accordingly.  When
+Sweep's Flymake integration is enabled, this command also updates the
+diagnostics for the current buffer (@pxref{Showing Errors}).  This may
+be useful, for example, after defining a new predicate.
+
+If the user option @code{sweeprolog-analyze-buffer-on-idle} is set to
+non-@code{nil} (as it is by default), Sweep also updates semantic
+highlighting in the buffer whenever Emacs is idle for a reasonable
+amount of time, unless the buffer is larger than the value of the
+@code{sweeprolog-analyze-buffer-max-size} user option.  You can
+specify a minimum idle time for Sweep to wait before updating
+reanalyzing the buffer highlighting is controlled by customizing the
+user option @code{sweeprolog-analyze-buffer-min-interval}.
+
+To view and customize the various faces that Sweep defines and uses
+for semantic highlighting, type @code{M-x customize-group @key{RET}
+sweeprolog-faces @key{RET}}.  @xref{Faces,,,emacs,}, for more
+information about text faces in Emacs.
+
+@menu
+* PceEmacs Theme::               Custom theme that mimics PceEmacs, the SWI-Prolog built-in editor
+* Highlight Variables::          Commands for emphasizing all occurrences of a Prolog variable
+* Quasi-Quotation::              Delegating fontification of quasi-quoted contents to other Emacs major modes
+@end menu
+
+@node PceEmacs Theme
+@subsection PceEmacs Highlighting Emulation
+
+@cindex theme, PceEmacs
+@cindex theme, sweeprolog-pce
+@cindex PceEmacs theme
+@cindex sweeprolog-pce, theme
+Sweep comes with a custom theme called @code{sweeprolog-pce}, that
+emulates the Prolog code highlighting provided by @dfn{PceEmacs}, the
+SWI-Prolog built-in Emacs-like editor (see
+@uref{https://www.swi-prolog.org/pldoc/man?section=pceemacs, Using the
+PceEmacs built-in editor} in the SWI-Prolog manual).  If you are
+starting out with Sweep after coming from PceEmacs, enabling this
+theme may soften your landing by providing a more familiar experience.
+
+The @code{sweeprolog-pce} theme only affects faces that Sweep itself
+defines, so you can use it along other themes that you may have
+enabled.  To enable this theme or the current Emacs session, type
+@kbd{M-x load-theme @key{RET} sweeprolog-pce @key{RET}}.  To enable it
+for future sessions, add the following to your Emacs configuration:
+
+@lisp
+(load-theme 'sweeprolog-pce t)
+@end lisp
+
+For more information about custom themes in Emacs, @xref{Custom
+Themes,,,emacs,}.
+
+@vindex sweeprolog-faces-style
+In versions up to and including 0.20.0, Sweep used to provide a
+different mechanism for emulating the highlighting of PceEmacs that
+involved customizing the user option @code{sweeprolog-faces-style}.
+When that option was set to @code{light} or @code{dark}, Sweep would
+use different sets of faces that mimic the highlighting of PceEmacs.
+@code{sweeprolog-faces-style} is now deprecated, and you should
+instead use the @code{sweeprolog-pce} theme.  Still, in benefit of
+users that have @code{sweeprolog-faces-style} set and expect Sweep to
+use PceEmacs highlighting, Sweep checks if
+@code{sweeprolog-faces-style} is either @code{light} or @code{dark}
+when you first open a Prolog buffer, and if so it simply enables the
+@code{sweeprolog-pce} theme to get the same effect.
+
+@node Highlight Variables
+@subsection Highlighting occurrences of a variable
+
+@cindex variable highlighting
+@cindex highlighting variables
+Sweep Prolog mode can highlight all occurrences of a given Prolog
+variable in the clause in which it appears.  By default, occurrences
+of the variable at point are highlighted automatically whenever you
+move the cursor into a variable.  To achieve this, Sweep uses the
+Emacs minor mode @code{cursor-sensor-mode} which allows for running
+hooks when the cursor enters or leaves certain text regions
+(@pxref{Special Properties,Special Properties in the Elisp
+manual,,elisp,}).
+
+@findex sweeprolog-highlight-variable
+@deffn Command sweeprolog-highlight-variable
+Highlight occurrences of a Prolog variable in the clause at point.
+With a prefix argument, clear variable highlighting in the clause at
+point instead.
+@end deffn
+
+@defopt sweeprolog-enable-cursor-sensor
+Whether to use @code{cursor-sensor-mode} to highlight occurrences of
+the Prolog variable across the current clause.  Defaults to @code{t}.
+@end defopt
+
+To disable automatic variable highlighting based on the variable at
+point, customize @code{sweeprolog-enable-cursor-sensor} to nil.
+
+To manually highlight occurrences of a variable in the current clause,
+use the command @code{M-x sweeprolog-highlight-variable}.  This
+command prompts for variable to highlight, defaulting to the variable
+at point, if any.  If you call it with a prefix argument (@kbd{C-u M-x
+sweeprolog-highlight-variable @key{RET}}), it clears all variable
+highlighting in the current clause instead.
+
+@node Quasi-Quotation
+@subsection Quasi-quotation highlighting
+
+SWI-Prolog supports @dfn{quasi-quotations}, which allow you to
+incorporate different languages as part of your Prolog code.  Sweep
+recognizes quasi-quotations and highlights their contents according to
+the Emacs mode corresponding to the quoted language.
+
+@defopt sweeprolog-qq-mode-alist
+Alist of @code{(@var{type} . @var{mode})} pairs, where @var{type} is a
+Prolog quasi-quotation type, and @var{mode} is a symbol specifying the
+major mode to use for highlighting quasi-quoted text of type
+@var{type}.
+@end defopt
+
+The user option @code{sweeprolog-qq-mode-alist} specifies the
+association between SWI-Prolog quasi-quotation types and Emacs major
+modes.  By default, Sweep defines associations for HTML and JavaScript
+quasi-quotation types.  You can change the default choice of mode for
+these highlighting languages and add associations for other languages
+by customizing @code{sweeprolog-qq-mode-alist}.
+
+If a quasi-quotation type does not have a matching mode in
+@code{sweeprolog-qq-mode-alist}, Sweep highlights the quoted content
+with the @code{sweeprolog-qq-content} face.
+
+For more information about quasi-quotations in SWI-Prolog, see
+@uref{https://www.swi-prolog.org/pldoc/man?section=quasiquotations,
+library(quasi_quotations) in the SWI-Prolog manual}.
+
+@node Hover for Help
+@section Hover for Help
+
+In @xref{Highlighting, , Semantic Highlighting}, we talked about how
+Sweep performs semantic analysis to determine the meaning of different
+terms in different contexts and highlight them accordingly.  Beyond
+highlighting, Sweep can also tell you exactly what different tokens in
+Prolog code mean by annotating them with a textual description that's
+displayed when you hover over them with the mouse.
+
+@defopt sweeprolog-enable-help-echo
+Whether to annotate Prolog tokens with help text via the
+@code{help-echo} text property.  Defaults to @code{t}.
+@end defopt
+
+@table @kbd
+@kindex C-h .
+@findex display-local-help
+@item C-h .
+Display the @code{help-echo} text of the token at point in the echo
+area (@code{display-local-help}).
+@end table
+
+If the user option @code{sweeprolog-enable-help-echo} is
+non-@code{nil}, as it is by default, Sweep annotates Prolog tokens
+with a short description of their meaning in that specific context.
+This is done by adding the @code{help-echo} text property to different
+parts of the buffer based on semantic analysis.  The @code{help-echo}
+text is automatically displayed at the mouse tooltip when you hover
+over different tokens in the buffer.
+
+Alternatively, you can display the @code{help-echo} text for the token
+at point in the echo area by typing @kbd{C-h .} (@kbd{C-h} followed by
+a dot).
+
+The @code{help-echo} description of file specification in import
+directives is especially useful as it tells you which predicates that
+the current buffer uses actually come from the imported file.  For
+example, if we have a Prolog file with the following contents:
+
+@example prolog
+:- use_module(library(lists)).
+
+foo(Foo, Bar) :- flatten(Bar, Baz), member(Foo, Baz).
+@end example
+
+Then hovering over @code{library(lists)} shows:
+
+@quotation
+Dependency on /usr/local/lib/swipl/library/lists.pl, resolves calls to flatten/2, member/2
+@end quotation
+
+@node Code Layout
+@section Maintaining Code Layout
+
+@cindex whitespace
+@cindex alignment
+@cindex layout
+Some Prolog constructs, such as if-then-else constructs, have a
+conventional @dfn{layout} in which each goal starts at the fourth
+column after the beginning of the opening parenthesis or operator.
+For example:
+
+@example prolog
+(   if
+->  then
+;   else
+*-> elif
+;   true
+)
+@end example
+
+To help you in maintaining the desired layout without having to
+manually count spaces, Sweep provides the command
+@code{sweeprolog-align-spaces} that updates the whitespace around
+point such that the next token is aligned to a (multiple of) four
+columns from the start of the previous token.  Sweep also provides a
+dedicated minor mode @code{sweeprolog-electric-layout-mode} that
+adjusts whitespace around point automatically as you type
+(@ref{Electric Layout mode, , Electric Layout mode}).
+
+@menu
+* Aligning Spaces::              Commands for adjusting whitespace according to Prolog conventions
+* Electric Layout mode::         Minor mode for automatically adjusting whitespace
+@end menu
+
+@node Aligning Spaces
+@subsection Inserting the Right Number of Spaces
+
+@findex sweeprolog-align-spaces
+@deffn Command sweeprolog-align-spaces
+Insert or remove spaces around point to such that the next Prolog
+token starts at a column distanced from the beginning of the previous
+token by a multiple of four columns.
+@end deffn
+
+@defopt sweeprolog-enable-cycle-spacing
+Whether to add @code{sweeprolog-align-spaces} as the first element of
+@code{cycle-spacing-actions} in Sweep Prolog mode buffers.  Defaults
+to @code{t}.
+@end defopt
+
+To insert or update whitespace around point, use the command @code{M-x
+sweeprolog-align-spaces}.  As an example, consider a Sweep Prolog mode
+buffer with the following contents, where @point{} designates the
+location of the cursor:
+
+@example prolog
+foo :-
+    (   if
+    ;@point{}
+@end example
+
+Calling @code{M-x sweeprolog-align-spaces} inserts three spaces, to
+yield the expected layout:
+
+@example prolog
+foo :-
+    (   if
+    ;   @point{}
+@end example
+
+@findex cycle-spacing
+In Emacs 29, you can extend the command @code{M-x cycle-spacing} via a
+list of callback functions specified by the variable
+@code{cycle-spacing-actions}.  Sweep leverages this facility and adds
+@code{sweeprolog-align-spaces} as the first action of
+@code{cycle-spacing}.  To inhibit @code{sweeprolog-mode} from doing
+so, set the user option @code{sweeprolog-enable-cycle-spacing} to nil.
+
+@kindex M-SPC
+Moreover, in Emacs 29 @code{cycle-spacing} is bound by default to
+@kbd{M-@key{SPC}}, which means that all you need to do to align
+if-then-else and similar constructs is to type @kbd{M-@key{SPC}} after
+the first token.
+
+In Emacs prior to version 29, you can bind
+@code{sweeprolog-align-spaces} to @kbd{M-@key{SPC}} directly by adding
+the following lines to Emacs's initialization file (@pxref{Init
+File,,,emacs,}).
+
+@lisp
+(eval-after-load 'sweeprolog
+  '(define-key sweeprolog-mode-map (kbd "M-SPC") #'sweeprolog-align-spaces))
+@end lisp
+
+@node Electric Layout mode
+@subsection Electric Layout mode
+
+@cindex electric layout
+The minor mode @code{sweeprolog-electric-layout-mode} adjusts
+whitespace around point automatically as you type:
+
+@findex sweeprolog-electric-layout-mode
+@deffn Command sweeprolog-electric-layout-mode
+Toggle automatic whitespace adjustment according to SWI-Prolog
+conventions.
+@end deffn
+
+It works by examining the context of point whenever a character is
+inserted in the current buffer, and applying the following layout
+rules:
+
+@table @asis
+@item @samp{PlDoc} Comments
+Insert two consecutive spaces after the @code{%!} or @code{%%}
+starting a @samp{PlDoc} predicate documentation structured comment.
+@item If-Then-Else
+Insert spaces after a part of an if-then-else
+constructs such that point is positioned four columns after its
+beginning.  The specific tokens that trigger this rule are the
+opening parenthesis @code{(} and the operators @code{;}, @code{->} and @code{*->}, and only if
+they are inserted in a callable context, where an if-then-else
+construct would normally appear.
+@end table
+
+To enable this mode in a Sweep Prolog mode buffer, type @kbd{M-x
+sweeprolog-electric-layout-mode @key{RET}}.  You can automate this
+step by adding @code{sweeprolog-electric-layout-mode} to
+@code{sweeprolog-mode-hook} in your Emacs configuration:
+
+@lisp
+(add-hook 'sweeprolog-mode-hook #'sweeprolog-electric-layout-mode)
+@end lisp
+
+@node Term-based Editing
+@section Term-based editing and motion commands
+
+@cindex sexps
+@cindex S-expressions
+@cindex terms, editing
+@cindex editing terms
+Emacs includes many useful features for operating on syntactic units
+in source code buffer, such as marking, transposing and moving over
+expressions.  By default, these features are geared towards working
+with Lisp expressions, or S-expressions.  Sweep extends Emacs's notion
+of syntactic expressions to accommodate for Prolog terms, which allows
+the standard S-expression based commands to operate on Prolog terms
+seamlessly.
+
+The Emacs manual covers the most important commands that operate on
+S-expressions, and by extension on Prolog terms.
+@xref{Expressions,,,emacs,}.  Another useful command for Prolog
+programmers is @kbd{M-x kill-backward-up-list}, bound by default to
+@kbd{C-M-^} in Sweep Prolog mode buffers.
+
+@table @kbd
+@kindex C-M-^
+@findex kill-backward-up-list
+@item C-M-^
+Kill the Prolog term containing the current term, leaving the current
+term itself (@code{kill-backward-up-list}).
+@end table
+
+This command replaces the parent term containing the term at point
+with the term itself.  To illustrate the utility of this command,
+consider the following clause:
+
+@example prolog
+head :-
+    goal1,
+    setup_call_cleanup(setup,
+                       goal2,
+                       cleanup).
+@end example
+
+Now with point anywhere inside @code{goal2}, calling
+@code{kill-backward-up-list} removes the @code{setup_call_cleanup/3}
+term leaving @code{goal2} to be called directly:
+
+@example prolog
+head :-
+    goal1,
+    goal2.
+@end example
+
+@node Holes
+@section Holes
+
+@cindex holes
+@dfn{Holes} are Prolog variables that some Sweep commands use as
+placeholder for other terms.
+
+When writing Prolog code in the usual way of typing in one character
+at a time, the buffer text is often found in a syntactically incorrect
+state while you edit it.  This happens for example right after you
+insert an infix operator, before typing its expected right-hand side
+argument.  Sweep provides an alternative method for inserting Prolog
+terms in a way that maintains the syntactic correctness of the buffer
+text while allowing the user to incrementally refine it by using
+placeholder terms, called simply @dfn{holes}.  Holes indicate the
+location of missing terms that the user can later fill in, essentially
+they represent source-level unknown terms and their presence satisfies
+the Prolog parser.  Holes are written in the buffer as regular Prolog
+variables, but they are annotated with a special text property that
+allows Sweep to recognize them as holes needed to be filled.
+
+@xref{Terms with Holes, , Inserting Terms with Holes}, for a command
+that uses holes to let you write syntactically correct Prolog terms
+incrementally.  Several other Sweep commands insert holes in place of
+unknown terms, including @kbd{C-M-i} (@pxref{Code Completion}),
+@kbd{C-M-m} (@pxref{Insert Term DWIM, , Context-Based Term Insertion})
+and @kbd{M-x sweeprolog-plunit-testset-skeleton}
+(@pxref{Writing Tests}).
+
+@menu
+* Terms with Holes::             Write Prolog one term at a time, not one character at a time
+* Jumping to Holes::             Commands for going to the next hole in the buffer
+* Filling Holes::                Filling holes in Prolog terms
+* Highlighting Holes::           Options for highlighting holes
+@end menu
+
+@node Terms with Holes
+@subsection Inserting Terms with Holes
+
+Use the command @kbd{C-c @key{RET}} to add a term to the buffer at
+point while keeping it syntactically correct.  You don't need to give
+the entire term at once, only its functor and arity.  Sweep
+automatically inserts holes for the arguments (if any), which you can
+incrementally fill one after the other.
+
+@table @kbd
+@kindex C-c RET
+@findex sweeprolog-insert-term-with-holes
+@item C-c @key{RET}
+Insert a Prolog term with a given functor and arity at point, using
+holes for arguments (@code{sweeprolog-insert-term-with-holes}).
+@end table
+
+The main command for inserting terms with holes is
+@code{sweeprolog-insert-term-with-holes}.  This command, bound by
+default to @kbd{C-c C-m} (or @kbd{C-c @key{RET}}) in Sweep Prolog mode
+buffers, prompts for a functor and an arity and inserts a
+corresponding term with holes in place of the term's arguments.  It
+leaves point right after the first hole, sets the mark to its start
+and activates the region such that the hole is marked.  Call
+@code{sweeprolog-insert-term-with-holes} again to replace the active
+region, which now covers the first hole, with another term, that may
+again contain further holes.  That way you can incrementally write a
+Prolog term, including whole clauses, by working down the syntactic
+structure of the term and maintaining its correctness all the while.
+Without a prefix argument, @code{sweeprolog-insert-term-with-holes}
+prompts for the functor and the arity to use.  A non-negative prefix
+argument, such as @kbd{C-2 C-c C-m} or @kbd{C-u C-c C-m}, is taken to
+be the inserted term's arity and in this case
+@code{sweeprolog-insert-term-with-holes} only prompts for the functor
+to insert.  A negative prefix argument, @kbd{C-- C-c C-m}, inserts
+only a single hole without prompting for a functor.  To further help
+with keeping the buffer syntactically correct, this command adds a
+comma (@code{,}) before or after the inserted term when needed
+according to the surrounding tokens.  If you call it at the end of a
+term that doesn't have a closing fullstop, it adds the fullstop after
+the inserted term.
+
+@node Jumping to Holes
+@subsection Jumping to Holes
+
+Use these commands to move between holes in the current Prolog buffer:
+
+@table @kbd
+@kindex C-c TAB
+@kindex C-c C-i
+@findex sweeprolog-forward-hole
+@item C-c @key{TAB}
+@itemx C-c C-i
+Move point to the next hole in the buffer and select it as the region.
+With numeric prefix argument @var{n}, move forward over @var{n} - 1
+holes and select the next one (@code{sweeprolog-forward-hole}).
+
+@kindex C-c S-TAB
+@kindex C-c C-I
+@findex sweeprolog-backward-hole
+@item C-c S-@key{TAB}
+@itemx C-c C-I
+Move point to the previous hole in the buffer and select it as the
+region.  With numeric prefix argument @var{n}, move backward over
+@var{n} - 1 holes and select the next one
+(@code{sweeprolog-backward-hole}).
+
+@kindex C-0 C-c TAB
+@kindex C-0 C-c C-i
+@findex sweeprolog-count-holes
+@item C-0 C-c @key{TAB}
+@item C-0 C-c C-i
+Display the number of holes that are present in the buffer
+(@code{sweeprolog-count-holes}).
+@end table
+
+@findex sweeprolog-forward-hole-on-tab-mode
+@deffn Command sweeprolog-forward-hole-on-tab-mode
+Toggle moving to the next hole in the buffer with @code{TAB} if the
+current line is already properly indented.
+@end deffn
+
+To jump to the next hole in a Sweep Prolog mode buffer, use the
+command @code{sweeprolog-forward-hole}, bound by default to @kbd{C-c
+@key{TAB}} (or @kbd{C-c C-i}).  This command sets up the region to
+cover the next hole after point leaving the cursor at right after the
+hole.  To jump to the previous hole use @kbd{C-c S-@key{TAB}}
+(@code{sweeprolog-backward-hole}), or call
+@code{sweeprolog-forward-hole} with a negative prefix argument
+(@kbd{C-- C-c @key{TAB}}).
+
+You can also call @code{sweeprolog-forward-hole} and
+@code{sweeprolog-backward-hole} with a numeric prefix argument to jump
+over the specified number of holes.  For example, typing @kbd{C-3 C-c
+@key{TAB}} skips the next two holes in the buffer and selects the
+third as the region.  As a special case, if you call these commands
+with a zero prefix argument (@kbd{C-0 C-c @key{TAB}}), they invoke the
+command @code{sweeprolog-count-holes} instead of jumping.  This
+command counts how many holes are left in the current buffer and
+reports its finding via a message in the echo area.
+
+When the minor mode @code{sweeprolog-forward-hole-on-tab-mode} is
+enabled, the @kbd{@key{TAB}} key is bound to a command moves to the
+next hole when called in a properly indented line (otherwise it
+indents the line).  This makes moving between holes in the buffer
+easier since you can use @kbd{@key{TAB}} instead of @key{C-c
+@key{TAB}} in most cases.  To enable this mode in a, type @kbd{M-x
+sweeprolog-forward-hole-on-tab-mode-map @key{RET}}.  You can automate
+this step by adding @code{sweeprolog-forward-hole-on-tab-mode} to
+@code{sweeprolog-mode-hook} in your Emacs configuration:
+
+@lisp
+(add-hook 'sweeprolog-mode-hook #'sweeprolog-forward-hole-on-tab-mode)
+@end lisp
+
+@node Filling Holes
+@subsection Filling Holes
+
+Filling a hole means replacing it in the buffer with a Prolog term.
+The simplest way to fill a hole is how you would replace any other
+piece of text in Emacs---select it as the region, kill it (for
+example, with @kbd{C-w}) and insert another Prolog term in its place.
+For more information about the region, @ref{Mark,,,emacs,} in the
+Emacs manual.
+
+Yanking a hole with @kbd{C-y} (@code{yank}) after you kill it removes
+the special hole property and inserts it as a plain variable.  This
+can be useful if you want to keep the variable name that Sweep chose
+for the hole---simply press @kbd{C-w C-y} with the hole marked.
+
+As an alternative to manually killing the region with @kbd{C-w}, if
+you enable Delete Selection mode (@code{delete-selection-mode}), the
+hole is automatically removed as soon as you start typing while its
+marked.  @xref{Using Region,,,emacs,}, for more information about
+Delete Selection mode.
+
+Most Sweep commands that insert holes also move to the first hole they
+insert and select it as the region for you to fill it.  Similarly,
+jumping to the next hole in the buffer with @kbd{C-c @key{TAB}} also
+selects it.  The command @kbd{C-c @key{RET}} is specifically designed
+for filling holes by deleting the selected hole and inserting a Prolog
+term at once (@pxref{Terms with Holes, , Inserting Terms with Holes}).
+
+@node Highlighting Holes
+@subsection Highlighting Holes
+
+Sweep highlights holes in Prolog buffer by default so you can easily
+identify missing terms.
+
+@defopt sweeprolog-highlight-holes
+Whether to highlight holes in Sweep Prolog mode buffers with a
+dedicated face.  By default, this is set to @code{t}.
+@end defopt
+
+When the user option @code{sweeprolog-highlight-holes} is set to
+non-@code{nil}, Sweep highlights holes in Prolog buffers with a
+dedicated face to make them easily distinguishable from regular Prolog
+variables.  Hole highlighting is enabled by default, to disable it
+customize @code{sweeprolog-highlight-holes} to @code{nil}.
+
+@node Cross References
+@section Definitions and References
+
+@cindex xref
+@cindex cross reference
+@cindex jumping to definitions
+@cindex jumping to references
+@cindex definitions, jumping to
+@cindex references, jumping to
+@kindex M-.
+Sweep Prolog mode integrates with the Emacs @code{xref} API to
+facilitate quick access to predicate definitions and references in
+Prolog code buffers.  This enables the many commands that the
+@code{xref} interface provides, like @kbd{M-.}
+(@code{xref-find-definitions}) for jumping to the definition of the
+predicate at point.  @xref{Find Identifiers,,,emacs,}, for an overview
+of the available commands.
+
+@cindex imenu
+@kindex M-g i
+Sweep Prolog mode also integrates with Emacs's @code{imenu}, which
+provides a simple facility for looking up and jumping to definitions
+in the current buffer.  To jump to a definition in the current buffer,
+type @kbd{M-x imenu @key{RET}} (bound by default to @kbd{M-g i} in
+Emacs version 29 or later).  For information about customizing
+@samp{imenu}, @ref{Imenu,,,emacs,}.
+
+@findex sweeprolog-xref-project-source-files
+@kindex M-?
+You can use the command @code{sweeprolog-xref-project-source-files} to
+update Sweep's cross reference data for all Prolog source files in the
+current project.  To determine the set of source files in the current
+project, Sweep consults the functions @code{project-current} and
+@code{project-files} (@pxref{Projects,,,emacs,}).  When you search for
+references to Prolog predicates with @kbd{M-?}
+(@code{xref-find-references}), Sweep implicitly invokes
+@code{sweeprolog-xref-project-source-files} to bring you up-to-date
+references from across the current project.
+
+@node Predicate Boundaries
+@section Predicate Definition Boundaries
+
+@cindex predicate-based motion
+@cindex motion, predicate-based
+The following commands act on entire Prolog predicate definitions as a
+single unit:
+
+@table @kbd
+@kindex M-n
+@findex sweeprolog-forward-predicate
+@item M-n
+Move forward from point to the next predicate definition in the
+current buffer (@code{sweeprolog-forward-predicate}).
+
+@kindex M-p
+@findex sweeprolog-backward-predicate
+@item M-p
+Move backward from point to the previous predicate definition
+(@code{sweeprolog-backward-predicate}).
+
+@kindex M-h
+@findex sweeprolog-mark-predicate
+@item M-h
+Select the current predicate as the active region, put point at the
+its beginning, and the mark at the end
+(@code{sweeprolog-mark-predicate}).
+@end table
+
+In Sweep Prolog mode, the commands @kbd{M-n}
+(@code{sweeprolog-forward-predicate}) and @kbd{M-p}
+(@code{sweeprolog-backward-predicate}) are available for quickly
+jumping to the first line of the next or previous predicate definition
+in the current buffer.
+
+The command @kbd{M-h} (@code{sweeprolog-mark-predicate}) marks the
+entire predicate definition at point, along with its @samp{PlDoc}
+comments if there are any.  As an example, you can use this command to
+move an entire predicate definition typing @kbd{M-h C-w} and then
+yanking it elsewhere with @kbd{C-y}.
+
+@node File Specifications
+@section Following File Specifications
+
+In SWI-Prolog, one often refers to source file paths using @dfn{file
+specifications}, special Prolog terms that act as path aliases, such
+as @code{library(lists)} which refers to a file @file{lists.pl} in any
+of the Prolog library directories.
+
+@table @kbd
+@kindex C-c C-o
+@findex sweeprolog-find-file-at-point
+@item C-c C-o
+Resolve file specification at point and visit the specified file
+(@code{sweeprolog-find-file-at-point}).
+@end table
+
+@defun sweeprolog-file-at-point &optional point
+Return the file name specified by the Prolog file specification at
+@var{point}.
+@end defun
+
+You can follow file specifications that occur in Sweep Prolog mode
+buffers with @kbd{C-c C-o} (or @kbd{M-x sweeprolog-find-file-at-point
+@key{RET}}) whenever point is over a valid file specification.  For
+example, consider a Prolog file buffer with the common directive
+@code{use_module/1}:
+
+@example prolog
+:- use_module(library(lists)).
+@end example
+
+With point anywhere inside @code{library(lists)}, type @kbd{C-c C-o}
+to open the @file{lists.pl} file in the Prolog library.
+
+Sweep also extends Emacs's @code{file-name-at-point-functions} hook
+with the function @code{sweeprolog-file-at-point} that returns the
+resolved Prolog file specification at point, if any.  Emacs uses this
+hook to populate the ``future history'' of minibuffer prompts that
+read file names, such as the one you get when you type @kbd{C-x C-f}
+(@code{find-file}).  In particular this means that if point is in a
+Prolog file specification, you can type @kbd{M-n} after @kbd{C-x C-f}
+to populate the minibuffer with the corresponding file name.  You can
+then go ahead and visit the file by typing @kbd{@key{RET}}, or you can
+edit the minibuffer contents and visit a nearby file instead.
+
+For more information about file specifications in SWI-Prolog, see
+@uref{https://www.swi-prolog.org/pldoc/doc_for?object=absolute_file_name/3,
+@code{absolute_file_name/3} in the SWI-Prolog manual}.
+
+@node Loading Buffers
+@section Loading Buffers
+
+@cindex loading
+You can load a buffer of SWI-Prolog code with the following command:
+
+@table @kbd
+@kindex C-c C-l
+@findex sweeprolog-load-buffer
+@item C-c C-l
+Load the current buffer into the embedded SWI-Prolog runtime
+(@code{sweeprolog-load-buffer}).
+@end table
+
+Use the command @code{sweeprolog-load-buffer} to load the contents of
+a Sweep Prolog mode buffer into the embedded SWI-Prolog runtime.
+After a buffer is loaded, you can query the predicates it defines from
+Elisp (@pxref{Querying Prolog}) and from the Sweep top-level
+(@pxref{The Prolog Top-level}).  In Sweep Prolog mode buffers,
+@code{sweeprolog-load-buffer} is bound to @kbd{C-c C-l}.  By default
+this command loads the current buffer if its major mode is
+@code{sweeprolog-mode}, and prompts for an appropriate buffer
+otherwise.  To choose a different buffer to load while visiting a
+@code{sweeprolog-mode} buffer, invoke @code{sweeprolog-load-buffer}
+with a prefix argument (@kbd{C-u C-c C-l}).
+
+The mode line displays the word @samp{Loaded} next to the @samp{Sweep}
+major mode indicator if the current buffer has been loaded and hasn't
+been modified since.  @xref{Mode Line,,,emacs,}, for more information
+about the mode line.
+
+More relevant information about loading code in SWI-Prolog can be
+found in
+@uref{https://www.swi-prolog.org/pldoc/man?section=consulting, Loading
+Prolog source files in the SWI-Prolog manual}.
+
+@node Setting Breakpoints
+@section Setting Breakpoints
+
+@cindex breakpoints
+You can set @emph{breakpoints} in Sweep Prolog mode buffers to have
+SWI-Prolog break before specific goals in the code (see
+@uref{https://www.swi-prolog.org/pldoc/man?section=trace-breakpoints,
+Breakpoints in the SWI-Prolog manual}).
+
+@table @kbd
+@kindex C-c C-b
+@findex sweeprolog-set-breakpoint
+@item C-c C-b
+Set a breakpoint (@code{sweeprolog-set-breakpoint}).
+@end table
+
+@defopt sweeprolog-highlight-breakpoints
+Whether to highlight breakpoints in Sweep Prolog mode buffers.
+Defaults to @code{t}.
+@end defopt
+
+The command @code{sweeprolog-set-breakpoint}, bound to @kbd{C-c C-b},
+sets a breakpoint at the position of the cursor.  If you call it with
+a positive prefix argument (for example, @kbd{C-u C-c C-b}), it
+creates a conditional breakpoint with a condition goal that you insert
+in the minibuffer.  If you call it with a non-positive prefix argument
+(for example, @kbd{C-0 C-c C-b}), it deletes the breakpoint at point
+instead.
+
+When Context Menu mode is enabled, you can also create and delete
+breakpoints in @code{sweeprolog-mode} buffers through right-click
+context menus (@pxref{Context Menu}).
+
+By default, Sweep highlights terms with active breakpoints in Sweep
+Prolog mode buffers.  To inhibit breakpoint highlighting, customize
+the user option @code{sweeprolog-highlight-breakpoints} to @code{nil}.
+
+@menu
+* Breakpoint Menu::              Special mode for managing breakpoints
+@end menu
+
+@node Breakpoint Menu
+@subsection Breakpoint Menu
+
+Sweep provides a @dfn{breakpoint menu} that lets you manage
+breakpoints across your codebase.
+
+@findex sweeprolog-list-breakpoints
+@deffn Command sweeprolog-list-breakpoints
+Display a list of active breakpoints.
+@end deffn
+
+To open the breakpoint menu, type @kbd{M-x sweeprolog-list-breakpoints
+@key{RET}}.  This command opens the breakpoint menu in the
+@file{*Sweep Breakpoints*} buffer.  The major mode of this buffer is
+Sweep Breakpoint Menu, which is a special mode that includes useful
+commands for managing Prolog breakpoints:
+
+@table @kbd
+@kindex RET @r{(Sweep Breakpoint Menu mode)}
+@findex sweeprolog-breakpoint-menu-find
+@item @key{RET}
+Go to the position of the breakpoint corresponding to the breakpoint
+menu entry at point.
+
+@kindex o @r{(Sweep Breakpoint Menu mode)}
+@findex sweeprolog-breakpoint-menu-find-other-window
+@item o
+Show the position of the breakpoint corresponding to the breakpoint
+menu entry at point, in another window
+(@code{sweeprolog-breakpoint-menu-find-other-window}).
+
+@kindex c @r{(Sweep Breakpoint Menu mode)}
+@findex sweeprolog-breakpoint-menu-set-condition
+@item c
+Set the condition goal for the breakpoint corresponding to the
+breakpoint menu entry at point
+(@code{sweeprolog-breakpoint-menu-set-condition}).
+@end table
+
+@node Creating New Modules
+@section Creating New Modules
+
+@cindex auto-insert
+Sweep integrates with the Emacs @code{auto-insert} command to assist
+you with creating of new SWI-Prolog modules.  You can use
+@code{auto-insert} to populate new Prolog files with module template.
+
+@defopt sweeprolog-module-header-comment-skeleton
+Additional content to put in the topmost comment in Prolog module
+headers.
+@end defopt
+
+The command @code{auto-insert} in Sweep Prolog mode inserts a Prolog
+module skeleton that begins with a @dfn{module header} multi-line
+comment.  By default, this header includes your name and email address
+(@code{user-full-name} and @code{user-mail-address} respectively).  If
+you want the header to contain more information, you can extend it to
+suite yours needs by customizing
+@code{sweeprolog-module-header-comment-skeleton}. This can be useful,
+for example, for including copyright text in the header.
+
+After the header, the module skeleton inserts a @code{module/2}
+directive with the module name set to the base name of the file.
+
+Lastly the skeleton includes a @samp{PlDoc} module comment for you to
+fill with the module's documentation (see
+@uref{https://www.swi-prolog.org/pldoc/man?section=sectioncomments,
+File comments in the SWI-Prolog manual}).
+
+As an example, open a new Prolog file and call it @file{foo.pl} by
+typing @kbd{C-x C-f foo.pl @key{RET}}, and insert the module skeleton
+with @kbd{M-x auto-insert @key{RET}}.  The buffer contents should now
+be as follows:
+
+@example prolog
+/*
+    Author:        John Doe
+    Email:         john.doe@@example.com
+
+*/
+
+:- module(foo, []).
+
+/** <module>
+
+*/
+
+@end example
+
+To automatically insert the module skeleton whenever you open a new
+Prolog file, enable the minor mode @code{auto-insert-mode}.
+@xref{Autoinserting,Autoinserting in the Autotyping
+manual,,autotype,}, for detailed information about @code{auto-insert}
+and its customization options.
+
+@node Documenting Code
+@section Documenting Predicates
+
+@cindex document code
+@cindex comments
+@cindex pldoc
+SWI-Prolog predicates can be documented with specially structured
+comments placed above the predicate definition, which are processed by
+the @samp{PlDoc} source documentation system.  Emacs comes with many
+useful commands specifically intended for working with comments in
+programming languages, which apply also to writing @samp{PlDoc}
+comments for Prolog predicates.  For an overview of the relevant
+standard Emacs commands, @pxref{Comment Commands,,,emacs,}.
+
+@table @kbd
+@kindex C-c C-d
+@findex sweeprolog-document-predicate-at-point
+@item C-c C-d
+Insert @samp{PlDoc} documentation comment for the predicate at or
+above point (@code{sweeprolog-document-predicate-at-point}).
+@end table
+
+@defopt sweeprolog-read-predicate-documentation-function
+Function to use for determining the initial contents of documentation
+comments that you insert with
+@code{sweeprolog-document-predicate-at-point}.
+@end defopt
+
+@defun sweeprolog-read-predicate-documentation-default-function
+Prompt and read from the minibuffer the argument modes, determinism
+specification and initial summary of the given predicate.
+@end defun
+
+@defun sweeprolog-read-predicate-documentation-with-holes
+Use holes for the initial documentation of the given predicate.
+@end defun
+
+Sweep also includes a dedicated command called
+@code{sweeprolog-document-predicate-at-point} for interactively
+creating @samp{PlDoc} comments for predicates in
+@code{sweeprolog-mode} buffers.  This command, bound by default to
+@kbd{C-c C-d}, finds the beginning of the predicate definition under
+or right above the current cursor location, and inserts a formatted
+@samp{PlDoc} comment.  This command fills in initial argument modes,
+determinism specification, and optionally a summary line for the
+documented predicate.  There are different ways in which
+@code{sweeprolog-document-predicate-at-point} can obtain the needed
+initial documentation information, depending on the value of the user
+option @code{sweeprolog-read-predicate-documentation-function} which
+specifies a function to retrieve this information.  The default
+function prompts you to insert the parameters one by one via the
+minibuffer.  Alternatively, you can use holes (@pxref{Holes}) for the
+predicate's argument modes and determinism specifiers by setting this
+option to @code{sweeprolog-read-predicate-documentation-with-holes},
+as follows:
+
+@lisp
+(setq sweeprolog-read-predicate-documentation-function
+      #'sweeprolog-read-predicate-documentation-with-holes)
+@end lisp
+
+@code{sweeprolog-document-predicate-at-point} leaves the cursor at the
+end of the newly inserted documentation comment for you to extend or
+edit it as you see fit.  To add another comment line, use @kbd{M-j}
+(@code{default-indent-new-line}) which starts a new line with the
+comment prefix filled in.  Emacs has other powerful built-in features
+for working with comments in code buffers that you can leverage to
+edit @samp{PlDoc} comments---@xref{Comments,,,emacs,}, for the full
+details.  Furthermore you can make use of the rich support Emacs
+provides for editing natural language text when working on
+@samp{PlDoc} comments.  For example, to nicely format a paragraph of
+text, use @kbd{M-q} (@code{fill-paragraph}).  Many useful commands for
+editing text are documented in @ref{Text,,,emacs,}, which see.
+
+For more information about @samp{PlDoc} and source documentation in
+SWI-Prolog, see
+@uref{https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/pldoc.html%27),
+the PlDoc manual}.
+
+@node Usage Comments
+@section Example Usage Comments
+
+Beyond documenting your code with @samp{PlDoc} comments as described
+in @ref{Documenting Code, , Documenting Predicates}, you may want to
+have comments in your source code that demonstrate example usage of
+some predicate or another.  Creating such comments usually involves
+posting queries in a Prolog top-level, copying the queries and their
+results into the relevant source code buffer, and formatting them as
+comments.  Sweep provides the following command to streamline this
+process:
+
+@table @kbd
+@item C-c C-%
+@kindex C-c C-%
+@findex sweeprolog-make-example-usage-comment
+Start a new top-level for recording example usage.  When you finish
+interacting with the top-level its contents are formatted as a comment
+in the buffer and position where you invoked this command
+(@code{sweeprolog-make-example-usage-comment}).
+@end table
+
+The command @code{sweeprolog-make-example-usage-comment}, bound to
+@kbd{C-c C-%} in Sweep Prolog mode buffers, creates and switches to a
+new top-level buffer for recording example usage that you want to
+demonstrate.  The @dfn{example usage top-level} is a regular top-level
+buffer (@pxref{The Prolog Top-level}), except that it's tied to the
+specific position in the source buffer where you invoke this command.
+You can post queries in the example usage top-level and edit it
+freely, then type @kbd{C-c C-q} in to quit the top-level buffer and
+format its contents as a comment in the source buffer.
+
+You can have multiple example usage top-levels for different parts of
+your code at the same time.  To display the source position where you
+created a certain usage example top-level buffer by, type @kbd{C-c
+C-b} in that buffer.
+
+@node Showing Prolog Docs
+@section Displaying Predicate Documentation
+
+Sweep integrates with the Emacs minor mode ElDoc, which automatically
+displays documentation for the predicate at point.  Whenever you move
+the cursor into a predicate definition or invocation, the signature
+and summary of that predicate are displayed in the echo area at the
+bottom of the frame.
+
+@defopt sweeprolog-enable-eldoc
+Whether to enable ElDoc support in @code{sweeprolog-mode} buffers.
+Defaults to @code{t}.
+@end defopt
+
+To disable the ElDoc integration in Sweep Prolog mode buffers,
+customize the user option @code{sweeprolog-enable-eldoc} to
+@code{nil}.
+
+@xref{Programming Language Doc,,,emacs,}, for more information about
+ElDoc and its customization options.
+
+@node Showing Errors
+@section Examining Diagnostics
+
+@cindex flymake
+@cindex diagnostics
+Sweep can diagnose problems in Prolog code and report them to the user
+by integrating with Flymake, a powerful interface for on-the-fly
+diagnostics built into Emacs.
+
+@defopt sweeprolog-enable-flymake
+Whether to enable Flymake support in Sweep Prolog mode buffers.
+Defaults to @code{t}.
+@end defopt
+
+@table @kbd
+@kindex C-c C-`
+@findex sweeprolog-show-diagnostics
+@item C-c C-`
+List diagnostics for the current buffer or project in a dedicated
+buffer (@code{sweeprolog-show-diagnostics}).
+@end table
+
+Flymake integration is enabled by default, to disable it customize the
+user option @code{sweeprolog-enable-flymake} to @code{nil}.
+
+@findex next-error
+@kindex M-g n
+@kindex M-g p
+When this integration is enabled, several Flymake commands are
+available for listing and jumping between found errors.
+@pxref{Finding diagnostics,Finding diagnostics,,flymake,}, for a full
+description of these commands.  Additionally, Sweep Prolog mode
+configures the standard command @kbd{M-x next-error} to operate on
+Flymake diagnostics.  This allows for moving to the next (or previous)
+error location with the common @code{M-g n} (or @code{M-g p})
+keybinding.  @xref{Compilation Mode,,,emacs,}, for more information
+about these commands.
+
+The command @code{sweeprolog-show-diagnostics} shows a list of Flymake
+diagnostics for the current buffer.  It is bound by default to
+@kbd{C-c C-`} in Sweep Prolog mode buffers with Flymake integration
+enabled.  When you call it with a prefix argument (@kbd{C-u C-c C-`}),
+it shows a list of diagnostics for all buffers in the current project.
+
+@node Exporting Predicates
+@section Exporting Predicates
+
+@cindex exporting predicates
+@cindex predicates, exporting
+@cindex modules, exporting predicates
+When you define a predicate in a Prolog mode, by default it is only
+visible inside that module, unless you @dfn{export} it by including
+the predicate in the export list of the defining module (the export
+list of a module is the second argument of the @code{module/2}
+directive).
+
+@table @kbd
+@kindex C-c C-e
+@findex sweeprolog-export-predicate
+@item C-c C-e
+Add the predicate predicate at point to the export list of the current
+Prolog module (@code{sweeprolog-export-predicate}).
+@end table
+
+Sweep provides a convenient command for exporting predicates that you
+define in Sweep Prolog mode buffers.  To add the predicate near point
+to the export list of the current module, use the command @kbd{C-c
+C-e} (@code{sweeprolog-export-predicate}).  If the current predicate
+is documented with a @samp{PlDoc} comment, this command adds a comment
+with the predicate's mode after its name in the export list.  If point
+is not near a predicate definition, calling
+@code{sweeprolog-export-predicate} prompts for a predicate to export
+with completion for non-exported predicates in the current buffer.  To
+force @code{sweeprolog-export-predicate} to prompt even when point is
+on a predicate definition, invoke it with a prefix argument (@kbd{C-u
+C-c C-e}).
+
+@node Code Completion
+@section Code Completion
+
+@cindex code completion
+@cindex completion-at-point
+@findex complete-symbol
+@findex completion-at-point
+@kindex C-M-i
+@kindex M-TAB
+In Emacs, major modes for different programming languages provide
+in-buffer code completion via a standard generic command called
+@code{completion-at-point} (@pxref{Symbol Completion,,,emacs,}).  This
+command is normally bound to @kbd{C-M-i} and @kbd{M-@key{TAB}}.  Sweep
+extends @code{completion-at-point} with context-aware completion for
+Prolog code in Prolog buffers.
+
+When providing candidates for in-buffer completion, Sweep takes into
+account the code surrounding the cursor to determine what kind of
+completion makes most sense:
+
+@table @asis
+@item Variable name completion
+If the text before point can be completed to one or more variable
+names that appear elsewhere in the current clause,
+@code{completion-at-point} suggests matching variable names as
+completion candidates.
+@item Predicate completion
+If point is at a callable position, @code{completion-at-point}
+suggests matching predicate calls as completion candidates.  If the
+predicate you choose takes arguments, Sweep inserts holes in their
+places, and moves point to the first argument (@pxref{Holes}).
+@item Atom completion
+If point is at a non-callable position, @code{completion-at-point}
+suggests matching atoms and functors as completion candidates.
+@end table
+
+@node Insert Term DWIM
+@section Context-Based Term Insertion
+
+@cindex context-based term insertion
+@cindex term insertion at-point
+As a means of automating common Prolog code editing tasks, such as
+adding new clauses to an existing predicate, Sweep Prolog mode
+provides the ``do what I mean'' command
+@code{sweeprolog-insert-term-dwim}, bound by default to @kbd{C-M-m}
+(or equivalently, @kbd{M-RET}).  This command inserts a new term at or
+after point according to the context in which you invoke it.
+
+@table @kbd
+@kindex M-RET
+@kindex C-M-m
+@findex sweeprolog-insert-term-dwim
+@item M-@key{RET}
+@itemx C-M-m
+Insert an appropriate Prolog term in the current buffer, based on the
+context at point (@code{sweeprolog-insert-term-dwim}).
+@end table
+
+@defvar sweeprolog-insert-term-functions
+List of functions for @code{sweeprolog-insert-term-dwim} to try for
+inserting a Prolog term based on the current context.
+@end defvar
+
+To determine which term to insert and exactly where, the command
+@code{sweeprolog-insert-term-dwim} calls the functions in the list
+held by the variable @code{sweeprolog-insert-term-functions} one after
+the other until one of the functions signal success by returning
+non-@code{nil}.
+
+By default, @code{sweeprolog-insert-term-dwim} tries the following
+insertion functions, in order:
+
+@defun sweeprolog-maybe-insert-next-clause
+If the last token before point is a fullstop ending a predicate
+clause, insert a new clause below it.
+@end defun
+
+@vindex sweeprolog-new-predicate-location-function
+@defun sweeprolog-maybe-define-predicate
+If point is over a call to an undefined predicate, insert a definition
+for that predicate.  By default, the new predicate definition is
+inserted right below the last clause of the current predicate
+definition.  You can customize the user option
+@code{sweeprolog-new-predicate-location-function} to control where in
+the buffer this function inserts new predicate definitions.
+@end defun
+
+This command inserts holes as placeholders for the body term and the
+head's arguments, if any.  @xref{Holes}.
+
+@node Writing Tests
+@section Writing Tests
+
+@cindex plunit
+@cindex testing
+SWI-Prolog includes the @samp{PlUnit} unit testing
+framework@footnote{See
+@uref{https://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/plunit.html%27),
+Prolog Unit Tests in the SWI-Prolog manual}.}, in which you write unit
+tests in special blocks of Prolog code enclosed within the directives
+@code{begin_tests/1} and @code{end_tests/1}.  To insert a new block of
+unit tests (also known as a @dfn{test-set}) in a Prolog buffer, use
+the command @kbd{M-x sweeprolog-plunit-testset-skeleton @key{RET}}.
+
+@findex sweeprolog-plunit-testset-skeleton
+@deffn Command sweeprolog-plunit-testset-skeleton
+Insert a @samp{PlUnit} test-set skeleton at point.
+@end deffn
+
+This command prompts for a name to give the new test-set and inserts a
+template such as the following:
+
+@example prolog
+:- begin_tests(foo_regression_tests).
+
+test() :- TestBody.
+
+:- end_tests(foo_regression_tests).
+@end example
+
+The cursor is left between the parentheses of the @code{test()} head
+term, and the @code{TestBody} variable is marked as a hole
+(@pxref{Holes}).  To insert another unit test, place point after a
+complete test case and type @kbd{C-M-m} (or @kbd{M-RET}) to invoke
+@code{sweeprolog-insert-term-dwim} (@pxref{Insert Term DWIM, ,
+Context-Based Term Insertion}).
+
+@node Code Dependencies
+@section Managing Dependencies
+
+@cindex dependencies
+@cindex autoload
+It is considered good practice to explicitly list the dependencies of
+your SWI-Prolog source files on predicates defined in other files by
+using @code{autoload/2} and @code{use_module/2} directives, rather
+than relying on implicit autoloads.  To find all implicitly autoloaded
+predicates in the current @code{sweeprolog-mode} buffer and make the
+dependencies on them explicit, use the command
+@code{sweeprolog-update-dependencies} bound to @kbd{C-c C-u}.
+
+@table @kbd
+@kindex C-c C-u
+@findex sweeprolog-update-dependencies
+@item C-c C-u
+Add explicit dependencies for implicitly autoloaded predicates in the
+current buffer (@code{sweeprolog-update-dependencies}).
+@end table
+
+@defopt sweeprolog-dependency-directive
+Determines which Prolog directive to use in
+@code{sweeprolog-update-dependencies} when adding new directives.  The
+value of this user option is one of the symbols @code{use-module},
+@code{autoload} or @code{infer}.  If it is @code{use-module},
+@code{sweeprolog-update-dependencies} adds @code{use_module/2}
+directives, a value of @code{autoload} means to add @code{autoload/2}
+directives, and @code{infer} says to infer which directive to use
+based on the existing dependency directives in the buffer, if any.
+Defaults to @code{infer}.
+@end defopt
+
+@defopt sweeprolog-note-implicit-autoloads
+Whether Flymake should complain about implicitly autoloaded predicates
+in Sweep Prolog mode buffers.
+@end defopt
+
+The command @code{sweeprolog-update-dependencies}, bound to @kbd{C-c
+C-u}, analyzes the current buffer and adds or updates
+@code{autoload/2} and @code{use_module/2} directives as needed.
+
+When this command adds a new directive, rather than updating an
+existing one, it can use either @code{autoload/2} or
+@code{use_module/2} to declare the new dependency based on the value
+of the user option @code{sweeprolog-dependency-directive}.  If you set
+this option is to @code{use-module}, new dependencies use the
+@code{use_module/2} directive.  If it's @code{autoload}, new
+dependencies use @code{autoload/2}.  If it's @code{infer}, as it is by
+default, new dependencies use @code{autoload/2} unless the buffer
+already contains dependency directives and they are all
+@code{use_module/2} directives, in which case they also use
+@code{use_module/2}.
+
+By default, when Flymake integration is enabled (@pxref{Showing
+Errors}), Sweep highlights calls to implicitly autoloaded predicates
+and reports them as Flymake diagnostics.  To inhibit Flymake from
+diagnosing implicit autoloads, customize the user option
+@code{sweeprolog-note-implicit-autoloads} to @code{nil}.
+
+@node Term Search
+@section Term Search
+
+@cindex term search
+@cindex search term
+You can search for Prolog terms matching a given search term with the
+command @code{sweeprolog-term-search}.
+
+@table @kbd
+@kindex C-c C-s
+@findex sweeprolog-term-search
+@item C-c C-s
+Search for Prolog terms matching a given search term in the current
+buffer (@code{sweeprolog-term-search}).
+@end table
+
+@findex sweeprolog-term-search-repeat-forward
+@deffn Command sweeprolog-term-search-repeat-forward
+Repeat the last Term Search, searching forward from point.
+@end deffn
+
+@findex sweeprolog-term-search-repeat-backward
+@deffn Command sweeprolog-term-search-repeat-backward
+Repeat the last Term Search, searching backward from point.
+@end deffn
+
+The command @code{sweeprolog-term-search}, bound by default to
+@code{C-c C-s} in Sweep Prolog mode buffers, prompts for a Prolog term
+to search for and finds terms in the current buffer that the search
+term subsumes.  It highlights all matching terms in the buffer and
+moves the cursor to the beginning of the next match after point.  For
+example, to find if-then-else constructs in the current buffer do
+@kbd{C-c C-s _ -> _ ; _ @key{RET}}.
+
+While prompting for a search term in the minibuffer, this command
+populates the ``future history'' with the Prolog terms at point, with
+the most nested term at point on top.  Typing @kbd{M-n} once in the
+minibuffer fills in the innermost term at point, typing @kbd{M-n}
+again cycles up the syntax tree at point filling the minibuffer with
+larger terms, up until the top-term at point.  @xref{Minibuffer
+History,,,emacs,}, for more information about minibuffer history
+commands.
+
+If you invoke @code{sweeprolog-term-search} with a prefix argument by
+typing @kbd{C-u C-c C-s}, you can further refine the search with an
+arbitrary Prolog goal for filtering out search results that fail it.
+The given goal runs for each matching term, and it may use variables
+from the search term to refer to the corresponding subterms of the
+matching term.  For example, you can find all places in your code
+where you have a call to @code{sub_string/5} with either the first or
+the last argument being a literal atom by typing @kbd{C-u C-c C-s
+sub_string(Str, _, _, _, Sub) @key{RET} atom(Str) ; atom(Sub)
+@key{RET}}.
+
+@kindex C-s (Term Search)
+@kindex C-r (Term Search)
+Typing @kbd{C-s} immediately after a successful search invokes the
+command @code{sweeprolog-term-search-repeat-forward} which moves
+forward to the next match.  Likewise, typing @kbd{C-r} after a
+successful term search invokes the command
+@code{sweeprolog-term-search-repeat-backward} which moves backward to
+the previous match.
+
+@node Context Menu
+@section Context Menu
+
+@cindex context menu
+@cindex right click menu
+In addition to the keybindings that Sweep provides for invoking its
+commands, it integrates with Emacs's standard Context Menu minor mode
+to provide contextual menus that you interact with using the mouse.
+
+@deffn Command context-menu-mode
+Toggle Context Menu mode.  When enabled, clicking the mouse button
+@code{down-mouse-3} (meaning ``right-click'') activates a menu whose
+contents depend on its surrounding context.
+@end deffn
+
+@defvar sweeprolog-context-menu-functions
+List of functions that create Context Menu entries for Prolog tokens.
+Each function should receive as its arguments the menu that is being
+created, the Prolog token's description, its start position, its end
+position, and the position of the mouse click.  It should alter the
+menu according to that context.
+@end defvar
+
+To enable Context Menu, type @kbd{M-x context-menu-mode @key{RET}} or
+add a call to @code{(context-menu-mode)} in your Emacs initialization
+file to enable it in all future sessions.  You access the context menu
+by right-clicking anywhere in Emacs.  If you do it in a Sweep Prolog
+mode buffer, you can invoke several Prolog-specific commands based on
+where you click in the buffer.
+
+If you right-click on a Prolog file specification or module name,
+Sweep suggests visiting it either in the current window or in another.
+If you right-click on a predicate, it lets you view its documentation
+in a dedicated buffer (@pxref{Prolog Help}).  For variables, it
+enables the @samp{Rename Variable} menu entry that you can use to
+rename the variable you click on across its containing clause
+(@pxref{Renaming Variables, , Renaming Variables}).
+
+You can further extend and customize the context menu that Sweep
+Prolog mode provides by adding functions to the variable
+@code{sweeprolog-context-menu-functions}.  Each function on this list
+receives the menu that is being created and a description of the
+clicked Prolog token, and it can extend the menu with entries before
+Emacs displays the menu.
+
+@node Renaming Variables
+@section Renaming Variables
+
+You can rename a Prolog variable across the current top-term with the
+following command:
+
+@table @kbd
+@kindex C-c C-r
+@findex sweeprolog-rename-variable
+@item C-c C-r
+Rename a variable across the topmost Prolog term at point
+(@code{sweeprolog-rename-variable}).
+@end table
+
+@defopt sweeprolog-rename-variable-allow-existing
+If non-nil, allow selecting an existing variable name as the new name
+of a variable being renamed with @code{sweeprolog-rename-variable}.
+If it is the symbol @code{confirm}, allow but ask for confirmation
+first.  Defaults to @code{confirm}.
+@end defopt
+
+The command @code{sweeprolog-rename-variable}, bound to @kbd{C-c C-r},
+prompts for two variable names and replaces all occurrences of the
+first variable in the term at point with the second.  The prompt for
+the first (old) variable name provides completion based on the
+existing variable names in the current term, and it uses the variable
+at point as its default.
+
+The user option @code{sweeprolog-rename-variable-allow-existing}
+controls what happens if the second (new) variable name that you
+insert in the minibuffer already occurs in the current clause.  By
+default it is set to @code{confirm}, which says to ask for
+confirmation before selecting an existing variable name as the new
+name.  This is because renaming a variable to another existing
+variable name potentially alters the semantics of the term by merging
+the two variables.  Other alternatives for this user option are
+@code{t} for allowing such merges without confirmation, and @code{nil}
+for refusing them altogether.
+
+If Context Menu mode is enabled, you can also rename variables by
+right-clicking on them with the mouse and selecting @samp{Rename
+Variable} from the top of the context menu.  @xref{Context Menu}, for
+more information about context menus in Sweep.
+
+@node Numbered Variables
+@section Numbered Variables
+
+A widespread convention in Prolog is using a common prefix with a
+numeric suffix to name related variables, such as @code{Foo0},
+@code{Foo1}, etc.  Sweep provides convenient commands for managing
+such @dfn{numbered variable} sequences consistently:
+
+@table @kbd
+@kindex C-c C-+
+@findex sweeprolog-increment-numbered-variables
+@item C-c C-+
+Prompt for a numbered variable and increment it and all numbered
+variables with the same base name and a greater number in the current
+clause (@code{sweeprolog-increment-numbered-variables}).
+
+@kindex C-c C--
+@findex sweeprolog-decrement-numbered-variables
+@item C-c C--
+Prompt for a numbered variable and decrement it and all numbered
+variables with the same base name and a greater number in the current
+clause (@code{sweeprolog-decrement-numbered-variables}).
+@end table
+
+Numbering variables is often used to convey the order in which they
+are bound.  For example:
+
+@example prolog
+%!  process(+State0, -State) is det.
+
+process(State0, State) :-
+    foo(State0, State1),
+    bar(State2, State1),
+    baz(State2, State).
+@end example
+
+Here @code{State0} and @code{State} are respectively the input and
+output arguments of @code{process/2}, and @code{State1} and
+@code{State2} represent intermediary stages between them.
+
+The command @kbd{C-c C-+}
+(@code{sweeprolog-increment-numbered-variables}) prompts you for a
+numbered variable in the current clause, and increments the number of
+that variable along with all other numbered variables with the same
+base name and a greater number.  You can use it to ``make room'' for
+another intermediary variable between two sequentially numbered
+variables.  If you call this command with point on a numeric variable,
+it suggests that variable as the default choice.  If you call this
+command with a prefix argument, it increments by the numeric value of
+the prefix argument, otherwise it increments by one.
+
+For instance, typing @kbd{C-c C-+ State1 RET} with point anywhere in
+the definition of @code{process/2} from the above example results in
+the following code:
+
+@example prolog
+process(State0, State) :-
+    foo(State0, State2),
+    bar(State3, State2),
+    baz(State3, State).
+@end example
+
+Note how @code{sweeprolog-increment-numbered-variables} replaced all
+occurrences of @code{State1} with @code{State2}, while the original
+occurrences of @code{State2} are replaced with @code{State3}.  The
+overall semantics of the clause doesn't change, but you can now
+replace the call to @code{foo/2} with two goals and reintroduce
+@code{State1} as an intermediary result between them while keeping
+your numbering consistent, e.g.:
+
+@example prolog
+process(State0, State) :-
+    one(State0, State1), two(State1, State2),
+    bar(State3, State2),
+    baz(State3, State).
+@end example
+
+If Context Menu mode is enabled, you can also invoke
+@code{sweeprolog-increment-numbered-variables} by right-clicking on a
+numbered variables and selecting @samp{Increment Variable Numbers}
+from the context menu.  @xref{Context Menu}.
+
+The command @kbd{C-c C--}
+(@code{sweeprolog-decrement-numbered-variables}) is similar to
+@kbd{C-c C-+} except it decrements all numbered variables starting
+with a given numbered variable rather than incrementing them.  When
+you delete an intermediary numbered variable and end with a gap in the
+variable numbering sequence, you can use this command to close the gap
+by decrementing the following numbered variables.
+
+After invoking either @kbd{C-c C--} or @kbd{C-c C-+}, you can continue
+to decrement or increment the same set of numbered variables by
+repeating with @code{-} and @code{+}.
+
+@node Macro Expansion
+@section Macro Expansion
+
+Recent versions of SWI-Prolog include a pre-processing mechanism
+called @dfn{Prolog macros}, implemented in @code{library(macros)}.  It
+provides a convenient way for computing terms at compile time and
+using them in code.
+
+Macros are defined using special rules with @code{#define(Macro, Replacement)}
+head terms.  Then, when SWI-Prolog reads a term of the form @code{#(Macro)}
+during compilation, it invokes the macro replacement rule and uses the
+expanded term instead.
+
+Sweep can replace macro invocations with their expansions.  To expand
+a macro in your source code, use the following command:
+
+@findex sweeprolog-expand-macro-at-point
+@deffn Command sweeprolog-expand-macro-at-point
+Replace the Prolog macro invocation starting at point with its
+expansion.
+@end deffn
+
+You can call this command with point on the @code{#} macro indicator
+to expand the macro inline.  To undo the expansion, use @kbd{C-/}
+(@code{undo}).
+
+With Context Menu mode enabled, you can also expand macros by
+right-clicking on the @code{#} and selecting @samp{Expand Macro} from
+the context menu.  @xref{Context Menu}.
+
+@node Prolog Help
+@chapter Prolog Help
+
+@cindex prolog help
+Sweep provides a way to read SWI-Prolog documentation via the standard
+Emacs @code{help} user interface, akin to Emacs's built-in
+@code{describe-function} (@kbd{C-h f}) and @code{describe-variable}
+(@kbd{C-h v}).  For more information about Emacs @code{help} and its
+special major mode, @code{help-mode}, @ref{Help Mode,,,emacs,}.
+
+@findex sweeprolog-describe-module
+@deffn Command sweeprolog-describe-module
+Prompt for a Prolog module and display its full documentation in a
+help buffer.
+@end deffn
+
+@findex sweeprolog-describe-predicate
+@deffn Command sweeprolog-describe-predicate
+Prompt for a Prolog predicate and display its full documentation in a
+help buffer.
+@end deffn
+
+@kindex s (Help mode)
+The command @code{sweeprolog-describe-module} prompts for the name of
+a Prolog module and displays its documentation in the @file{*Help*}
+buffer.  To jump to the source code from the documentation, press
+@kbd{s} (@code{help-view-source}).
+
+Similarly, you can use @kbd{M-x sweeprolog-describe-predicate
+@key{RET}} to display the documentation of a Prolog predicate.  This
+commands prompts for a predicate with completion.  When the cursor is
+over a predicate definition or invocation in a Sweep Prolog mode, that
+predicate is set as the default selection and can be described by
+simply typing @kbd{@key{RET}} in response to the prompt.
+
+@node The Prolog Top-level
+@chapter The Prolog Top-level
+
+@cindex top-level
+Sweep provides a classic Prolog @dfn{top-level} interface for
+interacting with the embedded Prolog runtime.  To start the top-level,
+use @kbd{M-x sweeprolog-top-level @key{RET}}.  This command opens a
+buffer with an interactive Prolog top-level.
+
+@findex sweeprolog-top-level
+@deffn Command sweeprolog-top-level
+Run an interactive Prolog top-level in a buffer.
+@end deffn
+
+@code{sweeprolog-top-level} creates a buffer named
+@file{*sweeprolog-top-level*}, and connects it to a Prolog top-level.
+If the @file{*sweeprolog-top-level*} buffer already exists, this
+command simply displays the existing buffer.  @xref{Multiple
+Top-levels} to learn about using multiple top-level buffers at the
+same time.
+
+@findex sweeprolog-top-level-mode
+@vindex sweeprolog-top-level-mode
+@cindex Sweep Top-level mode
+The top-level buffer uses the Sweep Top-level major mode
+(@code{sweeprolog-top-level-mode}).  This mode derives from
+@code{comint-mode}, which is the common mode used in Emacs
+@acronym{REPL, Read Evaluate Print Loop} interfaces.  As a result, the
+top-level buffer inherits the features present in other
+@code{comint-mode} derivatives, most of which are described in
+@ref{Shell Mode,,,emacs,}.
+
+The top-level buffer is connected to a Prolog thread running in the
+same process as Emacs and the main Prolog runtime.  In the current
+implementation, top-level buffers communicate with their corresponding
+threads via local TCP connections.  On the first invocation of
+@code{sweeprolog-top-level}, Sweep creates a TCP server socket bound
+to a random port to accept incoming connections from top-level
+buffers.  The TCP server only accepts connections from the local
+machine, but note that other users on the same host may be able to
+connect to the TCP server socket and get a Prolog top-level.  This may
+pose a security problem when sharing a host with untrusted users,
+hence @code{sweeprolog-top-level} should not be used on shared
+machines.  This is the only Sweep command that you want to avoid in
+such cases.
+
+@menu
+* Multiple Top-levels::          Creating and handling multiple Prolog top-level buffers
+* Top-level Menu::               A special buffer for operating on active top-levels
+* Top-level Signaling::          Commands for interrupting running Prolog top-levels
+* Top-level History::            Accessing previous queries posted to the Prolog top-level
+* Top-level Completion::         Commands for completing partiat Prolog predicate names
+* Follow Messages::              Minor mode for visiting source locations in printed messages
+* Send to Top-level::            Commands for sending goals to the be executed in the Top-level
+@end menu
+
+@node Multiple Top-levels
+@section Multiple Top-levels
+
+You can create and use any number of top-levels at the same time, each
+top-level with its own buffer.  If a top-level buffer already exists,
+@code{sweeprolog-top-level} simply opens it by default.  To create
+another one or more top-level buffers, run @code{sweeprolog-top-level}
+with a prefix argument (@kbd{C-u M-x sweeprolog-top-level @key{RET}})
+to choose a different buffer name.  Alternatively, run the command
+@kbd{C-x x u} (@code{rename-uniquely}) in the buffer called
+@file{*sweeprolog-top-level*} and then do @kbd{M-x
+sweeprolog-top-level @key{RET}} again.  This changes the name of the
+original top-level buffer to something like
+@file{*sweeprolog-top-level*<2>} and allows the new top-level to claim
+the buffer name @file{*sweeprolog-top-level*}.
+
+@node Top-level Menu
+@section The Top-level Menu buffer
+
+@cindex Top-level Menu
+Sweep provides a convenient interface for listing the active Prolog
+top-levels and operating on them, called the Top-level Menu buffer.
+This buffer shows the list of active Sweep top-level buffers in a
+table that includes information and statistics for each top-level.
+
+@findex sweeprolog-list-top-levels
+@deffn Command sweeprolog-list-top-levels
+Display a list of running Prolog top-levels.
+@end deffn
+
+To open the Top-level Menu buffer, use the command @kbd{M-x
+sweeprolog-list-top-levels @key{RET}}.  By default, the buffer is
+called @file{*Sweep Top-levels*}.
+
+The Top-level Menu buffer uses a special major mode named
+@code{sweeprolog-top-level-menu-mode}.  This mode provides several
+commands that operate on the top-level corresponding to the table row
+at point.  The available commands are:
+
+@table @kbd
+@findex sweeprolog-top-level-menu-go-to
+@item @key{RET} @r{(Sweep Top-level Menu mode)}
+Open the specified top-level buffer (@code{sweeprolog-top-level-menu-go-to}).
+
+@item k @r{(Sweep Top-level Menu mode)}
+@findex sweeprolog-top-level-menu-kill
+Kill the specified top-level buffer
+(@code{sweeprolog-top-level-menu-kill}).
+
+@item s @r{(Sweep Top-level Menu mode)}
+@findex sweeprolog-top-level-menu-signal
+Signal the specified top-level buffer
+(@code{sweeprolog-top-level-menu-signal}).  @xref{Top-level
+Signaling}.
+
+@item t @r{(Sweep Top-level Menu mode)}
+@findex sweeprolog-top-level-menu-new
+Create a new top-level buffer (@code{sweeprolog-top-level-menu-new}).
+
+@item g @r{(Sweep Top-level Menu mode)}
+Update the Top-level Menu contents (@code{revert-buffer}).
+@end table
+
+@node Top-level Signaling
+@section Sending signals to running top-levels
+
+@cindex signaling Prolog threads
+@cindex threads, signaling
+@findex sweeprolog-top-level-signal
+When executing long running Prolog queries in the top-level, there may
+arise a need to interrupt the query, either to inspect the state of
+the top-level or to free it for running other queries.  To signal a
+Sweep top-level that it should stop executing the current query and do
+something else instead, use the command
+@code{sweeprolog-top-level-signal}.
+
+@findex sweeprolog-top-level-signal
+@deffn Command sweeprolog-top-level-signal
+Prompt for a Prolog goal and signal a top-level buffer to execute it.
+@end deffn
+
+This command prompts for an active Sweep top-level buffer followed by
+a Prolog goal, and interrupts the top-level causing it to run the
+specified goal.
+
+@table @kbd
+@kindex C-c C-c @r{(Sweep Top-level mode)}
+@kindex C-u C-c C-c @r{(Sweep Top-level mode)}
+@findex sweeprolog-top-level-signal-current
+@item C-c C-c
+@item C-u C-c C-c
+Interrupt the current Prolog top-level.
+@end table
+
+@vindex sweeprolog-top-level-signal-default-goal
+In a top-level buffer, you can use the command
+@code{sweeprolog-top-level-signal-current} to signal the current
+top-level.  It is bound by default to @kbd{C-c C-c}.  This command
+uses the value of the user option
+@code{sweeprolog-top-level-signal-default-goal} as the goal to signal,
+this is set by default to a goal that interrupts the top-level thread
+returns control of the top-level to the user.  If you call
+@code{sweeprolog-top-level-signal-current} with a prefix argument
+(@kbd{C-u C-c C-c}), it prompts for the goal to signal.
+
+You can also signal top-levels from the Sweep Top-level Menu buffer
+with the command @code{sweeprolog-top-level-menu-signal} with point at
+the entry corresponding to the wanted top-level (@pxref{Top-level
+Menu}).
+
+For more information about interrupting threads in SWI-Prolog, see
+@uref{https://www.swi-prolog.org/pldoc/man?section=thread-signal,
+Signaling threads in the SWI-Prolog manual}.
+
+@node Top-level History
+@section Top-level History
+
+Sweep top-level buffers provide a history of previous user inputs,
+similarly to other @code{comint-mode} derivatives such as
+@code{shell-mode}.  To insert the last input from the history at the
+prompt, use @kbd{M-p} (@code{comint-previous-input}).  @xref{Shell
+History,,,emacs,}, for a full description of history related commands.
+
+@defopt sweeprolog-top-level-min-history-length
+Minimum input length to record in the history of Sweep top-levels.
+@end defopt
+
+@defopt sweeprolog-top-level-persistent-history
+How to persist input history for top-levels across Emacs sessions.
+@end defopt
+
+The Sweep top-level history only records inputs whose length is at
+least @code{sweeprolog-top-level-min-history-length} characters.  This
+user option is set to 3 by default, and should generally be set to at
+least 2 to keep the history from being clobbered with single-character
+inputs, which are common in the top-level interaction, for example
+@code{;} as used to invoke backtracking.
+
+Sweep can optionally persist top-level input history.  The user option
+@code{sweeprolog-top-level-persistent-history} controls if and where
+top-levels store their persistent history: when this option is
+non-@code{nil}, Sweep top-level buffers that you create read their
+input history from a persistent history file, and write their history
+back to it when you delete them.  If this option is a string, it is
+treated as a file name, and top-level buffers use that file to
+persistent their input history.  If it's a function, it is called with
+no arguments and should return either a file name for the persistent
+history, or @code{nil} to disable persistent history for that
+top-level buffer.  The file name that this user option specifies can
+be either absolute or relative, in which case it is expanded relative
+to the default directory of the top-level buffer (see @ref{File
+Names,,,emacs,}).  This option can also be a list of the form
+@code{(project @var{rel} @var{def})}, in which case the persistent
+history file that a top-level buffer uses depends on the current
+project of the of that buffer (@pxref{Projects,,,emacs,}).  If there
+is no current project, the top-level persistent history file is
+@var{def}.  Otherwise, the history file is @var{rel} relative to the
+project's root directory.  You can leave @var{def} @code{nil} or omit
+it entirely to disable persistent history for top-levels that are not
+associated with any project.  By default, this option is set to
+@code{nil} which says not to keep persistent top-level history.
+
+@node Top-level Completion
+@section Completion in the Top-level
+
+Sweep Top-level mode can complete the input you enter at the prompt,
+similarly to the in-buffer code completion you get in Sweep Prolog
+mode buffers (@pxref{Code Completion}).  To complete a partial
+predicate name or other input in the top-level prompt, type
+@kbd{C-M-i} (or @kbd{M-@key{TAB}}).
+
+@node Follow Messages
+@section Following Error Messages
+
+Many standard SWI-Prolog facilities generate messages that refer to
+specific source code locations.  For example, loading a Prolog file
+that contains singleton variables into the top-level produces warning
+messages pointing to the starting line of the clauses where the
+singleton variables occur.  If you enable
+@code{compilation-shell-minor-mode} in the top-level buffer, Emacs
+recognizes the Prolog messages that refer to source locations and
+provides convenient commands for visiting such source locations from
+the top-level buffer.  @xref{Compilation Mode,,,emacs,}, For more
+information about @code{compilation-shell-minor-mode}.
+
+To use @code{compilation-shell-minor-mode} automatically in all
+top-level buffers, you can arrange for the
+@code{sweeprolog-top-level-mode} hook to enable it as follows:
+
+@lisp
+(add-hook 'sweeprolog-top-level-mode-hook
+          #'compilation-shell-minor-mode)
+
+@end lisp
+
+@node Send to Top-level
+@section Sending Goals to the Top-level
+
+You can send a goal to execute in a Prolog top-level from any buffer
+with the command @kbd{M-x sweeprolog-top-level-send-goal @key{RET}}.
+
+@table @kbd
+@item C-c C-q
+@kindex C-c C-q
+@findex sweeprolog-top-level-send-goal
+Execute a Prolog goal in a top-level buffer and display that buffer
+(@code{sweeprolog-top-level-send-goal}).
+@end table
+
+This command prompts for a Prolog goal in the minibuffer, executes it
+in a top-level buffer and displays that buffer if it's not already
+visible.  While inserting the goal in the minibuffer, you can use
+@kbd{@key{TAB}} (or @kbd{C-i}) to get completion suggestions.
+
+In Sweep Prolog mode buffers, you can invoke
+@code{sweeprolog-top-level-send-goal} by typing @kbd{C-c C-q}.  It
+also uses the goal at point (if any) as the ``future history'' for the
+goal prompt, which you can access with @kbd{M-n} in the minibuffer.
+
+@node Async Queries
+@chapter Executing Prolog Asynchronously
+
+@cindex async queries
+@cindex query asynchronously
+@cindex Sweep Async Output mode
+Sweep provides a facility for executing Prolog goals in separate
+threads and capturing their output in Emacs buffers as it is produced.
+You can use this for running queries without blocking Emacs.
+
+@table @kbd
+@item C-c C-&
+@kindex C-c C-&
+@findex sweeprolog-async-goal
+Execute a Prolog goal asynchronously and display its output in a
+dedicated buffer (@code{sweeprolog-async-goal}).
+@end table
+
+The command @code{sweeprolog-async-goal}, bound to @code{C-c C-&} in
+Sweep Prolog mode buffers, prompts for a Prolog goal and executes it
+in a new Prolog thread, redirecting its output and error streams to an
+Emacs buffer that gets updated asynchronously.
+
+This is similar in nature to running asynchronous shell commands with
+the standard @kbd{M-&} (@code{async-shell-command}) or @kbd{M-x
+compile} commands, expect that @code{sweeprolog-async-goal} runs a
+Prolog goal instead of a shell command.  For more information about
+the aforementioned commands, @pxref{Single Shell,,,emacs,} and
+@ref{Compilation,,,emacs,}.
+
+The output buffer that @code{sweeprolog-async-goal} creates uses a
+dedicated mode called @dfn{Sweep Async Output mode}.  This mode is
+derived from the standard Compilation mode, and it provides all of the
+usual commands documented in @ref{Compilation Mode,,,emacs,}.
+Notably, you can run the same query again by typing @kbd{g}
+(@code{sweeprolog-async-goal-restart}) in the output buffer.  To
+interrupt the goal running in the current output buffer, press
+@kbd{C-c C-k} (@code{kill-compilation}).
+
+Compatibility note: asynchronous queries use pipe processes that
+require Emacs 28 or later and SWI-Prolog 9.1.4 or later.
+
+@node Finding Prolog Code
+@chapter Finding Prolog Code
+
+The following commands let you jump to a piece of Prolog code from
+anywhere in Emacs:
+
+@findex sweeprolog-find-module
+@deffn Command sweeprolog-find-module
+Prompt for a known Prolog module and find its source code.
+@end deffn
+
+@findex sweeprolog-find-predicate
+@deffn Command sweeprolog-find-predicate
+Prompt for a known Prolog predicate and find its source code.
+@end deffn
+
+@code{sweeprolog-find-module} and @code{sweeprolog-find-predicate}
+prompt you for a Prolog identifier (respectively, a module name or a
+predicate indicator), and jump to its source definition.  Sweep
+integrates with Emacs's standard completion API to annotate candidate
+modules in the completion UI with a summary line derived from their
+documentation, when available.
+
+By default, these commands use the current window to display the
+selected module or predicate.  To have it in another window instead,
+invoke these commands with a prefix argument (@kbd{C-u M-x
+sweeprolog-find-predicate @key{RET}}).
+
+@findex sweeprolog-read-predicate
+@vindex sweeprolog-predicate-visible-p-function
+The command @code{sweeprolog-find-predicate} uses the function
+@code{sweeprolog-read-predicate} for prompting you to insert a
+predicate indicator in the minibuffer.  This is the standard function
+that Sweep commands use for this purpose.  It provides completion
+candidates based on known predicates, and it uses the predicate at
+point, if any, as the default minibuffer argument.  By default,
+@code{sweeprolog-read-predicate} includes all predicates that Sweep
+knows about as completion candidates, except for predicates whose
+functor name begins with @code{$}, because that's the convention in
+SWI-Prolog for internal predicates that are usually of little interest
+to users.  To include also these predicates as completion candidates,
+customize the user option
+@code{sweeprolog-predicate-visible-p-function} to @code{nil}.
+
+@menu
+* File Spec Expansion::          Integration with standard Emacs file-finding commands
+* Native Predicates::            Finding and jumping to definitions of built-in SWI-Prolog predicates defined in C
+@end menu
+
+@node File Spec Expansion
+@section Prolog file specification expansion
+
+Sweep defines a handler for the Emacs function @code{expand-file-name}
+that recognizes Prolog file specifications, such as
+@code{library(lists)}, and expands them to their corresponding
+absolute paths.  This means that you can use Prolog file
+specifications with Emacs's standard @code{find-file} (@kbd{C-x C-f})
+to locate Prolog resources directly.
+
+For example, typing @kbd{C-x C-f library(pldoc/doc_man) @key{RET}}
+opens the source of the @code{pldoc_man} module from the Prolog
+library, and @kbd{C-x C-f pack(.) @key{RET}} opens the Prolog packages
+directory.
+
+@node Native Predicates
+@section Built-in Native Predicates
+
+@cindex native built-in predicates
+@cindex built-in native predicates
+Some of the built-in predicates provided by SWI-Prolog, such as
+@code{is/2}, are implemented in C and included as native functions in
+the SWI-Prolog runtime.  It is sometimes useful to examine the
+implementation of such native built-in predicates by reading its
+definition in the SWI-Prolog C sources.  Sweep knows about SWI-Prolog
+native built-ins, and can find and jump to their definitions in C when
+the user has the SWI-Prolog sources checked out locally.
+
+@vindex sweeprolog-swipl-sources
+@defopt sweeprolog-swipl-sources
+Location of the SWI-Prolog source code root directory.
+@end defopt
+
+The way Sweep locates the SWI-Prolog sources depends on the user
+option @code{sweeprolog-swipl-sources}.  Setting it to @code{nil}
+disables searching for definitions of native built-ins altogether.  To
+point Sweep to the root directory of the SWI-Prolog source code, set
+@code{sweeprolog-swipl-sources} to the name of that directory.  Any
+non-@code{nil} non-string value says to try and locate a checkout of
+the SWI-Prolog sources among known project root directories (Sweep
+consults Emacs's built-in @code{project-known-project-roots} to find
+your project roots, @pxref{Projects,,,emacs,}).
+
+With @code{sweeprolog-swipl-sources} set, the provided commands for
+finding predicate definitions operate seamlessly on native built-ins
+to display their C definitions.  These commands include:
+@itemize
+@item
+@kbd{M-x sweeprolog-find-predicate},
+@item
+@kbd{M-.} (@code{xref-find-definitions}) in Sweep Prolog mode buffers
+(@pxref{Cross References}), and
+@item
+@kbd{s} (@code{help-view-source}) in the @file{*Help*} buffer produced
+by @kbd{M-x sweeprolog-describe-predicate} (@pxref{Prolog Help}).
+@end itemize
+
+@node Quick Access Keymap
+@chapter Quick Access to Sweep Commands
+
+@cindex global prefix keymap
+@cindex prefix keymap, global commands
+@cindex keymap, for global commands
+@vindex sweeprolog-prefix-map
+Sweep defines a keymap called @code{sweeprolog-prefix-map} that
+provides global keybindings for several useful Sweep commands.  By
+default, @code{sweeprolog-prefix-map} itself is not bound to any key.
+To bind it to @kbd{C-c p}, add the following to your Emacs
+configuration:
+
+@lisp
+(keymap-global-set "C-c p" 'sweeprolog-prefix-map)
+@end lisp
+
+@kbd{C-c p} is the recommended binding for
+@code{sweeprolog-prefix-map}, but you're free to pick any key sequence
+you like.  As an example, with the above binding you can access the
+Sweep top-level from anywhere with @kbd{C-c p t}.
+
+The full list of keybindings in @code{sweeprolog-prefix-map}, assuming
+the recommended key binding, is given below:
+
+@table @kbd
+@kindex C-c p m @r{(Recommended Bindings)}
+@item C-c p m
+@code{sweeprolog-find-module} (@pxref{Finding Prolog Code}).
+@kindex C-c p p @r{(Recommended Bindings)}
+@item C-c p p
+@code{sweeprolog-find-predicate} (@pxref{Finding Prolog Code}).
+@kindex C-c p t @r{(Recommended Bindings)}
+@item C-c p t
+@code{sweeprolog-top-level} (@pxref{The Prolog Top-level}).
+@kindex C-c p q @r{(Recommended Bindings)}
+@item C-c p q
+@code{sweeprolog-top-level-send-goal} (@pxref{Send to Top-level}).
+@kindex C-c p l @r{(Recommended Bindings)}
+@item C-c p l
+@code{sweeprolog-load-buffer} (@pxref{Loading Buffers}).
+@kindex C-c p & @r{(Recommended Bindings)}
+@item C-c p &
+@code{sweeprolog-async-goal} (@pxref{Async Queries}).
+@kindex C-c p B @r{(Recommended Bindings)}
+@item C-c p B
+@code{sweeprolog-list-breakpoints} (@pxref{Breakpoint Menu}).
+@kindex C-c p P @r{(Recommended Bindings)}
+@item C-c p P
+@code{sweeprolog-pack-install} (@pxref{Prolog Packages}).
+@kindex C-c p R @r{(Recommended Bindings)}
+@item C-c p R
+@code{sweeprolog-restart} (@pxref{Initialization}).
+@kindex C-c p F @r{(Recommended Bindings)}
+@item C-c p F
+@code{sweeprolog-set-prolog-flag} (@pxref{Prolog Flags}).
+@kindex C-c p T @r{(Recommended Bindings)}
+@item C-c p T
+@code{sweeprolog-list-top-levels} (@pxref{Top-level Menu}).
+@kindex C-c p X @r{(Recommended Bindings)}
+@item C-c p X
+@code{sweeprolog-xref-project-source-files} (@pxref{Cross References}).
+@kindex C-c p h m @r{(Recommended Bindings)}
+@item C-c p h m
+@code{sweeprolog-describe-module} (@pxref{Prolog Help}).
+@kindex C-c p h p @r{(Recommended Bindings)}
+@item C-c p h p
+@code{sweeprolog-describe-predicate} (@pxref{Prolog Help}).
+@kindex C-c p h e @r{(Recommended Bindings)}
+@item C-c p h e
+@code{sweeprolog-view-messages} (@pxref{Prolog Messages}).
+@kindex C-c p h n @r{(Recommended Bindings)}
+@item C-c p h n
+@code{sweeprolog-view-news} (@pxref{Discovering Sweep}).
+@end table
+
+@node Prolog Messages
+@chapter Examining Prolog Messages
+
+@cindex messages
+@vindex sweeprolog-messages-buffer-name
+Sweep redirects messages that the embedded Prolog runtime emits to a
+dedicated Emacs buffer.  By default, the Sweep messages buffer is
+named @file{*Sweep Messages*}.  To instruct Sweep to use another
+buffer name instead, customize the user option
+@code{sweeprolog-messages-buffer-name} to a suitable value.
+
+The @file{*Sweep Messages*} buffer enables the minor mode
+@code{compilation-minor-mode}, which let's you jump to source
+locations that appear in errors and warning by clicking on them.
+
+@findex sweeprolog-view-messages
+@deffn Command sweeprolog-view-messages
+Display the Sweep messages buffer.
+@end deffn
+
+You can use the command @kbd{M-x sweeprolog-view-messages @key{RET}}
+to display the Sweep messages buffer.  This command is bound to @kbd{h
+e} in @code{sweeprolog-prefix-map} (@pxref{Quick Access Keymap}).
+
+@node Prolog Flags
+@chapter Setting Prolog Flags
+
+@cindex prolog flags
+SWI-Prolog has a set of @dfn{flags} that let you examine and configure
+the Prolog execution runtime.  You can set Prolog flags from Emacs
+directly with the following command:
+
+@findex sweeprolog-set-prolog-flag
+@deffn Command sweeprolog-set-prolog-flag
+Set the value of a Prolog flag.
+@end deffn
+
+This command let's you interactively configure the embedded Prolog
+execution environment by changing the values of Prolog flags.  It
+prompts you for a Prolog flag, with completion candidates annotated
+with their current values.  Then, it prompts again for a Prolog term
+and sets the flag's value to that term.
+
+For more information about Prolog flags in SWI-Prolog, see
+@uref{https://www.swi-prolog.org/pldoc/man?section=flags, Environment
+Control in the SWI-Prolog manual}.
+
+As an example, the Prolog flag @code{double_quotes} controls the
+interpretation of double quotes in Prolog code.  By default,
+@code{double_quotes} is set to @code{string}, so for instance
+@code{"foo"} is read as a SWI-Prolog string.  You can easily validate
+this in the Sweep top-level:
+
+@example prolog
+?- A = "foo".
+A = "foo".
+@end example
+
+You can change the interpretation of double quotes to denote lists of
+character codes, by setting the value the @code{double_quotes} flag to
+@code{codes} with @kbd{M-x sweeprolog-set-prolog-flag @key{RET}
+double_quotes @key{RET} codes @key{RET}}.  Evaluating @code{A = "foo"}
+again exhibits the different interpretation:
+
+@example prolog
+?- A = "foo".
+A = [102, 111, 111].
+@end example
+
+Note that some flags have a thread-local value, and
+@code{sweeprolog-set-prolog-flag} always operates only on the main
+thread.  To set flags in an existing top-level thread, use the
+predicate @code{set_prolog_flag/2} directly in that top-level.
+
+@node Prolog Packages
+@chapter Installing Prolog Packages
+
+You can install SWI-Prolog add-ons, also known as @dfn{packs}, with
+the following command:
+
+@findex sweeprolog-pack-install
+@deffn Command sweeprolog-pack-install
+Install or upgrade a Prolog pack.
+@end deffn
+
+This command prompts from a pack name, with completion, and installs
+it or upgrades it to the latest available version.  (See also
+@uref{https://www.swi-prolog.org/pldoc/man?section=packs, Packs in the
+SWI-Prolog manual}.)
+
+@node Contributing
+@chapter Contributing
+
+We highly appreciate all contributions, including bug reports,
+patches, improvement suggestions, and general feedback.
+
+For a list of known areas where Sweep could use some work,
+@pxref{Things To Do}.
+
+@menu
+* Developing Sweep::             Instructions for preparing a local development environment for working on sweep
+* Bug Reports::                  Commands for contacting the maintainers of this project
+@end menu
+
+@node Developing Sweep
+@section Setting up Sweep for local development
+
+Since the Prolog and C parts of Sweep are distributed and installed
+along with SWI-Prolog (@pxref{Installation}), the easiest way to set
+up Sweep for development is to start with a SWI-Prolog development
+setup.  Clone the @code{swipl-devel} Git repository, go the
+subdirectory @file{packages/sweep} that contains Sweep as a Git
+submodule, and update it to the latest development version:
+
+@example shell
+git clone --recursive https://github.com/SWI-Prolog/swipl-devel.git
+cd swipl-devel/packages/sweep
+git checkout master
+git pull
+@end example
+
+The directory @file{packages/sweep} in the @code{swipl-devel}
+repository now contains the development version of Sweep.  You can
+hack on Sweep's source files and then (re)build SWI-Prolog to test
+your changes.  See
+@uref{https://github.com/SWI-Prolog/swipl-devel/blob/master/CMAKE.md#building-from-source,
+Building SWI-Prolog using cmake} for more information about building
+SWI-Prolog from source.
+
+If you only modify the Elisp library @file{sweeprolog.el}, you do not
+need to rebuild SWI-Prolog.  You can simply evaluate and test your
+changes directly inside Emacs (@pxref{Lisp Eval,,,emacs,}).
+
+If you change @file{sweep.c} or otherwise want to rebuild SWI-Prolog,
+you can do that from the @file{packages/sweep} subdirectory by running
+the following command:
+
+@example shell
+ninja -C ../../build
+@end example
+
+@node Bug Reports
+@section Submitting patches and bug reports
+
+The best way to get in touch with the Sweep maintainers is via
+@uref{https://lists.sr.ht/~eshel/dev, the Sweep mailing list}.
+
+@findex sweeprolog-submit-bug-report
+@deffn Command sweeprolog-submit-bug-report
+Report a bug in Sweep to the maintainers via mail.
+@end deffn
+
+You can use the command @kbd{M-x sweeprolog-submit-bug-report} to
+easily contact the Sweep maintainers from within Emacs.  This command
+opens a new buffer with a message template ready to be sent to the
+Sweep mailing list.
+
+@node Things To Do
+@chapter Things to do
+
+The following sections list potential improvement for Sweep in
+different areas:
+
+@menu
+* Editing Improvements::         List of potential enhancements for reading and writing Prolog
+* General Improvements::         List of potentially useful new features
+@end menu
+
+@node Editing Improvements
+@section Improvements around editing Prolog
+
+@table @asis
+@item Respect @code{font-lock-maximum-decoration}
+We should take into account the value of
+@code{font-lock-maximum-decoration} while highlighting
+@code{sweeprolog-mode} buffers.  This variable conveys the user's
+preferred degree of highlighting.  A possible approach would be
+changing @code{sweeprolog-analyze-fragment-to-faces} such that each
+color fragment in the returned list states the minimum decoration
+level (1, 2 or 3) for which it should apply.
+@code{sweeprolog-analyze-fragment-font-lock} would then compare this
+target to the value of @code{(font-lock-value-in-major-mode
+font-lock-maximum-decoration)} and decide whether or not to apply the
+fragment.
+@end table
+
+@node General Improvements
+@section General improvements
+
+@table @asis
+@item Facilitate interactive debugging
+Sweep should facilitate interactive debugging of SWI-Prolog code.
+This is a big topic that we don't clearly address.  Perhaps this
+should handled through a Debug Adapter Protocol integration similar to
+@code{dap-swi-prolog} (@uref{https://github.com/eshelyaron/debug_adapter/blob/main/README.md,
+Debug Adapter Protocol for SWI-Prolog}).
+
+@item Integrate with @file{project.el} adding support for SWI-Prolog packs
+It would be nice if Sweep would ``teach'' @file{project.el} to detect
+directories containing SWI-Prolog @file{pack.pl} package definitions
+as root project directories.
+
+@item Extend the provided Elisp-Prolog interface
+Currently, the Elisp interface that Sweep provides for querying Prolog
+only allows calling directly to predicates of arity 2 (@pxref{Querying
+Prolog}), ideally we should provide a (backward-compatible) way for
+executing arbitrary Prolog queries.
+@end table
+
+@node Indices
+@unnumbered Indices
+
+@menu
+* Function Index::
+* Variable Index::
+* Keystroke Index::
+* Concept Index::
+@end menu
+
+@node Function Index
+@unnumberedsec Function index
+
+@printindex fn
+
+@node Variable Index
+@unnumberedsec Variable index
+
+@printindex vr
+
+@node Keystroke Index
+@unnumberedsec Keystroke index
+
+@printindex ky
+
+@node Concept Index
+@unnumberedsec Concept index
+
+@printindex cp
+
+@bye

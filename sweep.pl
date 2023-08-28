@@ -1243,7 +1243,7 @@ sweep_match_term(Pos, Term0, Term, Goal, From, To) :-
     arg(2, Pos, To),
     subsumes_term(Term, Term0),
     \+ \+ (   Term = Term0,
-              Goal
+              catch(Goal, _, false)
           ).
 sweep_match_term(brace_term_position(_, _, Arg), {Term0}, Term, Goal, From, To) :-
     sweep_match_term(Arg, Term0, Term, Goal, From, To).

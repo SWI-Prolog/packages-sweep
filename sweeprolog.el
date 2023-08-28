@@ -218,9 +218,9 @@ the value of this option is used as its path."
   :type 'string
   :group 'sweeprolog)
 
-(defcustom sweeprolog-messages-buffer-name "*sweep Messages*"
+(defcustom sweeprolog-messages-buffer-name "*Sweep Messages*"
   "The name of the buffer to use for logging Prolog messages."
-  :package-version '((sweeprolog . "0.1.1"))
+  :package-version '((sweeprolog . "0.23.1"))
   :type 'string
   :group 'sweeprolog)
 
@@ -5160,7 +5160,7 @@ accordingly."
 (defun sweeprolog-list-top-levels ()
   "Display a list of Prolog top-level threads."
   (interactive)
-  (let ((buf (get-buffer-create "*sweep Top-levels*")))
+  (let ((buf (get-buffer-create "*Sweep Top-levels*")))
     (with-current-buffer buf
       (sweeprolog-top-level-menu-mode)
       (sweeprolog-top-level-menu--refresh)
