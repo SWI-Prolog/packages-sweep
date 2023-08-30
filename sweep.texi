@@ -971,7 +971,7 @@ Minimum number of idle seconds to wait before analyzing a
 @end defopt
 
 At any point in a @code{sweeprolog-mode} buffer, you can use the
-command @code{C-c C-c} (@kbd{M-x sweeprolog-analyze-buffer}) to update
+command @kbd{C-c C-c} (@kbd{M-x sweeprolog-analyze-buffer}) to update
 the cross reference cache and highlight the buffer accordingly.  When
 Sweep's Flymake integration is enabled, this command also updates the
 diagnostics for the current buffer (@pxref{Showing Errors}).  This may
@@ -987,7 +987,7 @@ reanalyzing the buffer highlighting is controlled by customizing the
 user option @code{sweeprolog-analyze-buffer-min-interval}.
 
 To view and customize the various faces that Sweep defines and uses
-for semantic highlighting, type @code{M-x customize-group @key{RET}
+for semantic highlighting, type @kbd{M-x customize-group @key{RET}
 sweeprolog-faces @key{RET}}.  @xref{Faces,,,emacs,}, for more
 information about text faces in Emacs.
 
@@ -2009,7 +2009,7 @@ available for listing and jumping between found errors.
 description of these commands.  Additionally, Sweep Prolog mode
 configures the standard command @kbd{M-x next-error} to operate on
 Flymake diagnostics.  This allows for moving to the next (or previous)
-error location with the common @code{M-g n} (or @code{M-g p})
+error location with the common @kbd{M-g n} (or @kbd{M-g p})
 keybinding.  @xref{Compilation Mode,,,emacs,}, for more information
 about these commands.
 
@@ -2266,7 +2266,7 @@ Repeat the last Term Search, searching backward from point.
 @end deffn
 
 The command @code{sweeprolog-term-search}, bound by default to
-@code{C-c C-s} in Sweep Prolog mode buffers, prompts for a Prolog term
+@kbd{C-c C-s} in Sweep Prolog mode buffers, prompts for a Prolog term
 to search for and finds terms in the current buffer that the search
 term subsumes.  It highlights all matching terms in the buffer and
 moves the cursor to the beginning of the next match after point.  For
@@ -2843,7 +2843,7 @@ Execute a Prolog goal asynchronously and display its output in a
 dedicated buffer (@code{sweeprolog-async-goal}).
 @end table
 
-The command @code{sweeprolog-async-goal}, bound to @code{C-c C-&} in
+The command @code{sweeprolog-async-goal}, bound to @kbd{C-c C-&} in
 Sweep Prolog mode buffers, prompts for a Prolog goal and executes it
 in a new Prolog thread, redirecting its output and error streams to an
 Emacs buffer that gets updated asynchronously.
