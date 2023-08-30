@@ -198,23 +198,25 @@ code in Emacs are:
 
 @itemize
 @item
-@ref{Highlighting, , Semantic highlighting}
+Semantic highlighting, @pxref{Highlighting}.
 @item
-@ref{Indentation, , Automatic indentation}
+Automatic indentation, @ref{Indentation}
 @item
-@ref{Term-based Editing, , Structural editing and navigation}
+Structural editing and navigation, @pxref{Term-based Editing}
 @item
-@ref{Cross References, , Jumping to predicate definitions and references}
+Jumping to predicate definitions and references, @pxref{Cross
+References}
 @item
-@ref{Showing Errors, , On-the-fly diagnostics}
+On-the-fly diagnostics, @pxref{Showing Errors}
 @item
-@ref{Code Completion, , Intelligent code completion}
+Intelligent code completion, @pxref{Code Completion}
 @item
-@ref{Renaming Variables, , Refactoring support}
+Refactoring support, @pxref{Renaming Variables}
 @item
-@ref{The Prolog Top-level, , Integrated SWI-Prolog top-level}
+Integrated SWI-Prolog top-level, @pxref{The Prolog Top-level}
 @item
-@ref{Querying Prolog, , Ability to run Prolog queries directly from Emacs Lisp}
+Ability to run Prolog queries directly from Emacs Lisp, @ref{Querying
+Prolog}
 @end itemize
 
 These features and others are documented in the rest of this manual,
