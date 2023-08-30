@@ -11,9 +11,9 @@
 @c %**end of header
 
 @copying
-This manual is for Sweep (version 0.23.0), which provides an embedded
-SWI-Prolog runtime inside of Emacs along with an advanced SWI-Prolog
-development environment.
+This manual is for Sweep (version 0.23.1), an Emacs package providing
+an embedded SWI-Prolog runtime inside of Emacs along with an advanced
+SWI-Prolog development environment.
 
 Copyright @copyright{} 2022-2023 Eshel Yaron.
 
@@ -42,9 +42,9 @@ Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
 @node Top
 @top Sweep: SWI-Prolog Embedded in Emacs
 
-This manual is for Sweep (version 0.23.0), which provides an embedded
-SWI-Prolog runtime inside of Emacs along with an advanced SWI-Prolog
-development environment.
+This manual is for Sweep (version 0.23.1), an Emacs package providing
+an embedded SWI-Prolog runtime inside of Emacs along with an advanced
+SWI-Prolog development environment.
 
 @end ifnottex
 
