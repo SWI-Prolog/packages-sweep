@@ -13,17 +13,15 @@
 
 ;;; Commentary:
 
-;; sweep is an embedding of SWI-Prolog in Emacs.  It uses the C
-;; interfaces of both SWI-Prolog and Emacs Lisp to create a
-;; dynamically loaded Emacs module that contains the SWI-Prolog
-;; runtime.  sweep provides an interface for interacting with the
-;; embedded Prolog via a set of Elisp functions, as well as user
-;; facing modes and commands for writing and running Prolog within
-;; Emacs.
+;; Sweep is an embedding of SWI-Prolog in Emacs.  It uses the C
+;; interfaces of both SWI-Prolog and Emacs Lisp to let you query
+;; Prolog directly from Elisp.  On top of this tight integration,
+;; Sweep provides an advanced development environment for SWI-Prolog
+;; in Emacs.
 ;;
-;; For more information, see the sweep manual at
-;; <https://eshelyaron.com/sweep.html>.  The manual can also be read
-;; locally by evaluating (info "(sweep) Top")
+;; For more information, see the Sweep manual at
+;; <https://eshelyaron.com/sweep.html>.  To read the manual inside
+;; Emacs, do M-x sweeprolog-info-manual, or evaluate (info "(sweep)Top").
 
 ;;; Code:
 
