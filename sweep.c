@@ -30,7 +30,6 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <emacs-module.h>
 #include <SWI-Prolog.h>
 #include <SWI-Stream.h>
 #include <stdlib.h>
@@ -45,7 +44,10 @@
 #define EXPORT
 #endif
 
+#include <emacs-module.h>
+
 EXPORT int plugin_is_GPL_compatible;
+int plugin_is_GPL_compatible;
 
 struct sweep_env {
   term_t      output_term;
@@ -586,7 +588,7 @@ sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   PL_register_foreign("sweep_funcall", 2, sweep_funcall0, 0);
   PL_register_foreign("sweep_fd_open", 2, sweep_fd_open,  0);
 
-  r = PL_initialise(nargs, argv);
+  r = PL_initialise((int)nargs, argv);
 
   sweep_thread_id = PL_thread_self();
 

@@ -748,7 +748,11 @@ struct emacs_env_28
 };
 
 /* Every module should define a function as follows.  */
-extern int emacs_module_init (struct emacs_runtime *runtime)
+#ifndef EXPORT
+#define EXPORT extern
+#endif
+
+EXPORT int emacs_module_init (struct emacs_runtime *runtime)
   EMACS_NOEXCEPT
   EMACS_ATTRIBUTE_NONNULL (1);
 
