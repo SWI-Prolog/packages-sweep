@@ -117,10 +117,9 @@ be the name of the SWI-Prolog source code root directory.  Any
 other non-nil value says to try and find the SWI-Prolog sources
 among the directories that `project-known-project-roots' returns."
   :package-version '((sweeprolog . "0.7.1"))
-  :type '(choice (const  :tag "Detect"  t)
-                 (string :tag "Manual")
-                 (const  :tag "Disable" nil))
-  :group 'sweeprolog)
+  :type '(choice (const     :tag "Detect"  t)
+                 (directory :tag "Manual")
+                 (const     :tag "Disable" nil)))
 
 (defcustom sweeprolog-module-header-comment-skeleton ?\n
   "Additional content for the topmost comment in module headers.
@@ -129,21 +128,19 @@ The SWI-Prolog module header inserted by \\[auto-insert] includes
 a multiline comment at the very start of the buffer which
 contains the name and mail address of the author based on the
 user options `user-full-name' and `user-mail-address'
-respectively, followed by the value of this variable, is
+respectively, followed by the value of this variable, which is
 interpreted as a skeleton (see `skeleton-insert').  In its
 simplest form, this may be a string or a character.
 
 This user option may be useful, for example, to include copyright
 notices with the module header."
   :package-version '((sweeprolog . "0.4.6"))
-  :type 'any
-  :group 'sweeprolog)
+  :type 'any)
 
 (defcustom sweeprolog-indent-offset 4
   "Number of columns to indent with in `sweeprolog-mode' buffers."
   :package-version '((sweeprolog . "0.3.1"))
-  :type 'natnum
-  :group 'sweeprolog)
+  :type 'natnum)
 
 (defcustom sweeprolog-qq-mode-alist '(("graphql"    . graphql-mode)
                                       ("javascript" . js-mode)
@@ -154,8 +151,7 @@ This is a list of pairs of the form (TYPE . MODE), where TYPE is
 a Prolog quasi-quotation type given as a string, and MODE is a
 symbol specifing a major mode."
   :package-version '((sweeprolog . "0.4.3"))
-  :type '(alist :key-type string :value-type symbol)
-  :group 'sweeprolog)
+  :type '(alist :key-type string :value-type function))
 
 (defcustom sweeprolog-enable-cycle-spacing t
   "If non-nil and `cycle-spacing-actions' is defined, extend it.
@@ -164,103 +160,70 @@ This makes the first invocation of \\[cycle-spacing] in
 `sweeprolog-mode' buffers update whitespace around point using
 `sweeprolog-align-spaces', which see."
   :package-version '((sweeprolog . "0.5.3"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-analyze-buffer-on-idle t
   "If non-nil, analyze `sweeprolog-mode' buffers on idle."
   :package-version '((sweeprolog . "0.8.2"))
-  :type 'boolean
-  :group 'sweeprolog)
-
-(make-obsolete-variable 'sweeprolog-colourise-buffer-on-idle
-                        "Use `sweeprolog-analyze-buffer-on-idle' instead"
-                        "sweeprolog version 0.8.2")
+  :type 'boolean)
 
 (defcustom sweeprolog-analyze-buffer-max-size 100000
   "Maximum buffer size to analyze on idle."
   :package-version '((sweeprolog . "0.8.2"))
-  :type 'natnum
-  :group 'sweeprolog)
-
-(make-obsolete-variable 'sweeprolog-colourise-buffer-max-size
-                        "Use `sweeprolog-analyze-buffer-max-size' instead"
-                        "sweeprolog version 0.8.2")
+  :type 'natnum)
 
 (defcustom sweeprolog-analyze-buffer-min-interval 1.5
   "Minimum idle time to wait before analyzing the buffer."
   :package-version '((sweeprolog . "0.8.2"))
-  :type 'float
-  :group 'sweeprolog)
-
-(make-obsolete-variable 'sweeprolog-colourise-buffer-min-interval
-                        "Use `sweeprolog-analyze-buffer-min-interval' instead"
-                        "sweeprolog version 0.8.2")
+  :type 'float)
 
 (defcustom sweeprolog-swipl-path nil
-  "Path to the swipl executable.
+  "File name of the swipl executable.
 When non-nil, this is used by the embedded SWI-Prolog runtime to
-locate its \"home\" directory.  Otherwise, `executable-find' is
-used to find the swipl executable."
+locate its \"home\" directory.  Otherwise, Sweep uses
+`executable-find' to find the swipl executable."
   :package-version '((sweeprolog . "0.1.1"))
-  :type 'string
-  :group 'sweeprolog)
-
-(defcustom sweeprolog-libswipl-path nil
-  "Path to the libswipl shared object.
-On Linux and other ELF-based platforms, `sweep' first loads
-libswipl before loading `sweep-module'.  When this option is
-nil (the default), libswipl is located automatically, otherwise
-the value of this option is used as its path."
-  :package-version '((sweeprolog . "0.6.1"))
-  :type 'string
-  :group 'sweeprolog)
+  :type '(choice (file  :tag "File name" :must-match t)
+                 (const :tag "Search `executable-path'" nil)))
 
 (defcustom sweeprolog-messages-buffer-name "*Sweep Messages*"
   "The name of the buffer to use for logging Prolog messages."
   :package-version '((sweeprolog . "0.23.1"))
-  :type 'string
-  :group 'sweeprolog)
+  :type 'string)
 
 (defcustom sweeprolog-read-flag-prompt "Flag: "
   "Prompt used for reading a Prolog flag name from the minibuffer."
   :package-version '((sweeprolog . "0.1.2"))
-  :type 'string
-  :group 'sweeprolog)
+  :type 'string)
 
 (defcustom sweeprolog-read-module-prompt "Module: "
   "Prompt used for reading a Prolog module name from the minibuffer."
   :package-version '((sweeprolog . "0.1.0"))
-  :type 'string
-  :group 'sweeprolog)
+  :type 'string)
 
 (defcustom sweeprolog-read-predicate-prompt "Predicate"
   "Prompt used for reading a Prolog predicate name from the minibuffer."
   :package-version '((sweeprolog . "0.19.1"))
-  :type 'string
-  :group 'sweeprolog)
+  :type 'string)
 
 (defcustom sweeprolog-read-exportable-predicate-prompt "Export predicate: "
   "Prompt used for reading an exportable predicate name."
   :package-version '((sweeprolog . "0.6.2"))
-  :type 'string
-  :group 'sweeprolog)
+  :type 'string)
 
 (defcustom sweeprolog-read-pack-prompt "Pack: "
   "Prompt used for reading a Prolog pack name from the minibuffer."
   :package-version '((sweeprolog . "0.1.0"))
-  :type 'string
-  :group 'sweeprolog)
+  :type 'string)
 
 (defcustom sweeprolog-top-level-display-action nil
   "Display action used for displaying the `sweeprolog-top-level' buffer."
   :package-version '((sweeprolog . "0.1.0"))
   :type '(choice (const :tag "Default" nil)
-                 (cons  :tag "Action"
+                 (cons  :tag "Buffer display action"
                         (choice (function :tag "Display Function")
                                 (repeat :tag "Display Functions" function))
-                        alist))
-  :group 'sweeprolog)
+                        (alist :tag "Action alist"))))
 
 (defcustom sweeprolog-top-level-min-history-length 3
   "Minimum input length to record in the `sweeprolog-top-level' history.
@@ -268,20 +231,7 @@ the value of this option is used as its path."
 Inputs shorther than the value of this variable will not be
 inserted to the input history in `sweeprolog-top-level-mode' buffers."
   :package-version '((sweeprolog . "0.2.1"))
-  :type 'string
-  :group 'sweeprolog)
-
-(defcustom sweeprolog-init-on-load t
-  "If non-nil, initialize Prolog when `sweeprolog' is loaded."
-  :package-version '((sweeprolog "0.1.0"))
-  :type 'boolean
-  :group 'sweeprolog)
-
-(make-obsolete-variable 'sweeprolog-init-on-load
-                        (concat
-                         "Prolog is initialized on-demand,"
-                         " regardless of the value of this option.")
-                        "sweeprolog version 0.7.2")
+  :type 'natnum)
 
 (defcustom sweeprolog-init-args
   (append
@@ -312,36 +262,31 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
           sweeprolog--directory)))
   "List of strings used as initialization arguments for Prolog."
   :package-version '((sweeprolog "0.22.2"))
-  :type '(repeat string)
-  :group 'sweeprolog)
+  :type '(repeat string))
 
 (defcustom sweeprolog-enable-flymake t
-  "If non-nil, enable `flymake' suport in `sweeprolog-mode' buffers."
+  "Whether to enable Flymake support in Sweep Prolog mode buffers."
   :package-version '((sweeprolog "0.6.0"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-note-implicit-autoloads t
-  "If non-nil, `flymake' notes implicitly autoload predicates."
+  "Whether Flymake should note implicitly autoload predicates."
   :package-version '((sweeprolog "0.9.2"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-enable-eldoc t
-  "If non-nil, enable `eldoc' suport in `sweeprolog-mode' buffers."
+  "Whether to enable ElDoc support in Sweep Prolog mode buffers."
   :package-version '((sweeprolog "0.4.7"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-enable-cursor-sensor t
-  "If non-nil, enable `cursor-sensor-mode' in `sweeprolog-mode'.
+  "Whether to enable `cursor-sensor-mode' in Sweep Prolog mode buffers.
 
-When enabled, `sweeprolog-mode' leverages `cursor-sensor-mode' to
+When non-nil, Sweep Prolog mode leverages `cursor-sensor-mode' to
 highlight all occurrences of the variable at point in the current
 clause."
   :package-version '((sweeprolog "0.4.2"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-new-predicate-location-function
   #'sweeprolog-default-new-predicate-location
@@ -361,20 +306,17 @@ non-terminals)."
                         sweeprolog-default-new-predicate-location)
                  (const    :tag "Above Current Predicate"
                         sweeprolog-new-predicate-location-above-current)
-                 (function :tag "Custom Function"))
-  :group 'sweeprolog)
+                 (function :tag "Custom Function")))
 
 (defcustom sweeprolog-top-level-signal-default-goal "sweep_interrupt"
   "Prolog goal used by default for signaling top-level threads."
   :package-version '((sweeprolog "0.8.12"))
-  :type 'string
-  :group 'sweeprolog-top-level)
+  :type 'string)
 
 (defcustom sweeprolog-highlight-holes t
-  "If non-nil, highlight holes in a dedicated face."
+  "Whether to highlight holes in a dedicated face."
   :package-version '((sweeprolog "0.8.12"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-read-predicate-documentation-function
   #'sweeprolog-read-predicate-documentation-default-function
@@ -401,27 +343,24 @@ documentation, acting as a short summary."
            :tag "Use Holes"
            sweeprolog-read-predicate-documentation-with-holes)
           (function
-           :tag "Custom Function"))
-  :group 'sweeprolog)
+           :tag "Custom Function")))
 
 (defcustom sweeprolog-enable-help-echo t
-  "If non-nil, annotate Prolog tokens with the `help-echo' property.
+  "Whether to annotate Prolog tokens with the `help-echo' property.
 
-When enabled, `sweeprolog-mode' adds a short description to each
+When non-nil, Sweep Prolog mode adds a short description to each
 token via its `help-echo' text property."
   :package-version '((sweeprolog "0.12.0"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-rename-variable-allow-existing 'confirm
-  "If non-nil, allow renaming variables to existing variable names.
+  "Whether to allow renaming variables to existing variable names.
 If it is the symbol `confirm', allow but ask for confirmation
 first."
   :package-version '((sweeprolog "0.15.1"))
   :type '(choice (const :tag "Allow"   t)
                  (const :tag "Confirm" confirm)
-                 (const :tag "Refuse"  nil))
-  :group 'sweeprolog)
+                 (const :tag "Refuse"  nil)))
 
 (defcustom sweeprolog-dependency-directive 'infer
   "Prolog directive to use for adding dependencies.
@@ -439,14 +378,12 @@ use `autoload/2' for all added directives."
   :package-version '((sweeprolog "0.17.0"))
   :type '(choice (const :tag "Prefer use_module/2" use-module)
                  (const :tag "Prefer autoload/2"  autoload)
-                 (const :tag "Infer" infer))
-  :group 'sweeprolog)
+                 (const :tag "Infer" infer)))
 
 (defcustom sweeprolog-highlight-breakpoints t
-  "If non-nil, highlight breakpoints with a dedicated face."
+  "Whether to highlight breakpoints with a dedicated face."
   :package-version '((sweeprolog "0.17.0"))
-  :type 'boolean
-  :group 'sweeprolog)
+  :type 'boolean)
 
 (defcustom sweeprolog-predicate-visible-p-function #'sweeprolog-predicate-non-hidden-p
   "Controls how `sweeprolog-read-predicate' filters completion candidates.
@@ -493,7 +430,7 @@ for top-level buffers that don't belong to any project."
   :type '(choice (const    :tag "Disable persistent history" nil)
                  (cons     :tag "File name relative to project root"
                            (const project) string)
-                 (string   :tag "History file name")
+                 (file     :tag "History file name")
                  (function :tag "Function returning history file name")))
 
 (defcustom sweeprolog-pack-description-max-width 80
@@ -619,7 +556,7 @@ pack completion candidates."
 
 (easy-menu-define sweeprolog-menu (list sweeprolog-mode-map
                                         sweeprolog-top-level-mode-map)
-  "`sweep' menu."
+  "Sweep menu."
   '("Sweep"
     [ "Load Prolog Buffer" sweeprolog-load-buffer t ]
     [ "Find Prolog Module" sweeprolog-find-module t ]
@@ -833,7 +770,7 @@ the order of the arguments is reversed."
       (`(,_ . ,result) result))))
 
 (defun sweeprolog-start-prolog-server ()
-  "Start the `sweep' Prolog top-level embedded server."
+  "Start the Sweep Prolog top-level embedded server."
   (setq sweeprolog-prolog-server-port
         (sweeprolog--query-once "sweep" "sweep_top_level_server" nil)))
 
@@ -857,7 +794,7 @@ the order of the arguments is reversed."
       win)))
 
 (defun sweeprolog-message (message)
-  "Emit the Prolog message MESSAGE to the `sweep' messages buffer."
+  "Emit the Prolog message MESSAGE to the Sweep messages buffer."
   (with-current-buffer (get-buffer-create sweeprolog-messages-buffer-name)
     (save-excursion
       (goto-char (point-max))
@@ -5124,7 +5061,7 @@ accordingly."
     (user-error "No top-level menu entry here")))
 
 (defun sweeprolog-top-level-menu-kill ()
-  "Kill the buffer of to the `sweep' Top-level Menu entry at point."
+  "Kill the buffer of to the Sweep Top-level Menu entry at point."
   (interactive "" sweeprolog-top-level-menu-mode)
   (if-let ((vec (tabulated-list-get-entry)))
       (let ((bn (seq-elt vec 0)))
@@ -5132,7 +5069,7 @@ accordingly."
     (user-error "No top-level menu entry here")))
 
 (defun sweeprolog-top-level-menu-go-to ()
-  "Go to the buffer of to the `sweep' Top-level Menu entry at point."
+  "Go to the buffer of to the Sweep Top-level Menu entry at point."
   (interactive "" sweeprolog-top-level-menu-mode)
   (if-let ((vec (tabulated-list-get-entry)))
       (let* ((bn (seq-elt vec 0))
@@ -5144,7 +5081,7 @@ accordingly."
 
 (define-derived-mode sweeprolog-top-level-menu-mode
   tabulated-list-mode "Sweep Top-level Menu"
-  "Major mode for browsing a list of active `sweep' top-levels."
+  "Major mode for browsing a list of active Sweep top-levels."
   (setq tabulated-list-format [("Buffer"      32 t)
                                ("Status"      32 t)
                                ("Stacks Size" 20 t)
@@ -6893,7 +6830,6 @@ This function is used as a `add-log-current-defun-function' in
        sweeprolog--initialized
        sweeprolog-init-args
        sweeprolog-swipl-path
-       sweeprolog-libswipl-path
        system-configuration-features)
      nil nil
      (propertize " "
