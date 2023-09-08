@@ -5763,6 +5763,12 @@ GOAL."
 (defvar sweeprolog-context-menu-point-at-click nil
   "Buffer position at mouse click.")
 
+(defvar sweeprolog-context-menu-region-beg-at-click nil
+  "Beginning of region at time of mouse click.")
+
+(defvar sweeprolog-context-menu-region-end-at-click nil
+  "End of region at time of mouse click.")
+
 (defvar sweeprolog-context-menu-file-at-click nil
   "Prolog file specification at mouse click.")
 
@@ -5988,9 +5994,12 @@ POINT is the buffer position of the mouse click."
                              :help ,(format "Expand macro to %s" expansion)
                              :keys "\\[sweeprolog-expand-macro-at-point]")))))
 
-(defun sweeprolog-context-menu-for-region (menu &rest _)
-  "Extend MENU with commands that are only relevant when the region is active."
-  (when (use-region-p)
+(defun sweeprolog-context-menu-for-region (menu _tok _beg _end point)
+  "Extend MENU with commands for when the region is active and includes POINT."
+  (when (and (use-region-p)
+             (<= sweeprolog-context-menu-region-beg-at-click
+                 point
+                 sweeprolog-context-menu-region-end-at-click))
     (define-key menu [sweeprolog-extract-region-to-predicate]
                 `(menu-item "Extract to New Predicate"
                             sweeprolog-extract-region-to-predicate
@@ -6012,7 +6021,9 @@ the position for which the menu is created.")
 
 (defun sweeprolog-context-menu-function (menu click)
   "Populate MENU with Prolog commands at CLICK."
-  (let ((point (posn-point (event-start click))))
+  (let ((point (posn-point (event-start click)))
+        (sweeprolog-context-menu-region-beg-at-click (region-beginning))
+        (sweeprolog-context-menu-region-end-at-click (region-end)))
     (save-mark-and-excursion
       (goto-char point)
       (sweeprolog-analyze-term-at-point
