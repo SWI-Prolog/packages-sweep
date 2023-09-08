@@ -2549,9 +2549,9 @@ result of being extracted from the current clause,
 asks you to confirm before continuing.
 
 By default, @code{sweeprolog-extract-region-to-predicate} is not bound
-directly to any key in Sweep Prolog mode; instead, you can it by
-typing @kbd{M-@key{RET}} (@code{sweeprolog-insert-term-dwim}) when the
-region is active.  @xref{Insert Term DWIM}).
+directly to any key in Sweep Prolog mode; instead, you can invoke it
+by typing @kbd{M-@key{RET}} (@code{sweeprolog-insert-term-dwim}) when
+the region is active.  @xref{Insert Term DWIM}.
 
 With Context Menu mode enabled, you can also invoke this command by
 right-clicking on an active region.
