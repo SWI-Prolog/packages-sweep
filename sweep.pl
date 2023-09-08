@@ -93,7 +93,9 @@
             sweep_variable_start_code/2,
             sweep_head_functors_collection/2,
             sweep_functors_collection/2,
-            sweep_compound_functors_collection/2
+            sweep_compound_functors_collection/2,
+            sweep_term_variable_names/2,
+            sweep_goal_may_cut/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -1422,3 +1424,29 @@ sweep_expand_macro(String0, String) :-
     term_string(Term, String, [variable_names(Vs), module(M)]).
 
 sweep_variable_start_code(C, _) :- code_type(C, prolog_var_start).
+
+sweep_term_variable_names(String, Names) :-
+    term_string(_, String, [variable_names(VarNames)]),
+    maplist([Atom=_,Name]>>atom_string(Atom, Name), VarNames, Names).
+
+sweep_goal_may_cut(String, _) :-
+    term_string(Goal, String),
+    sweep_goal_may_cut_(Goal),
+    !.
+
+sweep_goal_may_cut_((_->A;B)) =>
+    (   sweep_goal_may_cut_(A)
+    ;   sweep_goal_may_cut_(B)
+    ).
+sweep_goal_may_cut_(A;B) =>
+    (   sweep_goal_may_cut_(A)
+    ;   sweep_goal_may_cut_(B)
+    ).
+sweep_goal_may_cut_((A,B)) =>
+    (   sweep_goal_may_cut_(A)
+    ;   sweep_goal_may_cut_(B)
+    ).
+sweep_goal_may_cut_(!) =>
+    true.
+sweep_goal_may_cut_(_) =>
+    false.

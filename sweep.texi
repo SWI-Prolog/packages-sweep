@@ -2099,8 +2099,8 @@ As a means of automating common Prolog code editing tasks, such as
 adding new clauses to an existing predicate, Sweep Prolog mode
 provides the ``do what I mean'' command
 @code{sweeprolog-insert-term-dwim}, bound by default to @kbd{C-M-m}
-(or equivalently, @kbd{M-RET}).  This command inserts a new term at or
-after point according to the context in which you invoke it.
+(or equivalently, @kbd{M-@key{RET}}).  This command inserts a new term in
+the current buffer according to the context in which you invoke it.
 
 @table @kbd
 @kindex M-RET
@@ -2109,7 +2109,7 @@ after point according to the context in which you invoke it.
 @item M-@key{RET}
 @itemx C-M-m
 Insert an appropriate Prolog term in the current buffer, based on the
-context at point (@code{sweeprolog-insert-term-dwim}).
+current context (@code{sweeprolog-insert-term-dwim}).
 @end table
 
 @defvar sweeprolog-insert-term-functions
@@ -2125,6 +2125,11 @@ non-@code{nil}.
 
 By default, @code{sweeprolog-insert-term-dwim} tries the following
 insertion functions, in order:
+
+@defun sweeprolog-maybe-extract-region-to-predicate
+If the region is active, extract the selected goal into a separate
+predicate.  @xref{Extract Goal}.
+@end defun
 
 @defun sweeprolog-maybe-insert-next-clause
 If the last token before point is a fullstop ending a predicate
@@ -2177,7 +2182,7 @@ test() :- TestBody.
 The cursor is left between the parentheses of the @code{test()} head
 term, and the @code{TestBody} variable is marked as a hole
 (@pxref{Holes}).  To insert another unit test, place point after a
-complete test case and type @kbd{C-M-m} (or @kbd{M-RET}) to invoke
+complete test case and type @kbd{C-M-m} (or @kbd{M-@key{RET}}) to invoke
 @code{sweeprolog-insert-term-dwim} (@pxref{Insert Term DWIM, ,
 Context-Based Term Insertion}).
 
@@ -2516,6 +2521,38 @@ to expand the macro inline.  To undo the expansion, use @kbd{C-/}
 With Context Menu mode enabled, you can also expand macros by
 right-clicking on the @code{#} and selecting @samp{Expand Macro} from
 the context menu.  @xref{Context Menu}.
+
+@node Extract Goal
+@section Extracting Goals to Separate Predicates
+
+Sweep can help you extract a part of the body of a Prolog clause into
+a separate predicate, so you can reuse it in other places.
+
+@findex sweeprolog-extract-region-to-predicate
+@deffn Command sweeprolog-extract-region-to-predicate
+Extract the goal between point and mark into a new predicate.
+@end deffn
+
+This command extracts the selected goal into a separate predicate.  It
+prompts you for the name of the new predicate and inserts a definition
+for that predicate in the current buffer, while replacing the current
+region with a call to this new predicate.  The body of the new
+predicate is the goal in the current region, and this command
+determines the arguments of the new predicate based on the variables
+that the goal to extract shares with the containing clause.
+
+If the selected goal contains a cut whose scope would change as a
+result of being extracted from the current clause,
+@code{sweeprolog-extract-region-to-predicate} warns you about it and
+asks you to confirm before continuing.
+
+By default, @code{sweeprolog-extract-region-to-predicate} is not bound
+directly to any key in Sweep Prolog mode; instead, you can it by
+typing @kbd{M-@key{RET}} (@code{sweeprolog-insert-term-dwim}) when the
+region is active.  @xref{Insert Term DWIM}).
+
+With Context Menu mode enabled, you can also invoke this command by
+right-clicking on an active region.
 
 @node Prolog Help
 @chapter Prolog Help

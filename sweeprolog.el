@@ -56,7 +56,8 @@
 (defvar sweeprolog--extra-init-args nil)
 
 (defvar sweeprolog-insert-term-functions
-  '(sweeprolog-maybe-insert-next-clause
+  '(sweeprolog-maybe-extract-region-to-predicate
+    sweeprolog-maybe-insert-next-clause
     sweeprolog-maybe-define-predicate)
   "Hook of functions that insert a Prolog term in a certain context.
 
@@ -1392,8 +1393,8 @@ Prolog buffers."
 (defun sweeprolog-local-variables-collection (&rest exclude)
   "Return a list of variable names that occur in the current clause.
 
-EXCLUDE is a list of variables name to be excluded from the
-resulting list even when found in the current clause."
+EXCLUDE is a list of variable names to exclude from the resulting
+list even when found in the current clause."
   (let* ((case-fold-search nil)
          (beg (save-mark-and-excursion
                 (unless (sweeprolog-at-beginning-of-top-term-p)
@@ -5987,13 +5988,23 @@ POINT is the buffer position of the mouse click."
                              :help ,(format "Expand macro to %s" expansion)
                              :keys "\\[sweeprolog-expand-macro-at-point]")))))
 
+(defun sweeprolog-context-menu-for-region (menu &rest _)
+  "Extend MENU with commands that are only relevant when the region is active."
+  (when (use-region-p)
+    (define-key menu [sweeprolog-extract-region-to-predicate]
+                `(menu-item "Extract to New Predicate"
+                            sweeprolog-extract-region-to-predicate
+                            :help "Extract the selected goal into a separate predicate"
+                            :keys "\\[sweeprolog-extract-region-to-predicate]"))))
+
 (defvar sweeprolog-context-menu-functions
   '(sweeprolog-context-menu-for-clause
     sweeprolog-context-menu-for-file
     sweeprolog-context-menu-for-module
     sweeprolog-context-menu-for-predicate
     sweeprolog-context-menu-for-variable
-    sweeprolog-context-menu-for-macro)
+    sweeprolog-context-menu-for-macro
+    sweeprolog-context-menu-for-region)
   "Functions that create context menu entries for Prolog tokens.
 Each function receives as its arguments the menu, the Prolog
 token's description, its start position, its end position, and
@@ -6808,6 +6819,80 @@ This function is used as a `add-log-current-defun-function' in
       (concat (when mod (concat mod ":"))
               fun ind (number-to-string ari)))))
 
+
+;;;; Extract goals to separate predicates
+
+(defun sweeprolog-extract-region-to-predicate (beg end new)
+  "Extract the Prolog goal from BEG to END into a new predicate, NEW.
+
+BEG and END are buffer positions; interactively, these are the
+beginning and end of the current region.  NEW is a string used as
+the functor of the new predicate; interactively, this command
+prompts for NEW in the minibuffer.
+
+This command defines the new predicate with arguments based on
+the variables that the goal to extract shares with the containing
+clause.
+
+The user option `sweeprolog-new-predicate-location-function' says
+where in the buffer to insert the newly created predicate."
+  (interactive "r\nsNew predicate functor: " sweeprolog-mode)
+  ;; TODO - check that NEW isn't already used
+  (let* ((name (sweeprolog-format-string-as-atom new))
+         (body (buffer-substring-no-properties beg end))
+         (vars (condition-case error
+                   (sweeprolog--query-once "sweep" "sweep_term_variable_names"
+                                           body)
+                 (prolog-exception
+                  (user-error "Region does not contain a valid Prolog term")))))
+    (if (and (sweeprolog--query-once "sweep" "sweep_goal_may_cut" body)
+             (not (y-or-n-p (concat
+                             "The selected goal contains a cut whose "
+                             "scope would change as a result of this "
+                             "operation.  Continue?"))))
+        (message "Canceled.")
+      (combine-after-change-calls
+        (goto-char beg)
+        (delete-region beg end)
+        (insert name)
+        (let* ((clause-beg (save-excursion
+                             (sweeprolog-beginning-of-top-term)
+                             (point)))
+               (clause-end (save-excursion
+                             (sweeprolog-end-of-top-term)
+                             (point)))
+               (clause-vars
+                (condition-case error
+                    (sweeprolog--query-once "sweep" "sweep_term_variable_names"
+                                            (buffer-substring-no-properties
+                                             clause-beg clause-end))
+                  (prolog-exception (sweeprolog-local-variables-collection))))
+               (neck (or (nth 4 (sweeprolog-definition-at-point)) ":-"))
+               (args (seq-intersection vars clause-vars #'string=)))
+          (when args
+            (insert "(" (mapconcat #'identity args ", ") ")"))
+          (funcall sweeprolog-new-predicate-location-function
+                   name (length args) neck)
+          (let ((def-beg (1+ (point))))
+            (insert (concat "\n"
+                            name
+                            (when args
+                              (concat "(" (mapconcat #'identity args ", ") ")"))
+                            " "
+                            neck
+                            "\n"
+                            body
+                            ".\n"))
+            (indent-region-line-by-line def-beg (point))
+            (goto-char def-beg)))))))
+
+(defun sweeprolog-maybe-extract-region-to-predicate (&rest _)
+  (when (use-region-p)
+    (sweeprolog-extract-region-to-predicate
+     (use-region-beginning)
+     (use-region-end)
+     (read-string "Extract region to new predicate: "))
+    t))
 
 ;;;; Bug Reports
 
