@@ -553,7 +553,7 @@ Close the last Prolog query.  Similar to @code{sweeprolog-cut-query}
 expect that any unifications created by the last query are dropped.
 @end defun
 
-Sweep provides the Elisp function @samp{sweeprolog-open-query} for
+Sweep provides the Elisp function @code{sweeprolog-open-query} for
 invoking Prolog predicates.  The predicate you invoke via this
 function must be of arity two, and it will be called in mode
 @code{p(+In, -Out)}---the predicate should treat the first argument as
@@ -625,10 +625,10 @@ Elisp integers are converted to equivalent Prolog integers.
 @item
 Elisp floats are converted to equivalent Prolog floats.
 @item
-The Elisp nil object is converted to the Prolog empty list @samp{[]}.
+The Elisp nil object is converted to the Prolog empty list @code{[]}.
 @item
 Elisp cons cells are converted to Prolog lists whose head and tail
-are the Prolog representations of the @samp{car} and the @samp{cdr} of the cons.
+are the Prolog representations of the @code{car} and the @code{cdr} of the cons.
 @end itemize
 
 @node Prolog to Elisp
@@ -1566,7 +1566,7 @@ provides a simple facility for looking up and jumping to definitions
 in the current buffer.  To jump to a definition in the current buffer,
 type @kbd{M-x imenu @key{RET}} (bound by default to @kbd{M-g i} in
 Emacs version 29 or later).  For information about customizing
-@samp{imenu}, @ref{Imenu,,,emacs,}.
+@code{imenu}, @ref{Imenu,,,emacs,}.
 
 @findex sweeprolog-xref-project-source-files
 @kindex M-?
@@ -2554,7 +2554,8 @@ by typing @kbd{M-@key{RET}} (@code{sweeprolog-insert-term-dwim}) when
 the region is active.  @xref{Insert Term DWIM}.
 
 With Context Menu mode enabled, you can also invoke this command by
-right-clicking on an active region.
+right-clicking on an active region and selecting @samp{Extract to New
+Predicate}.
 
 @node Prolog Help
 @chapter Prolog Help
