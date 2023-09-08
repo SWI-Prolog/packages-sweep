@@ -112,6 +112,7 @@ Editing Prolog Code
 * Renaming Variables::           Replacing occurrences of one Prolog variable with another
 * Numbered Variables::           Commands for managing numbers in names of related variables
 * Macro Expansion::              Commands for expanding SWI-Prolog macros
+* Extract Goal::                 Commands for extracting part of a Prolog clause body to a separate predicate
 
 Indentation
 
@@ -770,6 +771,7 @@ more information about Menu Bar mode, @pxref{Menu Bars,,,emacs,}.
 * Renaming Variables::           Replacing occurrences of one Prolog variable with another
 * Numbered Variables::           Commands for managing numbers in names of related variables
 * Macro Expansion::              Commands for expanding SWI-Prolog macros
+* Extract Goal::                 Commands for extracting part of a Prolog clause body to a separate predicate
 @end menu
 
 @node Indentation
