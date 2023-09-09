@@ -212,7 +212,7 @@ On-the-fly diagnostics, @pxref{Showing Errors}
 @item
 Intelligent code completion, @pxref{Code Completion}
 @item
-Refactoring support, @pxref{Renaming Variables}
+Refactoring, @pxref{Renaming Variables} and @ref{Extract Goal}
 @item
 Integrated SWI-Prolog top-level, @pxref{The Prolog Top-level}
 @item
@@ -2528,6 +2528,8 @@ the context menu.  @xref{Context Menu}.
 @node Extract Goal
 @section Extracting Goals to Separate Predicates
 
+@cindex extract goal
+@cindex refactor, extract to separate definition
 Sweep can help you extract a part of the body of a Prolog clause into
 a separate predicate, so you can reuse it in other places.
 
