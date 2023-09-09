@@ -11,6 +11,15 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.24.1 on 2023-09-09
+
+** Refine checks for extracting goals to separate predicates
+
+Sweep now checks that the selected region is a goal at a callable
+position, rather than a data term, before suggesting to extract the
+region to a separate predicate in ~sweeprolog-insert-term-dwim~
+(~M-RET~) and in the right-click context menu.
+
 * Version 0.24.0 on 2023-09-08
 
 ** New command ~sweeprolog-extract-region-to-predicate~
