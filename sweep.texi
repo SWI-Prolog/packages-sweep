@@ -2129,8 +2129,8 @@ By default, @code{sweeprolog-insert-term-dwim} tries the following
 insertion functions, in order:
 
 @defun sweeprolog-maybe-extract-region-to-predicate
-If the region is active, extract the selected goal into a separate
-predicate.  @xref{Extract Goal}.
+If the region is active and selects a goal, extract the selected goal
+into a separate predicate.  @xref{Extract Goal}.
 @end defun
 
 @defun sweeprolog-maybe-insert-next-clause
@@ -2334,12 +2334,13 @@ position, and the position of the mouse click.  It should alter the
 menu according to that context.
 @end defvar
 
-To enable Context Menu, type @kbd{M-x context-menu-mode @key{RET}} or
-add a call to @code{(context-menu-mode)} in your Emacs initialization
-file to enable it in all future sessions.  You access the context menu
-by right-clicking anywhere in Emacs.  If you do it in a Sweep Prolog
-mode buffer, you can invoke several Prolog-specific commands based on
-where you click in the buffer.
+To enable Context Menu mode, type @kbd{M-x context-menu-mode
+@key{RET}}.  To have Context Menu mode enabled automatically when
+Emacs starts, place a call to @code{(context-menu-mode)} in your Emacs
+initialization file.  You can access the context menu by
+right-clicking anywhere in Emacs.  If you do it in a Sweep Prolog mode
+buffer, you can invoke several Prolog-specific commands based on where
+you click in the buffer.
 
 If you right-click on a Prolog file specification or module name,
 Sweep suggests visiting it either in the current window or in another.
@@ -2347,7 +2348,7 @@ If you right-click on a predicate, it lets you view its documentation
 in a dedicated buffer (@pxref{Prolog Help}).  For variables, it
 enables the @samp{Rename Variable} menu entry that you can use to
 rename the variable you click on across its containing clause
-(@pxref{Renaming Variables, , Renaming Variables}).
+(@pxref{Renaming Variables}).
 
 You can further extend and customize the context menu that Sweep
 Prolog mode provides by adding functions to the variable
@@ -2547,6 +2548,10 @@ If the selected goal contains a cut whose scope would change as a
 result of being extracted from the current clause,
 @code{sweeprolog-extract-region-to-predicate} warns you about it and
 asks you to confirm before continuing.
+
+If you call @code{sweeprolog-extract-region-to-predicate} when the
+region does not contain a valid Prolog term, this command complains
+and refuses to extract the invalid term.
 
 By default, @code{sweeprolog-extract-region-to-predicate} is not bound
 directly to any key in Sweep Prolog mode; instead, you can invoke it

@@ -6000,11 +6000,14 @@ POINT is the buffer position of the mouse click."
              (<= sweeprolog-context-menu-region-beg-at-click
                  point
                  sweeprolog-context-menu-region-end-at-click))
-    (define-key menu [sweeprolog-extract-region-to-predicate]
-                `(menu-item "Extract to New Predicate"
-                            sweeprolog-extract-region-to-predicate
-                            :help "Extract the selected goal into a separate predicate"
-                            :keys "\\[sweeprolog-extract-region-to-predicate]"))))
+    (when (sweeprolog-context-callable-p
+           sweeprolog-context-menu-region-beg-at-click)
+      (define-key
+       menu [sweeprolog-extract-region-to-predicate]
+       `(menu-item "Extract to New Predicate"
+                   sweeprolog-extract-region-to-predicate
+                   :help "Extract the selected goal into a separate predicate"
+                   :keys "\\[sweeprolog-insert-term-dwim] in active region")))))
 
 (defvar sweeprolog-context-menu-functions
   '(sweeprolog-context-menu-for-clause
@@ -6895,10 +6898,12 @@ where in the buffer to insert the newly created predicate."
                             body
                             ".\n"))
             (indent-region-line-by-line def-beg (point))
-            (goto-char def-beg)))))))
+            (goto-char def-beg)
+            (sweeprolog-analyze-buffer)))))))
 
 (defun sweeprolog-maybe-extract-region-to-predicate (&rest _)
-  (when (use-region-p)
+  (when (and (use-region-p)
+             (sweeprolog-context-callable-p (use-region-beginning)))
     (sweeprolog-extract-region-to-predicate
      (use-region-beginning)
      (use-region-end)
