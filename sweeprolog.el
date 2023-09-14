@@ -2271,7 +2271,7 @@ inside a comment, string or quoted atom."
   :group 'sweeprolog-faces)
 
 (defface sweeprolog-hole
-  '((t :box t))
+  '((t :box (:line-width (-1 . -1))))
   "Face for highlighting Prolog holes."
   :group 'sweeprolog-faces)
 
