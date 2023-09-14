@@ -3281,10 +3281,11 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
   (setq sweeprolog-top-level-timer (run-with-idle-timer 0.2 t #'sweeprolog-colourise-query (current-buffer)))
   (add-hook 'kill-buffer-hook
             (lambda ()
-              (condition-case _
-                  (sweeprolog-top-level-signal (current-buffer)
-                                               "thread_exit(0)")
-                (prolog-exception nil)))
+              (when (process-live-p (get-buffer-process (current-buffer)))
+                (condition-case _
+                    (sweeprolog-top-level-signal (current-buffer)
+                                                 "thread_exit(0)")
+                  (prolog-exception nil))))
             nil t)
   (add-hook 'kill-buffer-hook
             (lambda ()
