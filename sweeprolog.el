@@ -4688,6 +4688,7 @@ certain contexts to maintain conventional Prolog layout."
   (setq-local comment-multi-line t)
   (setq-local add-log-current-defun-function
               #'sweeprolog-add-log-current-defun)
+  (setq-local prettify-symbols-alist '((":-" . ?←)))
   (setq-local mode-line-process
               '(:eval
                 (when (sweeprolog-buffer-loaded-since-last-modification-p)
