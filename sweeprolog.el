@@ -2982,7 +2982,7 @@ modified."
         (sweeprolog-end-of-top-term)
         (sweeprolog-analyze-region start (point) "true")))))
 
-(defun sweeprolog-analyze-some-terms (beg end &optional _verbose)
+(defun sweeprolog-analyze-some-terms (beg end &optional verbose)
   (let ((sweeprolog--analyze-point (point)))
    (save-match-data
      (save-mark-and-excursion
@@ -3001,6 +3001,7 @@ modified."
          (sweeprolog-end-of-top-term)
          (skip-chars-forward " \t\n")
          (sweeprolog-analyze-term cur (point))
+         (font-lock-fontify-keywords-region start (point) verbose)
          `(jit-lock-bounds ,start . ,(point)))))))
 
 (defun sweeprolog-syntax-propertize (start end)
