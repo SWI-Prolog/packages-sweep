@@ -3001,7 +3001,8 @@ modified."
          (sweeprolog-end-of-top-term)
          (skip-chars-forward " \t\n")
          (sweeprolog-analyze-term cur (point))
-         (font-lock-fontify-keywords-region start (point) verbose)
+         (when font-lock-keywords
+           (font-lock-fontify-keywords-region start (point) verbose))
          `(jit-lock-bounds ,start . ,(point)))))))
 
 (defun sweeprolog-syntax-propertize (start end)
