@@ -3131,6 +3131,12 @@ function with PROC and MSG."
                           #'sweeprolog-top-level-sentinel)
     (add-hook 'kill-buffer-hook #'comint-write-input-ring nil t)))
 
+(defcustom sweeprolog-top-level-use-pty
+  (not (memq system-type '(ms-dos windows-nt)))
+  "Whether to communicate with top-levels using pseudo-terminal (\"pty\").
+
+By default, this is t on systems where Emacs can use a pty.")
+
 (defun sweeprolog-top-level-buffer (&optional name)
   "Return a Prolog top-level buffer named NAME.
 
@@ -3138,20 +3144,27 @@ If NAME is nil, use the default name \"*sweeprolog-top-level*\".
 
 If the buffer already exists, ensure it is associated with a live
 top-level."
-  (unless sweeprolog-prolog-server-port
-    (sweeprolog-start-prolog-server))
   (let ((buf (get-buffer-create (or name "*sweeprolog-top-level*"))))
     (unless (process-live-p (get-buffer-process buf))
       (with-current-buffer buf
         (unless (derived-mode-p 'sweeprolog-top-level-mode)
           (sweeprolog-top-level-mode)))
-      (unless (sweeprolog--query-once "sweep" "sweep_accept_top_level_client"
-                                      (buffer-name buf))
-        (error "Failed to create new top-level!"))
-      (make-comint-in-buffer "sweeprolog-top-level"
-                             buf
-                             (cons "localhost"
-                                   sweeprolog-prolog-server-port))
+      (if sweeprolog-top-level-use-pty
+          (progn
+            (make-comint-in-buffer "sweeprolog-top-level" buf nil)
+            (process-send-eof (get-buffer-process buf))
+            (sweeprolog--query-once "sweep" "sweep_top_level_start_pty"
+                                    (cons (process-tty-name
+                                           (get-buffer-process buf))
+                                          (buffer-name buf))))
+        (unless sweeprolog-prolog-server-port
+          (sweeprolog-start-prolog-server))
+        (sweeprolog--query-once "sweep" "sweep_accept_top_level_client"
+                                (buffer-name buf))
+        (make-comint-in-buffer "sweeprolog-top-level"
+                               buf
+                               (cons "localhost"
+                                     sweeprolog-prolog-server-port)))
       (unless comint-last-prompt
         (accept-process-output (get-buffer-process buf) 1))
       (sweeprolog-top-level-setup-history buf)

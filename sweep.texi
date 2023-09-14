@@ -2631,19 +2631,37 @@ top-level buffer inherits the features present in other
 @code{comint-mode} derivatives, most of which are described in
 @ref{Shell Mode,,,emacs,}.
 
-The top-level buffer is connected to a Prolog thread running in the
-same process as Emacs and the main Prolog runtime.  In the current
-implementation, top-level buffers communicate with their corresponding
-threads via local TCP connections.  On the first invocation of
-@code{sweeprolog-top-level}, Sweep creates a TCP server socket bound
-to a random port to accept incoming connections from top-level
-buffers.  The TCP server only accepts connections from the local
-machine, but note that other users on the same host may be able to
-connect to the TCP server socket and get a Prolog top-level.  This may
-pose a security problem when sharing a host with untrusted users,
-hence @code{sweeprolog-top-level} should not be used on shared
-machines.  This is the only Sweep command that you want to avoid in
-such cases.
+@cindex top-level communication
+@cindex communication, top-level
+Top-level buffers are backed by Prolog threads that run in the same
+process as Emacs and the main Prolog runtime.  On Unix systems,
+top-levels communicate with their corresponding threads via a
+pseudo-terminal device (@dfn{pty}).  Alternatively, Sweep top-level
+buffers can communicate with their threads via a local TCP connection.
+You can force Sweep to use TCP instead of a pty on Unix systems by
+customizing the user option @code{sweeprolog-top-level-use-pty} to
+@code{nil}.
+
+@defopt sweeprolog-top-level-use-pty
+Whether to use pty for top-level communication.  If this is non-nil,
+Sweep top-level buffers communicate with their top-level threads via a
+pty, otherwise they use a local TCP connection.
+@end defopt
+
+@code{sweeprolog-top-level-use-pty} is on by default on systems where
+Emacs can use a pty.  On other systems, such as MS Windows, or when
+otherwise @code{sweeprolog-top-level-use-pty} is set to @code{nil},
+Sweep creates a TCP server socket bound to a random port to accept
+incoming connections from top-level buffers.  Sweep only starts this
+TCP server socket when you first invoke of
+@code{sweeprolog-top-level}, so there are no listening sockets before
+you actually use the top-level.  The TCP server only accepts
+connections from the local machine, but note that other users on the
+same host might be able to connect to the TCP server socket and get a
+Prolog top-level.  This may be a security concern if you are sharing a
+host with untrusted users, so you should be careful about using
+@code{sweeprolog-top-level} with @code{sweeprolog-top-level-use-pty}
+set to @code{nil} on shared machines.
 
 @menu
 * Multiple Top-levels::          Creating and handling multiple Prolog top-level buffers

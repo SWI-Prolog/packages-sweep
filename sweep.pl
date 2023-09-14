@@ -95,7 +95,8 @@
             sweep_functors_collection/2,
             sweep_compound_functors_collection/2,
             sweep_term_variable_names/2,
-            sweep_goal_may_cut/2
+            sweep_goal_may_cut/2,
+            sweep_top_level_start_pty/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -771,6 +772,16 @@ write_sweep_module_location :-
     ),
     format('M ~w~n', Path).
 :- endif.
+
+sweep_top_level_start_pty([Name|Buffer], _) :-
+    thread_create(sweep_top_level_pty_client(Name), T, [detached(true)]),
+    thread_property(T, id(Id)),
+    asserta(sweep_top_level_thread_buffer(Id, Buffer)).
+
+sweep_top_level_pty_client(Name) :-
+    open(Name, read, InStream, [eof_action(reset)]),
+    open(Name, write, OutStream),
+    sweep_top_level_client(InStream, OutStream, ip(127,0,0,1)).
 
 sweep_top_level_server(_, Port) :-
     tcp_socket(ServerSocket),
