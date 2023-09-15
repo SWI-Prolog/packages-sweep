@@ -3262,7 +3262,21 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
                        sweeprolog-top-level-signal-default-goal)))
   (unless sweeprolog-top-level-thread-id
     (sweeprolog-top-level--populate-thread-id))
-  (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
+  (when (and (or (not sweeprolog-top-level-thread-id)
+                 (eq (condition-case error
+                         (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal)
+                       (prolog-exception
+                        (pcase error
+                          (`(prolog-exception
+                             compound "error"
+                             (compound "existence_error" (atom . "thread") ,_)
+                             .
+                             ,_)
+                           'no-thread))))
+                     'no-thread))
+             sweeprolog-top-level-use-pty)
+    (delete-process (get-buffer-process
+                     (current-buffer)))))
 
 ;;;###autoload
 (define-derived-mode sweeprolog-top-level-mode comint-mode "Sweep Top-level"
