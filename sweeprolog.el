@@ -3194,6 +3194,7 @@ top-level."
               (if sweeprolog-top-level-use-pty
                   (progn
                     (make-comint-in-buffer "sweeprolog-top-level" buf nil)
+                    (setq-local comint-process-echoes t)
                     (process-send-eof (get-buffer-process buf))
                     (sweeprolog--query-once "sweep" "sweep_top_level_start_pty"
                                             (process-tty-name (get-buffer-process buf))))
@@ -3203,6 +3204,7 @@ top-level."
                                        buf
                                        (cons "localhost"
                                              sweeprolog-prolog-server-port))
+                (setq-local comint-process-echoes nil)
                 (sweeprolog--query-once "sweep" "sweep_accept_top_level_client" nil)))
         (let ((proc (get-buffer-process buf)))
           (set-process-filter proc
