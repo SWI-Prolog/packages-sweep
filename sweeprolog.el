@@ -636,8 +636,6 @@ pack completion candidates."
 
 (defvar-local sweeprolog--html-footnotes nil)
 
-(defvar-local sweeprolog-top-level-timer nil "Buffer-local timer.")
-
 (defvar-local sweeprolog-top-level-thread-id nil
   "Prolog top-level thread ID corresponding to this buffer.")
 
@@ -3112,16 +3110,18 @@ Interactively, PROJ is the prefix argument."
 
 ;;;; Top-level
 
-(defun sweeprolog-colourise-query (buffer)
-  (when (buffer-live-p buffer)
-    (with-current-buffer buffer
-      (when-let ((beg (cdr comint-last-prompt))
-                 (end (point-max))
-                 (query (buffer-substring-no-properties beg end)))
+(defvar sweeprolog-top-level-output-filter nil)
+
+(defun sweeprolog-colourise-query (change-beg change-end &rest _)
+  (unless sweeprolog-top-level-output-filter
+    (let ((beg (cdr comint-last-prompt))
+          (end (point-max)))
+      (when (and beg (<= beg change-beg change-end end))
         (with-silent-modifications
           (font-lock-unfontify-region beg end))
         (sweeprolog--query-once "sweep" "sweep_colourise_query"
-                                (cons query (marker-position beg)))))))
+                                (cons (buffer-substring-no-properties beg end)
+                                      (marker-position beg)))))))
 
 (defun sweeprolog-top-level-sentinel (proc msg)
   "Sentinel for Prolog top-level processes.
@@ -3130,7 +3130,8 @@ Calls `comint-write-input-ring' to update the top-level's
 persistent history before calling the default process sentinel
 function with PROC and MSG."
   (comint-write-input-ring)
-  (internal-default-process-sentinel proc msg))
+  (let ((sweeprolog-top-level-output-filter t))
+    (internal-default-process-sentinel proc msg)))
 
 (defun sweeprolog-top-level-maybe-delete-process ()
   (let ((process (get-buffer-process (current-buffer))))
@@ -3147,9 +3148,9 @@ function with PROC and MSG."
   (when sweeprolog-top-level-thread-id
     (sweeprolog--query-once "sweep" "sweep_kill_thread"
                             sweeprolog-top-level-thread-id))
-  (when-let ((process (get-buffer-process buffer)))
-    (process-send-eof process)
-    (delete-process process))
+  (while (process-live-p (get-buffer-process buffer))
+    (process-send-eof (get-buffer-process buffer))
+    (accept-process-output (get-buffer-process buffer) 1))
   (setq sweeprolog-top-level-thread-id nil))
 
 (defun sweeprolog-top-level-setup-history (buf)
@@ -3203,14 +3204,15 @@ top-level."
                                        (cons "localhost"
                                              sweeprolog-prolog-server-port))
                 (sweeprolog--query-once "sweep" "sweep_accept_top_level_client" nil)))
-        ;; (sweeprolog-top-level-setup-history buf)
         (let ((proc (get-buffer-process buf)))
           (set-process-filter proc
                               (lambda (process string)
-                                (comint-output-filter process string)
+                                (let ((sweeprolog-top-level-output-filter t))
+                                  (comint-output-filter process string))
                                 (when (string-match (rx "Sweep top-level thread exited") string)
                                   (delete-process process)
-                                  (setq sweeprolog-top-level-thread-id nil))))
+                                  (with-current-buffer buf
+                                    (setq sweeprolog-top-level-thread-id nil)))))
           (unless comint-last-prompt buf (accept-process-output proc 1))
           (set-process-query-on-exit-flag proc nil)
           (setq-local comint-input-ring-file-name
@@ -3327,23 +3329,11 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
                                                (< sweeprolog-top-level-min-history-length
                                                   (length s)))
               comint-delimiter-argument-list '(?,)
+              comint-highlight-input nil
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
   (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point nil t)
-  (setq sweeprolog-top-level-timer (run-with-idle-timer 0.2 t #'sweeprolog-colourise-query (current-buffer)))
-  (add-hook 'kill-buffer-hook
-            (lambda ()
-              (when (process-live-p (get-buffer-process (current-buffer)))
-                (condition-case _
-                    (sweeprolog-top-level-signal (current-buffer)
-                                                 "thread_exit(0)")
-                  (prolog-exception nil))))
-            nil t)
-  (add-hook 'kill-buffer-hook
-            (lambda ()
-              (when (timerp sweeprolog-top-level-timer)
-                (cancel-timer sweeprolog-top-level-timer)))
-            nil t)
+  (add-hook 'after-change-functions #'sweeprolog-colourise-query nil t)
   (when (and (member sweeprolog-faces-style '(light dark))
              (not (custom-theme-enabled-p 'sweeprolog-pce)))
     (load-theme 'sweeprolog-pce t)

@@ -564,7 +564,7 @@ sweep_pack_install(PackName, true) :-
     pack_install(Pack, [silent(true), upgrade(true), interactive(false)]).
 
 sweep_colourise_query([String|Offset], _) :-
-    prolog_colourise_query(String, module(sweep), sweep_handle_fragment_(Offset)).
+    prolog_colourise_query(String, user, sweep_handle_fragment_(Offset)).
 
 sweep_color_normalized(Offset, Col, Nom) :-
     Col =.. [Nom0|Rest],
