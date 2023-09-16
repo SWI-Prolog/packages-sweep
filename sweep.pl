@@ -52,7 +52,6 @@
             sweep_module_path/2,
             sweep_thread_signal/2,
             sweep_top_level_server/2,
-            sweep_top_level_threads/2,
             sweep_accept_top_level_client/2,
             sweep_local_predicate_export_comment/2,
             write_sweep_module_location/0,
@@ -96,7 +95,10 @@
             sweep_compound_functors_collection/2,
             sweep_term_variable_names/2,
             sweep_goal_may_cut/2,
-            sweep_top_level_start_pty/2
+            sweep_top_level_start_pty/2,
+            sweep_cleanup_threads/2,
+            sweep_kill_thread/2,
+            sweep_list_threads/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -126,8 +128,7 @@
 
 :- meta_predicate with_buffer_stream(-, +, 0).
 
-:- dynamic sweep_top_level_thread_buffer/2,
-           sweep_open_buffer/3,
+:- dynamic sweep_open_buffer/3,
            sweep_current_comment/3.
 
 :- multifile prolog:xref_source_time/2,
@@ -164,9 +165,9 @@ prolog:xref_close_source(Source, Stream) :-
     close(Stream),
     free_memory_file(H).
 
-sweep_top_level_threads(_, Ts) :-
+sweep_list_threads(IdBufferPairs, Ts) :-
     findall([Id, Buffer, Status, Stack, CPUTime],
-            (   sweep_top_level_thread_buffer(Id, Buffer),
+            (   member([Buffer|Id], IdBufferPairs),
                 thread_property(Id, status(Status0)),
                 term_string(Status0, Status),
                 thread_statistics(Id, stack, Stack),
@@ -773,10 +774,9 @@ write_sweep_module_location :-
     format('M ~w~n', Path).
 :- endif.
 
-sweep_top_level_start_pty([Name|Buffer], _) :-
-    thread_create(sweep_top_level_pty_client(Name), T, [detached(true)]),
-    thread_property(T, id(Id)),
-    asserta(sweep_top_level_thread_buffer(Id, Buffer)).
+sweep_top_level_start_pty(Name, Id) :-
+    sweep_create_thread(sweep_top_level_pty_client(Name), T),
+    thread_property(T, id(Id)).
 
 sweep_top_level_pty_client(Name) :-
     open(Name, read, InStream, [eof_action(reset)]),
@@ -789,15 +789,9 @@ sweep_top_level_server(_, Port) :-
     tcp_bind(ServerSocket, Port),
     tcp_listen(ServerSocket, 5),
     thread_self(Self),
-    thread_create(sweep_top_level_server_start(Self, ServerSocket), T,
+    sweep_create_thread(sweep_top_level_server_start(Self, ServerSocket), _,
                   [ alias(sweep_top_level_server)
                   ]),
-    at_halt((   is_thread(T),
-                thread_property(T, status(running))
-            ->  thread_signal(T, thread_exit(0)),
-                thread_join(T, _)
-            ;   true
-            )),
     thread_get_message(sweep_top_level_server_started).
 
 sweep_top_level_server_start(Caller, ServerSocket) :-
@@ -808,15 +802,15 @@ sweep_top_level_server_loop(ServerSocket) :-
     thread_get_message(Message),
     sweep_top_level_server_loop_(Message, ServerSocket).
 
-sweep_top_level_server_loop_(accept(Buffer), ServerSocket) :-
+sweep_top_level_server_loop_(accept(From), ServerSocket) :-
     !,
     tcp_accept(ServerSocket, Slave, Peer),
     tcp_open_socket(Slave, InStream, OutStream),
     set_stream(InStream, close_on_abort(false)),
     set_stream(OutStream, close_on_abort(false)),
-    thread_create(sweep_top_level_client(InStream, OutStream, Peer), T, [detached(true)]),
+    sweep_create_thread(sweep_top_level_client(InStream, OutStream, Peer), T),
     thread_property(T, id(Id)),
-    asserta(sweep_top_level_thread_buffer(Id, Buffer)),
+    thread_send_message(From, client(Id)),
     sweep_top_level_server_loop(ServerSocket).
 sweep_top_level_server_loop_(_, _).
 
@@ -832,29 +826,23 @@ sweep_top_level_client(InStream, OutStream, ip(127,0,0,1)) :-
     set_stream(user_input, newline(detect)),
     set_stream(user_output, newline(dos)),
     set_stream(user_error, newline(dos)),
-    thread_self(Self),
-    thread_property(Self, id(Id)),
-    thread_at_exit(retractall(sweep_top_level_thread_buffer(Id, _))),
-    call_cleanup(prolog,
-                 ( close(InStream, [force(true)]),
-                   close(OutStream, [force(true)])
-                 )).
+    thread_at_exit(( catch(format("~nSweep top-level thread exited~n"),
+                           _, true),
+                     close(InStream, [force(true)]),
+                     close(OutStream, [force(true)])
+                   )),
+    prolog.
 sweep_top_level_client(InStream, OutStream, _) :-
     close(InStream),
-    close(OutStream),
-    thread_self(Self),
-    thread_property(Self, id(Id)),
-    retractall(sweep_top_level_thread_buffer(Id, _)).
+    close(OutStream).
 
-%!  sweep_accept_top_level_client(+Buffer, -Result) is det.
-%
-%   Signal the top-level server thread to accept a new TCP connection
-%   from buffer Buffer.
-
-sweep_accept_top_level_client(Buffer, _) :-
-    thread_send_message(sweep_top_level_server, accept(Buffer)).
+sweep_accept_top_level_client(_, Id) :-
+    thread_self(S),
+    thread_send_message(sweep_top_level_server, accept(S)),
+    thread_get_message(client(Id)).
 
 sweep_thread_signal([ThreadId|Goal0], _) :-
+    is_thread(ThreadId),
     term_string(Goal, Goal0),
     thread_signal(ThreadId, Goal).
 
@@ -1345,18 +1333,87 @@ sweep_predicate_dependencies([To0|From0], Deps) :-
                       ),
           Deps).
 
+sweep_cleanup_threads(_,_) :-
+    sweep_cleanup_threads.
+
+sweep_cleanup_threads :-
+    is_thread(sweep_supervisor),
+    !,
+    thread_send_message(sweep_supervisor, cleanup),
+    thread_join(sweep_supervisor, _).
+sweep_cleanup_threads.
+
+:- meta_predicate sweep_create_thread(0, -).
+:- meta_predicate sweep_create_thread(0, -, +).
+
+sweep_create_thread(Goal, T) :-
+    sweep_create_thread(Goal, T, []).
+
+sweep_create_thread(Goal, T, Options) :-
+    (   is_thread(sweep_supervisor)
+    ->  true
+    ;   thread_self(S),
+        thread_create(sweep_supervisor_start(S), _, [alias(sweep_supervisor)]),
+        thread_get_message(sweep_supervisor_started)
+    ),
+    thread_create((sweep_thread_start, Goal), T,
+                  [at_exit(sweep_thread_at_exit)|Options]).
+
+sweep_thread_start :-
+    thread_self(T),
+    thread_send_message(sweep_supervisor, new(T)).
+
+sweep_thread_at_exit :-
+    (   is_thread(sweep_supervisor)
+    ->  thread_self(T),
+        catch(thread_send_message(sweep_supervisor, exit(T)), _, true)
+    ;   true
+    ).
+
+sweep_supervisor_start(Caller) :-
+    thread_send_message(Caller, sweep_supervisor_started),
+    sweep_supervisor_loop([]).
+
+sweep_supervisor_loop(Threads) :-
+    thread_get_message(Message),
+    sweep_supervisor_loop_(Message, Threads).
+
+sweep_supervisor_loop_(cleanup, Ts) =>
+    maplist(cleanup_thread, Ts).
+sweep_supervisor_loop_(new(T), Ts) =>
+    sweep_supervisor_loop([T|Ts]).
+sweep_supervisor_loop_(exit(T), Ts0) =>
+    cleanup_thread(T),
+    select(T, Ts0, Ts),
+    sweep_supervisor_loop(Ts).
+sweep_supervisor_loop_(_, Ts) =>
+    sweep_supervisor_loop(Ts).
+
+sweep_kill_thread(T, _) :-
+    cleanup_thread(T).
+
+cleanup_thread(T) :-
+    is_thread(T),
+    !,
+    catch(cleanup_thread_(T), _, true).
+cleanup_thread(_).
+
+cleanup_thread_(T) :-
+    thread_property(T, detached(false)),
+    !,
+    thread_detach(T),
+    (   thread_property(T, status(running))
+    ->  thread_signal(T, thread_exit(0))
+    ;   true
+    ).
+cleanup_thread_(T) :-
+    thread_signal(T, thread_exit(0)).
+
 sweep_async_goal([GoalString|FD], TId) :-
     term_string(Goal, GoalString),
     random_between(1, 1024, Cookie),
     thread_self(Self),
-    thread_create(sweep_start_async_goal(Self, Cookie, Goal, FD), T,
-                  [detached(true)]),
-    at_halt((   is_thread(T),
-                thread_property(T, status(running))
-            ->  thread_signal(T, thread_exit(0)),
-                thread_join(T, _)
-            ;   true
-            )),
+    sweep_create_thread(sweep_start_async_goal(Self, Cookie, Goal, FD), T),
     thread_get_message(sweep_async_goal_started(Cookie)),
     thread_property(T, id(TId)).
 

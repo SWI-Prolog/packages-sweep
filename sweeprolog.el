@@ -705,13 +705,43 @@ pack completion candidates."
 If specified, ARGS should be a list of string passed to Prolog as
 extra initialization arguments."
   (unless sweeprolog--initialized
+    (message "Starting Sweep.")
     (apply #'sweeprolog-initialize
            (cons (or sweeprolog-swipl-path (executable-find "swipl"))
                  (append sweeprolog-init-args
                          (append sweeprolog--extra-init-args
                                  args))))
     (setq sweeprolog--initialized t)
+    (add-hook 'kill-emacs-query-functions #'sweeprolog-maybe-kill-top-levels)
+    (add-hook 'kill-emacs-hook #'sweeprolog-shutdown)
     (sweeprolog-setup-message-hook)))
+
+(defun sweeprolog-maybe-kill-top-levels ()
+  (let ((top-levels (seq-filter (lambda (buffer)
+                                  (with-current-buffer buffer
+                                    (and (derived-mode-p 'sweeprolog-top-level-mode)
+                                         sweeprolog-top-level-thread-id)))
+                                (buffer-list))))
+    (or (not top-levels)
+        (and (let ((num (length top-levels)))
+               (y-or-n-p (if (< 1 num)
+                             (format "Stop %d running Sweep top-levels?" num)
+                           "Stop running Sweep top-level?")))
+             (prog1 t
+               (dolist (buffer top-levels)
+                 (sweeprolog-top-level-delete-process buffer)))))))
+
+(defun sweeprolog-shutdown ()
+  (message "Stopping Sweep.")
+  (sweeprolog--query-once "sweep" "sweep_cleanup_threads" nil)
+  (sweeprolog-cleanup)
+  (setq sweeprolog--initialized       nil
+        sweeprolog-prolog-server-port nil))
+
+(defun sweeprolog-maybe-shutdown ()
+  (when (sweeprolog-maybe-kill-top-levels)
+    (sweeprolog-shutdown)
+    t))
 
 (defun sweeprolog-restart (&rest args)
   "Restart the embedded Prolog runtime.
@@ -727,22 +757,11 @@ Otherwise set ARGS to nil."
     current-prefix-arg
     (fboundp 'split-string-shell-command)
     (split-string-shell-command (read-string "swipl arguments: "))))
-  (when-let ((top-levels (seq-filter (lambda (buffer)
-                                       (with-current-buffer buffer
-                                         (derived-mode-p 'sweeprolog-top-level-mode)))
-                                     (buffer-list))))
-    (if (y-or-n-p "Stop running sweep top-level processes?")
-        (dolist (buffer top-levels)
-          (let ((process (get-buffer-process buffer)))
-            (when (process-live-p process)
-              (delete-process process))))
-      (user-error "Cannot restart sweep with running top-level processes")))
-  (message "Stoping sweep.")
-  (sweeprolog-cleanup)
-  (setq sweeprolog--initialized       nil
-        sweeprolog-prolog-server-port nil)
-  (message "Starting sweep.")
-  (apply #'sweeprolog-init args))
+  (if (sweeprolog-maybe-shutdown)
+      (progn
+        (sit-for 1)
+        (apply #'sweeprolog-init args))
+    (user-error "Cannot restart Sweep with running top-levels")))
 
 (defun sweeprolog--open-query (ctx mod fun arg &optional rev)
   "Ensure that Prolog is initialized and execute a new query.
@@ -3113,6 +3132,26 @@ function with PROC and MSG."
   (comint-write-input-ring)
   (internal-default-process-sentinel proc msg))
 
+(defun sweeprolog-top-level-maybe-delete-process ()
+  (let ((process (get-buffer-process (current-buffer))))
+    (or (not process)
+        (not (memq (process-status process) '(run stop open listen)))
+        (and (yes-or-no-p
+              (format "Buffer %S has a running top-level; kill it? "
+                      (buffer-name (current-buffer))))
+             (prog1 t
+               (sweeprolog-top-level-delete-process))))))
+
+(defun sweeprolog-top-level-delete-process (&optional buffer)
+  (setq buffer (or buffer (current-buffer)))
+  (when sweeprolog-top-level-thread-id
+    (sweeprolog--query-once "sweep" "sweep_kill_thread"
+                            sweeprolog-top-level-thread-id))
+  (when-let ((process (get-buffer-process buffer)))
+    (process-send-eof process)
+    (delete-process process))
+  (setq sweeprolog-top-level-thread-id nil))
+
 (defun sweeprolog-top-level-setup-history (buf)
   "Setup `comint-input-ring-file-name' for top-level buffer BUF."
   (with-current-buffer buf
@@ -3149,27 +3188,47 @@ top-level."
     (unless (process-live-p (get-buffer-process buf))
       (with-current-buffer buf
         (unless (derived-mode-p 'sweeprolog-top-level-mode)
-          (sweeprolog-top-level-mode)))
-      (if sweeprolog-top-level-use-pty
-          (progn
-            (make-comint-in-buffer "sweeprolog-top-level" buf nil)
-            (process-send-eof (get-buffer-process buf))
-            (sweeprolog--query-once "sweep" "sweep_top_level_start_pty"
-                                    (cons (process-tty-name
-                                           (get-buffer-process buf))
-                                          (buffer-name buf))))
-        (unless sweeprolog-prolog-server-port
-          (sweeprolog-start-prolog-server))
-        (sweeprolog--query-once "sweep" "sweep_accept_top_level_client"
-                                (buffer-name buf))
-        (make-comint-in-buffer "sweeprolog-top-level"
-                               buf
-                               (cons "localhost"
-                                     sweeprolog-prolog-server-port)))
-      (unless comint-last-prompt
-        (accept-process-output (get-buffer-process buf) 1))
-      (sweeprolog-top-level-setup-history buf)
-      (sweeprolog-top-level--populate-thread-id))
+          (sweeprolog-top-level-mode))
+        (setq sweeprolog-top-level-thread-id
+              (if sweeprolog-top-level-use-pty
+                  (progn
+                    (make-comint-in-buffer "sweeprolog-top-level" buf nil)
+                    (process-send-eof (get-buffer-process buf))
+                    (sweeprolog--query-once "sweep" "sweep_top_level_start_pty"
+                                            (process-tty-name (get-buffer-process buf))))
+                (unless sweeprolog-prolog-server-port
+                  (sweeprolog-start-prolog-server))
+                (make-comint-in-buffer "sweeprolog-top-level"
+                                       buf
+                                       (cons "localhost"
+                                             sweeprolog-prolog-server-port))
+                (sweeprolog--query-once "sweep" "sweep_accept_top_level_client" nil)))
+        ;; (sweeprolog-top-level-setup-history buf)
+        (let ((proc (get-buffer-process buf)))
+          (set-process-filter proc
+                              (lambda (process string)
+                                (comint-output-filter process string)
+                                (when (string-match (rx "Sweep top-level thread exited") string)
+                                  (delete-process process)
+                                  (setq sweeprolog-top-level-thread-id nil))))
+          (unless comint-last-prompt buf (accept-process-output proc 1))
+          (set-process-query-on-exit-flag proc nil)
+          (setq-local comint-input-ring-file-name
+                      (pcase sweeprolog-top-level-persistent-history
+                        ((pred stringp)
+                         sweeprolog-top-level-persistent-history)
+                        ((pred functionp)
+                         (funcall sweeprolog-top-level-persistent-history))
+                        (`(project . ,rel-def)
+                         (if-let ((project (project-current)))
+                             (expand-file-name (car rel-def)
+                                               (project-root project))
+                           (cadr rel-def)))))
+          (comint-read-input-ring t)
+          (set-process-sentinel proc #'sweeprolog-top-level-sentinel)
+          (add-hook 'kill-buffer-hook #'comint-write-input-ring nil t)
+          (add-hook 'kill-buffer-query-functions #'sweeprolog-top-level-maybe-delete-process nil t)
+          )))
     buf))
 
 ;;;###autoload
@@ -3227,11 +3286,6 @@ appropriate buffer."
                  (not (string= "|    " prompt)))
         (comint-send-input)))))
 
-(defun sweeprolog-top-level--populate-thread-id ()
-  (setq sweeprolog-top-level-thread-id
-        (sweeprolog--query-once "sweep" "sweep_top_level_thread_buffer"
-                                (buffer-name) t)))
-
 (defun sweeprolog-signal-thread (tid goal)
   (sweeprolog--query-once "sweep" "sweep_thread_signal"
                           (cons tid goal)))
@@ -3260,23 +3314,7 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
                          (read-string "Signal goal: ?- " nil
                                       'sweeprolog-top-level-signal-goal-history)
                        sweeprolog-top-level-signal-default-goal)))
-  (unless sweeprolog-top-level-thread-id
-    (sweeprolog-top-level--populate-thread-id))
-  (when (and (or (not sweeprolog-top-level-thread-id)
-                 (eq (condition-case error
-                         (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal)
-                       (prolog-exception
-                        (pcase error
-                          (`(prolog-exception
-                             compound "error"
-                             (compound "existence_error" (atom . "thread") ,_)
-                             .
-                             ,_)
-                           'no-thread))))
-                     'no-thread))
-             sweeprolog-top-level-use-pty)
-    (delete-process (get-buffer-process
-                     (current-buffer)))))
+  (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
 
 ;;;###autoload
 (define-derived-mode sweeprolog-top-level-mode comint-mode "Sweep Top-level"
@@ -5068,7 +5106,16 @@ accordingly."
                   (sz (number-to-string (nth 3 th)))
                   (ct (number-to-string (nth 4 th))))
               (list id (vector bn st sz ct))))
-          (sweeprolog--query-once "sweep" "sweep_top_level_threads" nil)))
+          (sweeprolog--query-once
+           "sweep" "sweep_list_threads"
+           (delq nil
+                 (mapcar (lambda (buffer)
+                           (when-let
+                               ((thread
+                                 (buffer-local-value 'sweeprolog-top-level-thread-id
+                                                     buffer)))
+                             (cons (buffer-name buffer) thread)))
+                         (buffer-list))))))
 
 (defun sweeprolog-top-level-menu--refresh ()
   (tabulated-list-init-header)
@@ -6827,7 +6874,7 @@ as a comment in the source location where you invoked
           (goto-char marker)
           (insert example)
           (comment-region marker (point))))
-      (delete-process (get-buffer-process top-level-buffer))
+      (sweeprolog-top-level-delete-process top-level-buffer)
       (kill-buffer top-level-buffer))))
 
 (defun sweeprolog-make-example-usage-comment (point)
