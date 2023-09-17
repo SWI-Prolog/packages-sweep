@@ -11,6 +11,39 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.25.0 on 2023-09-17
+
+** Snappier query highlighting in Sweep top-levels
+
+Sweep now highlights the query you insert in the top-level immediately
+as you type it.  In previous versions, query highlighting relied on a
+short timer, that could lead to a small delay before Sweep would
+update the highlighting when you change the query.
+
+** Sweep top-levels can now communicate via pty instead of local TCP
+
+Sweep top-level buffers can now communicate with their corresponding
+top-level threads via a pseudo-terminal (pty) device, instead of a
+local TCP connection.  Local TCP connections remain supported for
+systems where Emacs cannot use a pty, such as MS Windows.  On Unix
+systems, top-levels now use pty by default.
+
+** Compatibility with and support for Prettify Symbols mode
+
+Sweep Prolog mode is now compatible with the Prettify Symbols minor
+mode.  Prettify Symbols mode, and similar features, rely on
+~font-lock-add-keywords~ to add highlighting patterns.  Sweep does not
+use Font Lock keywords for its highlighting, but now it does invoke
+the relevant Font Lock keyword highlighting routines for compatibility
+with minor modes such as Prettify Symbols.
+
+** Minor improvements to hole highlighting
+
+Sweep now uses a slightly smaller "box" around holes to highlight them
+in Prolog code, such that holes are displayed with the same dimensions
+of any other text.  This avoids small visual jitter when inserting or
+removing holes in a buffer.
+
 * Version 0.24.1 on 2023-09-09
 
 ** Refine checks for extracting goals to separate predicates
