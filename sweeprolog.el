@@ -662,6 +662,7 @@ pack completion candidates."
 ;;;; Initialization
 
 (defun sweeprolog--load-module (line)
+  "Load the dynamic module that LINE describes."
   (save-match-data
     (when (string-match (rx bos
                             (or "L" "M")
@@ -694,6 +695,7 @@ pack completion candidates."
                          "and up to date")))))))
 
 (defun sweeprolog-ensure-initialized ()
+  "Initilize Prolog, unless already initilized."
   (sweeprolog--ensure-module)
   (sweeprolog-init))
 
@@ -715,6 +717,7 @@ extra initialization arguments."
     (sweeprolog-setup-message-hook)))
 
 (defun sweeprolog-maybe-kill-top-levels ()
+  "Ask before killing running Prolog top-levels."
   (let ((top-levels (seq-filter (lambda (buffer)
                                   (with-current-buffer buffer
                                     (and (derived-mode-p 'sweeprolog-top-level-mode)
@@ -730,6 +733,7 @@ extra initialization arguments."
                  (sweeprolog-top-level-delete-process buffer)))))))
 
 (defun sweeprolog-shutdown ()
+  "Shutdown Prolog."
   (message "Stopping Sweep.")
   (sweeprolog--query-once "sweep" "sweep_cleanup_threads" nil)
   (sweeprolog-cleanup)
@@ -737,6 +741,7 @@ extra initialization arguments."
         sweeprolog-prolog-server-port nil))
 
 (defun sweeprolog-maybe-shutdown ()
+  "Ask before killing running top-levels and shutdown Prolog."
   (when (sweeprolog-maybe-kill-top-levels)
     (sweeprolog-shutdown)
     t))
