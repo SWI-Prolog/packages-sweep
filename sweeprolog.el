@@ -460,6 +460,7 @@ pack completion candidates."
   "C-c C-o" #'sweeprolog-find-file-at-point
   "C-c C-q" #'sweeprolog-top-level-send-goal
   "C-c C-r" #'sweeprolog-rename-variable
+  "C-c C-S-s" #'sweeprolog-query-replace-term
   "C-c C-s" #'sweeprolog-term-search
   "C-c C-t" #'sweeprolog-top-level
   "C-c C-u" #'sweeprolog-update-dependencies
@@ -534,13 +535,6 @@ pack completion candidates."
   :doc "Keymap for example top-level buffer."
   "C-c C-b" #'sweeprolog-top-level-example-display-source
   "C-c C-q" #'sweeprolog-top-level-example-done)
-
-(defvar-keymap sweeprolog-term-search-map
-  :doc "Transient keymap activated after `sweeprolog-term-search'."
-  "C-g" #'sweeprolog-term-search-abort
-  "C-m" #'sweeprolog-term-search-delete-overlays
-  "C-r" #'sweeprolog-term-search-repeat-backward
-  "C-s" #'sweeprolog-term-search-repeat-forward)
 
 (defvar-keymap sweeprolog-read-term-map
   :doc "Keymap used by `sweeprolog-read-term'."
@@ -2316,6 +2310,26 @@ inside a comment, string or quoted atom."
   '((((background light)) :background "lightgreen")
     (((background dark))  :background "darkgreen"))
   "Face for highlighting Prolog breakpoints."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-term-search-match
+  '((t :inherit lazy-highlight))
+  "Face for highlighting term search matches."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-term-search-current
+  '((t :inherit isearch))
+  "Face for highlighting the current term search match."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-query-replace-term-match
+  '((t :inherit sweeprolog-term-search-match))
+  "Face for highlighting term replacement matches."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-query-replace-term-current
+  '((t :inherit sweeprolog-term-search-current))
+  "Face for highlighting the current term replacement match."
   :group 'sweeprolog-faces)
 
 ;;;; Font-lock
@@ -4349,7 +4363,7 @@ work."
                      (buffer-substring-no-properties obeg oend))))
          (if (> opre pre)
              (signal 'scan-error
-                     (list (format "Cannot scan backwards infix operator of higher precedence %s." opre)
+                     (list (format "Cannot scan backwards beyond infix operator of higher precedence %s." opre)
                            obeg
                            oend))
            (goto-char oend)
@@ -4459,17 +4473,14 @@ work."
 
 (defun sweeprolog--backward-sexp ()
   (let ((point (point))
-        (prec (pcase (sweeprolog-last-token-boundaries)
-                (`(operator ,obeg ,oend)
-                 (unless (and nil
-                              (string= "." (buffer-substring-no-properties obeg oend))
-                              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
-                   (if-let ((pprec
-                             (sweeprolog-op-infix-precedence
-                              (buffer-substring-no-properties obeg oend))))
-                       (progn (goto-char obeg) (1- pprec))
-                     0)))
-                (_ 0))))
+        (prec (or (pcase (sweeprolog-last-token-boundaries)
+                    (`(,(or 'operator 'symbol) ,obeg ,oend)
+                     (when-let ((pprec
+                                 (sweeprolog-op-infix-precedence
+                                  (buffer-substring-no-properties obeg oend))))
+                       (goto-char obeg)
+                       (1- pprec))))
+                  0)))
     (condition-case error
         (sweeprolog--backward-term prec)
       (scan-error (when (= point (point))
@@ -4477,17 +4488,14 @@ work."
 
 (defun sweeprolog--forward-sexp ()
   (let ((point (point))
-        (prec (pcase (sweeprolog-next-token-boundaries)
-                (`(operator ,obeg ,oend)
-                 (unless (and nil
-                              (string= "." (buffer-substring-no-properties obeg oend))
-                              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
-                   (if-let ((pprec
-                             (sweeprolog-op-infix-precedence
-                              (buffer-substring-no-properties obeg oend))))
-                       (progn (goto-char oend) (1- pprec))
-                     0)))
-                (_ 0))))
+        (prec (or (pcase (sweeprolog-next-token-boundaries)
+                    (`(,(or 'operator 'symbol) ,obeg ,oend)
+                     (when-let ((pprec
+                                 (sweeprolog-op-infix-precedence
+                                  (buffer-substring-no-properties obeg oend))))
+                       (goto-char oend)
+                       (1- pprec))))
+                  0)))
     (condition-case error
         (sweeprolog--forward-term prec)
       (scan-error (when (= point (point))
@@ -5594,63 +5602,6 @@ properly."
 
 ;;;; Term Search
 
-(defvar sweeprolog-term-search-last-search nil
-  "Last term searched with `sweeprolog-term-search'.")
-
-(defvar-local sweeprolog-term-search-overlays nil
-  "List of `sweeprolog-term-search' overlays in the current buffer.")
-
-(defvar-local sweeprolog-term-search-repeat-count 0)
-
-(defun sweeprolog-term-search-delete-overlays ()
-  "Delete overlays created by `sweeprolog-term-search'."
-  (interactive "" sweeprolog-mode)
-  (mapc #'delete-overlay sweeprolog-term-search-overlays)
-  (setq sweeprolog-term-search-overlays nil))
-
-(defun sweeprolog-term-search-repeat-forward ()
-  "Repeat last `sweeprolog-term-search' searching forward from point."
-  (interactive "" sweeprolog-mode)
-  (setq sweeprolog-term-search-repeat-count
-        (mod (1+ sweeprolog-term-search-repeat-count)
-             (length sweeprolog-term-search-overlays)))
-  (sweeprolog-term-search (car sweeprolog-term-search-last-search)
-                          (cdr sweeprolog-term-search-last-search)))
-
-(defun sweeprolog-term-search-repeat-backward ()
-  "Repeat last `sweeprolog-term-search' searching backward from point."
-  (interactive "" sweeprolog-mode)
-  (setq sweeprolog-term-search-repeat-count
-        (mod (1- sweeprolog-term-search-repeat-count)
-             (length sweeprolog-term-search-overlays)))
-  (sweeprolog-term-search (car sweeprolog-term-search-last-search)
-                          (cdr sweeprolog-term-search-last-search) t))
-
-(defun sweeprolog-term-search-abort ()
-  "Abort term search and restore point to its original position."
-  (interactive "" sweeprolog-mode)
-  (goto-char (mark t))
-  (pop-mark)
-  (sweeprolog-term-search-delete-overlays)
-  (signal 'quit nil))
-
-(defun sweeprolog-term-search-in-buffer (term &optional goal buffer)
-  "Search for Prolog term TERM satisfying GOAL in buffer BUFFER.
-
-Return a list of (BEG . END) cons cells where BEG is the buffer
-position of the beginning of a matching term and END is its
-corresponding end position."
-  (setq goal   (or goal "true"))
-  (setq buffer (or buffer (current-buffer)))
-  (with-current-buffer buffer
-    (let ((offset (point-min)))
-      (mapcar (lambda (match)
-                (cons (+ offset (car match))
-                      (+ offset (cdr match))))
-              (sweeprolog--query-once "sweep" "sweep_term_search"
-                                      (list buffer-file-name
-                                            term goal))))))
-
 (defun sweeprolog-read-term-try ()
   "Try to read a Prolog term in the minibuffer.
 
@@ -5725,10 +5676,13 @@ moving point."
 (defvar sweeprolog-read-goal-history nil
   "History list for `sweeprolog-read-goal'.")
 
-(defun sweeprolog-read-term (&optional prompt)
-  "Read a Prolog term prompting with PROMPT (default \"?- \")."
+(defun sweeprolog-read-term (&optional prompt initial)
+  "Prompt for a Prolog term with PROMPT (defaults to \"?- \").
+
+If INITIAL is non-nil, use it as the initial contents of the
+minibuffer."
   (setq prompt (or prompt "?- "))
-  (read-from-minibuffer prompt nil
+  (read-from-minibuffer prompt initial
                         sweeprolog-read-term-map nil
                         'sweeprolog-read-term-history
                         (when (derived-mode-p 'sweeprolog-mode)
@@ -5747,90 +5701,324 @@ moving point."
                           (when (derived-mode-p 'sweeprolog-mode)
                             (sweeprolog-goals-at-point)))))
 
-(defun sweeprolog-term-search-next (point overlays backward)
-  "Return first overlay in OVERLAYS starting after POINT.
-If no overlay starts after POINT, return the first overlay.
+(defun sweeprolog-term-replace-edits (file template replacement condition classes)
+  (let ((state (mapcar (lambda (class)
+                         (pcase class
+                           ('goal "goal(_)")
+                           (_ (symbol-name class))))
+                       classes)))
+    (mapcar
+     (pcase-lambda (`(compound "replace" ,beg ,end ,rep))
+       (list (1+ beg) (1+ end) rep))
+     (without-restriction
+       (sweeprolog--query-once "sweep" "sweep_term_replace"
+                               (list file
+                                     sweeprolog-indent-offset
+                                     template
+                                     condition
+                                     state
+                                     replacement))))))
 
-If BACKWARD is non-nil, return last overlay ending before POINT
-instead, or the last overlay if no overlay ends before POINT."
-  (if backward
-      (let* ((match nil)
-             (reversed (reverse overlays))
-             (first (car reversed)))
-        (while (and reversed (not match))
-          (let ((head (car reversed))
-                (tail (cdr reversed)))
-            (if (< (overlay-start head) point)
-                (setq match head)
-              (setq reversed tail))))
-        (or match first))
-    (let ((match nil)
-          (first (car overlays)))
-      (while (and overlays (not match))
-        (let ((head (car overlays))
-              (tail (cdr overlays)))
-          (if (< point (overlay-start head))
-              (setq match head)
-            (setq overlays tail))))
-      (or match first))))
+;;;###autoload
+(defun sweeprolog-term-search (template &optional backward condition class)
+  "Search for terms matching TEMPLATE.
 
-(defun sweeprolog-term-search (term &optional goal backward interactive)
-  "Search forward for Prolog term TERM in the current buffer.
+If BACKWARD is non-nil, search backward from point, otherwise
+search forward.
 
-Optional argument GOAL is a goal that matching terms must
-satisfy, it may refer to variables occuring in TERM.
+CONDITION is a Prolog goal that this commands runs for each
+matching term.  If the goal fails this command disregards the
+corresponding match.  CONDITION can share variables with
+TEMPLATE, in which case this commands unifies these sharing
+variables with the corresponding subterms of the matching term.
+If CONDITION is omitted or nil, it defaults to \"true\".
 
-If BACKWARD is non-nil, search backward instead.
+CLASS is the class of terms to target, it can be one of `clause',
+`head', `goal', `data' and `_'.  `clause' only matches whole
+clauses, `head' only matches head terms, `goal' only matches goal
+terms, `data' only matches data terms, and `_' matches any term.
+CLASS can also be a list of one or more of these symbols, in
+which a term matches if it matches any of the classes in CLASS.
+If CLASS is omitted or nil, it defaults to `_'.
 
-If INTERACTIVE is non-nil, as it is when called interactively,
-push the current position to the mark ring before moving point.
-
-When called interactively with a prefix argument, prompt for
-GOAL."
-  (interactive (let* ((term (sweeprolog-read-term "[Term-search] ?- "))
-                      (goal (if current-prefix-arg
-                                (sweeprolog-read-goal
-                                 (concat "[Term-search goal for "
-                                         term
-                                         "] ?- "))
-                              "true")))
-                 (list term goal nil t))
+Interactively, prompt for TEMPLATE.  With a prefix argument
+\\[universal-argument], prompt for CONDITION.  With a double
+prefix argument \\[universal-argument] \\[universal-argument],
+prompt for CLASS as well.  A negative prefix argument
+\\[negative-argument] searches backward from point."
+  (interactive (let* ((template (sweeprolog-read-term "[Search] ?- "))
+                      (condition (when (member current-prefix-arg
+                                               '((4)  (-4)
+                                                 (16) (-16)))
+                                   (sweeprolog-read-goal
+                                    (concat "[Condition for matching "
+                                            template
+                                            "] ?- "))))
+                      (class (when (member current-prefix-arg
+                                           '((16) (-16)))
+                               (mapcar #'intern
+                                       (completing-read-multiple
+                                        (format-prompt "Replace terms of class" "_")
+                                        '("clause" "head" "goal" "data" "_")
+                                        nil t nil nil "_")))))
+                 (list template
+                       (and current-prefix-arg
+                            (< (prefix-numeric-value current-prefix-arg) 0))
+                       condition class))
                sweeprolog-mode)
-  (when interactive
-    (setq sweeprolog-term-search-repeat-count 0))
-  (sweeprolog-term-search-delete-overlays)
-  (setq sweeprolog-term-search-last-search (cons term goal))
-  (let ((matches (sweeprolog-term-search-in-buffer term goal)))
-    (if (not matches)
-        (message "No matching term found.")
-      (setq sweeprolog-term-search-overlays
-            (mapcar (lambda (match)
-                      (let* ((beg (car match))
-                             (end (cdr match))
-                             (overlay (make-overlay beg end)))
-                        (overlay-put overlay 'face 'lazy-highlight)
-                        (overlay-put overlay 'evaporate t)
-                        overlay))
-                    matches))
-      (let ((next
-             (sweeprolog-term-search-next
-              (point) sweeprolog-term-search-overlays backward)))
-        (overlay-put next 'face 'isearch)
-        (when interactive
-          (push-mark (point) t))
-        (goto-char (overlay-start next)))
-      (set-transient-map sweeprolog-term-search-map t
-                         #'sweeprolog-term-search-delete-overlays)
-      (message
-       (substitute-command-keys
-        (concat
-         "Match "
-         (number-to-string (1+ sweeprolog-term-search-repeat-count))
-         "/"
-         (number-to-string (length matches)) ".  "
-         "\\<sweeprolog-term-search-map>"
-         "\\[sweeprolog-term-search-repeat-forward] for next match, "
-         "\\[sweeprolog-term-search-repeat-backward] for previous match."))))))
+  (setq condition (or condition           "true")
+        class     (or (ensure-list class) '(_)))
+  (let* ((items
+          (seq-filter
+           (pcase-lambda (`(,beg ,end ,_))
+             (<= (point-min) beg end (point-max)))
+           (sweeprolog-term-replace-edits (buffer-file-name) template
+                                          "true" condition class)))
+         (groups
+          (seq-group-by (pcase-lambda (`(,beg ,end ,_)) (< beg (point)))
+                        items))
+         (after-point (alist-get nil groups))
+         (before-point (alist-get t groups))
+         (overlays
+          (mapcar
+           (pcase-lambda (`(,beg ,end ,_))
+             (let ((overlay (make-overlay beg end)))
+               (overlay-put overlay 'face 'sweeprolog-term-search-match)
+               overlay))
+           (append after-point before-point)))
+         (length (length items))
+         (index (if backward (1- length) 0)))
+    (push-mark (point) t)
+    (when backward
+      (setq overlays (reverse overlays)))
+    (let ((go t)
+          (inhibit-quit t)
+          (query-replace-map
+           (let ((map (make-sparse-keymap)))
+             (define-key map "\C-l" 'recenter)
+             (define-key map "\C-v" 'scroll-up)
+             (define-key map "\M-v" 'scroll-down)
+             (define-key map [next] 'scroll-up)
+             (define-key map [prior] 'scroll-down)
+             (define-key map [?\C-\M-v] 'scroll-other-window)
+             (define-key map [M-next] 'scroll-other-window)
+             (define-key map [?\C-\M-\S-v] 'scroll-other-window-down)
+             (define-key map [M-prior] 'scroll-other-window-down)
+             map)))
+      (if overlays
+          (while go
+            (unless
+                (with-local-quit
+                  (let* ((overlay (car overlays))
+                         (pos (if backward
+                                  (overlay-start overlay)
+                                (overlay-end overlay))))
+                    (overlay-put overlay 'priority 100)
+                    (overlay-put overlay 'face 'sweeprolog-term-search-current)
+                    (goto-char pos)
+                    (pcase
+                        (car (read-multiple-choice
+                              ;; TODO - maybe indicate a wrapped
+                              ;; search like Isearch does?
+                              (format "Match %d/%d"
+                                      (1+ index)
+                                      length)
+                              '((?  "next" "Next match")
+                                (?  "back" "Last match")
+                                (?  "exit" "Exit term search"))))
+                      (?
+                       (setq overlays (if backward
+                                          (cons overlay
+                                                (reverse (cdr overlays)))
+                                        (append (cdr overlays)
+                                                (list overlay)))
+                             index (if backward
+                                       index
+                                     (mod (1+ index) length))
+                             backward nil))
+                      (?
+                       (setq overlays (if backward
+                                          (append (cdr overlays)
+                                                  (list overlay))
+                                        (cons overlay
+                                              (reverse (cdr overlays))))
+                             index (if backward
+                                       (mod (1- index) length)
+                                     index)
+                             backward t))
+                      (?
+                       (setq go nil)
+                       t))
+                    (overlay-put overlay 'priority nil)
+                    (overlay-put overlay 'face 'sweeprolog-term-search-match)))
+              (goto-char (mark t))
+              (pop-mark)
+              (setq go nil)))
+        (message "No matching term found."))
+      (mapc #'delete-overlay overlays))))
+
+;;;###autoload
+(defun sweeprolog-query-replace-term (template replacement &optional condition class)
+  "Replace some terms after point matching TEMPLATE with REPLACEMENT.
+
+When the region is active, replace matching terms in region.
+
+Query before performing each replacement.
+
+Matching terms are those that the Prolog term TEMPLATE (given as
+a string) subsumes.  REPLACEMENT is a Prolog term to insert in
+place of matching terms.  REPLACEMENT can share variables with
+TEMPLATE, in which case this commands unifies these sharing
+variables with the corresponding subterms of the matching term.
+
+CONDITION is a Prolog goal that this commands runs for each
+matching term.  If the goal fails this command disregards the
+corresponding match and does not suggest replacing it.  CONDITION
+can share variables with TEMPLATE, similarly to REPLACEMENT.  If
+CONDITION is omitted or nil, it defaults to \"true\".
+
+CLASS is the class of terms to target, it can be one of `clause',
+`head', `goal', `data' and `_'.  `clause' only matches whole
+clauses, `head' only matches head terms, `goal' only matches goal
+terms, `data' only matches data terms, and `_' matches any term.
+CLASS can also be a list of one or more of these symbols, in
+which a term matches if it matches any of the classes in CLASS.
+If CLASS is omitted or nil, it defaults to `_'.
+
+Interactively, prompt for TEMPLATE and REPLACEMENT.  With a
+prefix argument \\[universal-argument], prompt for CONDITION.
+With a double prefix argument \\[universal-argument] \\[universal-argument],
+prompt for CLASS as well."
+  (interactive (let* ((template (sweeprolog-read-term "[Replace] ?- "))
+                      (replacement
+                       (sweeprolog-read-term
+                        (concat "[Replace " template " with] ?- ")))
+                      (condition (when current-prefix-arg
+                                   (sweeprolog-read-goal
+                                    (concat "[Condition for replacing "
+                                            template
+                                            "] ?- "))))
+                      (class (when (equal current-prefix-arg '(16))
+                               (mapcar #'intern
+                                       (completing-read-multiple
+                                        (format-prompt "Replace terms of class" "_")
+                                        '("clause" "head" "goal" "data" "_")
+                                        nil t nil nil "_")))))
+                 (list template replacement condition class))
+               sweeprolog-mode)
+  (setq condition (or condition           "true")
+        class     (or (ensure-list class) '(_)))
+  (let* ((bounds-beg (or (use-region-beginning) (point)))
+         (bounds-end (or (use-region-end) (point-max)))
+         (items
+          (seq-filter
+           (pcase-lambda (`(,beg ,end ,_))
+             (<= bounds-beg beg end bounds-end))
+           (sweeprolog-term-replace-edits (buffer-file-name) template
+                                          replacement condition class)))
+         (overlays
+          (mapcar
+           (pcase-lambda (`(,beg ,end ,rep))
+             (let ((overlay (make-overlay beg end)))
+               (overlay-put overlay 'face 'sweeprolog-query-replace-term-match)
+               (overlay-put overlay 'sweeprolog-term-replacement rep)
+               overlay))
+           items))
+         (count 0)
+         (last nil)
+         (try nil))
+    (cl-labels ((replace (b e r i)
+                  (undo-boundary)
+                  (combine-after-change-calls
+                    (delete-region b e)
+                    (insert r)
+                    ;; TODO - turn fresh variables in rep into holes
+                    (let ((inhibit-message t))
+                      (indent-region-line-by-line b (point))))
+                  (cl-incf count (if i -1 1))))
+      (if (use-region-p)
+          (deactivate-mark)
+        (push-mark (point) t))
+      (let ((inhibit-quit t))
+        (with-local-quit
+          (while overlays
+            (let* ((overlay (car overlays))
+                   (start (overlay-start overlay))
+                   (end (overlay-end overlay))
+                   (cur (buffer-substring start end))
+                   (rep (overlay-get overlay 'sweeprolog-term-replacement))
+                   (max-mini-window-height 0.5))
+              (overlay-put overlay 'priority 100)
+              (overlay-put overlay 'face 'sweeprolog-query-replace-term-current)
+              (goto-char start)
+              (setq last overlay)
+              (setq overlays (cdr overlays))
+              (pcase
+                  (car (read-multiple-choice
+                        (mapconcat #'identity
+                                   (list "Replace" (propertize cur 'face 'diff-removed)
+                                         (if try "back to" "with")
+                                         (propertize rep 'face 'diff-added)
+                                         "?")
+                                   (if (or (string-search "\n" cur)
+                                           (string-search "\n" rep))
+                                       "\n"
+                                     " "))
+                        '((?y  "yes"                       "Replace occurrence")
+                          (?n  "no"                        "Skip occurrence")
+                          (?t  "try"                       "Replace and suggest reverting back")
+                          (?q  "quit"                      "Quit")
+                          (?.  "last"                      "Replace and exit")
+                          (?!  "all"                       "Replace all remaining occurrences")
+                          (?e  "edit"                      "Edit replacement"))))
+                (?y
+                 (replace start end rep try)
+                 (setq try nil))
+                (?n
+                 (setq try nil))
+                (?t
+                 (replace start end rep try)
+                 (setq try (not try))
+                 (let ((rev (make-overlay start (point))))
+                   (overlay-put rev 'face 'sweeprolog-query-replace-term-match)
+                   (overlay-put rev 'sweeprolog-term-replacement cur)
+                   (setq overlays (cons rev overlays))))
+                (?q
+                 (mapc #'delete-overlay overlays)
+                 (setq overlays nil))
+                (?.
+                 (replace start end rep try)
+                 (mapc #'delete-overlay overlays)
+                 (setq overlays nil))
+                (?!
+                 (replace start end rep try)
+                 (while overlays
+                   (let* ((ov (car overlays))
+                          (ov-start (overlay-start ov))
+                          (ov-end (overlay-end ov))
+                          (ov-rep (overlay-get ov 'sweeprolog-term-replacement)))
+                     (goto-char ov-start)
+                     (delete-region ov-start ov-end)
+                     (insert ov-rep)
+                     (indent-region-line-by-line start (point))
+                     (cl-incf count)
+                     (delete-overlay ov)
+                     (setq overlays (cdr overlays)))))
+                (?e
+                 (replace start end
+                          (sweeprolog-read-term "[Edit replacement] ?- "
+                                                rep)
+                          try)))
+              (delete-overlay overlay)
+              (setq last nil))))
+        (mapc #'delete-overlay overlays)
+        (when last (delete-overlay last)))
+      (message (concat "Replaced %d "
+                       (ngettext "occurrence"
+                                 "occurrences"
+                                 count)
+                       " of %s.")
+               count template))))
 
 
 ;;;; Right-Click Context Menu

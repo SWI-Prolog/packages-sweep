@@ -2264,23 +2264,18 @@ Search for Prolog terms matching a given search term in the current
 buffer (@code{sweeprolog-term-search}).
 @end table
 
-@findex sweeprolog-term-search-repeat-forward
-@deffn Command sweeprolog-term-search-repeat-forward
-Repeat the last Term Search, searching forward from point.
-@end deffn
-
-@findex sweeprolog-term-search-repeat-backward
-@deffn Command sweeprolog-term-search-repeat-backward
-Repeat the last Term Search, searching backward from point.
-@end deffn
-
 The command @code{sweeprolog-term-search}, bound by default to
 @kbd{C-c C-s} in Sweep Prolog mode buffers, prompts for a Prolog term
 to search for and finds terms in the current buffer that the search
 term subsumes.  It highlights all matching terms in the buffer and
-moves the cursor to the beginning of the next match after point.  For
+moves the cursor to the end of the next match after point.  For
 example, to find if-then-else constructs in the current buffer do
 @kbd{C-c C-s _ -> _ ; _ @key{RET}}.
+
+This command highlights the current match with the
+@code{sweeprolog-term-search-current} face, and all other matches with
+the @code{sweeprolog-term-search-match} face.  @xref{Face
+Customization,,,emacs,} for information about customizing faces.
 
 While prompting for a search term in the minibuffer, this command
 populates the ``future history'' with the Prolog terms at point, with
@@ -2291,25 +2286,159 @@ larger terms, up until the top-term at point.  @xref{Minibuffer
 History,,,emacs,}, for more information about minibuffer history
 commands.
 
-If you invoke @code{sweeprolog-term-search} with a prefix argument by
-typing @kbd{C-u C-c C-s}, you can further refine the search with an
-arbitrary Prolog goal for filtering out search results that fail it.
-The given goal runs for each matching term, and it may use variables
-from the search term to refer to the corresponding subterms of the
-matching term.  For example, you can find all places in your code
-where you have a call to @code{sub_string/5} with either the first or
-the last argument being a literal atom by typing @kbd{C-u C-c C-s
+If you invoke @code{sweeprolog-term-search} with a prefix argument
+(@kbd{C-u C-c C-s}), you can further refine the search with an
+arbitrary Prolog goal.  The given goal runs for each matching term,
+and if the goal fails @code{sweeprolog-term-search} disregards the
+corresponding match.  You can use variables from the search term in
+the goal to refer to the corresponding subterms of the matching
+term---for example, you can find all places in your code where you
+have a call to @code{sub_string/5} with either the first or the last
+argument being a literal atom by typing @kbd{C-u C-c C-s
 sub_string(Str, _, _, _, Sub) @key{RET} atom(Str) ; atom(Sub)
 @key{RET}}.
 
+If you call this command with a double prefix argument (@kbd{C-u C-u
+C-c C-s}), it also prompts you to specify the @dfn{class} of term to
+search for.  This can be one of the following symbols:
+
+@table @code
+@item clause
+Matches whole clauses.
+
+@item head
+Matches head terms.
+
+@item goal
+Matches goal terms.
+
+@item data
+Matches data terms.
+
+@item _
+Matches any term.
+@end table
+
+You can specify multiple classes in the minibuffer by delimiting them
+with @samp{,}, in which case @code{sweeprolog-term-search} matches
+terms that match any of the these classes.
+
+If you call @code{sweeprolog-term-search} with a negative prefix
+argument (@kbd{C-- C-c C-s}), it searches backward and moves to
+beginning of the first match that starts before point.
+
 @kindex C-s (Term Search)
 @kindex C-r (Term Search)
-Typing @kbd{C-s} immediately after a successful search invokes the
-command @code{sweeprolog-term-search-repeat-forward} which moves
-forward to the next match.  Likewise, typing @kbd{C-r} after a
-successful term search invokes the command
-@code{sweeprolog-term-search-repeat-backward} which moves backward to
-the previous match.
+@kindex C-m (Term Search)
+@kindex RET (Term Search)
+After invoking @code{sweeprolog-term-search}, use @kbd{C-s} to move to
+the next matching term and @kbd{C-r} to move backward to the previous
+match.  To exit term search, type @kbd{C-m} (or @kbd{@key{RET}}).
+Similarly to Isearch, @code{sweeprolog-term-search} sets the mark to
+the original point so you can easily return to where you were before
+beginning the search.  @xref{Basic Isearch,,,emacs,}.
+
+@node Term Replace
+@section Query Replace Term
+
+@cindex term replace
+@cindex replace term
+@cindex query replace term
+@cindex refactor replace
+@cindex replace, search and
+Sweep includes a powerful search and replace mechanism called
+@dfn{Term Replace}, that allows you to quickly and consistently
+transform some terms across a Prolog buffer.  Term Replace searches
+for terms with the same flexibility and precision of Term Search
+(@pxref{Term Search}), while letting you interactively transform and
+replace matching terms in place.  You can use Term Replace to refactor
+your code in many ways, such as extending a predicate with another
+argument, or replacing all calls to a predicate with another one while
+transposing some of the arguments.  If you're familiar with Emacs's
+Query Replace commands, you can think of Term Replace as a
+Prolog-specific superpowered version of @code{query-replace-regexp}
+(@pxref{Query Replace,,,emacs,}).  To initiate Term Replace, use the
+following command:
+
+@table @kbd
+@kindex C-c C-S
+@findex sweeprolog-query-replace-term
+@item C-c C-S
+Replace some terms after point matching a given template with a given
+replacement (@code{sweeprolog-query-replace-term}).
+@end table
+
+The command @code{sweeprolog-query-replace-term} (bound to @kbd{C-c
+C-S}) prompts for two Prolog terms, the @dfn{template term} and the
+@dfn{replacement term}, and then asks for each term in the buffer that
+matches the template if you want to replace it.  You can use variables
+in the template term to capture sub-terms of the matching term, and
+use them in the replacement term.  For example, if you want to
+transpose the two arguments in a bunch of calls to @code{=/2}, you can
+specify @code{R=L} as the template term and @code{L=R} as the
+replacement.
+
+This command uses the same underlying term search as @kbd{C-c C-s}
+(@code{sweeprolog-term-search}) does for finding matches, expect that
+@code{sweeprolog-query-replace-term} only searches from point to the
+end of buffer.  If you invoke @code{sweeprolog-query-replace-term}
+with an active region, it limits the operation to matching terms in
+the region.  @code{sweeprolog-query-replace-term} highlights the
+current match with the @code{sweeprolog-query-replace-term-current}
+face, and all other matches with the
+@code{sweeprolog-query-replace-term-match} face.  By default, these
+faces inherit from @code{sweeprolog-term-search-current} and
+@code{sweeprolog-term-search-match}, respectively.  Furthermore,
+similarly to @kbd{C-c C-s}, you can invoke
+@code{sweeprolog-query-replace-term} with a prefix argument to refine
+the search with an arbitrary Prolog goal that matching terms must
+satisfy, or with two prefix arguments to target only terms in certain
+contexts.  @xref{Term Search} for full details about prefix arguments
+and search refinement.
+
+@code{sweeprolog-query-replace-term} goes over the matching terms in
+turn and asks you what to do with each.  The available answers are:
+
+@table @kbd
+@item y
+Replace the current match and move to the next one.
+
+@item n
+Skip the current match without replacing it.
+
+@item t
+Replace the current match, show the result, and suggest reverting back
+before moving to the next match.
+
+@item q
+Quit without replacing the current match.
+
+@item .
+Replace the current match, and exit right away asking about further
+matches.
+
+@item !
+Replace the current match and all remaining matches without asking.
+
+@item e
+Edit the replacement term for the current match in the minibuffer, and
+then perform the replacement.
+
+@item C-r
+Enter recursive edit.  This allows you to pause the current Term
+Replace session, perform some edits, or otherwise use Emacs however
+you please, an then resume Term Replace from the same point by typing
+@kbd{C-M-c}.  @xref{Recursive Edit,,,emacs,}.
+@end table
+
+If you include a new variable in the replacement term
+that does not appear in the template term,
+@code{sweeprolog-query-replace-term} uses that variable as-is in each
+replacement, expect if the matching term happens to contain a variable
+with that name already, in which case this command adds the suffix
+@samp{Fresh} to the name of the new variable from the replacement.
+Including a new variable in the replacement term is useful, for
+example, for introducing a new argument to a predicate.
 
 @node Context Menu
 @section Context Menu
@@ -2372,10 +2501,11 @@ Rename a variable across the topmost Prolog term at point
 @end table
 
 @defopt sweeprolog-rename-variable-allow-existing
-If non-nil, allow selecting an existing variable name as the new name
-of a variable being renamed with @code{sweeprolog-rename-variable}.
-If it is the symbol @code{confirm}, allow but ask for confirmation
-first.  Defaults to @code{confirm}.
+If non-@code{nil}, allow selecting an existing variable name as the
+new name of a variable being renamed with
+@code{sweeprolog-rename-variable}.  If it is the symbol
+@code{confirm}, allow but ask for confirmation first.  Defaults to
+@code{confirm}.
 @end defopt
 
 The command @code{sweeprolog-rename-variable}, bound to @kbd{C-c C-r},
@@ -2643,9 +2773,10 @@ customizing the user option @code{sweeprolog-top-level-use-pty} to
 @code{nil}.
 
 @defopt sweeprolog-top-level-use-pty
-Whether to use pty for top-level communication.  If this is non-nil,
-Sweep top-level buffers communicate with their top-level threads via a
-pty, otherwise they use a local TCP connection.
+Whether to use pty for top-level communication.  If this is
+non-@code{nil}, Sweep top-level buffers communicate with their
+top-level threads via a pty, otherwise they use a local TCP
+connection.
 @end defopt
 
 @code{sweeprolog-top-level-use-pty} is on by default on systems where

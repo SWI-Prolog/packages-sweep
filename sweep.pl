@@ -72,7 +72,7 @@
             sweep_format_head/2,
             sweep_format_term/2,
             sweep_current_functors/2,
-            sweep_term_search/2,
+            sweep_term_replace/2,
             sweep_terms_at_point/2,
             sweep_predicate_dependencies/2,
             sweep_async_goal/2,
@@ -1214,59 +1214,230 @@ sweep_current_functors(A0, Col) :-
             ),
             Col).
 
-sweep_term_search([Path0,TermString,GoalString], Res) :-
-    term_string(Term, TermString, [variable_names(TermVarNames)]),
+sweep_term_replace([FileName0,BodyIndent,TemplateString,GoalString,FinalString,RepString], Res) :-
+    term_string(Template, TemplateString, [variable_names(TemplateVarNames)]),
     term_string(Goal, GoalString, [variable_names(GoalVarNames)]),
-    maplist({GoalVarNames}/[TermVarName]>>ignore(memberchk(TermVarName, GoalVarNames)),
-            TermVarNames),
-    atom_string(Path, Path0),
-    setup_call_cleanup(prolog_open_source(Path, Stream),
-                       sweep_search_stream(Stream, Term, Goal, Res),
+    maplist(term_string, Final, FinalString),
+    term_string(Rep, RepString, [variable_names(VarNames0)]),
+    maplist({GoalVarNames}/[VarName]>>ignore(memberchk(VarName, GoalVarNames)),
+            TemplateVarNames),
+    maplist({VarNames0}/[VarName]>>ignore(memberchk(VarName, VarNames0)),
+            TemplateVarNames),
+    atom_string(FileName, FileName0),
+    xref_source(FileName),
+    sweep_module_path_(Module, FileName),
+    setup_call_cleanup(prolog_open_source(FileName, Stream),
+                       sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, Template-Goal, Rep-VarNames0, Res),
                        prolog_close_source(Stream)).
 
-sweep_search_stream(Stream, Term, Goal, Res) :-
-    prolog_read_source_term(Stream, Term0, _, [subterm_positions(TermPos)]),
-    sweep_search_stream_(Term0, TermPos, Stream, Term, Goal, Res).
+sweep_anon_var_names(Term, VarNames, AnonVars) :-
+    term_variables(Term, TermVars),
+    convlist({VarNames}/[Var,'_'=Var]>>(   \+ (   member(_=VV, VarNames),
+                                                  Var == VV
+                                              )
+                                       ),
+             TermVars, AnonVars).
 
-sweep_search_stream_(end_of_file, _, _, _, _, []) :-
-    !.
-sweep_search_stream_(Term0, TermPos, Stream, Term, Goal, Res) :-
-    findall([HS|HE],
-            sweep_match_term(TermPos, Term0, Term, Goal, HS, HE),
+sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, Rep-VarNames0, Res) :-
+    read_clause(Stream, Term, [subterm_positions(Pos), variable_names(VarNames1), syntax_errors(dec10)]),
+    !,
+    sweep_anon_var_names(Rep, VarNames0, AnonVars0),
+    sweep_anon_var_names(Term, VarNames1, AnonVars1),
+    maplist({VarNames1}/[Name0=Var,Name=Var]>>(   member(Name0=_, VarNames1)
+                                              ->  atom_concat(Name0, 'Fresh', Name)
+                                              ;   Name = Name0
+                                              ),
+            VarNames0, VarNames2),
+    append(AnonVars1, AnonVars0, AnonVars),
+    append(VarNames2, AnonVars, VarNames3),
+    append(VarNames1, VarNames3, VarNames),
+    sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, TemplateGoal, Rep-VarNames, Res).
+sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Res) :-
+    sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Res).
+
+sweep_replace_stream_(end_of_file, _, _, _, _, _, _, _, _, []) :- !.
+sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Res) :-
+    (   var(Term)
+    ->  State = clause
+    ;   memberchk(Term, [(_:-_),(_=>_),(_-->_)])
+    ->  State = clause
+    ;   Term = (:-_)
+    ->  State = directive
+    ;   State = head
+    ),
+    findall(Result,
+            sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, 0, 1200, State, Final, TemplateGoal, RepVarNames,Result),
             Res,
             Tail),
-    sweep_search_stream(Stream, Term, Goal, Tail).
+    sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Tail).
 
-sweep_match_term(Pos, Term0, Term, Goal, From, To) :-
+
+
+%!  sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result) is nondet.
+
+sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result) :-
+    (   sweep_replace_term_(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result)
+    ;   sweep_replace_term_r(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result)
+    ).
+
+sweep_replace_term_r(brace_term_position(_, _, Pos), {Term}, FileName, Module, BodyIndent, CurrentIndent0, _Precedence, State0, Final, TemplateGoal, RepVarNames, Result) :-
+    CurrentIndent is CurrentIndent0 + BodyIndent,
+    (   State0 == data
+    ->  State = data
+    ;   State0 == goal(2)
+    ->  State = goal(0)
+    ;   State = State0
+    ),
+    sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, 1200, State, Final, TemplateGoal, RepVarNames, Result).
+sweep_replace_term_r(list_position(_, _, Elms, Tail), List, FileName, Module, BodyIndent, CurrentIndent0, _Precedence, _State, Final, TemplateGoal, RepVarNames, Result) :-
+    CurrentIndent is CurrentIndent0 + BodyIndent,
+    (   nth0(I, Elms, Pos),
+        nth0(I, List, Term),
+        sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, 999, data, Final, TemplateGoal, RepVarNames, Result)
+    ;   Tail == none
+    ->  false
+    ;   list_tail(List, Term),
+        sweep_replace_term(Tail, Term, FileName, Module, BodyIndent, CurrentIndent, 999, data, Final, TemplateGoal, RepVarNames, Result)
+    ).
+sweep_replace_term_r(term_position(From, To, _, _, ArgsPos), Term, FileName, Module0, BodyIndent, CurrentIndent0, _, State0, Final, TemplateGoal, RepVarNames, Result) :-
+    CurrentIndent is CurrentIndent0 + BodyIndent,
+    compound_name_arguments(Term, Functor, Arguments),
+    length(Arguments, Arity),
+    (   Arguments == []         % nullary compound, e.g. foo()
+    ->  true
+    ;   Arguments = [Arg]
+    ->  ArgsPos = [ArgPos],
+        arg(1, ArgPos, ArgBeg),
+        arg(2, ArgPos, ArgEnd),
+        Module = Module0,
+        (   ArgBeg == From,
+            (   xref_op(FileName, op(Precedence0, Assoc, Functor))
+            ;   current_op(Precedence0, Assoc, Functor)
+            ),
+            memberchk(Assoc, [fx,fy])
+        ->  (   Assoc == fx
+            ->  Precedence is Precedence0 - 1
+            ;   Precedence = Precedence0
+            )
+        ;   ArgEnd == To,
+            (   xref_op(FileName, op(Precedence0, Assoc, Functor))
+            ;   current_op(Precedence0, Assoc, Functor)
+            ),
+            memberchk(Assoc, [xf,yf])
+        ->  (   Assoc == xf
+            ->  Precedence is Precedence0 - 1
+            ;   Precedence = Precedence0
+            )
+        ;   Precedence = 999
+        ),
+        sweep_replace_update_state(FileName, Module, Functor, Arity, 1, State0, State),
+        sweep_replace_term(ArgPos, Arg, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result)
+    ;   Arguments = [Left, Right]
+    ->  ArgsPos = [LeftPos, RightPos],
+        arg(2, RightPos, ArgEnd),
+        (   ArgEnd == To,        % infix operator
+            (   xref_op(FileName, op(Precedence0, Assoc, Functor))
+            ;   current_op(Precedence0, Assoc, Functor)
+            ),
+            memberchk(Assoc, [xfx, xfy, yfy, yfx])
+        ->  (   Assoc == xfx
+            ->  LeftPrecedence is Precedence0 - 1,
+                RightPrecedence is Precedence0 - 1
+            ;   Assoc == xfy
+            ->  LeftPrecedence is Precedence0 - 1,
+                RightPrecedence = Precedence0
+            ;   Assoc == yfx
+            ->  LeftPrecedence = Precedence0,
+                RightPrecedence is Precedence0 - 1
+            ;   Assoc == yfy
+            ->  LeftPrecedence = Precedence0,
+                RightPrecedence = Precedence0
+            )
+        ;   LeftPrecedence = 999,
+            RightPrecedence = 999
+        ),
+        (   Functor = ':',
+            atom(Left),
+            State0 = goal(_)
+        ->  Module = Left,
+            LeftState = module,
+            RightState = State0
+        ;   Module = Module0,
+            sweep_replace_update_state(FileName, Module, Functor, Arity, 1, State0, LeftState),
+            sweep_replace_update_state(FileName, Module, Functor, Arity, 2, State0, RightState)
+        ),
+        (   sweep_replace_term(LeftPos, Left, FileName, Module, BodyIndent, CurrentIndent, LeftPrecedence, LeftState, Final, TemplateGoal, RepVarNames, Result)
+        ;   sweep_replace_term(RightPos, Right, FileName, Module, BodyIndent, CurrentIndent, RightPrecedence, RightState, Final, TemplateGoal, RepVarNames, Result)
+        )
+    ;   nth1(I, ArgsPos, ArgPos),
+        nth1(I, Arguments, Arg),
+        Module = Module0,
+        sweep_replace_update_state(FileName, Module, Functor, Arity, I, State0, ArgState),
+        sweep_replace_term(ArgPos, Arg, FileName, Module, BodyIndent, CurrentIndent, 999, ArgState, Final, TemplateGoal, RepVarNames, Result)
+    ).
+sweep_replace_term_r(dict_position(_, _, _, _, KeyValuePosList), Term, FileName, Module, BodyIndent, CurrentIndent0, _, _, Final, TemplateGoal, RepVarNames, Result) :-
+    CurrentIndent is CurrentIndent0 + BodyIndent,
+    member(key_value_position(_, _, _, _, Key, _, ValuePos), KeyValuePosList),
+    get_dict(Key, Term, Value),
+    sweep_replace_term(ValuePos, Value, FileName, Module, BodyIndent, CurrentIndent, 999, data, Final, TemplateGoal, RepVarNames, Result).
+sweep_replace_term_r(parentheses_term_position(_, _, Pos), Term, FileName, Module, BodyIndent, CurrentIndent, _, State, Final, TemplateGoal, RepVarNames, Result) :-
+    sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, 1200, State, Final, TemplateGoal, RepVarNames, Result).
+sweep_replace_term_r(quasi_quotation_position(_, _, Term, Pos, _), _, FileName, Module, BodyIndent, CurrentIndent0, _, _, Final, TemplateGoal, RepVarNames, Result) :-
+    CurrentIndent is CurrentIndent0 + BodyIndent,
+    sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, 999, syntax, Final, TemplateGoal, RepVarNames, Result).
+
+sweep_replace_update_state(_, _, _, _, _, data, data) :- !.
+sweep_replace_update_state(_, _, _, _, _, syntax, data) :- !.
+sweep_replace_update_state(_, _, _, _, _, module, data) :- !.
+sweep_replace_update_state(_FileName, _Module, ':-', 1, 1, directive, goal(0)) :- !.
+sweep_replace_update_state(_FileName, _Module, ':-', 2, 1, clause, head) :- !.
+sweep_replace_update_state(_FileName, _Module, ':-', 2, 2, clause, goal(0)) :- !.
+sweep_replace_update_state(_FileName, _Module, '=>', 2, 1, clause, head) :- !.
+sweep_replace_update_state(_FileName, _Module, '=>', 2, 2, clause, goal(0)) :- !.
+sweep_replace_update_state(_FileName, _Module, '-->', 2, 1, clause, head) :- !.
+sweep_replace_update_state(_FileName, _Module, '-->', 2, 2, clause, goal(2)) :- !.
+sweep_replace_update_state(_FileName, _Module, _Functor, _Arity, _I, clause, data) :- !.
+sweep_replace_update_state(_FileName, _Module, _Functor, _Arity, _I, head, data) :- !.
+sweep_replace_update_state(_FileName, Module, Functor, Arity, I, goal(N0), State) :-
+    pi_head(Functor/Arity,Head),
+    (   (   (   @(predicate_property(Head, meta_predicate(Spec)), Module)
+            ;   catch(infer_meta_predicate(Head, Spec),
+                      error(permission_error(access, private_procedure, _),
+                            context(system:clause/2, _)),
+                  false)
+            )
+        ->  arg(I, Spec, A),
+            callable_arg(A, M)
+        )
+    ->  N is N0 + M,
+        State = goal(N)
+    ;   State = data
+    ).
+
+:- dynamic sweep_match_replacement/1.
+
+sweep_replace_term_(Pos, Term, _FileName, Module, _BodyIndent, CurrentIndent, Precedence, State, Final, Template-Goal, Rep-VarNames, replace(Beg, End, New)) :-
     compound(Pos),
     Pos \= parentheses_term_position(_, _, _),
-    arg(1, Pos, From),
-    arg(2, Pos, To),
-    subsumes_term(Term, Term0),
-    \+ \+ (   Term = Term0,
-              catch(Goal, _, false)
-          ).
-sweep_match_term(brace_term_position(_, _, Arg), {Term0}, Term, Goal, From, To) :-
-    sweep_match_term(Arg, Term0, Term, Goal, From, To).
-sweep_match_term(list_position(_, _, Elms, _), Term0, Term, Goal, From, To) :-
-    nth0(I, Elms, Elm),
-    nth0(I, Term0, Term1),
-    sweep_match_term(Elm, Term1, Term, Goal, From, To).
-sweep_match_term(list_position(_, _, _, Tail), Term0, Term, Goal, From, To) :-
-    list_tail(Term0, Term1),
-    sweep_match_term(Tail, Term1, Term, Goal, From, To).
-sweep_match_term(term_position(_, _, _, _, SubPos), Term0, Term, Goal, From, To) :-
-    nth1(I, SubPos, Sub),
-    arg(I, Term0, Term1),
-    sweep_match_term(Sub, Term1, Term, Goal, From, To).
-sweep_match_term(dict_position(_, _, _, _, KeyValuePosList), Term0, Term, Goal, From, To) :-
-    member(key_value_position(_, _, _, _, Key, _, ValuePos), KeyValuePosList),
-    get_dict(Key, Term0, Term1),
-    sweep_match_term(ValuePos, Term1, Term, Goal, From, To).
-sweep_match_term(parentheses_term_position(_, _, ContentPos), Term0, Term, Goal, From, To) :-
-    sweep_match_term(ContentPos, Term0, Term, Goal, From, To).
-sweep_match_term(quasi_quotation_position(_, _, SyntaxTerm, SyntaxPos, _), _, Term, Goal, From, To) :-
-    sweep_match_term(SyntaxPos, SyntaxTerm, Term, Goal, From, To).
+    subsumes_term(Template, Term),
+    member(FS, Final),
+    subsumes_term(FS, State),
+    \+ \+ (   Template = Term,
+              catch(Goal, _, false),
+              with_output_to(
+                  string(New0),
+                  (   State = goal(_)
+                  ->  prolog_listing:portray_body(Rep, CurrentIndent, noindent, Precedence, current_output,
+                                                  [module(Module), variable_names(VarNames)])
+                  ;   prolog_listing:pprint(current_output, Rep, Precedence,
+                                            [module(Module), variable_names(VarNames)])
+                  )
+              ),
+              asserta(sweep_match_replacement(New0))
+          ),
+    retract(sweep_match_replacement(New)),
+    arg(1, Pos, Beg),
+    arg(2, Pos, End).
 
 list_tail([_|T0], T) :- nonvar(T0), T0 = [_|_], !, list_tail(T0, T).
 list_tail([_|T], T).

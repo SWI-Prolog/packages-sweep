@@ -113,7 +113,7 @@ foo(Foo, Bar) :- flatten(Bar, Baz), member(Foo, Baz).
                         (help-at-pt-kbd-string))))
 
 (sweeprolog-deftest terms-at-point ()
-  "Test `sweeprolog-term-search'."
+  "Test `sweeprolog-terms-at-point'."
   "
 recursive(Var) :-
     (   true
@@ -148,16 +148,21 @@ bar(bar(bar), bar{bar:bar}, [bar,bar|bar]).
 foo([Bar|Baz]).
 "
   (goto-char (point-min))
-  (sweeprolog-term-search "bar")
-  (should (= (point) 10))
-  (sweeprolog-term-search "bar")
-  (should (= (point) 24))
-  (sweeprolog-term-search "bar")
-  (should (= (point) 31))
-  (sweeprolog-term-search "bar")
-  (should (= (point) 35))
-  (sweeprolog-term-search "bar")
-  (should (= (point) 39)))
+  (let ((unread-command-events (listify-key-sequence (kbd "RET"))))
+    (sweeprolog-term-search "bar"))
+  (should (= (point) 13))
+  (let ((unread-command-events (listify-key-sequence (kbd "RET"))))
+    (sweeprolog-term-search "bar"))
+  (should (= (point) 27))
+  (let ((unread-command-events (listify-key-sequence (kbd "RET"))))
+    (sweeprolog-term-search "bar"))
+  (should (= (point) 34))
+  (let ((unread-command-events (listify-key-sequence (kbd "RET"))))
+    (sweeprolog-term-search "bar"))
+  (should (= (point) 38))
+  (let ((unread-command-events (listify-key-sequence (kbd "RET"))))
+    (sweeprolog-term-search "bar"))
+  (should (= (point) 42)))
 
 (sweeprolog-deftest beginning-of-next-top-term-header ()
   "Test finding the beginning of the first top term."
