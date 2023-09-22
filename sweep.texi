@@ -107,7 +107,8 @@ Editing Prolog Code
 * Insert Term DWIM::             Commands for smart insertion of Prolog terms based on the surrounding context
 * Writing Tests::                Commands that facilitate writing Prolog unit tests
 * Code Dependencies::            Commands for managing dependencies of Prolog source files on each other
-* Term Search::                  Search for Prolog terms matching with a given structure
+* Term Search::                  Search for Prolog terms matching a given structure
+* Term Replace::                 Consistently replace a set of terms in Prolog buffers
 * Context Menu::                 Right-click on Prolog code to open contextual menus
 * Renaming Variables::           Replacing occurrences of one Prolog variable with another
 * Numbered Variables::           Commands for managing numbers in names of related variables
@@ -192,7 +193,7 @@ provide advanced features for developing SWI-Prolog programs in Emacs.
 @end menu
 
 @node Main Features
-@chapter Main Features
+@section Main Features
 
 Some of the main benefits that Sweep brings to working with Prolog
 code in Emacs are:
@@ -225,7 +226,7 @@ along with many options that Sweep provides for you to customize its
 behavior.
 
 @node Architecture
-@chapter High-level Architecture
+@section High-level Architecture
 
 @cindex architecture, of Sweep
 @cindex design, of Sweep
@@ -271,7 +272,7 @@ contains predicates that @file{sweeprolog.el} invokes through
 @end itemize
 
 @node Alternatives
-@chapter Comparison with Emacs's built-in Prolog mode
+@section Comparison with Emacs's built-in Prolog mode
 
 Emacs has a built-in mode for Prolog code, defined in the library
 @file{prolog.el} that comes bundled with Emacs.  @file{prolog.el} aims
@@ -352,7 +353,7 @@ to work with Sweep.
 would load dynamic modules in a way that is not fully compatible with
 the way the SWI-Prolog native library, @file{libswipl}, loads its own
 native extensions.  This may lead to Sweep failing after loading
-@code{sweep-module} (@pxref{Architecture, , High-level Architecture}).
+@code{sweep-module} (@pxref{Architecture}).
 If you're running Emacs 28 or earlier on Linux, you can workaround
 this issue by starting Emacs with @file{libswipl} loaded upfront via
 @env{LD_PRELOAD}, for example:
@@ -766,7 +767,8 @@ more information about Menu Bar mode, @pxref{Menu Bars,,,emacs,}.
 * Insert Term DWIM::             Commands for smart insertion of Prolog terms based on the surrounding context
 * Writing Tests::                Commands that facilitate writing Prolog unit tests
 * Code Dependencies::            Commands for managing dependencies of Prolog source files on each other
-* Term Search::                  Search for Prolog terms matching with a given structure
+* Term Search::                  Search for Prolog terms matching a given structure
+* Term Replace::                 Consistently replace a set of terms in Prolog buffers
 * Context Menu::                 Right-click on Prolog code to open contextual menus
 * Renaming Variables::           Replacing occurrences of one Prolog variable with another
 * Numbered Variables::           Commands for managing numbers in names of related variables
