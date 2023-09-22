@@ -419,44 +419,16 @@ View the Sweep NEWS file.
 @chapter Prolog Initialization and Cleanup
 
 The embedded SWI-Prolog runtime must be initialized before it can
-start executing queries.  Initializing Prolog is usually taken care of
-by Sweep when you first use a command that requires running some
-Prolog code.  This section elaborates about Prolog initialization and
-its customization options in Sweep:
-
-@defun sweeprolog-initialize prog @r{@b{&rest}} args
-Initialize the embedded Prolog runtime.  @var{prog} should be the path
-to the @command{swipl} executable, and @var{args} should be a list of
-command line arguments for @command{swipl}.  Sweep initializes Prolog
-as if it was started from the command line as @code{@var{prog}
-@var{args}}.
-@end defun
-
-@defun sweeprolog-handle-command-line-args
-Enable support for the Sweep specific @option{--swipl-args} Emacs
-command line flag.  This flag can be used to specify additional Prolog
-initialization arguments for Sweep to use when initializing Prolog
-on-demand, directly from Emacs's command line invocation.
-@end defun
+start executing queries.  Normally, Sweep takes care of initializing
+Prolog for you the first time you use a command that requires running
+some Prolog code.  This section elaborates about Prolog initialization
+and its customization options in Sweep:
 
 @defopt sweeprolog-init-args
 List of strings used as initialization arguments for Prolog.  Sweep
 uses these as the @var{args} argument of @code{sweeprolog-initialize}
 when it initializes Prolog on-demand.
 @end defopt
-
-@findex sweeprolog-restart
-@deffn Command sweeprolog-restart
-Restart the embedded Prolog runtime.
-@end deffn
-
-In Sweep, Prolog initialization is done via the C-implemented
-@code{sweeprolog-initialize} Elisp function defined in
-@code{sweep-module}.  @code{sweeprolog-initialize} takes one or more
-string arguments and initializes the embedded Prolog as if it were
-invoked externally in a command line with the given strings as command
-line arguments, where the first argument to
-@code{sweeprolog-initialize} corresponds to @code{argv[0]}.
 
 Sweep loads and initializes Prolog on-demand at the first invocation
 of a command that requires the embedded Prolog.  The user option
@@ -470,6 +442,24 @@ your Emacs configuration:
 (with-eval-after-load 'sweeprolog
   (push "--stack-limit=512m" sweeprolog-init-args))
 @end lisp
+
+Sweep initializes Prolog from Elisp by calling function
+@code{sweeprolog-initialize}.
+
+@defun sweeprolog-initialize prog @r{@b{&rest}} args
+Initialize the embedded Prolog runtime.  @var{prog} should be the path
+to the @command{swipl} executable, and @var{args} should be a list of
+command line arguments for @command{swipl}.  Sweep initializes Prolog
+as if it was started from the command line as @code{@var{prog}
+@var{args}}.
+@end defun
+
+The function @code{sweeprolog-initialize} takes one or more string
+arguments and initializes the embedded Prolog as if it were invoked
+externally in a command line with the given strings as command line
+arguments, where the first argument to @code{sweeprolog-initialize}
+corresponds to @code{argv[0]}.  This function is implemented in C in
+@code{sweep-module} (@pxref{Architecture}).
 
 @cindex sweep Prolog flag
 The default value of @code{sweeprolog-init-args} is set to load the
@@ -496,20 +486,56 @@ emacs --some-emacs-option --swipl-args -l foobar.pl \; --more-emacs-options
 
 In order for Sweep to be able to handle Emacs's command line
 arguments, you must call @code{sweeprolog-handle-command-line-args}
-before Emacs processes the @option{--swipl-args} argument.  You can do
-this, for example, by calling it from the command line right before
+before Emacs processes the @option{--swipl-args} argument.
+
+@defun sweeprolog-handle-command-line-args
+Enable support for the Sweep-specific @option{--swipl-args} Emacs
+command line flag.  This flag can be used to specify additional Prolog
+initialization arguments for Sweep to use when initializing Prolog
+on-demand, directly from Emacs's command line invocation.
+@end defun
+
+This function makes Emacs recognize the @option{--swipl-args} command
+line flag by adding a dedicated handler function to
+@code{command-line-functions} (@pxref{Command-Line
+Arguments,,,elisp,}).  If you want to use @option{--swipl-args}, you
+should arrange for @code{command-line-functions} to run before Emacs
+processes @option{--swipl-args}.  To do that, either place a call
+@code{sweeprolog-handle-command-line-args} in your Emacs
+configuration, or call it from the command line right before
 @option{--swipl-args}:
 
 @example
 emacs -f sweeprolog-handle-command-line-args --swipl-args -l foobar.pl \;
 @end example
 
-You can reset the embedded Prolog runtime using the command
-@code{sweeprolog-restart}.  This command cleans up the the Prolog
-state and resources, and starts it anew.  When you call it with a
-prefix argument (@kbd{C-u M-x sweeprolog-restart @key{RET}}), it prompts for
-additional initialization arguments to pass to the embedded Prolog
-runtime on startup.
+@cindex restart Prolog
+@cindex shutdown Prolog
+@cindex cleanup Prolog
+You can shut down or restart the embedded Prolog runtime using the
+following commands:
+
+@findex sweeprolog-shutdown
+@deffn Command sweeprolog-shutdown
+Shut down the embedded Prolog runtime.
+@end deffn
+
+@deffn Command sweeprolog-restart
+Restart the embedded Prolog runtime.
+@end deffn
+
+The command @code{sweeprolog-shutdown} shuts down the Prolog runtime
+and frees up resources Prolog allocated.  You cannot shut down Prolog
+with running top-levels (@pxref{The Prolog Top-level})---if you invoke
+@code{sweeprolog-shutdown} while you have running top-levels, this
+command suggests killing them, and if you refuse it complains and
+keeps Prolog running.  The command @code{sweeprolog-restart} is
+similar to @code{sweeprolog-shutdown}, expect it starts the embedded
+Prolog runtime anew after shutting it down.  When you invoke
+@code{sweeprolog-restart} with a prefix argument (@kbd{C-u M-x
+sweeprolog-restart @key{RET}}), this command prompts for additional
+initialization arguments to pass to the embedded Prolog runtime when
+restarting it.
 
 @node Querying Prolog
 @chapter Querying Prolog

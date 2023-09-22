@@ -707,7 +707,7 @@ extra initialization arguments."
                                  args))))
     (setq sweeprolog--initialized t)
     (add-hook 'kill-emacs-query-functions #'sweeprolog-maybe-kill-top-levels)
-    (add-hook 'kill-emacs-hook #'sweeprolog-shutdown)
+    (add-hook 'kill-emacs-hook #'sweeprolog--shutdown)
     (sweeprolog-setup-message-hook)))
 
 (defun sweeprolog-maybe-kill-top-levels ()
@@ -726,7 +726,7 @@ extra initialization arguments."
                (dolist (buffer top-levels)
                  (sweeprolog-top-level-delete-process buffer)))))))
 
-(defun sweeprolog-shutdown ()
+(defun sweeprolog--shutdown ()
   "Shutdown Prolog."
   (message "Stopping Sweep.")
   (sweeprolog--query-once "sweep" "sweep_cleanup_threads" nil)
@@ -734,11 +734,12 @@ extra initialization arguments."
   (setq sweeprolog--initialized       nil
         sweeprolog-prolog-server-port nil))
 
-(defun sweeprolog-maybe-shutdown ()
+(defun sweeprolog-shutdown ()
   "Ask before killing running top-levels and shutdown Prolog."
-  (when (sweeprolog-maybe-kill-top-levels)
-    (sweeprolog-shutdown)
-    t))
+  (interactive)
+  (if (sweeprolog-maybe-kill-top-levels)
+      (sweeprolog--shutdown)
+    (user-error "Cannot restart Sweep with running top-levels")))
 
 (defun sweeprolog-restart (&rest args)
   "Restart the embedded Prolog runtime.
@@ -754,11 +755,10 @@ Otherwise set ARGS to nil."
     current-prefix-arg
     (fboundp 'split-string-shell-command)
     (split-string-shell-command (read-string "swipl arguments: "))))
-  (if (sweeprolog-maybe-shutdown)
-      (progn
-        (sit-for 1)
-        (apply #'sweeprolog-init args))
-    (user-error "Cannot restart Sweep with running top-levels")))
+  (sweeprolog-shutdown)
+  (progn
+    (sit-for 1)
+    (apply #'sweeprolog-init args)))
 
 (defun sweeprolog--open-query (ctx mod fun arg &optional rev)
   "Ensure that Prolog is initialized and execute a new query.
