@@ -11,6 +11,22 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.25.1 on 2023-09-22
+
+** New command ~sweeprolog-query-replace-term~
+
+This commands lets you replace terms in the current buffer by
+transforming them interactively.  You can use to perform very precise
+yet highly flexible code transformations.  See the new manual section
+"Term Replace" or type ~C-h f sweeprolog-query-replace-term~ for more
+details.
+
+** Faster ~sweeprolog-term-search~
+
+This version includes a reimplementation of the
+~sweeprolog-term-search~ command that is both simpler and much more
+performant.
+
 * Version 0.25.0 on 2023-09-17
 
 ** Snappier query highlighting in Sweep top-levels
