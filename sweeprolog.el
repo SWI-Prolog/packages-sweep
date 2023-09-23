@@ -59,13 +59,9 @@
   '(sweeprolog-maybe-extract-region-to-predicate
     sweeprolog-maybe-insert-next-clause
     sweeprolog-maybe-define-predicate)
-  "Hook of functions that insert a Prolog term in a certain context.
+  "List of functions that insert a Prolog term in a certain context.
 
-Each hook function is called with four arguments describing the
-current context.  The first argument, POINT, is the buffer
-position in which insertion should take place.  The rest of the
-arguments, KIND, BEG and END, describe the previous non-comment
-Prolog token as returned from `sweeprolog-last-token-boundaries'.")
+See `sweeprolog-insert-term-dwim' for more details.")
 
 (defvar sweeprolog-mode-syntax-table
   (let ((table (make-syntax-table)))
@@ -3845,24 +3841,29 @@ of the prefix argument."
     (goto-char point)
     (sweeprolog-forward-hole)))
 
-(defun sweeprolog-maybe-insert-next-clause (point kind beg end)
-  (when-let ((current-predicate (and (eq kind 'operator)
-                                     (string= "." (buffer-substring-no-properties beg end))
-                                     (sweeprolog-definition-at-point point))))
-    (let ((functor (nth 1 current-predicate))
-          (arity   (nth 2 current-predicate))
-          (neck    (nth 4 current-predicate))
-          (module  (nth 5 current-predicate)))
-      (goto-char end)
-      (end-of-line)
-      (sweeprolog-insert-clause functor
-                                arity
-                                neck
-                                module)
-      t)))
+(defun sweeprolog-maybe-insert-next-clause (point _arg)
+  (let* ((bounds (sweeprolog-last-token-boundaries point))
+         (kind (car bounds))
+         (beg  (cadr bounds))
+         (end  (caddr bounds)))
+    (when-let ((current-predicate (and (eq kind 'operator)
+                                       (string= "." (buffer-substring-no-properties beg end))
+                                       (sweeprolog-definition-at-point point))))
+      (let ((functor (nth 1 current-predicate))
+            (arity   (nth 2 current-predicate))
+            (neck    (nth 4 current-predicate))
+            (module  (nth 5 current-predicate)))
+        (goto-char end)
+        (end-of-line)
+        (sweeprolog-insert-clause functor
+                                  arity
+                                  neck
+                                  module)
+        t))))
 
 (defun sweeprolog-default-new-predicate-location (&rest _)
-  (sweeprolog-end-of-predicate-at-point))
+  (sweeprolog-end-of-predicate-at-point)
+  (end-of-line))
 
 (defun sweeprolog-new-predicate-location-above-current (&rest _)
   (sweeprolog-beginning-of-predicate-at-point)
@@ -3870,7 +3871,7 @@ of the prefix argument."
                   (point-min))))
     (while (re-search-backward (rx bol "%" (or "%" "!")) last t))))
 
-(defun sweeprolog-maybe-define-predicate (point _kind _beg _end)
+(defun sweeprolog-maybe-define-predicate (point _arg)
   (let ((functor nil)
         (arity nil)
         (neck ":-"))
@@ -3901,22 +3902,19 @@ of the prefix argument."
                                 neck)
       t)))
 
-(defun sweeprolog-insert-term-dwim (&optional point)
+(defun sweeprolog-insert-term-dwim (&optional point arg)
   "Insert an appropriate Prolog term at POINT.
 
-This command calls the functions in
-`sweeprolog-insert-term-functions' one after the other until one
-of them signal success by returning non-nil."
-  (interactive "d" sweeprolog-mode)
+Call the functions in `sweeprolog-insert-term-functions' one
+after the other, with two arguments POINT and ARG, until one of
+them returns non-nil.
+
+Interactively, POINT is point and ARG is the prefix argument."
+  (interactive "d\nP" sweeprolog-mode)
   (setq point (or point (point)))
-  (let* ((bounds (sweeprolog-last-token-boundaries))
-         (kind (car bounds))
-         (beg  (cadr bounds))
-         (end  (caddr bounds)))
-    (unless (run-hook-with-args-until-success
-             'sweeprolog-insert-term-functions
-             point kind beg end)
-      (user-error "No term insertion function applies here"))))
+  (unless (run-hook-with-args-until-success
+           'sweeprolog-insert-term-functions point arg)
+    (user-error "No term insertion function applies here")))
 
 (defun sweeprolog-at-beginning-of-top-term-p ()
   (and (looking-at-p (rx bol graph))
@@ -5857,6 +5855,17 @@ prompt for CLASS as well.  A negative prefix argument
         (message "No matching term found."))
       (mapc #'delete-overlay overlays))))
 
+(defvar sweeprolog-query-replace-term-include-match-function #'always
+  "Function used to filter matching terms for `sweeprolog-query-replace-term'.
+
+This function is called with one argument, a list (BEG END REP),
+describing a term matching the current execution of
+`sweeprolog-query-replace-term'.  BEG and END are the buffer
+positions of the beginning and end of the matching term, and REP
+is the replacement string for that match.  If this function
+returns nil, the corresponding match is filtered out and
+`sweeprolog-query-replace-term' does not suggest replacing it.")
+
 ;;;###autoload
 (defun sweeprolog-query-replace-term (template replacement &optional condition class)
   "Replace some terms after point matching TEMPLATE with REPLACEMENT.
@@ -5923,7 +5932,9 @@ prompt for CLASS as well."
                (overlay-put overlay 'face 'sweeprolog-query-replace-term-match)
                (overlay-put overlay 'sweeprolog-term-replacement rep)
                overlay))
-           items))
+           (seq-filter
+            sweeprolog-query-replace-term-include-match-function
+            items)))
          (count 0)
          (last nil)
          (try nil))
@@ -7099,12 +7110,17 @@ This function is used as a `add-log-current-defun-function' in
 
 ;;;; Extract goals to separate predicates
 
-(defun sweeprolog-extract-region-to-predicate (beg end new)
+(defun sweeprolog-extract-region-to-predicate (beg end new &optional all)
   "Extract the Prolog goal from BEG to END into a new predicate, NEW.
 
-BEG and END are buffer positions; interactively, these are the
-beginning and end of the current region.  NEW is a string used as
-the functor of the new predicate; interactively, this command
+BEG and END are buffer positions, and NEW is a string used as the
+functor of the new predicate.  If the optional argument ALL is
+non-nil, after extracting the selected goal, search for other
+occurrences of this goal in the current buffer and suggest
+replacing them with calls to the newly defined predicate.
+
+Interactively, BEG and END are the beginning and end of the
+current region, ALL is the prefix argument, and this command
 prompts for NEW in the minibuffer.
 
 This command defines the new predicate with arguments based on
@@ -7113,9 +7129,11 @@ clause.
 
 The user option `sweeprolog-new-predicate-location-function' says
 where in the buffer to insert the newly created predicate."
-  (interactive "r\nsNew predicate functor: " sweeprolog-mode)
+  (interactive "r\nsNew predicate functor: \np" sweeprolog-mode)
   ;; TODO - check that NEW isn't already used
   (let* ((name (sweeprolog-format-string-as-atom new))
+         (head nil)
+         (neck nil)
          (body (buffer-substring-no-properties beg end))
          (vars (condition-case error
                    (sweeprolog--query-once "sweep" "sweep_term_variable_names"
@@ -7128,8 +7146,8 @@ where in the buffer to insert the newly created predicate."
                              "scope would change as a result of this "
                              "operation.  Continue?"))))
         (message "Canceled.")
+      (goto-char beg)
       (combine-after-change-calls
-        (goto-char beg)
         (delete-region beg end)
         (insert name)
         (let* ((clause-beg (save-excursion
@@ -7144,33 +7162,51 @@ where in the buffer to insert the newly created predicate."
                                             (buffer-substring-no-properties
                                              clause-beg clause-end))
                   (prolog-exception (sweeprolog-local-variables-collection))))
-               (neck (or (nth 4 (sweeprolog-definition-at-point)) ":-"))
-               (args (seq-intersection vars clause-vars #'string=)))
-          (when args
-            (insert "(" (mapconcat #'identity args ", ") ")"))
+               (args (seq-intersection vars clause-vars #'string=))
+               (args-string (when args
+                              (concat "("
+                                      (mapconcat #'identity args ", ")
+                                      ")"))))
+          (setq head (concat name args-string)
+                neck (or (nth 4 (sweeprolog-definition-at-point)) ":-"))
+          (when args-string (insert args-string))
           (funcall sweeprolog-new-predicate-location-function
                    name (length args) neck)
-          (let ((def-beg (1+ (point))))
-            (insert (concat "\n"
-                            name
-                            (when args
-                              (concat "(" (mapconcat #'identity args ", ") ")"))
-                            " "
-                            neck
-                            "\n"
-                            body
-                            ".\n"))
+          (let ((def-beg (1+ (point)))
+                (clause (concat "\n"
+                                head
+                                " "
+                                neck
+                                "\n"
+                                body
+                                ".\n")))
+            (insert clause)
             (indent-region-line-by-line def-beg (point))
-            (goto-char def-beg)
-            (sweeprolog-analyze-buffer)))))))
+            (goto-char def-beg))))
+      (when all
+        (let ((body-beg
+               (+ 2 (point)
+                  (length head)
+                  (length neck)
+                  sweeprolog-indent-offset)))
+          (save-excursion
+            (goto-char (point-min))
+            (let ((sweeprolog-query-replace-term-include-match-function
+                   (pcase-lambda (`(,beg . ,_))
+                     (not (= beg body-beg)))))
+              (deactivate-mark)
+              (sweeprolog-query-replace-term
+               body head "true" '(goal))))))
+      (sweeprolog-analyze-buffer))))
 
-(defun sweeprolog-maybe-extract-region-to-predicate (&rest _)
+(defun sweeprolog-maybe-extract-region-to-predicate (_point arg)
   (when (and (use-region-p)
              (sweeprolog-context-callable-p (use-region-beginning)))
     (sweeprolog-extract-region-to-predicate
      (use-region-beginning)
      (use-region-end)
-     (read-string "Extract region to new predicate: "))
+     (read-string "Extract region to new predicate: ")
+     arg)
     t))
 
 ;;;; Bug Reports

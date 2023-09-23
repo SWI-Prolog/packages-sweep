@@ -2149,16 +2149,23 @@ inserting a Prolog term based on the current context.
 
 To determine which term to insert and exactly where, the command
 @code{sweeprolog-insert-term-dwim} calls the functions in the list
-held by the variable @code{sweeprolog-insert-term-functions} one after
-the other until one of the functions signal success by returning
-non-@code{nil}.
+@code{sweeprolog-insert-term-functions} one after the other until one
+of them succeeds.  The functions on this list are called @dfn{term
+insertion functions}, each insertion function takes two
+arguments---the position where you invoke
+@code{sweeprolog-insert-term-dwim} and the prefix argument you give
+it, if any---and returns non-@code{nil} after performing its specific
+insertion if it is applicable in the current context.
 
-By default, @code{sweeprolog-insert-term-dwim} tries the following
-insertion functions, in order:
+By default, @code{sweeprolog-insert-term-functions} contains the
+following insertion functions:
 
 @defun sweeprolog-maybe-extract-region-to-predicate
 If the region is active and selects a goal, extract the selected goal
-into a separate predicate.  @xref{Extract Goal}.
+into a separate predicate.  With a prefix argument, also suggest
+replacing other goals in the buffer that the selected goal subsumes
+with invocations of the new predicate that this function creates.
+@xref{Extract Goal}.
 @end defun
 
 @defun sweeprolog-maybe-insert-next-clause
@@ -2717,6 +2724,14 @@ By default, @code{sweeprolog-extract-region-to-predicate} is not bound
 directly to any key in Sweep Prolog mode; instead, you can invoke it
 by typing @kbd{M-@key{RET}} (@code{sweeprolog-insert-term-dwim}) when
 the region is active.  @xref{Insert Term DWIM}.
+
+If you invoke @code{sweeprolog-extract-region-to-predicate} with a
+prefix argument---either directly or via
+@code{sweeprolog-insert-term-dwim} by typing @kbd{C-u M-@key{RET}}
+with an active region---then after extracting the selected goal to a
+new predicate, this command searches the current buffer for other
+goals that the selected goal subsumes, and suggests replacing them
+with invocations of the newly defined predicate.  @xref{Term Replace}.
 
 With Context Menu mode enabled, you can also invoke this command by
 right-clicking on an active region and selecting @samp{Extract to New
