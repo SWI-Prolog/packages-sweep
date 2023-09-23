@@ -1397,6 +1397,8 @@ sweep_replace_update_state(_FileName, _Module, '=>', 2, 2, clause, goal(0)) :- !
 sweep_replace_update_state(_FileName, _Module, '-->', 2, 1, clause, head) :- !.
 sweep_replace_update_state(_FileName, _Module, '-->', 2, 2, clause, goal(2)) :- !.
 sweep_replace_update_state(_FileName, _Module, _Functor, _Arity, _I, clause, data) :- !.
+sweep_replace_update_state(_FileName, _Module, ',', 2, 1, head, head) :- !.     %  SSU head
+sweep_replace_update_state(_FileName, _Module, ',', 2, 2, head, goal(0)) :- !.  %  SSU guard
 sweep_replace_update_state(_FileName, _Module, _Functor, _Arity, _I, head, data) :- !.
 sweep_replace_update_state(_FileName, Module, Functor, Arity, I, goal(N0), State) :-
     pi_head(Functor/Arity,Head),
