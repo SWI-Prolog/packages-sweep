@@ -7139,7 +7139,8 @@ where in the buffer to insert the newly created predicate."
                    (sweeprolog--query-once "sweep" "sweep_term_variable_names"
                                            body)
                  (prolog-exception
-                  (user-error "Region does not contain a valid Prolog term")))))
+                  (user-error "Region does not contain a valid Prolog term"))))
+         (def-end nil))
     (if (and (sweeprolog--query-once "sweep" "sweep_goal_may_cut" body)
              (not (y-or-n-p (concat
                              "The selected goal contains a cut whose "
@@ -7182,18 +7183,15 @@ where in the buffer to insert the newly created predicate."
                                 ".\n")))
             (insert clause)
             (indent-region-line-by-line def-beg (point))
+            (setq def-end (point))
             (goto-char def-beg))))
       (when all
-        (let ((body-beg
-               (+ 2 (point)
-                  (length head)
-                  (length neck)
-                  sweeprolog-indent-offset)))
+        (let ((def-beg (point)))
           (save-excursion
             (goto-char (point-min))
             (let ((sweeprolog-query-replace-term-include-match-function
-                   (pcase-lambda (`(,beg . ,_))
-                     (not (= beg body-beg)))))
+                   (pcase-lambda (`(,beg ,end . ,_))
+                     (not (<= def-beg beg end def-end)))))
               (deactivate-mark)
               (sweeprolog-query-replace-term
                body head "true" '(goal))))))
