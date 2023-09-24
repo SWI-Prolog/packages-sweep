@@ -2328,6 +2328,24 @@ inside a comment, string or quoted atom."
   "Face for highlighting the current term replacement match."
   :group 'sweeprolog-faces)
 
+(defface sweeprolog-query-replace-term-prompt-old
+  '((((class color) (min-colors 88) (background light))
+     :background "#ffdddd" :extend t)
+    (((class color) (min-colors 88) (background dark))
+     :background "#553333" :extend t)
+    (((class color))
+     :foreground "red" :extend t))
+  "Face to use for the old term in `sweeprolog-query-replace-term' queries.")
+
+(defface sweeprolog-query-replace-term-prompt-new
+  '((((class color) (min-colors 88) (background light))
+     :background "#ddffdd" :extend t)
+    (((class color) (min-colors 88) (background dark))
+     :background "#335533" :extend t)
+    (((class color))
+     :foreground "green" :extend t))
+  "Face to use for the new term in `sweeprolog-query-replace-term' queries.")
+
 ;;;; Font-lock
 
 (defun sweeprolog-analyze-start-font-lock (beg end)
@@ -5967,9 +5985,9 @@ prompt for CLASS as well."
               (pcase
                   (car (read-multiple-choice
                         (mapconcat #'identity
-                                   (list "Replace" (propertize cur 'face 'diff-removed)
+                                   (list "Replace" (propertize cur 'face 'sweeprolog-query-replace-term-prompt-old)
                                          (if try "back to" "with")
-                                         (propertize rep 'face 'diff-added)
+                                         (propertize rep 'face 'sweeprolog-query-replace-term-prompt-new)
                                          "?")
                                    (if (or (string-search "\n" cur)
                                            (string-search "\n" rep))
