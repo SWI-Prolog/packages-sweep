@@ -1358,7 +1358,7 @@ sweep_replace_term_r(term_position(From, To, _, _, ArgsPos), Term, FileName, Mod
         ),
         (   Functor = ':',
             atom(Left),
-            State0 = goal(_)
+            member(State0, [goal(_),head])
         ->  Module = Left,
             LeftState = module,
             RightState = State0
