@@ -1770,4 +1770,17 @@ f:o(Bar) --> baz(Bar)."
   (forward-line)
   (should (string= (add-log-current-defun) "f:o//1")))
 
+(sweeprolog-deftest up-list ()
+  "Test `up-list' support."
+  "
+foo((A,B)) =>
+    (   bar(-!-A)
+    ;   baz(B)
+    ).
+"
+  (call-interactively #'up-list)
+  (should (= (point) 30))
+  (call-interactively #'up-list)
+  (should (= (point) 51)))
+
 ;;; sweeprolog-tests.el ends here
