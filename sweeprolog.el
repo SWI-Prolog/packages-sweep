@@ -439,6 +439,15 @@ pack completion candidates."
   :package-version '((sweeprolog "0.22.2"))
   :type 'natnum)
 
+(defcustom sweeprolog-top-level-use-pty
+  (not (memq system-type '(ms-dos windows-nt)))
+  "Whether to communicate with top-levels using pseudo-terminal (\"pty\").
+
+By default, this is t on systems where Emacs can use a pty."
+  :package-version '((sweeprolog "0.25.0"))
+  :type 'boolean)
+
+
 ;;;; Keymaps
 
 (defvar-keymap sweeprolog-mode-map
@@ -3202,12 +3211,6 @@ function with PROC and MSG."
     (set-process-sentinel (get-buffer-process buf)
                           #'sweeprolog-top-level-sentinel)
     (add-hook 'kill-buffer-hook #'comint-write-input-ring nil t)))
-
-(defcustom sweeprolog-top-level-use-pty
-  (not (memq system-type '(ms-dos windows-nt)))
-  "Whether to communicate with top-levels using pseudo-terminal (\"pty\").
-
-By default, this is t on systems where Emacs can use a pty.")
 
 (defun sweeprolog-top-level-buffer (&optional name)
   "Return a Prolog top-level buffer named NAME.
