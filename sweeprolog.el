@@ -132,7 +132,7 @@ simplest form, this may be a string or a character.
 This user option may be useful, for example, to include copyright
 notices with the module header."
   :package-version '((sweeprolog . "0.4.6"))
-  :type 'any)
+  :type 'sexp)
 
 (defcustom sweeprolog-indent-offset 4
   "Number of columns to indent with in `sweeprolog-mode' buffers."
@@ -460,9 +460,7 @@ pack completion candidates."
   "C-c C-s" #'sweeprolog-term-search
   "C-c C-t" #'sweeprolog-top-level
   "C-c C-u" #'sweeprolog-update-dependencies
-  "C-c C-`"  (if (fboundp 'flymake-show-buffer-diagnostics) ;; Flymake 1.2.1+
-                 #'sweeprolog-show-diagnostics
-               #'flymake-show-diagnostics-buffer)
+  "C-c C-`" #'sweeprolog-show-diagnostics
   "C-c C-&" #'sweeprolog-async-goal
   "C-c C-%" #'sweeprolog-make-example-usage-comment
   "C-c C--" #'sweeprolog-decrement-numbered-variables
@@ -5791,7 +5789,7 @@ prompt for CLASS as well.  A negative prefix argument
            (sweeprolog-term-replace-edits (buffer-file-name) template
                                           "true" condition class)))
          (groups
-          (seq-group-by (pcase-lambda (`(,beg ,end ,_)) (< beg (point)))
+          (seq-group-by (pcase-lambda (`(,beg ,_ ,_)) (< beg (point)))
                         items))
          (after-point (alist-get nil groups))
          (before-point (alist-get t groups))
@@ -7153,7 +7151,7 @@ where in the buffer to insert the newly created predicate."
          (head nil)
          (neck nil)
          (body (buffer-substring-no-properties beg end))
-         (vars (condition-case error
+         (vars (condition-case nil
                    (sweeprolog--query-once "sweep" "sweep_term_variable_names"
                                            body)
                  (prolog-exception
@@ -7176,7 +7174,7 @@ where in the buffer to insert the newly created predicate."
                              (sweeprolog-end-of-top-term)
                              (point)))
                (clause-vars
-                (condition-case error
+                (condition-case nil
                     (sweeprolog--query-once "sweep" "sweep_term_variable_names"
                                             (buffer-substring-no-properties
                                              clause-beg clause-end))
