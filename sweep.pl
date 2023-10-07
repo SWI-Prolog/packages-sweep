@@ -1273,7 +1273,6 @@ sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, Te
     sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Tail).
 
 
-
 %!  sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result) is nondet.
 
 sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result) :-
@@ -1439,8 +1438,7 @@ sweep_replace_term_(Pos, Term, _FileName, Module, _BodyIndent, CurrentIndent, Pr
               asserta(sweep_match_replacement(New0))
           ),
     retract(sweep_match_replacement(New)),
-    arg(1, Pos, Beg),
-    arg(2, Pos, End).
+    pos_bounds(Pos, Beg, End).
 
 list_tail([_|T0], T) :- nonvar(T0), T0 = [_|_], !, list_tail(T0, T).
 list_tail([_|T], T).
@@ -1472,8 +1470,7 @@ sweep_terms_at_point([String, Start, Point], Res) :-
 
 sweep_terms_at_point_(SubPos, Start, Point, Beg, End) :-
     SubPos \= parentheses_term_position(_, _, _),
-    arg(1, SubPos, Beg0),
-    arg(2, SubPos, End0),
+    pos_bounds(SubPos, Beg0, End0),
     Beg0 =< Point,
     Point =< End0,
     Beg is Beg0 + Start,
@@ -1494,6 +1491,10 @@ sweep_terms_at_point_(parentheses_term_position(_, _, SubPos), Start, Point, Beg
     sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
 sweep_terms_at_point_(quasi_quotation_position(_, _, _, SubPos, _), Start, Point, Beg, End) :-
     sweep_terms_at_point_(SubPos, Start, Point, Beg, End).
+
+pos_bounds(SubPos, Beg0, End0) :-
+    arg(1, SubPos, Beg0),
+    arg(2, SubPos, End0).
 
 sweep_predicate_dependencies([To0|From0], Deps) :-
     atom_string(To, To0),
