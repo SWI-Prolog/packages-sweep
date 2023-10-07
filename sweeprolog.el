@@ -7130,8 +7130,7 @@ clause.
 The user option `sweeprolog-new-predicate-location-function' says
 where in the buffer to insert the newly created predicate."
   (interactive "r\nsNew predicate functor: \nP" sweeprolog-mode)
-  (let* ((module (sweeprolog-buffer-module))
-         (pred-beg nil)
+  (let* ((pred-beg nil)
          (pred-end nil)
          (clause-beg (save-excursion
                        (goto-char end)
@@ -7178,8 +7177,8 @@ where in the buffer to insert the newly created predicate."
                     functor arity neck)
            (setq pred-beg (1+ (point)))
            (insert "\n" head " " neck "\n" body ".\n")
+           (indent-region-line-by-line pred-beg (point))
            (setq pred-end (point))
-           (indent-region-line-by-line pred-beg pred-end)
            (goto-char pred-beg))
          (deactivate-mark)
          (when all
