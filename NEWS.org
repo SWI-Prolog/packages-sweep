@@ -11,6 +11,18 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.25.3 on 2023-10-07
+
+** ~sweeprolog-extract-region-to-predicate~ now supports lambda terms and existentially quantified goals
+
+The command ~sweeprolog-extract-region-to-predicate~ now supports
+extracting ~library(yall)~ lambda terms to separate predicate
+definitions.  The new ~sweeprolog-extract-region-to-predicate~ also
+improves the handling of existentially quantified goals (~X^Y^Goal~),
+and in-clause disjunctions.
+
+** Various minor bug fixes and documentation improvements
+
 * Version 0.25.2 on 2023-09-23
 
 ** ~sweeprolog-extract-region-to-predicate~ can now replace all occurrences of the extracted goal in the buffer
