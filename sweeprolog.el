@@ -4215,36 +4215,6 @@ work."
             (sweeprolog-read-predicate-documentation mod fun ari neck)))
     (_ (user-error "No predicate found at point"))))
 
-(defun sweeprolog-token-boundaries (&optional pos)
-  (let ((point (or pos (point))))
-    (save-excursion
-      (goto-char point)
-      (unless (eobp)
-       (let ((beg (point))
-             (syn (char-syntax (char-after))))
-         (cond
-          ((or (= syn ?w) (= syn ?_))
-           (skip-syntax-forward "w_")
-           (if (= (char-syntax (char-after)) ?\()
-               (progn
-                 (forward-char)
-                 (list 'functor beg (point)))
-             (list 'symbol beg (point))))
-          ((= syn ?\")
-           (forward-char)
-           (while (and (not (eobp)) (nth 3 (syntax-ppss)))
-             (forward-char))
-           (list 'string beg (point)))
-          ((= syn ?.)
-           (skip-syntax-forward ".")
-           (list 'operator beg (point)))
-          ((= syn ?\()
-           (list 'open beg (point)))
-          ((= syn ?\))
-           (list 'close beg (point)))
-          ((= syn ?>) nil)
-          (t (list 'else beg (point)))))))))
-
 (defun sweeprolog-next-token-boundaries (&optional pos)
   (let ((point (or pos (point))))
     (save-excursion
