@@ -2714,7 +2714,10 @@ that the goal to extract shares with the containing clause.
 If the selected goal contains a cut whose scope would change as a
 result of being extracted from the current clause,
 @code{sweeprolog-extract-region-to-predicate} warns you about it and
-asks you to confirm before continuing.
+asks you to confirm before continuing.  If your code already includes
+a definition for the predicate that
+@code{sweeprolog-extract-region-to-predicate} would define, this
+command similarly warns you and asks for confirmation.
 
 If you call @code{sweeprolog-extract-region-to-predicate} when the
 region does not contain a valid Prolog term, this command complains

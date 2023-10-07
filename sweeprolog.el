@@ -7105,6 +7105,11 @@ This function is used as a `add-log-current-defun-function' in
 
 ;;;; Extract goals to separate predicates
 
+(defun sweeprolog--extract-goal (str beg end new &optional file-name)
+  (sweeprolog--query-once "sweep" "sweep_extract_goal"
+                          (list str beg end new (or file-name
+                                                    (buffer-file-name)))))
+
 (defun sweeprolog-extract-region-to-predicate (beg end new &optional all)
   "Extract the Prolog goal from BEG to END into a new predicate, NEW.
 
@@ -7124,73 +7129,68 @@ clause.
 
 The user option `sweeprolog-new-predicate-location-function' says
 where in the buffer to insert the newly created predicate."
-  (interactive "r\nsNew predicate functor: \np" sweeprolog-mode)
-  ;; TODO - check that NEW isn't already used
-  (let* ((name (sweeprolog-format-string-as-atom new))
-         (head nil)
-         (neck nil)
-         (body (buffer-substring-no-properties beg end))
-         (vars (condition-case nil
-                   (sweeprolog--query-once "sweep" "sweep_term_variable_names"
-                                           body)
-                 (prolog-exception
-                  (user-error "Region does not contain a valid Prolog term"))))
-         (def-end nil))
-    (if (and (sweeprolog--query-once "sweep" "sweep_goal_may_cut" body)
-             (not (y-or-n-p (concat
-                             "The selected goal contains a cut whose "
-                             "scope would change as a result of this "
-                             "operation.  Continue?"))))
-        (message "Canceled.")
-      (goto-char beg)
-      (combine-after-change-calls
-        (delete-region beg end)
-        (insert name)
-        (let* ((clause-beg (save-excursion
-                             (sweeprolog-beginning-of-top-term)
-                             (point)))
-               (clause-end (save-excursion
-                             (sweeprolog-end-of-top-term)
-                             (point)))
-               (clause-vars
-                (condition-case nil
-                    (sweeprolog--query-once "sweep" "sweep_term_variable_names"
-                                            (buffer-substring-no-properties
-                                             clause-beg clause-end))
-                  (prolog-exception (sweeprolog-local-variables-collection))))
-               (args (seq-intersection vars clause-vars #'string=))
-               (args-string (when args
-                              (concat "("
-                                      (mapconcat #'identity args ", ")
-                                      ")"))))
-          (setq head (concat name args-string)
-                neck (or (nth 4 (sweeprolog-definition-at-point)) ":-"))
-          (when args-string (insert args-string))
-          (funcall sweeprolog-new-predicate-location-function
-                   name (length args) neck)
-          (let ((def-beg (1+ (point)))
-                (clause (concat "\n"
-                                head
-                                " "
-                                neck
-                                "\n"
-                                body
-                                ".\n")))
-            (insert clause)
-            (indent-region-line-by-line def-beg (point))
-            (setq def-end (point))
-            (goto-char def-beg))))
-      (when all
-        (let ((def-beg (point)))
-          (save-excursion
-            (goto-char (point-min))
-            (let ((sweeprolog-query-replace-term-include-match-function
-                   (pcase-lambda (`(,beg ,end . ,_))
-                     (not (<= def-beg beg end def-end)))))
-              (deactivate-mark)
-              (sweeprolog-query-replace-term
-               body head "true" '(goal))))))
-      (sweeprolog-analyze-buffer))))
+  (interactive "r\nsNew predicate functor: \nP" sweeprolog-mode)
+  (let* ((module (sweeprolog-buffer-module))
+         (pred-beg nil)
+         (pred-end nil)
+         (clause-beg (save-excursion
+                       (goto-char end)
+                       (sweeprolog-beginning-of-top-term)
+                       (point)))
+         (clause-end (save-excursion
+                       (goto-char beg)
+                       (sweeprolog-end-of-top-term)
+                       (point)))
+         (clause-str (buffer-substring-no-properties clause-beg
+                                                     clause-end)))
+    (pcase
+        (condition-case error
+            (sweeprolog--extract-goal clause-str
+                                      (- beg clause-beg)
+                                      (- end clause-beg)
+                                      new)
+          (prolog-exception
+           (pcase error
+             (`(prolog-exception
+                compound "error"
+                (compound "syntax_error" ,_)
+                ,_)
+              (user-error "Cannot extract goal from invalid term!")))))
+      ('nil (user-error (format "Selection %s is not a valid goal!" (buffer-substring-no-properties beg end))))
+      (`(,call ,head ,neck ,body ,safe ,functor ,arity ,in-use)
+       (cond
+        ((or (and (not safe)
+                  (not (y-or-n-p (concat
+                                  "The selected goal contains a cut whose "
+                                  "scope may change as a result of this "
+                                  "operation.  Continue?"))))
+             (and in-use
+              (not (y-or-n-p (concat
+                              "Predicate %s:%s/%d is already defined.  "
+                              "Continue?")))))
+         (message "Canceled."))
+        (t
+         (goto-char beg)
+         (combine-after-change-calls
+           (delete-region beg end)
+           (insert call)
+           (funcall sweeprolog-new-predicate-location-function
+                    functor arity neck)
+           (setq pred-beg (1+ (point)))
+           (insert "\n" head " " neck "\n" body ".\n")
+           (setq pred-end (point))
+           (indent-region-line-by-line pred-beg pred-end)
+           (goto-char pred-beg))
+         (deactivate-mark)
+         (when all
+           (save-excursion
+             (goto-char (point-min))
+             (let ((sweeprolog-query-replace-term-include-match-function
+                    (pcase-lambda (`(,beg ,end . ,_))
+                      (not (<= pred-beg beg end pred-end)))))
+               (sweeprolog-query-replace-term
+                body head "true" '(goal)))))
+         (sweeprolog-analyze-buffer)))))))
 
 (defun sweeprolog-maybe-extract-region-to-predicate (_point arg)
   (when (and (use-region-p)

@@ -93,12 +93,12 @@
             sweep_head_functors_collection/2,
             sweep_functors_collection/2,
             sweep_compound_functors_collection/2,
-            sweep_term_variable_names/2,
             sweep_goal_may_cut/2,
             sweep_top_level_start_pty/2,
             sweep_cleanup_threads/2,
             sweep_kill_thread/2,
-            sweep_list_threads/2
+            sweep_list_threads/2,
+            sweep_extract_goal/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -1670,7 +1670,7 @@ sweep_variable_start_code(C, _) :- code_type(C, prolog_var_start).
 
 sweep_term_variable_names(String, Names) :-
     term_string(_, String, [variable_names(VarNames)]),
-    maplist([Atom=_,Name]>>atom_string(Atom, Name), VarNames, Names).
+    maplist([Atom=_,Atom]>>true, VarNames, Names).
 
 sweep_goal_may_cut(String, _) :-
     term_string(Goal, String),
@@ -1693,3 +1693,316 @@ sweep_goal_may_cut_(!) =>
     true.
 sweep_goal_may_cut_(_) =>
     false.
+
+strip_parens(parentheses_term_position(_,_,Pos0), Pos, _, Pri) :-
+    !,
+    strip_parens(Pos0, Pos, 1200, Pri).
+strip_parens(Pos, Pos, Pri, Pri).
+
+clause_body_pos_neck(C,P0,B,BP,N,R) :-
+    strip_parens(P0,P,1199,R),
+    clause_body_pos_neck_(C,P,B,BP,N).
+
+clause_body_pos_neck_((:-B), term_position(_,_,_,_,[BP]), B, BP,0) :- !.
+clause_body_pos_neck_((_:-B), term_position(_,_,_,_,[_,BP]), B, BP,0) :- !.
+clause_body_pos_neck_((_=>B), term_position(_,_,_,_,[_,BP]), B, BP,0) :- !.
+clause_body_pos_neck_((_-->B), term_position(_,_,_,_,[_,BP]), B, BP,//).
+
+sweep_extract_goal([ClauseString,GoalBeg,GoalEnd,Functor0,FileName0],
+                   [Call,Head,Neck,Body,Safe,Functor,Arity,Exists]) :-
+    Result = result(Call, Head, Body, Safe, Arity, Neck, Exists),
+    atom_string(Functor1, Functor0),
+    term_string(Functor1, Functor),
+    atom_string(FileName, FileName0),
+    xref_source(FileName),
+    sweep_module_path_(Mod, FileName),
+    term_string(Clause, ClauseString, [subterm_positions(Pos0),
+                                       variable_names(ClauseVarNames),
+                                       module(Mod)]),
+    clause_body_pos_neck(Clause, Pos0, Body0, Pos, Meta, Pri),
+    pos_bounds(Pos, PosBeg, PosEnd),
+    (   GoalBeg =< PosBeg, PosEnd =< GoalEnd
+    ->  sweep_extract_this_goal(ClauseString, ClauseVarNames, Functor1, Body0, Pos, 0, false, Meta, Mod, Pri, Result)
+    ;   sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Functor1, Body0, Pos, 0, false, Meta, Mod, Pri, Result)
+    ).
+
+sweep_extract_goal_r(_, _, _, _, _, _, _,
+                     Pos, _, _, _, _, _, _) :-
+    var(Pos),
+    !,
+    fail.
+sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, {Goal},
+                     brace_term_position(_, _, Pos), Offset, Safe0, '//', Mod, _Pri, Result) :-
+    !,
+    Pri = 1199,
+    pos_bounds(Pos, PosBeg, PosEnd),
+    (   GoalBeg =< PosBeg, PosEnd =< GoalEnd
+    ->  sweep_extract_this_goal(ClauseString, ClauseVarNames, Func, Goal, Pos, Offset, Safe0, 0, Mod, Pri, Result)
+    ;   sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, Pos, Offset, Safe0, 0, Mod, Pri, Result)
+    ).
+sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal,
+                     parentheses_term_position(_, _, Pos), Offset, Safe0, Meta, Mod, _Pri, Result) :-
+    !,
+    Pri = 1199,
+    pos_bounds(Pos, PosBeg, PosEnd),
+    (   GoalBeg =< PosBeg, PosEnd =< GoalEnd
+    ->  sweep_extract_this_goal(ClauseString, ClauseVarNames, Func, Goal, Pos, Offset, Safe0, Meta, Mod, Pri, Result)
+    ;   sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, Pos, Offset, Safe0, Meta, Mod, Pri, Result)
+    ).
+sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal,
+                     term_position(Beg,End,_,_,PosList), Offset, Safe0, Meta, Mod, Pri, Result) :-
+    !,
+    (   @(predicate_property(Goal, meta_predicate(Spec)), Mod)
+    ->  true
+    ;   ignore(catch(infer_meta_predicate(Goal, Spec),
+                     error(permission_error(access, private_procedure, _),
+                           context(system:clause/2, _)),
+                     false))
+    ),
+    sweep_extract_goal_term(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, 1, Beg, End, Spec, PosList, PosList, Offset, Safe0, Meta, Mod, Pri, Result).
+
+sweep_extract_goal_term(FileName, ClauseString0, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, ArgIndex, Beg, End, Spec,
+                        [Pos|Tail], PosList, Offset0, Safe0, Meta0, Mod0, Pri0, Result) :-
+    arg(ArgIndex, Goal, Arg),
+    pos_bounds(Pos, PosBeg, PosEnd),
+    (   GoalBeg =< PosBeg, PosEnd =< GoalEnd
+    ->  sweep_extract_goal_update_state(FileName, Goal, ArgIndex, PosBeg, PosEnd, PosList, Beg, End, Spec,
+                                        ClauseString0, Offset0, Safe0, Meta0, Mod0,
+                                        ClauseString, Offset, Safe1, Meta, Mod, Pri),
+        sweep_extract_this_goal(ClauseString, ClauseVarNames, Func, Arg, Pos, Offset, Safe1, Meta, Mod, Pri, Result)
+    ;   PosBeg =< GoalBeg, GoalEnd =< PosEnd
+    ->  sweep_extract_goal_update_state(FileName, Goal, ArgIndex, PosBeg, PosEnd, PosList, Beg, End, Spec,
+                                        ClauseString0, Offset0, Safe0, Meta0, Mod0,
+                                        ClauseString, Offset, Safe1, Meta, Mod, Pri),
+        sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Arg, Pos, Offset, Safe1, Meta, Mod, Pri, Result)
+    ;   ArgIndex1 is ArgIndex + 1,
+        sweep_extract_goal_term(FileName, ClauseString0, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, ArgIndex1, Beg, End, Spec,
+                                Tail, PosList, Offset0, Safe0, Meta0, Mod0, Pri0, Result)
+    ).
+
+sweep_extract_goal_update_state(FileName, Goal, ArgIndex, ArgBeg, ArgEnd, PosList, Beg, End, Spec,
+                                ClauseString0, Offset0, Safe0, Meta0, Mod0,
+                                ClauseString, Offset, Safe, Meta, Mod, Pri) :-
+    sweep_extract_goal_update_module(Goal, ArgIndex, Mod0, Mod),
+    sweep_extract_goal_update_meta(Spec, ArgIndex, Meta0, Meta),
+    sweep_extract_goal_update_precedence(FileName, Goal, ArgIndex, ArgBeg, ArgEnd, Beg, End, Pri),
+    sweep_extract_goal_update_safety(Goal, ArgIndex, Safe0, Safe),
+    sweep_extract_goal_update_clause_string(Goal, ArgIndex, PosList, ClauseString0, Offset0, ClauseString, Offset).
+
+sweep_extract_goal_update_clause_string((_;_), 1, [_,AltPos], ClauseString0, Offset, ClauseString, Offset) :-
+    !,
+    pos_bounds(AltPos, AltBeg, AltEnd),
+    sub_string(ClauseString0, 0, AltBeg, _, ClauseBeforeAlt),
+    sub_string(ClauseString0, AltEnd, _, 0, ClauseAfterAlt),
+    string_concat(ClauseBeforeAlt, "true", ClauseString1),
+    string_concat(ClauseString1, ClauseAfterAlt, ClauseString).
+sweep_extract_goal_update_clause_string((_;_), 2, [AltPos,_], ClauseString0, Offset0, ClauseString, Offset) :-
+    !,
+    pos_bounds(AltPos, AltBeg, AltEnd),
+    Offset is Offset0 + AltEnd - AltBeg - 4,
+    sub_string(ClauseString0, 0, AltBeg, _, ClauseBeforeAlt),
+    sub_string(ClauseString0, AltEnd, _, 0, ClauseAfterAlt),
+    string_concat(ClauseBeforeAlt, "true", ClauseString1),
+    string_concat(ClauseString1, ClauseAfterAlt, ClauseString).
+sweep_extract_goal_update_clause_string(_, _, _, ClauseString, Offset, ClauseString, Offset).
+
+sweep_extract_goal_update_safety((_,_), _, Safe, Safe) :-
+    !.
+sweep_extract_goal_update_safety((_;_), _, Safe, Safe) :-
+    !.
+sweep_extract_goal_update_safety((_->_), 2, Safe, Safe) :-
+    !.
+sweep_extract_goal_update_safety(_, _, _, true).
+
+sweep_extract_goal_update_module(Mod1:_, ArgIndex, _Mod0, Mod) :-
+    atom(Mod1),
+    !,
+    ArgIndex == 2,
+    Mod = Mod1.
+sweep_extract_goal_update_module(_, _, Mod, Mod).
+
+sweep_extract_goal_update_meta(Spec, 2, ^, ^) :-
+    var(Spec),
+    !.
+sweep_extract_goal_update_meta(Spec, _, _, _) :-
+    var(Spec),
+    !,
+    fail.
+sweep_extract_goal_update_meta(Spec, ArgIndex, //, Meta) :-
+    !,
+    arg(ArgIndex, Spec, Meta0),
+    (   Meta0 == 0
+    ->  Meta = '//'
+    ;   Meta = Meta0
+    ).
+sweep_extract_goal_update_meta(Spec, ArgIndex, _Meta0, Meta) :-
+    arg(ArgIndex, Spec, Meta).
+
+sweep_extract_goal_update_precedence(FileName, Goal, ArgIndex, ArgBeg, ArgEnd, Beg, End, Pri) :-
+    compound_name_arity(Goal, F, N),
+    sweep_extract_goal_update_precedence_(FileName, F, N, ArgIndex, ArgBeg, ArgEnd, Beg, End, Pri).
+
+sweep_extract_goal_update_precedence_(FileName, F, 1, 1, Beg, _ArgEnd, Beg, _End, Precedence) :-
+    (   xref_op(FileName, op(Precedence0, Assoc, F))
+    ;   current_op(Precedence0, Assoc, F)
+    ),
+    memberchk(Assoc, [xf,yf]),
+    !,
+    (   Assoc == xf
+    ->  Precedence is Precedence0 - 1
+    ;   Precedence = Precedence0
+    ).
+sweep_extract_goal_update_precedence_(FileName, F, 1, 1, _ArgBeg, End, _Beg, End, Precedence) :-
+    (   xref_op(FileName, op(Precedence0, Assoc, F))
+    ;   current_op(Precedence0, Assoc, F)
+    ),
+    memberchk(Assoc, [fx,fy]),
+    !,
+    (   Assoc == fx
+    ->  Precedence is Precedence0 - 1
+    ;   Precedence = Precedence0
+    ).
+sweep_extract_goal_update_precedence_(FileName, F, 2, 1, Beg, _ArgEnd, Beg, _End, Precedence) :-
+    (   xref_op(FileName, op(Precedence0, Assoc, F))
+    ;   current_op(Precedence0, Assoc, F)
+    ),
+    memberchk(Assoc, [xfx, xfy, yfy, yfx]),
+    !,
+    (   Assoc == xfx
+    ->  Precedence is Precedence0 - 1
+    ;   Assoc == xfy
+    ->  Precedence is Precedence0 - 1
+    ;   Assoc == yfx
+    ->  Precedence = Precedence0
+    ;   Assoc == yfy
+    ->  Precedence = Precedence0
+    ).
+sweep_extract_goal_update_precedence_(FileName, F, 2, 2, _ArgBeg, End, _Beg, End, Precedence) :-
+    (   xref_op(FileName, op(Precedence0, Assoc, F))
+    ;   current_op(Precedence0, Assoc, F)
+    ),
+    memberchk(Assoc, [xfx, xfy, yfy, yfx]),
+    !,
+    (   Assoc == xfx
+    ->  Precedence is Precedence0 - 1
+    ;   Assoc == xfy
+    ->  Precedence is Precedence0
+    ;   Assoc == yfx
+    ->  Precedence = Precedence0 - 1
+    ;   Assoc == yfy
+    ->  Precedence = Precedence0
+    ).
+sweep_extract_goal_update_precedence_(_, _, _, _, _, _, _, _, 999).
+
+sweep_extract_this_goal(Clause, ClauseVarNames, Func, Term, Pos, Offset, Safe0, ^, Mod, Pri, Result) :-
+    !,
+    sweep_extract_ext_goal([], Clause, ClauseVarNames, Func, Term, Pos, Offset, Safe0, Mod, Pri, Result).
+sweep_extract_this_goal(Clause, ClauseVarNames, Func, Bindings>>_Goal, Pos, Offset, _Safe0, Meta, Mod, Pri, result(Call, Head, Body, "true", Arity, ":-", Exists)) :-
+    !,
+    sweep_extract_lambda(Clause, ClauseVarNames, Func, Bindings, Pos, Offset, Meta, Mod, Pri, Call, Head, Body, Arity, Exists).
+sweep_extract_this_goal(Clause, _ClauseVarNames, Func, Term, Pos, Offset, Safe0, Meta, Mod, Pri, Result) :-
+    sweep_extract_this_goal_([], Clause, Func, Term, Pos, Offset, Safe0, Meta, Mod, Pri, Result).
+
+sweep_extract_this_goal_(Exts, Clause, Func, Term, Pos, Offset, Safe0, Meta, Mod, Pri, result(Call, Head, Body, Safe, Arity, Neck, Exists)) :-
+    pos_bounds(Pos, BodyBeg0, BodyEnd0),
+    BodyLength is BodyEnd0 - BodyBeg0,
+    BodyBeg is BodyBeg0 - Offset,
+    BodyEnd is BodyEnd0 - Offset,
+    sub_string(Clause, BodyBeg, BodyLength, _, Body),
+    sub_string(Clause, 0, BodyBeg, _, ClauseBeforeBody),
+    sub_string(Clause, BodyEnd, _, 0, ClauseAfterBody),
+    string_concat(ClauseBeforeBody, Func, ClauseWithoutBody0),
+    string_concat(ClauseWithoutBody0, ClauseAfterBody, ClauseWithoutBody),
+    sweep_term_variable_names(ClauseWithoutBody, OtherVars0),
+    subtract(OtherVars0, Exts, OtherVars),
+    sweep_term_variable_names(Body, BodyVars),
+    intersection(OtherVars, BodyVars, CommonVars),
+    maplist([A,A=V,V]>>true,CommonVars, VarNames, Args),
+    length(Args, Arity),
+    CallTerm =.. [Func|Args],
+    term_string(CallTerm, Call, [quoted(true),
+                                 character_escapes(true),
+                                 spacing(next_argument),
+                                 variable_names(VarNames),
+                                 module(Mod),
+                                 priority(Pri)]),
+    (   Meta == '//'
+    ->  Extra = 2
+    ;   integer(Meta)
+    ->  Extra = Meta
+    ;   Extra = 0
+    ),
+    FullArity is Arity + Extra,
+    pi_head(Func/FullArity, H),
+    (   sweep_predicate_location_(Mod, H, _, _)
+    ->  Exists = "true"
+    ;   Exists = []
+    ),
+    % TODO - adjust Head and Body when Meta > 0
+    Head = Call,
+    (   Safe0
+    ->  Safe = "true"
+    ;   (   sweep_goal_may_cut_(Term)
+        ->  Safe = []
+        ;   Safe = "true"
+        )
+    ),
+    (   Meta == '//'
+    ->  Neck = "-->"
+    ;   Neck = ":-"
+    ).
+
+sweep_extract_ext_goal(Exts, ClauseString, ClauseVarNames, Func, Var^Term, term_position(_,_,_,_,[_,Pos]), Offset, Safe0, Mod, _Pri, Result) :-
+    !,
+    (   member(Name=V, ClauseVarNames),
+        V == Var
+    ->  true
+    ;   Name = '_'
+    ),
+    sweep_extract_ext_goal([Name|Exts], ClauseString, ClauseVarNames, Func, Term, Pos, Offset, Safe0, Mod, 200, Result).
+sweep_extract_ext_goal(Exts, ClauseString, _ClauseVarNames, Func, Term, Pos, Offset, Safe0, Mod, Pri, Result) :-
+    sweep_extract_this_goal_(Exts, ClauseString, Func, Term, Pos, Offset, Safe0, 0, Mod, Pri, Result).
+
+sweep_extract_lambda(Clause, ClauseVarNames, Func, Bindings, Pos0, Offset, Meta, Mod, Pri0, Call, Head, Body, Arity, Exists) :-
+    strip_parens(Pos0, term_position(_,_,_,_,[_BindingsPos0, GoalPos0]), Pri0, _Pri),
+    strip_parens(GoalPos0, GoalPos, 399, _GoalPri),
+    sweep_extract_lambda_(Clause, ClauseVarNames, Func, Bindings, GoalPos, Offset, Meta, Mod, Pri0, Call, Head, Body, Arity, Exists).
+
+
+sweep_extract_lambda_(Clause, ClauseVarNames, Func, {Shared0}/Args, GoalPos, Offset, Meta, Mod, Pri0, Call, Head, Body, Arity, Exists) :-
+    comma_list(Shared0, Shared),
+    sweep_extract_lambda_1(Clause, ClauseVarNames, Func, Shared, Args, GoalPos, Offset, Meta, Mod, Pri0, Call, Head, Body, Arity, Exists).
+sweep_extract_lambda_(Clause, ClauseVarNames, Func, Args, GoalPos, Offset, Meta, Mod, Pri0, Call, Head, Body, Arity, Exists) :-
+    sweep_extract_lambda_1(Clause, ClauseVarNames, Func, [], Args, GoalPos, Offset, Meta, Mod, Pri0, Call, Head, Body, Arity, Exists).
+
+sweep_extract_lambda_1(Clause, ClauseVarNames, Func, Shared, Args, GoalPos, Offset, Meta, Mod, Pri0, Call, Head, Body, Arity, Exists) :-
+    pos_bounds(GoalPos, BodyBeg0, BodyEnd0),
+    BodyLength is BodyEnd0 - BodyBeg0,
+    BodyBeg is BodyBeg0 - Offset,
+    sub_string(Clause, BodyBeg, BodyLength, _, Body),
+    length(Args, ArgsLen),
+    (   integer(Meta)
+    ->  ArgsLen == Meta
+    ;   ArgsLen == 0
+    ),
+    CallTerm =.. [Func|Shared],
+    term_string(CallTerm, Call, [quoted(true),
+                                 character_escapes(true),
+                                 spacing(next_argument),
+                                 variable_names(ClauseVarNames),
+                                 module(Mod),
+                                 priority(Pri0)]),
+    append(Shared, Args, HeadArgs),
+    HeadTerm =.. [Func|HeadArgs],
+    term_string(HeadTerm, Head, [quoted(true),
+                                 character_escapes(true),
+                                 spacing(next_argument),
+                                 variable_names(ClauseVarNames),
+                                 module(Mod),
+                                 priority(Pri0)]),
+    length(HeadArgs, Arity),
+    pi_head(Func/Arity, H),
+    (   sweep_predicate_location_(Mod, H, _, _)
+    ->  Exists = "true"
+    ;   Exists = []
+    ).

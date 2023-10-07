@@ -35,7 +35,7 @@ The second argument is ignored."
            (progn . ,body)
          (set-buffer-modified-p nil)
          (kill-buffer)
-         (sweeprolog-restart)
+         ;; (sweeprolog-restart)
          (setq-default sweeprolog-enable-flymake enable-flymake-flag)))))
 
 (defconst sweeprolog-tests-greeting
@@ -1783,4 +1783,282 @@ foo((A,B)) =>
   (call-interactively #'up-list)
   (should (= (point) 51)))
 
+(sweeprolog-deftest extract-region-to-predicate ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B, C, D, bar(bar), bar{bar:bar}, [bar,bar|bar]) :-
+    A = B,
+    C = D.
+"
+  (sweeprolog-extract-region-to-predicate 85 101 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B, C, D, bar(bar), bar{bar:bar}, [bar,bar|bar]) :-
+    bbb(A, B, C, D).
+
+bbb(A, B, C, D) :-
+    A = B,
+    C = D.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-parens ()
+  "Test `sweeprolog-extract-region-to-predicate' with parentheses."
+  ""
+  (should (equal (sweeprolog--extract-goal "bar :-
+    (   A = B,
+        C = D
+    )."
+                                           11 41 "foo")
+                 (list "foo" "foo" ":-" "(   A = B,
+        C = D
+    )"
+                       "true" "foo" 0 nil)))
+  (should (equal (sweeprolog--extract-goal "bar :-
+    (   A = B,
+        C = D
+    )."
+                                           15 35 "foo")
+                 (list "foo" "foo" ":-" "A = B,
+        C = D"
+                       "true" "foo" 0 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-cut ()
+  "Test `sweeprolog-extract-region-to-predicate' in presence of a cut."
+  ""
+  (should (equal (sweeprolog--extract-goal "bar :-
+    A = B,
+    !,
+    C = D."
+                                           11 34 "foo")
+                 (list "foo" "foo" ":-" "A = B,
+    !,
+    C = D"
+                       nil "foo" 0 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-clean-cut ()
+  "Test `sweeprolog-extract-region-to-predicate' in presence of a clean cut."
+  ""
+  (should (equal (sweeprolog--extract-goal "bar :-
+    A = B,
+    call(!),
+    C = D."
+                                           11 40 "foo")
+                 (list "foo" "foo" ":-" "A = B,
+    call(!),
+    C = D"
+                       "true" "foo" 0 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-dcg ()
+                    "Test `sweeprolog-extract-region-to-predicate'."
+                    ""
+                    (should (equal (sweeprolog--extract-goal "bar(A,D) -->
+    foo1(A, B),
+    foo2(C, D)."
+                                                             17 43 "foo")
+                                   (list "foo(A, D)" "foo(A, D)" "-->" "foo1(A, B),
+    foo2(C, D)"
+                                         "true" "foo" 2 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-dcg-to-reg-1 ()
+  "Test `sweeprolog-extract-region-to-predicate' with \"{}/1\" in DCG."
+  ""
+  (should (equal (sweeprolog--extract-goal "bar(A,D) -->
+    {foo1(A, B), foo2(C, D)}."
+                                           17 41 "foo")
+                 (list "foo(A, D)" "foo(A, D)" "-->" "{foo1(A, B), foo2(C, D)}"
+                       "true" "foo" 2 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-dcg-to-reg-2 ()
+  "Test `sweeprolog-extract-region-to-predicate' with \"{}/1\" in DCG."
+  ""
+  (should (equal (sweeprolog--extract-goal "bar(A,D) -->
+    {foo1(A, B), foo2(C, D)}."
+                                           18 40 "foo")
+                 (list "foo(A, D)" "foo(A, D)" ":-" "foo1(A, B), foo2(C, D)"
+                       "true" "foo" 2 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-dcg-in-use ()
+  "Test `sweeprolog-extract-region-to-predicate' with DCG that's in use."
+  ":- module(baz, []).
+
+bar(A,D) -->
+    foo1(A, B),
+    foo2(C, D).
+
+foo(_,_) --> [].
+"
+  (should (equal (sweeprolog--extract-goal "bar(A,D) -->
+    foo1(A, B),
+    foo2(C, D)."
+                                           17 43 "foo")
+                 (list "foo(A, D)" "foo(A, D)" "-->" "foo1(A, B),
+    foo2(C, D)"
+                       "true" "foo" 2 "true"))))
+
+
+(sweeprolog-deftest extract-region-to-predicate-1 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B, C, D, bar(bar), bar{bar:bar}, [bar,bar|bar]) :-
+    A = B,
+    C = D.
+"
+  (sweeprolog-extract-region-to-predicate 85 90 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B, C, D, bar(bar), bar{bar:bar}, [bar,bar|bar]) :-
+    bbb(A, B),
+    C = D.
+
+bbb(A, B) :-
+    A = B.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-2 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   A = C,
+        B = D
+    ;   A = C,
+        B = D
+    ).
+"
+  (sweeprolog-extract-region-to-predicate 44 64 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   bbb(A, B)
+    ;   A = C,
+        B = D
+    ).
+
+bbb(A, B) :-
+    A = C,
+    B = D.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-3 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   A = C,
+        B = D
+    ;   A = C,
+        B = D
+    ).
+"
+  (sweeprolog-extract-region-to-predicate 73 93 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   A = C,
+        B = D
+    ;   bbb(A, B)
+    ).
+
+bbb(A, B) :-
+    A = C,
+    B = D.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-ext-1 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    setof(X, Y^member(X, Y), Y).
+"
+  (sweeprolog-extract-region-to-predicate 49 63 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    setof(X, bbb(X), Y).
+
+bbb(X) :-
+    member(X, Y).
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-ext-2 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    setof(X, Y^(member(X, Y), X = Z), Y).
+"
+  (sweeprolog-extract-region-to-predicate 51 72 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    setof(X, Y^bbb(Y, X), Y).
+
+bbb(Y, X) :-
+    (member(X, Y), X = Z).
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-lambda-1 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    maplist([VarName]>>ignore(memberchk(VarName, GoalVarNames)),
+            TemplateVarNames).
+"
+  (sweeprolog-extract-region-to-predicate 48 99 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    maplist(bbb,
+            TemplateVarNames).
+
+bbb(VarName) :-
+    ignore(memberchk(VarName, GoalVarNames)).
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-lambda-2 ()
+                    "Test `sweeprolog-extract-region-to-predicate'."
+                    "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    maplist({GoalVarNames}/[VarName]>>ignore(memberchk(VarName, GoalVarNames)),
+            TemplateVarNames).
+"
+                    (sweeprolog-extract-region-to-predicate 48 114 "bbb")
+                    (should (string= (buffer-string)
+                                     "
+:- module(bbb, []).
+
+bar(A, Y) :-
+    maplist(bbb(GoalVarNames),
+            TemplateVarNames).
+
+bbb(GoalVarNames, VarName) :-
+    ignore(memberchk(VarName, GoalVarNames)).
+")))
 ;;; sweeprolog-tests.el ends here
