@@ -5932,7 +5932,8 @@ prompt for CLASS as well."
                   (combine-after-change-calls
                     (delete-region b e)
                     (insert r)
-                    ;; TODO - turn fresh variables in rep into holes
+                    ;; TODO - mark fresh variables in the replacement
+                    ;; term as holes.
                     (let ((inhibit-message t))
                       (indent-region-line-by-line b (point))))
                   (cl-incf count (if i -1 1))))
