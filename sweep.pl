@@ -1008,10 +1008,7 @@ name_variable(N, V) :- V = '$VAR'(N).
 sweep_context_callable([H|T], R) :-
     H = [F0|_],
     atom_string(F, F0),
-    (   xref_op(_, op(1200, _, F))
-    ->  true
-    ;   current_op(1200, _, F)
-    ),
+    op_is_neck(F),
     !,
     (   F == (-->)
     ->  R0 = 2
@@ -1020,6 +1017,12 @@ sweep_context_callable([H|T], R) :-
     sweep_context_callable_(T, R0, 0, R).
 sweep_context_callable([_|T], R) :-
     sweep_context_callable(T, R).
+
+op_is_neck(F) :-
+    (   xref_op(_, op(1200, _, F))
+    ->  true
+    ;   current_op(1200, _, F)
+    ).
 
 sweep_context_callable_([], R0, R1, R) :- R is R0 + R1, !.
 sweep_context_callable_([[":"|2]], R0, R1, R) :- R is R0 + R1, !.
@@ -1036,11 +1039,9 @@ sweep_context_callable_([H|T], R0, _, R) :-
     sweep_context_callable_(T, R0, R1, R).
 
 sweep_context_callable_arg((-->), _, 2) :- !.
+sweep_context_callable_arg(^, _, 0) :- !.
 sweep_context_callable_arg(Neck, _, 0) :-
-    (   xref_op(_, op(1200, _, Neck))
-    ->  true
-    ;   current_op(1200, _, Neck)
-    ),
+    op_is_neck(Neck),
     !.
 sweep_context_callable_arg(F, N, R) :-
     sweep_current_module(Mod),
