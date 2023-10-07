@@ -5853,7 +5853,12 @@ describing a term matching the current execution of
 positions of the beginning and end of the matching term, and REP
 is the replacement string for that match.  If this function
 returns nil, the corresponding match is filtered out and
-`sweeprolog-query-replace-term' does not suggest replacing it.")
+`sweeprolog-query-replace-term' does not suggest replacing it.
+
+`sweeprolog-extract-region-to-predicate' let-binds this variable
+when it calls `sweeprolog-query-replace-term' to replace other
+occurrences of the extracted goal in the current buffer, in order
+to filter out the body of the clause that it just created.")
 
 ;;;###autoload
 (defun sweeprolog-query-replace-term (template replacement &optional condition class)
