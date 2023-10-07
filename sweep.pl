@@ -1315,8 +1315,8 @@ sweep_replace_term_r(term_position(From, To, _, _, ArgsPos), Term, FileName, Mod
             (   xref_op(FileName, op(Precedence0, Assoc, Functor))
             ;   current_op(Precedence0, Assoc, Functor)
             ),
-            memberchk(Assoc, [fx,fy])
-        ->  (   Assoc == fx
+            memberchk(Assoc, [xf,yf])
+        ->  (   Assoc == xf
             ->  Precedence is Precedence0 - 1
             ;   Precedence = Precedence0
             )
@@ -1324,8 +1324,8 @@ sweep_replace_term_r(term_position(From, To, _, _, ArgsPos), Term, FileName, Mod
             (   xref_op(FileName, op(Precedence0, Assoc, Functor))
             ;   current_op(Precedence0, Assoc, Functor)
             ),
-            memberchk(Assoc, [xf,yf])
-        ->  (   Assoc == xf
+            memberchk(Assoc, [fx,fy])
+        ->  (   Assoc == fx
             ->  Precedence is Precedence0 - 1
             ;   Precedence = Precedence0
             )
