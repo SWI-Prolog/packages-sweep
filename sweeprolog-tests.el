@@ -1852,6 +1852,42 @@ bbb(A, B, C, D) :-
     C = D"
                        "true" "foo" 0 nil))))
 
+(sweeprolog-deftest extract-region-to-predicate-cut-1 ()
+  "Test `sweeprolog-extract-region-to-predicate' in presence of a cut."
+  ""
+  (should
+   (equal
+    (sweeprolog--extract-goal "
+bar :-
+    call((foo, ! ; baz)).
+"
+     12 32 "spam")
+    '("spam" "spam" ":-" "call((foo, ! ; baz))" "true" "spam" 0 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-cut-2 ()
+  "Test `sweeprolog-extract-region-to-predicate' in presence of a cut."
+  ""
+  (should
+   (equal
+    (sweeprolog--extract-goal "
+bar :-
+    call((foo, ! ; baz)).
+"
+     17 31 "spam")
+    '("spam" "spam" ":-" "(foo, ! ; baz)" "true" "spam" 0 nil))))
+
+(sweeprolog-deftest extract-region-to-predicate-cut-3 ()
+  "Test `sweeprolog-extract-region-to-predicate' in presence of a cut."
+  ""
+  (should
+   (equal
+    (sweeprolog--extract-goal "
+bar :-
+    call((foo, ! ; baz)).
+"
+     18 24 "spam")
+    '("spam" "spam" ":-" "foo, !" nil "spam" 0 nil))))
+
 (sweeprolog-deftest extract-region-to-predicate-dcg ()
                     "Test `sweeprolog-extract-region-to-predicate'."
                     ""

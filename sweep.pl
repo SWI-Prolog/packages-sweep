@@ -1843,11 +1843,13 @@ sweep_extract_goal_update_clause_string((_;_), 2, [AltPos,_], ClauseString0, Off
     string_concat(ClauseString1, ClauseAfterAlt, ClauseString).
 sweep_extract_goal_update_clause_string(_, _, _, ClauseString, Offset, ClauseString, Offset).
 
-sweep_extract_goal_update_safety((_,_), _, Safe, Safe) :-
+sweep_extract_goal_update_safety((_,_), _, _, false) :-
     !.
-sweep_extract_goal_update_safety((_;_), _, Safe, Safe) :-
+sweep_extract_goal_update_safety((_;_), _, _, false) :-
     !.
-sweep_extract_goal_update_safety((_->_), 2, Safe, Safe) :-
+sweep_extract_goal_update_safety((_->_), 2, _, false) :-
+    !.
+sweep_extract_goal_update_safety((_*->_), 2, _, false) :-
     !.
 sweep_extract_goal_update_safety(_, _, _, true).
 
