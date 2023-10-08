@@ -11,6 +11,16 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.25.4 on 2023-10-08
+
+** Fix recent issue with ~sweeprolog-extract-region-to-predicate~
+
+This is a bug-fix release, addressing an issue with
+~sweeprolog-extract-region-to-predicate~ that was introduced in
+version 0.25.3.  The issue prevented goal extraction from the start or
+middle of right-associative binary operator chains, including ~,/2~
+and thus affecting extraction from common conjunction chains.
+
 * Version 0.25.3 on 2023-10-07
 
 ** ~sweeprolog-extract-region-to-predicate~ now supports lambda terms and existentially quantified goals
