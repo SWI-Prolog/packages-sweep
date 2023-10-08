@@ -1750,7 +1750,7 @@ sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, F
     ;   sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, Pos, Offset, Safe0, Meta, Mod, Pri, Result)
     ).
 sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal,
-                     term_position(Beg,End,_,_,PosList), Offset, Safe0, Meta, Mod, Pri, Result) :-
+                     term_position(Beg,End,FBeg,FEnd,PosList), Offset, Safe0, Meta, Mod, Pri, Result) :-
     !,
     (   @(predicate_property(Goal, meta_predicate(Spec)), Mod)
     ->  true
@@ -1759,9 +1759,29 @@ sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, F
                            context(system:clause/2, _)),
                      false))
     ),
-    sweep_extract_goal_term(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, 1, Beg, End, Spec, PosList, PosList, Offset, Safe0, Meta, Mod, Pri, Result).
+    sweep_extract_goal_term(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, 1, Beg, End, FBeg, FEnd, Spec, PosList, PosList, Offset, Safe0, Meta, Mod, Pri, Result).
 
-sweep_extract_goal_term(FileName, ClauseString0, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, ArgIndex, Beg, End, Spec,
+sweep_extract_goal_term(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, 1, Beg, End, FBeg, FEnd, Spec,
+                        [LeftPos, RightPos], _PosList, Offset, Safe0, Meta0, Mod0, Pri0, Result) :-
+    RightPos = term_position(RightBeg,_RightEnd,RightFBeg,RightFEnd,[RightLeftPos,RightRightPos]),
+    compound_name_arguments(Goal,  F, [Left,Right]),
+    compound_name_arguments(Right, F, [RightLeft,RightRight]),
+    pos_bounds(LeftPos, Beg, PosEnd),
+    GoalBeg =< Beg, PosEnd =< GoalEnd,
+    pos_bounds(RightLeftPos, RightBeg, RightLeftEnd),
+    RightLeftEnd =< GoalEnd,
+    arg(1, Spec, SubMeta),
+    arg(2, Spec, SubMeta),
+    (   xref_op(FileName, op(_, xfy, F))
+    ;   current_op(_, xfy, F)
+    ),
+    !,
+    push_assoc_arg(F, FBeg, FEnd, RightLeft, RightLeftPos, Left, LeftPos, NewLeft, NewLeftPos),
+    compound_name_arguments(NewGoal, F, [NewLeft,RightRight]),
+    NewPosList = [NewLeftPos, RightRightPos],
+    sweep_extract_goal_term(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, NewGoal, 1, Beg, End, RightFBeg, RightFEnd, Spec,
+                            NewPosList, NewPosList, Offset, Safe0, Meta0, Mod0, Pri0, Result).
+sweep_extract_goal_term(FileName, ClauseString0, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, ArgIndex, Beg, End, FBeg, FEnd, Spec,
                         [Pos|Tail], PosList, Offset0, Safe0, Meta0, Mod0, Pri0, Result) :-
     arg(ArgIndex, Goal, Arg),
     pos_bounds(Pos, PosBeg, PosEnd),
@@ -1776,9 +1796,22 @@ sweep_extract_goal_term(FileName, ClauseString0, ClauseVarNames, GoalBeg, GoalEn
                                         ClauseString, Offset, Safe1, Meta, Mod, Pri),
         sweep_extract_goal_r(FileName, ClauseString, ClauseVarNames, GoalBeg, GoalEnd, Func, Arg, Pos, Offset, Safe1, Meta, Mod, Pri, Result)
     ;   ArgIndex1 is ArgIndex + 1,
-        sweep_extract_goal_term(FileName, ClauseString0, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, ArgIndex1, Beg, End, Spec,
+        sweep_extract_goal_term(FileName, ClauseString0, ClauseVarNames, GoalBeg, GoalEnd, Func, Goal, ArgIndex1, Beg, End, FBeg, FEnd, Spec,
                                 Tail, PosList, Offset0, Safe0, Meta0, Mod0, Pri0, Result)
     ).
+
+push_assoc_arg(F, FBeg, FEnd, PushTerm, PushPos,
+               Term,    term_position(PosBeg, _PosEnd, PosFBeg, PosFEnd, [LeftPos, RightPos]),
+               NewTerm, term_position(PosBeg, PushPosEnd, FBeg, FEnd, [LeftPos, NewRightPos])) :-
+    compound_name_arguments(Term, F, [Left, Right]),
+    !,
+    arg(2, PushPos, PushPosEnd),
+    compound_name_arguments(NewTerm, F, [Left, NewRight]),
+    push_assoc_arg(F, PosFBeg, PosFEnd, PushTerm, PushPos, Right, RightPos, NewRight, NewRightPos).
+push_assoc_arg(F, FBeg, FEnd, PushTerm, PushPos, Term, Pos, NewTerm, term_position(PosBeg, PushPosEnd, FBeg, FEnd, [Pos, PushPos])) :-
+    compound_name_arguments(NewTerm, F, [Term, PushTerm]),
+    arg(1, Pos, PosBeg),
+    arg(2, PushPos, PushPosEnd).
 
 sweep_extract_goal_update_state(FileName, Goal, ArgIndex, ArgBeg, ArgEnd, PosList, Beg, End, Spec,
                                 ClauseString0, Offset0, Safe0, Meta0, Mod0,
@@ -1791,14 +1824,18 @@ sweep_extract_goal_update_state(FileName, Goal, ArgIndex, ArgBeg, ArgEnd, PosLis
 
 sweep_extract_goal_update_clause_string((_;_), 1, [_,AltPos], ClauseString0, Offset, ClauseString, Offset) :-
     !,
-    pos_bounds(AltPos, AltBeg, AltEnd),
+    pos_bounds(AltPos, AltBeg0, AltEnd0),
+    AltBeg is AltBeg0 - Offset,
+    AltEnd is AltEnd0 - Offset,
     sub_string(ClauseString0, 0, AltBeg, _, ClauseBeforeAlt),
     sub_string(ClauseString0, AltEnd, _, 0, ClauseAfterAlt),
     string_concat(ClauseBeforeAlt, "true", ClauseString1),
     string_concat(ClauseString1, ClauseAfterAlt, ClauseString).
 sweep_extract_goal_update_clause_string((_;_), 2, [AltPos,_], ClauseString0, Offset0, ClauseString, Offset) :-
     !,
-    pos_bounds(AltPos, AltBeg, AltEnd),
+    pos_bounds(AltPos, AltBeg0, AltEnd0),
+    AltBeg is AltBeg0 - Offset0,
+    AltEnd is AltEnd0 - Offset0,
     Offset is Offset0 + AltEnd - AltBeg - 4,
     sub_string(ClauseString0, 0, AltBeg, _, ClauseBeforeAlt),
     sub_string(ClauseString0, AltEnd, _, 0, ClauseAfterAlt),

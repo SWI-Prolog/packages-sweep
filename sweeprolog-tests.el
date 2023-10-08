@@ -1978,17 +1978,155 @@ bbb(A, B) :-
     B = D.
 ")))
 
-(sweeprolog-deftest extract-region-to-predicate-ext-1 ()
+(sweeprolog-deftest extract-region-to-predicate-4 ()
   "Test `sweeprolog-extract-region-to-predicate'."
   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    A = C,
+    B = D,
+    A = C,
+    B = D.
+"
+  (sweeprolog-extract-region-to-predicate 40 56 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    bbb(A, B, C, D),
+    A = C,
+    B = D.
+
+bbb(A, B, C, D) :-
+    A = C,
+    B = D.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-5 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B) :-
+    A = C,
+    B = D,
+    A = C,
+    B = D.
+"
+  (sweeprolog-extract-region-to-predicate 51 67 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    A = C,
+    bbb(A, B, C, D),
+    B = D.
+
+bbb(A, B, C, D) :-
+    B = D,
+    A = C.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-6 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B) :-
+    A = C,
+    B = D,
+    A = C,
+    B = D.
+"
+  (sweeprolog-extract-region-to-predicate 62 78 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    A = C,
+    B = D,
+    bbb(A, B, C, D).
+
+bbb(A, B, C, D) :-
+    A = C,
+    B = D.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-7 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   A = B
+    ->  C = D
+    ;   (   A = B -> C = D   )
+    ;   A = E, E = B
+    ->  C = D
+    ).
+"
+  (sweeprolog-extract-region-to-predicate 72 94 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   A = B
+    ->  C = D
+    ;   bbb(A, B)
+    ;   A = E, E = B
+    ->  C = D
+    ).
+
+bbb(A, B) :-
+    (   A = B -> C = D   ).
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-8 ()
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   A = B
+    ->  C = D
+    ;   (   A = B -> C = D   )
+    ;   A = E, E = B
+    ->  C = D
+    ).
+"
+  (sweeprolog-extract-region-to-predicate 103 115 "bbb")
+  (should (string= (buffer-string)
+                   "
+:- module(bbb, []).
+
+bar(A, B) :-
+    (   A = B
+    ->  C = D
+    ;   (   A = B -> C = D   )
+    ;   bbb(A, B)
+    ->  C = D
+    ).
+
+bbb(A, B) :-
+    A = E, E = B.
+")))
+
+(sweeprolog-deftest extract-region-to-predicate-ext-1 ()
+                    "Test `sweeprolog-extract-region-to-predicate'."
+                    "
 :- module(bbb, []).
 
 bar(A, Y) :-
     setof(X, Y^member(X, Y), Y).
 "
-  (sweeprolog-extract-region-to-predicate 49 63 "bbb")
-  (should (string= (buffer-string)
-                   "
+                    (sweeprolog-extract-region-to-predicate 49 63 "bbb")
+                    (should (string= (buffer-string)
+                                     "
 :- module(bbb, []).
 
 bar(A, Y) :-

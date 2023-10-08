@@ -7165,7 +7165,8 @@ where in the buffer to insert the newly created predicate."
                                   "operation.  Continue?"))))
              (and in-use
               (not (y-or-n-p (concat
-                              "Predicate %s:%s/%d is already defined.  "
+                              (format "Predicate %s/%d is already defined.  "
+                                      functor arity)
                               "Continue?")))))
          (message "Canceled."))
         (t
