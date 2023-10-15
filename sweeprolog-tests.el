@@ -479,8 +479,8 @@ baz(Baz) :- fooba-!-"
   (let ((cap (sweeprolog-completion-at-point)))
     (should (= 64 (nth 0 cap)))
     (should (= 69 (nth 1 cap)))
-    (should (equal '(("foobar(Baz)" compound "term_position" 0 11 0 6 ((compound "-" 7 10))))
-                   (nth 2 cap)))))
+    (should (equal '("foobar(Baz)")
+                   (all-completions "" (nth 2 cap))))))
 
 (sweeprolog-deftest cap-autoloaded-predicate ()
   "Completion at point for remote predicates."
@@ -491,8 +491,8 @@ baz(Baz) :- lists:memberc-!-"
   (let ((cap (sweeprolog-completion-at-point)))
     (should (= 70 (nth 0 cap)))
     (should (= 77 (nth 1 cap)))
-    (should (equal '(("memberchk(Elem, List)" compound "term_position" 0 21 0 9 ((compound "-" 10 14) (compound "-" 16 20))))
-                   (nth 2 cap)))))
+    (should (equal '("memberchk(Elem, List)")
+                   (all-completions "" (nth 2 cap))))))
 
 (sweeprolog-deftest cap-compound ()
   "Completion at point for compound terms."
