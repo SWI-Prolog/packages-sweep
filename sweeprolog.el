@@ -1436,6 +1436,13 @@ list even when found in the current clause."
                 (push (match-string-no-properties 0) vars)))))))
     vars))
 
+(defun sweeprolog-predicate-completion-sort (candidates)
+  "Sort predicate completion CANDIDATES by functor length."
+  (sort candidates
+        (lambda (a b)
+          (< (or (string-search "(" a) (length a))
+             (or (string-search "(" b) (length b))))))
+
 (defun sweeprolog-predicate-completion-candidates (beg end cxt)
   (let ((col (sweeprolog--query-once
               "sweep" "sweep_heads_collection"
@@ -1443,7 +1450,13 @@ list even when found in the current clause."
                     (sweeprolog--qualyfing-module beg)
                     (buffer-substring-no-properties beg (point))
                     (buffer-substring-no-properties (point) end)))))
-    (list beg end col
+    (list beg end
+          (lambda (s p a)
+            (if (eq a 'metadata)
+                '(metadata
+                  (display-sort-function . sweeprolog-predicate-completion-sort)
+                  (cycle-sort-function   . sweeprolog-predicate-completion-sort))
+              (complete-with-action a col s p)))
           :exclusive 'no
           :annotation-function (lambda (_) " Predicate functor")
           :exit-function
