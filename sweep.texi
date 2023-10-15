@@ -3477,6 +3477,17 @@ level (1, 2 or 3) for which it should apply.
 target to the value of @code{(font-lock-value-in-major-mode
 font-lock-maximum-decoration)} and decide whether or not to apply the
 fragment.
+
+@item Support @kbd{M-x align}
+Sweep Prolog mode should integrate with @file{align.el} such that
+@kbd{M-x align} aligns arguments of consecutive predicate calls.
+Concretely, we need to locally set @code{align-mode-rules-list} to a
+suitable value in @code{sweeprolog-mode}.
+
+@item Support code filling/formatting
+Sweep Prolog mode should define a @code{fill-paragraph-function}, and
+perhaps also a @code{normal-auto-fill-function}, for code filling that
+takes into account Prolog-specific conventions.
 @end table
 
 @node General Improvements
