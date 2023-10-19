@@ -1514,7 +1514,7 @@ When the minor mode @code{sweeprolog-forward-hole-on-tab-mode} is
 enabled, the @kbd{@key{TAB}} key is bound to a command moves to the
 next hole when called in a properly indented line (otherwise it
 indents the line).  This makes moving between holes in the buffer
-easier since you can use @kbd{@key{TAB}} instead of @key{C-c
+easier since you can use @kbd{@key{TAB}} instead of @kbd{C-c
 @key{TAB}} in most cases.  To enable this mode in a, type @kbd{M-x
 sweeprolog-forward-hole-on-tab-mode-map @key{RET}}.  You can automate
 this step by adding @code{sweeprolog-forward-hole-on-tab-mode} to
