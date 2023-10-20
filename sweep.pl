@@ -103,6 +103,7 @@
 
 :- use_module(library(pldoc)).
 :- use_module(library(listing)).
+:- use_module(library(ansi_term)).
 :- use_module(library(prolog_source)).
 :- use_module(library(prolog_colour)).
 :- use_module(library(pldoc/doc_process)).
@@ -819,6 +820,8 @@ sweep_top_level_client(InStream, OutStream, ip(127, 0, 0, 1), TC) :-
     set_prolog_IO(InStream, OutStream, OutStream),
     set_stream(InStream, tty(true)),
     set_prolog_flag(tty_control, TC),
+    set_prolog_flag(verbose, normal),
+    set_prolog_flag(color_term, true),
     current_prolog_flag(encoding, Enc),
     set_stream(user_input, encoding(Enc)),
     set_stream(user_output, encoding(Enc)),
