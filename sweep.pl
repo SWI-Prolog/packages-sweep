@@ -781,7 +781,7 @@ sweep_top_level_start_pty(Name, Id) :-
 sweep_top_level_pty_client(Name) :-
     open(Name, read, InStream, [eof_action(reset)]),
     open(Name, write, OutStream),
-    sweep_top_level_client(InStream, OutStream, ip(127,0,0,1)).
+    sweep_top_level_client(InStream, OutStream, ip(127, 0, 0, 1), true).
 
 sweep_top_level_server(_, Port) :-
     tcp_socket(ServerSocket),
@@ -808,17 +808,17 @@ sweep_top_level_server_loop_(accept(From), ServerSocket) :-
     tcp_open_socket(Slave, InStream, OutStream),
     set_stream(InStream, close_on_abort(false)),
     set_stream(OutStream, close_on_abort(false)),
-    sweep_create_thread(sweep_top_level_client(InStream, OutStream, Peer), T),
+    sweep_create_thread(sweep_top_level_client(InStream, OutStream, Peer, false), T),
     thread_property(T, id(Id)),
     thread_send_message(From, client(Id)),
     sweep_top_level_server_loop(ServerSocket).
 sweep_top_level_server_loop_(_, _).
 
-sweep_top_level_client(InStream, OutStream, ip(127,0,0,1)) :-
+sweep_top_level_client(InStream, OutStream, ip(127, 0, 0, 1), TC) :-
     !,
     set_prolog_IO(InStream, OutStream, OutStream),
     set_stream(InStream, tty(true)),
-    set_prolog_flag(tty_control, false),
+    set_prolog_flag(tty_control, TC),
     current_prolog_flag(encoding, Enc),
     set_stream(user_input, encoding(Enc)),
     set_stream(user_output, encoding(Enc)),
@@ -832,7 +832,7 @@ sweep_top_level_client(InStream, OutStream, ip(127,0,0,1)) :-
                      close(OutStream, [force(true)])
                    )),
     prolog.
-sweep_top_level_client(InStream, OutStream, _) :-
+sweep_top_level_client(InStream, OutStream, _, _) :-
     close(InStream),
     close(OutStream).
 
