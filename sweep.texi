@@ -143,11 +143,11 @@ Setting Breakpoints
 
 The Prolog Top-level
 
-* Multiple Top-levels::          Creating and handling multiple Prolog top-level buffers
+* Top-level Interaction::        The basics of working with a top-level
+* Multiple Top-levels::          Creating and handling multiple top-level buffers
 * Top-level Menu::               A special buffer for operating on active top-levels
-* Top-level Signaling::          Commands for interrupting running Prolog top-levels
+* Top-level Signaling::          Commands for interrupting running top-levels
 * Top-level History::            Accessing previous queries posted to the Prolog top-level
-* Top-level Completion::         Commands for completing partiat Prolog predicate names
 * Follow Messages::              Minor mode for visiting source locations in printed messages
 * Send to Top-level::            Commands for sending goals to the be executed in the Top-level
 
@@ -2840,15 +2840,46 @@ host with untrusted users, so you should be careful about using
 @code{sweeprolog-top-level} with @code{sweeprolog-top-level-use-pty}
 set to @code{nil} on shared machines.
 
+@cindex ANSI escape sequences
+@cindex escape sequences, ANSI
+When Emacs connects to a top-level via a pty, the top-level uses
+@dfn{ANSI escape sequences} to add colored output and other features.
+Emacs interprets these escape sequences by default and turns them into
+text properties for the top-level output.  If you want Emacs to filter
+out ANSI escape sequences and disable output coloring, set the user
+option @code{ansi-color-for-comint-mode} to the symbol @code{filter}.
+
 @menu
-* Multiple Top-levels::          Creating and handling multiple Prolog top-level buffers
+* Top-level Interaction::        The basics of working with a top-level
+* Multiple Top-levels::          Creating and handling multiple top-level buffers
 * Top-level Menu::               A special buffer for operating on active top-levels
-* Top-level Signaling::          Commands for interrupting running Prolog top-levels
+* Top-level Signaling::          Commands for interrupting running top-levels
 * Top-level History::            Accessing previous queries posted to the Prolog top-level
-* Top-level Completion::         Commands for completing partiat Prolog predicate names
 * Follow Messages::              Minor mode for visiting source locations in printed messages
 * Send to Top-level::            Commands for sending goals to the be executed in the Top-level
 @end menu
+
+@node Top-level Interaction
+@section Interacting with the Top-level
+
+When you start a new top-level, it prompts you to enter a Prolog query
+by displaying the @dfn{query prompt}, which is usually @samp{?- }.
+You post your query by typing it at the prompt, and pressing
+@kbd{@key{RET}} (@code{comint-send-input}) to send it.  If the query
+succeeds with a choicepoint, the top-level lets you to perform one of
+several actions by typing a single character, such as @kbd{;} to get
+the next answer.  Sweep Top-level mode detects that the top-level
+expects a single character input, and sends the character you type to
+the top-level immediately.  After the top-level is done with answering
+your query, it prompts you again to post a new one.
+
+@cindex top-level completion
+@cindex completion, in the top-level
+The Sweep top-level provides input completion at the query prompt,
+which works similarly to the in-buffer completion you get in Sweep
+Prolog mode buffers (@pxref{Code Completion}).  Namely, to complete a
+partial predicate name or other input in the top-level prompt, type
+@kbd{C-M-i} (or @kbd{M-@key{TAB}}).
 
 @node Multiple Top-levels
 @section Multiple Top-levels
@@ -3011,15 +3042,6 @@ project's root directory.  You can leave @var{def} @code{nil} or omit
 it entirely to disable persistent history for top-levels that are not
 associated with any project.  By default, this option is set to
 @code{nil} which says not to keep persistent top-level history.
-
-@node Top-level Completion
-@section Completion in the Top-level
-
-Sweep Top-level mode can complete the input you enter at the prompt,
-similarly to the in-buffer code completion you get in Sweep Prolog
-mode buffers (@pxref{Code Completion}).  To complete a partial
-predicate name or other input in the top-level prompt, type
-@kbd{C-M-i} (or @kbd{M-@key{TAB}}).
 
 @node Follow Messages
 @section Following Error Messages
