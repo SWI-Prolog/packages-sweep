@@ -11,6 +11,24 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.25.5 on 2023-10-20
+
+** Improved predicate completion candidate sorting
+
+Sweep now sorts predicate completion candidates more intelligently,
+placing predicates with a shorter functor ahead in the candidate list.
+
+** The top-level now uses ANSI escape sequences for output coloring
+
+For Sweep top-levels that use a pty (the default on Unix systems), the
+top-level output now includes ANSI escape sequences that Emacs
+automatically translates to text properties (colors, etc.).  To have
+Emacs filter out these escape sequences without applying the
+corresponding text properties, set ~ansi-color-for-comint-mode~ to the
+symbol ~filter~.
+
+** Minor documentation improvements and bug fixes
+
 * Version 0.25.4 on 2023-10-08
 
 ** Fix recent issue with ~sweeprolog-extract-region-to-predicate~
