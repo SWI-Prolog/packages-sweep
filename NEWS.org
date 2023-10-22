@@ -11,6 +11,16 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.26.0 on 2023-10-22
+
+** More fine-grained in-buffer completions
+
+This version of Sweep includes improved in-buffer completion for
+predicate options (declared with ~predicate_options/3~), arithmetic
+functions, and source file specifications (such as ~library(lists)~).
+
+** Sweep now disables input echoing in top-levels when using a pty
+
 * Version 0.25.5 on 2023-10-20
 
 ** Improved predicate completion candidate sorting
