@@ -1567,6 +1567,10 @@ Used for `completion-at-point' candidates in cases such as:
          (sweeprolog-option-completion-candidates beg end pred ari)))
       (`("option" ,pred ,ari ,option)
        (sweeprolog-option-arg-completion-candidates beg end pred ari option))
+      ("arith"
+       (if fnc
+           (sweeprolog-arith-functor-completion-candidates beg end)
+         (sweeprolog-arith-completion-candidates beg end)))
       (_
        (if fnc
            (sweeprolog-compound-functor-completion-candidates beg end fnc)
@@ -1695,6 +1699,59 @@ Used for `completion-at-point' candidates in cases such as:
 
     foo :- 123 =-!- 100 + 20 + 3"
   nil)
+
+(defun sweeprolog-arith-functor-completion-candidates (beg end)
+  "Return completions for arithmetic function functors between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(T) :- T is f-!-t("
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_function_functors_collection"
+         (list (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Arithmetic function functor")))
+
+(defun sweeprolog-arith-completion-candidates (beg end)
+  "Return completions for arithmetic expression between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(T) :- T is f-!-"
+  (let ((col (sweeprolog--query-once
+              "sweep" "sweep_functions_collection"
+              (list (buffer-substring-no-properties beg (point))
+                    (buffer-substring-no-properties (point) end)))))
+    (list beg end col
+          :exclusive 'no
+          :annotation-function (lambda (_) " Arithmentic function")
+          :exit-function
+          (lambda (string status)
+            (pcase status
+              ('finished
+               (pcase (cdr (assoc-string string col))
+                 (`(compound
+                    "term_position"
+                    0 ,length
+                    ,_fbeg ,_fend
+                    ,holes)
+                  (with-silent-modifications
+                    (dolist (hole holes)
+                      (pcase hole
+                        (`(compound "-" ,hbeg ,hend)
+                         (add-text-properties
+                          (- (point) length (- hbeg))
+                          (- (point) length (- hend))
+                          (list
+                           'sweeprolog-hole t
+                           'font-lock-face (list 'sweeprolog-hole)
+                           'rear-nonsticky '(sweeprolog-hole
+                                             cursor-sensor-functions
+                                             font-lock-face)))))))
+                  (backward-char length)
+                  (sweeprolog-forward-hole)))))))))
 
 (defun sweeprolog-option-functor-completion-candidates (beg end pred ari)
   "Return completions for option functors for PRED/ARI between BEG and END.

@@ -2124,6 +2124,9 @@ If point is at a position where a source file specification should
 appear (such as the argument of @code{use_module/1}),
 @code{completion-at-point} suggests matching source file
 specifications.
+@item Source file completion
+If point is inside an arithmetic expression,
+@code{completion-at-point} suggests matching arithmetic functions.
 @item Atom completion
 If point is at a non-callable position, @code{completion-at-point}
 suggests matching atoms and functors as completion candidates.

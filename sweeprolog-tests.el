@@ -496,6 +496,42 @@ foo(T) :-
     (should (= 46 (nth 1 cap)))
     (should (equal '("fail") (nth 2 cap)))))
 
+(sweeprolog-deftest cap-arith-functor ()
+  "Completion at point for arithmetic function functors."
+  "
+foo(T) :-
+    T is cop-!-n(
+"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 21 (nth 0 cap)))
+    (should (= 25 (nth 1 cap)))
+    (should (equal '("copysign")
+                   (all-completions "" (nth 2 cap))))))
+
+(sweeprolog-deftest cap-arith ()
+                    "Completion at point for arithmetic functions."
+                    "
+foo(T) :-
+    T is cop-!-
+"
+                    (let ((cap (sweeprolog-completion-at-point)))
+                      (should (= 21 (nth 0 cap)))
+                      (should (= 24 (nth 1 cap)))
+                      (should (equal '("copysign(_, _)")
+                                     (all-completions "" (nth 2 cap))))))
+
+(sweeprolog-deftest cap-arith-nested ()
+  "Completion at point for arithmetic functions."
+  "
+foo(T) :-
+    T is copysign(cop-!-
+"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 30 (nth 0 cap)))
+    (should (= 33 (nth 1 cap)))
+    (should (equal '("copysign(_, _)")
+                   (all-completions "" (nth 2 cap))))))
+
 (sweeprolog-deftest cap-source ()
   "Completion at point for source files."
   ":- use_module(li-!-"

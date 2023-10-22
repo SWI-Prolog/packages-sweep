@@ -104,7 +104,9 @@
             sweep_alias_source_file_name_collection/2,
             sweep_option_functors_collection/2,
             sweep_options_collection/2,
-            sweep_option_arguments_collection/2
+            sweep_option_arguments_collection/2,
+            sweep_functions_collection/2,
+            sweep_function_functors_collection/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -963,6 +965,24 @@ sweep_compound_functors_collection([Arity,Bef,Aft], Fs) :-
     setof(F, sweep_matching_functor(Bef, Aft, F/Arity), Fs0),
     maplist(term_string, Fs0, Fs).
 
+sweep_function_functors_collection([Bef,Aft], Fs) :-
+    findall(F, (   current_arithmetic_function(Head),
+                   Head =.. [F0|_],
+                   term_string(F0, F),
+                   sweep_matching_atom(Bef, Aft, F)
+               ),
+            Fs).
+
+sweep_functions_collection([Bef,Aft], Fs) :-
+    findall(F, (   current_arithmetic_function(Head),
+                   Head =.. [F0|Args],
+                   length(Args, Arity),
+                   term_string(F0, F1),
+                   sweep_matching_atom(Bef, Aft, F1),
+                   sweep_format_term([F1,Arity,999], F)
+               ),
+            Fs).
+
 sweep_option_functors_collection([Bef,Aft,Pred0,Ari,Arg], Fs) :-
     atom_string(Pred, Pred0),
     current_predicate_options(Pred/Ari, Arg, Options),
@@ -1119,6 +1139,10 @@ sweep_context_callable_arg(^, _, _, 0) :- !.
 sweep_context_callable_arg(Neck, _, _, 0) :-
     op_is_neck(Neck),
     !.
+sweep_context_callable_arg(_, _, "arith", "arith") :- !.
+sweep_context_callable_arg(F, N, 0, "arith") :-
+    arith_arg(F, N),
+    !.
 sweep_context_callable_arg(F0, N, 0, ["options", F, N]) :-
     current_option_arg(F0/N, N),
     !,
@@ -1147,6 +1171,20 @@ sweep_context_callable_arg(F, N, _, R) :-
     ),
     arg(N, Spec, A),
     callable_arg(A, R).
+
+arith_arg((is), 2).
+arith_arg((<), 1).
+arith_arg((<), 2).
+arith_arg((>), 1).
+arith_arg((>), 2).
+arith_arg((=<), 1).
+arith_arg((=<), 2).
+arith_arg((>=), 1).
+arith_arg((>=), 2).
+arith_arg((=\=), 1).
+arith_arg((=\=), 2).
+arith_arg((=:=), 1).
+arith_arg((=:=), 2).
 
 source_arg(load_files, 1).
 source_arg(use_module, 1).
