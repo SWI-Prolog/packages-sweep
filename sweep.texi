@@ -2115,6 +2115,10 @@ If point is at a callable position, @code{completion-at-point}
 suggests matching predicate calls as completion candidates.  If the
 predicate you choose takes arguments, Sweep inserts holes in their
 places, and moves point to the first argument (@pxref{Holes}).
+@item Predicate option completion
+If point is inside a predicates options list,
+@code{completion-at-point} suggests matching options or option values
+for the appropriate predicate.
 @item Source file completion
 If point is at a position where a source file specification should
 appear (such as the argument of @code{use_module/1}),

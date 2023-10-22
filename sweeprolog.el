@@ -1561,6 +1561,12 @@ Used for `completion-at-point' candidates in cases such as:
          (sweeprolog-source-completion-candidates beg end)))
       (`("source" . ,source)
        (sweeprolog-alias-source-completion-candidates beg end source))
+      (`("option" ,pred ,ari)
+       (if fnc
+           (sweeprolog-option-functor-completion-candidates beg end pred ari)
+         (sweeprolog-option-completion-candidates beg end pred ari)))
+      (`("option" ,pred ,ari ,option)
+       (sweeprolog-option-arg-completion-candidates beg end pred ari option))
       (_
        (if fnc
            (sweeprolog-compound-functor-completion-candidates beg end fnc)
@@ -1690,7 +1696,82 @@ Used for `completion-at-point' candidates in cases such as:
     foo :- 123 =-!- 100 + 20 + 3"
   nil)
 
+(defun sweeprolog-option-functor-completion-candidates (beg end pred ari)
+  "Return completions for option functors for PRED/ARI between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(T) :- read_term(T, [va-!-es("
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_option_functors_collection"
+         (list (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)
+               pred ari ari))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Option functor")))
+
+(defun sweeprolog-option-completion-candidates (beg end pred ari)
+  "Return completions for options for PRED/ARI between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(T) :- read_term(T, [va-!-"
+  (let ((col (sweeprolog--query-once
+              "sweep" "sweep_options_collection"
+              (list (buffer-substring-no-properties beg (point))
+                    (buffer-substring-no-properties (point) end)
+                    pred ari ari))))
+    (list beg end col
+          :exclusive 'no
+          :annotation-function (lambda (_) " Option")
+          :exit-function
+          (lambda (string status)
+            (pcase status
+              ('finished
+               (pcase (cdr (assoc-string string col))
+                 (`(compound
+                    "term_position"
+                    0 ,length
+                    ,_fbeg ,_fend
+                    ,holes)
+                  (with-silent-modifications
+                    (dolist (hole holes)
+                      (pcase hole
+                        (`(compound "-" ,hbeg ,hend)
+                         (add-text-properties
+                          (- (point) length (- hbeg))
+                          (- (point) length (- hend))
+                          (list
+                           'sweeprolog-hole t
+                           'font-lock-face (list 'sweeprolog-hole)
+                           'rear-nonsticky '(sweeprolog-hole
+                                             cursor-sensor-functions
+                                             font-lock-face)))))))
+                  (backward-char length)
+                  (sweeprolog-forward-hole)))))))))
+
+(defun sweeprolog-option-arg-completion-candidates (beg end pred ari option)
+  "Return completions for argument of OPTION for PRED/ARI between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(T) :- read_term(T, [syntax_errors(fa-!-"
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_option_arguments_collection"
+         (list (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)
+               pred ari ari option))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Option argument")))
+
 (defun sweeprolog-source-functor-completion-candidates (beg end)
+  "Return completion candidates for the Prolog path alias between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    :- use_module(lib-!-ry("
   (list beg end
         (sweeprolog--query-once
          "sweep" "sweep_path_alias_collection"
@@ -1700,6 +1781,11 @@ Used for `completion-at-point' candidates in cases such as:
         :annotation-function (lambda (_) " Path alias functor")))
 
 (defun sweeprolog-alias-source-completion-candidates (beg end alias)
+  "Return completions for the file specification in ALIAS between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    :- use_module(library(prol-!-"
   (list beg end
         (sweeprolog--query-once
          "sweep" "sweep_alias_source_file_name_collection"
@@ -1710,6 +1796,11 @@ Used for `completion-at-point' candidates in cases such as:
         :annotation-function (lambda (_) " Source")))
 
 (defun sweeprolog-source-completion-candidates (beg end)
+  "Return completions for the file specification between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    :- use_module(lib-!-"
   (list beg end
         (append
          (mapcar (lambda (file-name)

@@ -464,22 +464,54 @@ baz(Baz) :- bar(Baz).
 "
                    )))
 
+(sweeprolog-deftest cap-option-functor ()
+  "Completion at point for predicate option functors."
+  "
+foo(T) :-
+    read_term(T, [va-!-mes(
+"
+  (should (pcase (sweeprolog-completion-at-point)
+            (`(30 35 ("variable_names") . ,_) t))))
+
+(sweeprolog-deftest cap-option ()
+  "Completion at point for predicate options."
+  "
+foo(T) :-
+    read_term(T, [va-!-mes
+"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 30 (nth 0 cap)))
+    (should (= 35 (nth 1 cap)))
+    (should (equal '("variable_names(_)")
+                   (all-completions "" (nth 2 cap))))))
+
+(sweeprolog-deftest cap-option-argument ()
+  "Completion at point for predicate option arguments."
+  "
+foo(T) :-
+    read_term(T, [syntax_errors(fa-!-
+"
+  (let ((cap (sweeprolog-completion-at-point)))
+    (should (= 44 (nth 0 cap)))
+    (should (= 46 (nth 1 cap)))
+    (should (equal '("fail") (nth 2 cap)))))
+
 (sweeprolog-deftest cap-source ()
-  "Completion at point source files."
+  "Completion at point for source files."
   ":- use_module(li-!-"
   (should (pcase (sweeprolog-completion-at-point)
             (`(15 17 ,candidates . ,_)
              (member "library(prolog_colour)" candidates)))))
 
 (sweeprolog-deftest cap-source-in-library ()
-  "Completion at point source files."
+  "Completion at point for source files in a path alias."
   ":- use_module(library(pro-!-"
   (should (pcase (sweeprolog-completion-at-point)
             (`(23 26 ,candidates . ,_)
              (member "prolog_colour" candidates)))))
 
 (sweeprolog-deftest cap-source-alias-functor ()
-  "Completion at point source files."
+  "Completion at point for path alias functors."
   ":- use_module(l-!-ry(prolog_source))."
   (let ((res (sweeprolog-completion-at-point)))
     (should (= (nth 0 res) 15))

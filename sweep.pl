@@ -101,7 +101,10 @@
             sweep_extract_goal/2,
             sweep_path_alias_collection/2,
             sweep_source_file_name_collection/2,
-            sweep_alias_source_file_name_collection/2
+            sweep_alias_source_file_name_collection/2,
+            sweep_option_functors_collection/2,
+            sweep_options_collection/2,
+            sweep_option_arguments_collection/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -960,6 +963,35 @@ sweep_compound_functors_collection([Arity,Bef,Aft], Fs) :-
     setof(F, sweep_matching_functor(Bef, Aft, F/Arity), Fs0),
     maplist(term_string, Fs0, Fs).
 
+sweep_option_functors_collection([Bef,Aft,Pred0,Ari,Arg], Fs) :-
+    atom_string(Pred, Pred0),
+    current_predicate_options(Pred/Ari, Arg, Options),
+    maplist([T,F]>>(T =.. [F|_]), Options, Fs0),
+    maplist(term_string, Fs0, Fs1),
+    include(sweep_matching_atom(Bef, Aft), Fs1, Fs).
+
+sweep_options_collection([Bef,Aft,Pred0,Ari,Arg], Fs) :-
+    atom_string(Pred, Pred0),
+    current_predicate_options(Pred/Ari, Arg, Options),
+    maplist([T,F]>>(T =.. [F|_]), Options, Fs0),
+    maplist(term_string, Fs0, Fs1),
+    include(sweep_matching_atom(Bef, Aft), Fs1, Fs2),
+    maplist([L,R]>>sweep_format_term([L,1,999], R), Fs2, Fs).
+
+sweep_option_arguments_collection([Bef,Aft,Pred0,Ari,Arg,Opt0], Fs) :-
+    atom_string(Pred, Pred0),
+    atom_string(Opt1, Opt0),
+    Opt =.. [Opt1,Type],
+    current_predicate_options(Pred/Ari, Arg, Options),
+    member(Opt, Options),
+    sweep_option_arguments_collection_(Type, Bef, Aft, Fs).
+
+sweep_option_arguments_collection_(boolean, Bef, Aft, Fs) :-
+    sweep_option_arguments_collection_(oneof([true,false]), Bef, Aft, Fs).
+sweep_option_arguments_collection_(oneof(Alts0), Bef, Aft, Alts) :-
+    maplist(atom_string, Alts0, Alts1),
+    include(sweep_matching_atom(Bef, Aft), Alts1, Alts).
+
 sweep_alias_source_file_name_collection([Bef,Aft,Alias], As) :-
     setof(A, sweep_alias_source_file_name(Bef, Aft, Alias, A), As).
 
@@ -1073,6 +1105,9 @@ sweep_context_callable_([["("|_]|T], R0, R) :-
 sweep_context_callable_([["{"|_]|T], 2, R) :-
     !,
     sweep_context_callable_(T, 0, R).
+sweep_context_callable_([["["|_]|T], ["options", F, N], R) :-
+    !,
+    sweep_context_callable_(T, ["option", F, N], R).
 sweep_context_callable_([H|T], R0, R) :-
     H = [F0|N],
     atom_string(F, F0),
@@ -1084,6 +1119,13 @@ sweep_context_callable_arg(^, _, _, 0) :- !.
 sweep_context_callable_arg(Neck, _, _, 0) :-
     op_is_neck(Neck),
     !.
+sweep_context_callable_arg(F0, N, 0, ["options", F, N]) :-
+    current_option_arg(F0/N, N),
+    !,
+    atom_string(F0, F).
+sweep_context_callable_arg(F0, 1, ["option", P, N], ["option", P, N, F]) :-
+    !,
+    atom_string(F0, F).
 sweep_context_callable_arg(F, N, 0, "source") :-
     source_arg(F,N),
     !.
