@@ -1550,13 +1550,21 @@ Used for `completion-at-point' candidates in cases such as:
          (open-paren (char-after end))
          (fnc (and open-paren (= open-paren ?\()
                    (sweeprolog-count-arguments-forward (1+ end)))))
-    (if cxt
-        (if fnc
-            (sweeprolog-predicate-functor-completion-candidates beg end fnc cxt)
-          (sweeprolog-predicate-completion-candidates beg end cxt))
-      (if fnc
-          (sweeprolog-compound-functor-completion-candidates beg end fnc)
-        (sweeprolog-compound-completion-candidates beg end)))))
+    (pcase cxt
+      ((pred integerp)
+       (if fnc
+           (sweeprolog-predicate-functor-completion-candidates beg end fnc cxt)
+         (sweeprolog-predicate-completion-candidates beg end cxt)))
+      ("source"
+       (if fnc
+           (sweeprolog-source-functor-completion-candidates beg end)
+         (sweeprolog-source-completion-candidates beg end)))
+      (`("source" . ,source)
+       (sweeprolog-alias-source-completion-candidates beg end source))
+      (_
+       (if fnc
+           (sweeprolog-compound-functor-completion-candidates beg end fnc)
+         (sweeprolog-compound-completion-candidates beg end))))))
 
 (defun sweeprolog--variable-completion-at-point (beg end)
   "Return completion candidates for the variable between BEG and END.
@@ -1682,6 +1690,40 @@ Used for `completion-at-point' candidates in cases such as:
     foo :- 123 =-!- 100 + 20 + 3"
   nil)
 
+(defun sweeprolog-source-functor-completion-candidates (beg end)
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_path_alias_collection"
+         (cons (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Path alias functor")))
+
+(defun sweeprolog-alias-source-completion-candidates (beg end alias)
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_alias_source_file_name_collection"
+         (list (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)
+               alias))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Source")))
+
+(defun sweeprolog-source-completion-candidates (beg end)
+  (list beg end
+        (append
+         (mapcar (lambda (file-name)
+                   (file-name-sans-extension
+                    (file-relative-name file-name default-directory)))
+                 (directory-files-recursively default-directory
+                                              (rx ".pl" eos) nil t))
+         (sweeprolog--query-once
+          "sweep" "sweep_source_file_name_collection"
+          (cons (buffer-substring-no-properties beg (point))
+                (buffer-substring-no-properties (point) end))))
+        :exclusive 'no
+        :annotation-function (lambda (_) " Source")))
+
 (defun sweeprolog--completion-at-point ()
   "Return completion candidates for the Prolog code at point.
 
@@ -1699,9 +1741,9 @@ inside a comment, string or quoted atom."
                            (point))))
          (if (sweeprolog-variable-start-char-p (char-after symbol-beg))
              (sweeprolog--variable-completion-at-point symbol-beg
-                                                      symbol-end)
+                                                       symbol-end)
            (sweeprolog--atom-or-functor-completion-at-point symbol-beg
-                                                           symbol-end))))
+                                                            symbol-end))))
       (?. (sweeprolog--operator-completion-at-point))
       (?\( (pcase (char-before)
              (?\( (when-let ((prev (char-before (1- (point)))))
@@ -4720,7 +4762,7 @@ This function is added to ‘post-self-insert-hook’ by
                `(operator ,beg ,end))
            (when (and (member (buffer-substring-no-properties beg end)
                               '("(" ";" "->" "*->"))
-                      (sweeprolog-context-callable-p))
+                      (integerp (sweeprolog-context-callable-p)))
              (insert (make-string (+ 4 beg (- end)) ? ))))))
        ((= (char-syntax inserted) ?\))
         (sweeprolog-indent-line))))))
@@ -6284,8 +6326,8 @@ POINT is the buffer position of the mouse click."
              (<= sweeprolog-context-menu-region-beg-at-click
                  point
                  sweeprolog-context-menu-region-end-at-click))
-    (when (sweeprolog-context-callable-p
-           sweeprolog-context-menu-region-beg-at-click)
+    (when (integerp (sweeprolog-context-callable-p
+                     sweeprolog-context-menu-region-beg-at-click))
       (define-key
        menu [sweeprolog-extract-region-to-predicate]
        `(menu-item "Extract to New Predicate"
@@ -7209,7 +7251,7 @@ where in the buffer to insert the newly created predicate."
 
 (defun sweeprolog-maybe-extract-region-to-predicate (_point arg)
   (when (and (use-region-p)
-             (sweeprolog-context-callable-p (use-region-beginning)))
+             (integerp (sweeprolog-context-callable-p (use-region-beginning))))
     (sweeprolog-extract-region-to-predicate
      (use-region-beginning)
      (use-region-end)

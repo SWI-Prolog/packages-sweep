@@ -464,11 +464,33 @@ baz(Baz) :- bar(Baz).
 "
                    )))
 
-(sweeprolog-deftest cap-variable ()
-  "Completion at point for variable names."
-  "baz(Baz) :- bar(B-!-)."
+(sweeprolog-deftest cap-source ()
+  "Completion at point source files."
+  ":- use_module(li-!-"
   (should (pcase (sweeprolog-completion-at-point)
-            (`(17 18 ("Baz") . ,_) t))))
+            (`(15 17 ,candidates . ,_)
+             (member "library(prolog_colour)" candidates)))))
+
+(sweeprolog-deftest cap-source-in-library ()
+  "Completion at point source files."
+  ":- use_module(library(pro-!-"
+  (should (pcase (sweeprolog-completion-at-point)
+            (`(23 26 ,candidates . ,_)
+             (member "prolog_colour" candidates)))))
+
+(sweeprolog-deftest cap-source-alias-functor ()
+  "Completion at point source files."
+  ":- use_module(l-!-ry(prolog_source))."
+  (let ((res (sweeprolog-completion-at-point)))
+    (should (= (nth 0 res) 15))
+    (should (= (nth 1 res) 18))
+    (should (equal (nth 2 res) '("library")))))
+
+(sweeprolog-deftest cap-variable ()
+                    "Completion at point for variable names."
+                    "baz(Baz) :- bar(B-!-)."
+                    (should (pcase (sweeprolog-completion-at-point)
+                              (`(17 18 ("Baz") . ,_) t))))
 
 (sweeprolog-deftest cap-local-predicate ()
   "Completion at point for local predicates."

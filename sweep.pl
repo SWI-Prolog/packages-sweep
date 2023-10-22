@@ -98,7 +98,10 @@
             sweep_cleanup_threads/2,
             sweep_kill_thread/2,
             sweep_list_threads/2,
-            sweep_extract_goal/2
+            sweep_extract_goal/2,
+            sweep_path_alias_collection/2,
+            sweep_source_file_name_collection/2,
+            sweep_alias_source_file_name_collection/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -957,6 +960,41 @@ sweep_compound_functors_collection([Arity,Bef,Aft], Fs) :-
     setof(F, sweep_matching_functor(Bef, Aft, F/Arity), Fs0),
     maplist(term_string, Fs0, Fs).
 
+sweep_alias_source_file_name_collection([Bef,Aft,Alias], As) :-
+    setof(A, sweep_alias_source_file_name(Bef, Aft, Alias, A), As).
+
+sweep_alias_source_file_name(Bef, Aft, Alias, L) :-
+    atom_string(F, Alias),
+    A =.. [F,'.'],
+    absolute_file_name(A, Dir, [file_type(directory), solutions(all)]),
+    directory_member(Dir, M, [extensions([pl]), recursive(true)]),
+    atom_concat(Dir, '/', Prefix),
+    atom_concat(Prefix, R, M),
+    file_name_extension(S, pl, R),
+    atom_string(S, L),
+    sweep_matching_atom(Bef, Aft, L).
+
+sweep_source_file_name_collection([Bef|Aft], As) :-
+    setof(A, sweep_source_file_name(Bef, Aft, A), As).
+
+sweep_source_file_name(Bef, Aft, L) :-
+    file_search_path(A0, _),
+    term_string(A0, S),
+    sweep_matching_atom(Bef, Aft, S),
+    A =.. [A0,'.'],
+    absolute_file_name(A, Dir, [file_type(directory), solutions(all)]),
+    directory_member(Dir, F, [extensions([pl]), recursive(true)]),
+    sweep_file_path_in_library(F, L).
+
+sweep_path_alias_collection([Bef|Aft], As) :-
+    setof(A, sweep_matching_path_alias(Bef, Aft, A), As0),
+    maplist(term_string, As0, As).
+
+sweep_matching_path_alias(Bef, Aft, A) :-
+    file_search_path(A, _),
+    term_string(A, S),
+    sweep_matching_atom(Bef, Aft, S).
+
 sweep_matching_atom([], Aft, Atom) :-
     !,
     sweep_matching_atom_(Aft, 0, Atom).
@@ -1017,7 +1055,7 @@ sweep_context_callable([H|T], R) :-
     ->  R0 = 2
     ;   R0 = 0
     ),
-    sweep_context_callable_(T, R0, 0, R).
+    sweep_context_callable_(T, R0, R).
 sweep_context_callable([_|T], R) :-
     sweep_context_callable(T, R).
 
@@ -1027,26 +1065,32 @@ op_is_neck(F) :-
     ;   current_op(1200, _, F)
     ).
 
-sweep_context_callable_([], R0, R1, R) :- R is R0 + R1, !.
-sweep_context_callable_([[":"|2]], R0, R1, R) :- R is R0 + R1, !.
-sweep_context_callable_([["("|_]|T], R0, R1, R) :-
+sweep_context_callable_([], R, R) :- !.
+sweep_context_callable_([[":"|2]], R, R) :- !.
+sweep_context_callable_([["("|_]|T], R0, R) :-
     !,
-    sweep_context_callable_(T, R0, R1, R).
-sweep_context_callable_([["{"|_]|T], 2, R1, R) :-
+    sweep_context_callable_(T, R0, R).
+sweep_context_callable_([["{"|_]|T], 2, R) :-
     !,
-    sweep_context_callable_(T, 0, R1, R).
-sweep_context_callable_([H|T], R0, _, R) :-
+    sweep_context_callable_(T, 0, R).
+sweep_context_callable_([H|T], R0, R) :-
     H = [F0|N],
     atom_string(F, F0),
-    sweep_context_callable_arg(F, N, R1),
-    sweep_context_callable_(T, R0, R1, R).
+    sweep_context_callable_arg(F, N, R0, R1),
+    sweep_context_callable_(T, R1, R).
 
-sweep_context_callable_arg((-->), _, 2) :- !.
-sweep_context_callable_arg(^, _, 0) :- !.
-sweep_context_callable_arg(Neck, _, 0) :-
+sweep_context_callable_arg((-->), _, _, 2) :- !.
+sweep_context_callable_arg(^, _, _, 0) :- !.
+sweep_context_callable_arg(Neck, _, _, 0) :-
     op_is_neck(Neck),
     !.
-sweep_context_callable_arg(F, N, R) :-
+sweep_context_callable_arg(F, N, 0, "source") :-
+    source_arg(F,N),
+    !.
+sweep_context_callable_arg(F0, 1, "source", ["source"|F]) :-
+    !,
+    atom_string(F0, F).
+sweep_context_callable_arg(F, N, _, R) :-
     sweep_current_module(Mod),
     (   @(predicate_property(Head, visible), Mod)
     ;   xref_defined(_, Head, _)
@@ -1061,6 +1105,11 @@ sweep_context_callable_arg(F, N, R) :-
     ),
     arg(N, Spec, A),
     callable_arg(A, R).
+
+source_arg(load_files, 1).
+source_arg(use_module, 1).
+source_arg(consult, 1).
+source_arg(ensure_loaded, 1).
 
 callable_arg(N,    N) :- integer(N), !.
 callable_arg((^),  0) :- !.
@@ -1099,6 +1148,8 @@ sweep_file_path_in_library(Path, Spec) :-
     prolog_deps:segments(Spec0, Spec1),
     (   string(Spec1)
     ->  Spec = Spec1
+    ;   atom(Spec1)
+    ->  atom_string(Spec1, Spec)
     ;   term_string(Spec1, Spec)
     ).
 
