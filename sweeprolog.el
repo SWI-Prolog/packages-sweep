@@ -3575,6 +3575,7 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
   (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point nil t)
   (add-hook 'after-change-functions #'sweeprolog-colourise-query nil t)
+  (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
   (when (and (member sweeprolog-faces-style '(light dark))
              (not (custom-theme-enabled-p 'sweeprolog-pce)))
     (load-theme 'sweeprolog-pce t)
