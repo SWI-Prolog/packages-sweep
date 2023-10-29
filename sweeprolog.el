@@ -3433,11 +3433,12 @@ top-level."
                     (make-comint-in-buffer "sweeprolog-top-level" buf nil)
                     (let* ((proc (get-buffer-process buf))
                            (tty (process-tty-name proc)))
+                      (process-send-eof proc)
+                      (sweeprolog--query-once "sweep" "sweep_top_level_start_pty" tty)
+                      (unless comint-last-prompt buf (accept-process-output proc 1))
                       (when (eq system-type 'gnu/linux)
                         ;; make sure the pty does not echo input
-                        (call-process "stty" nil nil nil "-F" tty "-echo"))
-                      (process-send-eof proc)
-                      (sweeprolog--query-once "sweep" "sweep_top_level_start_pty" tty)))
+                        (call-process "stty" nil nil nil "-F" tty "-echo"))))
                 (unless sweeprolog-prolog-server-port
                   (sweeprolog-start-prolog-server))
                 (make-comint-in-buffer "sweeprolog-top-level"
