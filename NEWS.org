@@ -11,6 +11,23 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.26.1 on 2023-10-29
+
+** Fix issue with top-level not starting correctly on GNU/Linux
+
+This is a bugfix release, addressing an issue introduced in Sweep
+version 0.26.0 that could cause starting the Sweep top-level to fail
+on GNU/Linux systems, with the following message:
+
+#+begin_quote
+Process sweeprolog-top-level failed with code 0
+#+end_quote
+
+** Sweep now sets up Xref in top-level buffers
+
+Xref commands, such as ~M-.~ and ~M-?~, now use Sweep's
+cross-reference backend also in top-level buffers.
+
 * Version 0.26.0 on 2023-10-22
 
 ** More fine-grained in-buffer completions
