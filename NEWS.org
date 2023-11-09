@@ -11,6 +11,14 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.26.2 on 2023-11-09
+
+** Fix issue with Emacs daemon deleting a pty top-level
+
+This is a maintenance release, addressing an issue that could cause
+the Emacs daemon to shutdown upon deleting a top-level that uses a
+pseudo-terminal for communication.
+
 * Version 0.26.1 on 2023-10-29
 
 ** Fix issue with top-level not starting correctly on GNU/Linux
