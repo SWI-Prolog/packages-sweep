@@ -106,7 +106,8 @@
             sweep_options_collection/2,
             sweep_option_arguments_collection/2,
             sweep_functions_collection/2,
-            sweep_function_functors_collection/2
+            sweep_function_functors_collection/2,
+            sweep_nohup/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -2179,3 +2180,6 @@ sweep_extract_lambda_1(Clause, ClauseVarNames, Func, Shared, Args, GoalPos, Offs
     ->  Exists = "true"
     ;   Exists = []
     ).
+
+sweep_nohup(1, _) :- on_signal(hup, _, atom).
+sweep_nohup(0, _) :- on_signal(hup, _, default).

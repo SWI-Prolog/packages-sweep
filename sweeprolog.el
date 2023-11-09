@@ -3415,6 +3415,19 @@ function with PROC and MSG."
                           #'sweeprolog-top-level-sentinel)
     (add-hook 'kill-buffer-hook #'comint-write-input-ring nil t)))
 
+(defun sweeprolog-top-level-filter (process string)
+  (let ((sweeprolog-top-level-output-filter t))
+    (comint-output-filter process string))
+  (when (string-match (rx "Sweep top-level thread exited") string)
+    (with-current-buffer (process-buffer process)
+      (setq sweeprolog-top-level-thread-id nil))
+    (if (or (eq (process-type process) 'network)
+            (not (daemonp)))
+        (delete-process process)
+      (sweeprolog--query-once "sweep" "sweep_nohup" 1)
+      (delete-process process)
+      (sweeprolog--query-once "sweep" "sweep_nohup" 0))))
+
 (defun sweeprolog-top-level-buffer (&optional name)
   "Return a Prolog top-level buffer named NAME.
 
@@ -3447,14 +3460,7 @@ top-level."
                                              sweeprolog-prolog-server-port))
                 (sweeprolog--query-once "sweep" "sweep_accept_top_level_client" nil)))
         (let ((proc (get-buffer-process buf)))
-          (set-process-filter proc
-                              (lambda (process string)
-                                (let ((sweeprolog-top-level-output-filter t))
-                                  (comint-output-filter process string))
-                                (when (string-match (rx "Sweep top-level thread exited") string)
-                                  (delete-process process)
-                                  (with-current-buffer buf
-                                    (setq sweeprolog-top-level-thread-id nil)))))
+          (set-process-filter proc #'sweeprolog-top-level-filter)
           (unless comint-last-prompt buf (accept-process-output proc 1))
           (set-process-query-on-exit-flag proc nil)
           (setq-local comint-input-ring-file-name
