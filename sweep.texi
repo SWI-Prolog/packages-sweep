@@ -49,7 +49,7 @@ SWI-Prolog development environment.
 @end ifnottex
 
 @menu
-* Overview::                     Major mode for reading and writing Prolog
+* Overview::                     High level look at Sweep
 * Installation::                 Intructions for installing sweep
 * Getting Started::              First steps with sweep
 * Discovering Sweep::            Tips for finding out about Sweep features
