@@ -5298,7 +5298,7 @@ accordingly."
                                            pi)))
     (funcall cb (car docs)
              :thing pi
-             :face 'font-lock-function-name-face)))
+             :face 'sweeprolog-predicate-indicator)))
 
 
 ;;;; Top-level Menu
