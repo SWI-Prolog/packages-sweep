@@ -319,6 +319,7 @@ sweep_short_documentation_head(parentheses_term_position(Beg, End, Pos), Head, N
 
 sweep_short_documentation_(FileName, Mod, Goal, Index, Meta, PIString, Doc, ArgSpan) :-
     explicit_args(Meta, Goal, Head),
+    \+ is_control_goal(Head),
     (   predicate_property(Mod:Head, built_in)
     ->  M = system
     ;   (   xref_defined(FileName, Head, imported(From))
@@ -421,7 +422,6 @@ explicit_args_(N, G0, G) :-
     length(A1, N),
     append(A0, A1, A),
     G =.. [F|A].
-
 
 sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
     doc_comment(M:PI, Pos, OneLiner, Comment),
