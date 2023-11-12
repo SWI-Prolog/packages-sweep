@@ -1991,8 +1991,8 @@ C-b} in that buffer.
 
 Sweep integrates with the Emacs minor mode ElDoc, which automatically
 displays documentation for the predicate at point.  Whenever you move
-the cursor into a predicate definition or invocation, the signature
-and summary of that predicate are displayed in the echo area at the
+the cursor into a predicate definition or invocation, ElDoc displays
+the signature and summary of that predicate in the echo area at the
 bottom of the frame.
 
 @defopt sweeprolog-enable-eldoc
