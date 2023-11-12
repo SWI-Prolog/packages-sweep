@@ -34,7 +34,6 @@
           [ sweep_setup_message_hook/2,
             sweep_current_prolog_flags/2,
             sweep_set_prolog_flag/2,
-            sweep_documentation/2,
             sweep_expand_file_name/2,
             sweep_path_module/2,
             sweep_load_buffer/2,
@@ -107,7 +106,8 @@
             sweep_option_arguments_collection/2,
             sweep_functions_collection/2,
             sweep_function_functors_collection/2,
-            sweep_nohup/2
+            sweep_nohup/2,
+            sweep_short_documentation/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -234,51 +234,261 @@ sweep_handle_fragment_(Offset, Col, Beg, Len) :-
     Start is Beg + Offset,
     user:sweep_funcall("sweeprolog-analyze-fragment", [Start,Len|Nom], _).
 
-sweep_documentation(PI0, Docs) :-
-    term_string(PI1, PI0),
-    (   PI1 = M:PI
+sweep_short_documentation([ClauseString,Point,FileName0], [PIString,Doc,ArgSpan]) :-
+    atom_string(FileName, FileName0),
+    xref_source(FileName),
+    sweep_module_path_(Mod, FileName),
+    term_string(Clause, ClauseString, [subterm_positions(Pos), module(Mod), syntax_errors(quiet)]),
+    callable(Clause),
+    sweep_short_documentation_clause(Pos, Clause, Point, FileName, Mod, PIString, Doc, ArgSpan).
+
+sweep_short_documentation_clause(Beg-End, Atom, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    Beg =< Point, Point =< End,
+    sweep_short_documentation_(FileName, Mod, Atom, 0, 0, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause(brace_term_position(Beg, End, _), Head, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    (   Beg < Point, Point < End
+    ->  Arg = 1
+    ;   Arg = 0
+    ),
+    sweep_short_documentation_(FileName, Mod, Head, Arg, 0, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause(Pos, Clause, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    Pos = term_position(Beg, End, _, _, ArgsPos),
+    !,
+    Beg =< Point, Point =< End,
+    sweep_short_documentation_clause_(Clause, Pos, ArgsPos, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause(parentheses_term_position(Beg, End, Pos), Clause, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    Beg < Point, Point < End,
+    sweep_short_documentation_clause(Pos, Clause, Point, FileName, Mod, PIString, Doc, ArgSpan).
+
+sweep_short_documentation_clause_((Head :- Body), _Pos, [HeadPos, BodyPos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_clause_neck(Head, HeadPos, Body, BodyPos, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause_((Head => Body), _Pos, [HeadPos, BodyPos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_clause_neck(Head, HeadPos, Body, BodyPos, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause_((Head --> Body), _Pos, [HeadPos, BodyPos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_clause_neck(Head, HeadPos, Body, BodyPos, '//', Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause_((:- Directive), _Pos, [Pos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_body(Pos, Directive, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause_(Head, Pos, _, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    sweep_short_documentation_head(Pos, Head, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+
+
+sweep_short_documentation_clause_neck(Head, HeadPos, Body, BodyPos, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    (   pos_bounds(HeadPos, HeadBeg, HeadEnd),
+        HeadBeg =< Point, Point =< HeadEnd
+    ->  sweep_short_documentation_head(HeadPos, Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan)
+    ;   pos_bounds(BodyPos, BodyBeg, BodyEnd),
+        BodyBeg =< Point, Point =< BodyEnd
+    ->  sweep_short_documentation_body(BodyPos, Body, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan)
+    ).
+
+sweep_short_documentation_head(Beg-End, Atom, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    Beg =< Point, Point =< End,
+    atom(Atom),
+    sweep_short_documentation_(FileName, Mod, Atom, 0, Neck, PIString, Doc, ArgSpan).
+sweep_short_documentation_head(brace_term_position(Beg, End, _), Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    (   Beg < Point, Point < End
+    ->  Arg = 1
+    ;   Arg = 0
+    ),
+    sweep_short_documentation_(FileName, Mod, Head, Arg, Neck, PIString, Doc, ArgSpan).
+sweep_short_documentation_head(term_position(_, _, _, _, [_, Pos]), Mod:Head, Neck, Point, FileName, _, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_head(Pos, Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_head(term_position(_, _, _, _, ArgsPos), Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    (   nth1(Index, ArgsPos, ArgPos),
+        pos_bounds(ArgPos, ArgBeg, ArgEnd),
+        ArgBeg =< Point, Point =< ArgEnd
     ->  true
-    ;   PI=PI1
+    ;   Index = 0
     ),
-    findall(Doc, sweep_documentation_(M, PI, Doc), Docs).
+    sweep_short_documentation_(FileName, Mod, Head, Index, Neck, PIString, Doc, ArgSpan).
+sweep_short_documentation_head(parentheses_term_position(Beg, End, Pos), Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    Beg < Point, Point < End,
+    sweep_short_documentation_head(Pos, Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan).
 
-sweep_documentation_(M, PI, Docs) :-
-   doc_comment(M:PI, Pos, OneLiner, Comment),
-   is_structured_comment(Comment, Prefixes),
-   string_codes(Comment, Codes),
-   indented_lines(Codes, Prefixes, Lines),
-   pldoc_modes:mode_lines(Lines, ModeText, [], _),
-   pldoc_modes:modes(ModeText, M, Pos, Modes),
-   sweep_documentation_modes(Modes, OneLiner, Docs).
-sweep_documentation_(_, PI, Docs) :-
-    pldoc_man:load_man_object(PI, _, _, Dom),
-    with_output_to(string(DomS), html_text(Dom, [])),
-    sub_string(DomS, EOL, _, _, '\n'),
-    sub_string(DomS, 0, EOL, _, FLine),
-    sub_string(DomS, EOL, _, 0, Rest),
-    (   sub_string(Rest, EOS, _, _, '. ')
-    ->  sub_string(Rest, 0, EOS, _, OneLiner2)
-    ;   OneLiner2=Rest
+sweep_short_documentation_(FileName, Mod, Goal, Index, Meta, PIString, Doc, ArgSpan) :-
+    explicit_args(Meta, Goal, Head),
+    (   predicate_property(Mod:Head, built_in)
+    ->  M = system
+    ;   (   xref_defined(FileName, Head, imported(From))
+        % ; predicate_property(Mod:Head, imported_from(From))
+        ;   predicate_property(Mod:Head, autoload(From0)),
+            absolute_file_name(From0, From, [extensions([pl])])
+        ;   predicate_property(Mod:Head, file(From))
+        ),
+        sweep_module_path_(M0, From),
+        \+ M0 == user
+    ->  M = M0
+    ;   M = Mod
     ),
-    format(string(Docs), '~w.    ~w.~n', [FLine, OneLiner2]),
-    !.
+    pi_head(F/A0, Head),
+    (   sweep_grammar_rule(M, F, A0)
+    ->  A is A0 - 2,
+        PI = F//A
+    ;   PI = F/A0
+    ),
+    sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan).
 
-sweep_documentation_modes([mode(Mode0, Args)|_], OneLiner, Docs) :-
+sweep_short_documentation_body(Beg-End, Atom, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    Beg =< Point, Point =< End,
+    atom(Atom),
+    sweep_short_documentation_(FileName, Mod, Atom, 0, Neck, PIString, Doc, ArgSpan).
+sweep_short_documentation_body(brace_term_position(Beg, End, Pos), {Body}, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    (   Beg < Point, Point < End
+    ->  (   Neck == '//'
+        ->  sweep_short_documentation_body(Pos, Body, 0, Point, FileName, Mod, PIString, Doc, ArgSpan)
+        ;   sweep_short_documentation_(FileName, Mod, {Body}, 1, Neck, PIString, Doc, ArgSpan)
+        )
+    ;   sweep_short_documentation_(FileName, Mod, {Body}, 0, Neck, PIString, Doc, ArgSpan)
+    ).
+sweep_short_documentation_body(term_position(_, _, _, _, [_, Pos]), M0:Goal, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    (   atom(M0)
+    ->  M = M0
+    ;   M = Mod
+    ),
+    sweep_short_documentation_body(Pos, Goal, Neck, Point, FileName, M, PIString, Doc, ArgSpan).
+sweep_short_documentation_body(term_position(_, _, _, _, [_, Pos]), _^Goal, 0, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_body(Pos, Goal, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_body(Pos, Body, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    Pos = term_position(_, _, _, _, _),
+    (   Body = _>>_
+    ;   Body = _/_
+    ),
+    integer(Neck),
+    Neck > 0,
+    !,
+    sweep_short_documentation_body(Pos, Body, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_body(term_position(_, _, _, _, ArgsPos), Body, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    (   nth1(Index, ArgsPos, ArgPos),
+        pos_bounds(ArgPos, ArgBeg, ArgEnd),
+        ArgBeg =< Point, Point =< ArgEnd
+    ->  (   explicit_args(Neck, Body, Goal),
+            (   @(predicate_property(Goal, meta_predicate(Spec)), Mod)
+            ->  true
+            ;   catch(infer_meta_predicate(Goal, Spec),
+                      error(permission_error(access, private_procedure, _),
+                            context(system:clause/2, _)),
+                      false)
+            ),
+            arg(Index, Spec, Meta),
+            (   integer(Meta)
+            ->  Neck1 = Meta
+            ;   Meta == '^'
+            ->  Neck1 = 0
+            ;   Meta == '//'
+            ->  Neck1 = '//'
+            ),
+            arg(Index, Body, ArgBody)
+        ->  sweep_short_documentation_body(ArgPos, ArgBody, Neck1, Point, FileName, Mod, PIString, Doc, ArgSpan)
+        ;   sweep_short_documentation_(FileName, Mod, Body, Index, Neck, PIString, Doc, ArgSpan)
+        )
+    ;   sweep_short_documentation_(FileName, Mod, Body, 0, Neck, PIString, Doc, ArgSpan)
+    ).
+sweep_short_documentation_body(parentheses_term_position(Beg, End, Pos), Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    Beg < Point, Point < End,
+    sweep_short_documentation_body(Pos, Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan).
+
+explicit_args('//', G0, G) :-
+    !,
+    explicit_args_(2, G0, G).
+explicit_args('^', G0, G) :-
+    !,
+    explicit_args_(0, G0, G).
+explicit_args(N, G0, G) :-
+    integer(N),
+    !,
+    explicit_args_(N, G0, G).
+
+explicit_args_(N, G0, G) :-
+    G0 =.. [F|A0],
+    length(A1, N),
+    append(A0, A1, A),
+    G =.. [F|A].
+
+
+sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
+    doc_comment(M:PI, Pos, OneLiner, Comment),
+    is_structured_comment(Comment, Prefixes),
+    string_codes(Comment, Codes),
+    indented_lines(Codes, Prefixes, Lines),
+    pldoc_modes:mode_lines(Lines, ModeText, [], _),
+    pldoc_modes:modes(ModeText, M, Pos, Modes),
+    member(mode(Mode0, Args), Modes),
+    length(Args, Arity),
+    arg(2, PI, Arity),
     maplist([Name=Var]>>(Var='$VAR'(Name)), Args),
     (   Mode0=(Mode1 is Det)
     ->  true
     ;   Mode1=Mode0,
         Det=unspec
     ),
-    format(string(Docs),
-           '~W is ~w.~n    ~w~n',
-           [ Mode1,
-             [module(pldoc_modes), numbervars(true)],
-             Det,
-             OneLiner
-           ]).
-sweep_documentation_modes([_|T], OneLiner, Docs) :-
-    sweep_documentation_modes(T, OneLiner, Docs).
+    term_string(Mode1, S, [module(pldoc_modes), numbervars(true)]),
+    term_string(T    , S, [module(pldoc_modes), numbervars(true),
+                           subterm_positions(P)]),
+    (   Index == 0
+    ->  ArgSpan = []
+    ;   P = term_position(_, _, _, _, ArgsPos0),
+        (   (   functor(T, '//', 1), PI = _//_
+            ;   functor(T, ':-', 1))
+        ->  ArgsPos0 = [term_position(_, _, _, _, ArgsPos)]
+        ;   ArgsPos = ArgsPos0
+        ),
+        nth1(Index, ArgsPos, ArgPos),
+        pos_bounds(ArgPos, ArgBeg, ArgEnd),
+        ArgSpan = [ArgBeg|ArgEnd]
+    ),
+    format(string(Doc), '~w is ~w.~n    ~w~n', [S, Det, OneLiner]),
+    term_string(M:PI, PIString).
+sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
+    (   pldoc_man:load_man_object(M:PI, _, _, Dom)
+    ->  true
+    ;   pldoc_man:load_man_object(PI, _, _, Dom)
+    ),
+    memberchk(element(dt, _, SubDom0), Dom),
+    memberchk(element(a, Att, SubDom), SubDom0),
+    with_output_to(string(S), html_text(element(dt, Att, SubDom))),
+    term_string(T , S, [module(pldoc_modes), numbervars(true), subterm_positions(P)]),
+    (   Index == 0
+    ->  ArgSpan = []
+    ;   P = term_position(_, _, _, _, ArgsPos0),
+        (   (   functor(T, '//', 1), PI = _//_
+            ;   functor(T, ':-', 1))
+        ->  ArgsPos0 = [term_position(_, _, _, _, ArgsPos)]
+        ;   ArgsPos = ArgsPos0
+        ),
+        nth1(Index, ArgsPos, ArgPos),
+        pos_bounds(ArgPos, ArgBeg, ArgEnd),
+        ArgSpan = [ArgBeg|ArgEnd]
+    ),
+    with_output_to(string(DomS), html_text(Dom)),
+    (   sub_string(DomS, EOL, _, _, '\n')
+    ->  sub_string(DomS, 0, EOL, _, FLine),
+        sub_string(DomS, EOL, _, 0, Rest)
+    ),
+    (   sub_string(Rest, EOS, _, _, '. ')
+    ->  sub_string(Rest, 0, EOS, _, OneLiner2)
+    ;   OneLiner2=Rest
+    ),
+    format(string(Doc), '~w.    ~w.~n', [FLine, OneLiner2]),
+    term_string(M:PI, PIString).
+
 
 sweep_module_class(M0, C) :-
     atom_string(M, M0),
@@ -1293,6 +1503,10 @@ sweep_file_missing_dependencies(File0, Deps) :-
     phrase(dep_directives(Directives), Deps).
 
 dep_directives(Directives) --> sequence(dep_directive, Directives).
+
+%!  dep_directive(+Directive)// is undefined.
+%
+%   Relate Directive to a list of dependency descriptors
 
 dep_directive(:- use_module(Spec)) -->
     !,

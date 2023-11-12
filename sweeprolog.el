@@ -5293,13 +5293,24 @@ accordingly."
 ;;;; ElDoc
 
 (defun sweeprolog-predicate-modes-doc (cb)
-  (when-let ((pi (sweeprolog-identifier-at-point))
-             (docs (sweeprolog--query-once "sweep" "sweep_documentation"
-                                           pi)))
-    (funcall cb (car docs)
-             :thing pi
-             :face 'sweeprolog-predicate-indicator)))
-
+  "Call CB with the documentation of the predicate at point, if any."
+  (when-let ((clause-beg (save-excursion
+                           (unless (sweeprolog-at-beginning-of-top-term-p)
+                             (sweeprolog-beginning-of-top-term))
+                           (point)))
+             (clause-end (save-excursion
+                           (sweeprolog-end-of-top-term)
+                           (point)))
+             (clause-str (buffer-substring-no-properties clause-beg
+                                                         clause-end)))
+    (pcase (sweeprolog--query-once
+            "sweep" "sweep_short_documentation"
+            (list clause-str (- (point) clause-beg) buffer-file-name))
+      (`(,pi ,doc ,span)
+       (when span
+         (add-face-text-property (car span) (cdr span)
+                                 'eldoc-highlight-function-argument nil doc))
+       (funcall cb doc :thing pi :face 'sweeprolog-predicate-indicator)))))
 
 ;;;; Top-level Menu
 
