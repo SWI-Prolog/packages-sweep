@@ -2556,6 +2556,10 @@ inside a comment, string or quoted atom."
      :foreground "green" :extend t))
   "Face to use for the new term in `sweeprolog-query-replace-term' queries.")
 
+(defface sweeprolog-eldoc-argument-highlight
+  '((t :inherit eldoc-highlight-function-argument))
+  "Face to use for highliting the argument at point in ElDoc messages.")
+
 ;;;; Font-lock
 
 (defun sweeprolog-analyze-start-font-lock (beg end)
@@ -5309,7 +5313,7 @@ accordingly."
       (`(,pi ,doc ,span)
        (when span
          (add-face-text-property (car span) (cdr span)
-                                 'eldoc-highlight-function-argument nil doc))
+                                 'sweeprolog-eldoc-argument-highlight nil doc))
        (funcall cb doc :thing pi :face 'sweeprolog-predicate-indicator)))))
 
 ;;;; Top-level Menu

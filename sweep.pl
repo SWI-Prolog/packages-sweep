@@ -441,7 +441,7 @@ sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
     ),
     term_string(Mode1, S, [module(pldoc_modes), numbervars(true)]),
     term_string(T    , S, [module(pldoc_modes), numbervars(true),
-                           subterm_positions(P)]),
+                           subterm_positions(P), syntax_errors(quiet)]),
     (   Index == 0
     ->  ArgSpan = []
     ;   P = term_position(_, _, _, _, ArgsPos0),
@@ -464,7 +464,8 @@ sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
     memberchk(element(dt, _, SubDom0), Dom),
     memberchk(element(a, Att, SubDom), SubDom0),
     with_output_to(string(S), html_text(element(dt, Att, SubDom))),
-    term_string(T , S, [module(pldoc_modes), numbervars(true), subterm_positions(P)]),
+    term_string(T , S, [module(pldoc_modes), numbervars(true),
+                        subterm_positions(P), syntax_errors(quiet)]),
     (   Index == 0
     ->  ArgSpan = []
     ;   P = term_position(_, _, _, _, ArgsPos0),
