@@ -11,6 +11,16 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.27.0 on 2023-11-12
+
+** Highlight the argument at point in ElDoc documentation messages
+
+When displaying the documentation for the predicate at point, Sweep
+now highlights the argument in the predicate signature that
+corresponds to the argument at point.  This can help you tell which
+term corresponds to which argument when you're looking at a predicate
+call with many complex arguments.
+
 * Version 0.26.2 on 2023-11-09
 
 ** Fix issue with Emacs daemon deleting a pty top-level
