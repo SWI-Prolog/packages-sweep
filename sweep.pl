@@ -1445,10 +1445,9 @@ sweep_file_path_in_library(Path, Spec) :-
     ;   term_string(Spec1, Spec)
     ).
 
-
 predicate_argument_names(M:F/A, Args, Extra) :-
     (   sweep_grammar_rule(M, F, A)
-    ->  Extra = [_,_]
+    ->  Extra = ['$VAR'('_'),'$VAR'('_')]
     ;   Extra = []
     ),
     sweep_module_functor_arity_pi_(M, F, A, M:PI),
@@ -1457,7 +1456,6 @@ predicate_argument_names(M:F/A, Args, Extra) :-
     ;   predicate_argument_names_from_pldoc(M, PI, Args0)),
     arg(2, PI, N),
     predicate_argument_names_(N, Args0, Args).
-
 
 predicate_argument_names_from_man(M, PI, Args) :-
     (   pldoc_man:load_man_object(M:PI, _, _, DOM0)
