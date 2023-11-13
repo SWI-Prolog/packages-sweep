@@ -1596,20 +1596,22 @@ sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, 
     !,
     sweep_anon_var_names(Rep, VarNames0, AnonVars0),
     sweep_anon_var_names(Term, VarNames1, AnonVars1),
-    maplist({VarNames1}/[Name0=Var,Name=Var]>>(   member(Name0=_, VarNames1)
-                                              ->  atom_concat(Name0, 'Fresh', Name)
-                                              ;   Name = Name0
-                                              ),
-            VarNames0, VarNames2),
+    maplist(var_name_disambiguate(VarNames1), VarNames0, VarNames2),
     append(AnonVars1, AnonVars0, AnonVars),
     append(VarNames2, AnonVars, VarNames3),
     append(VarNames1, VarNames3, VarNames),
-    sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, TemplateGoal, Rep-VarNames, Res).
+    sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, TemplateGoal, VarNames0, Rep-VarNames, Res).
 sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Res) :-
     sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Res).
 
-sweep_replace_stream_(end_of_file, _, _, _, _, _, _, _, _, []) :- !.
-sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Res) :-
+var_name_disambiguate(VarNames1, Name0=Var, Name=Var) :-
+    (   member(Name0=_, VarNames1)
+    ->  atom_concat(Name0, 'Fresh', Name)
+    ;   Name = Name0
+    ).
+
+sweep_replace_stream_(end_of_file, _, _, _, _, _, _, _, _, _, []) :- !.
+sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, TemplateGoal, VarNames0, Rep-VarNames, Res) :-
     (   var(Term)
     ->  State = clause
     ;   memberchk(Term, [(_:-_),(_=>_),(_-->_)])
@@ -1619,10 +1621,10 @@ sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, Te
     ;   State = head
     ),
     findall(Result,
-            sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, 0, 1200, State, Final, TemplateGoal, RepVarNames,Result),
+            sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, 0, 1200, State, Final, TemplateGoal, Rep-VarNames,Result),
             Res,
             Tail),
-    sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, RepVarNames, Tail).
+    sweep_replace_stream(Stream, FileName, Module, BodyIndent, Final, TemplateGoal, Rep-VarNames0, Tail).
 
 
 %!  sweep_replace_term(Pos, Term, FileName, Module, BodyIndent, CurrentIndent, Precedence, State, Final, TemplateGoal, RepVarNames, Result) is nondet.
