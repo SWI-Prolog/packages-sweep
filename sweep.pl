@@ -1288,7 +1288,11 @@ sweep_heads_collection([D,M0,Bef,Aft], Ps) :-
     ->  true
     ;   term_string(M, M0)
     ),
-    sweep_matching_predicates(Bef, Aft, D, M, PIs),
+    sweep_matching_predicates(Bef, Aft, D, M, PIs0),
+    (   D == 0
+    ->  exclude([M:P/A]>>sweep_grammar_rule(M, P, A), PIs0, PIs)
+    ;   PIs = PIs0
+    ),
     maplist(sweep_format_head_(D), PIs, Ps).
 
 sweep_format_head_(D, M:F/A, [S|SP]) :-
