@@ -253,6 +253,7 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
          "--no-signals"
          "-g"
          "create_prolog_flag(sweep,true,[access(read_only),type(boolean)])"
+         "-O"
          "-l"
          (expand-file-name
           "sweep.pl"
@@ -1444,46 +1445,71 @@ list even when found in the current clause."
              (or (string-search "(" b) (length b))))))
 
 (defun sweeprolog-predicate-completion-candidates (beg end cxt)
-  (let ((col (sweeprolog--query-once
-              "sweep" "sweep_heads_collection"
-              (list cxt
-                    (sweeprolog--qualyfing-module beg)
-                    (buffer-substring-no-properties beg (point))
-                    (buffer-substring-no-properties (point) end)))))
-    (list beg end
-          (lambda (s p a)
-            (if (eq a 'metadata)
-                '(metadata
-                  (display-sort-function . sweeprolog-predicate-completion-sort)
-                  (cycle-sort-function   . sweeprolog-predicate-completion-sort))
-              (complete-with-action a col s p)))
-          :exclusive 'no
-          :annotation-function (lambda (_) " Predicate functor")
-          :exit-function
-          (lambda (string status)
-            (pcase status
-              ('finished
-               (pcase (cdr (assoc-string string col))
-                 (`(compound
-                    "term_position"
-                    0 ,length
-                    ,_fbeg ,_fend
-                    ,holes)
-                  (with-silent-modifications
-                    (dolist (hole holes)
-                      (pcase hole
-                        (`(compound "-" ,hbeg ,hend)
-                         (add-text-properties
-                          (- (point) length (- hbeg))
-                          (- (point) length (- hend))
-                          (list
-                           'sweeprolog-hole t
-                           'font-lock-face (list 'sweeprolog-hole)
-                           'rear-nonsticky '(sweeprolog-hole
-                                             cursor-sensor-functions
-                                             font-lock-face)))))))
-                  (backward-char length)
-                  (sweeprolog-forward-hole)))))))))
+  (let* ((col (sweeprolog--query-once
+               "sweep" "sweep_heads_collection"
+               (list cxt
+                     (sweeprolog--qualyfing-module beg)
+                     (buffer-substring-no-properties beg (point))
+                     (buffer-substring-no-properties (point) end))))
+         (table (make-hash-table :test 'equal :size (length col))))
+    (dolist (cand col)
+      (puthash (car cand) (cdr cand) table))
+    (let ((sort-fn
+           (lambda (cands)
+             (sort cands
+                   (lambda (a b)
+                     (let* ((aprops (gethash a table))
+                            (bprops (gethash b table))
+                            (aargs (nth 1 aprops))
+                            (bargs (nth 1 bprops))
+                            (aflen (nth 2 aprops))
+                            (bflen (nth 2 bprops))
+                            (arity (nth 3 aprops))
+                            (brity (nth 3 bprops))
+                            (afirst t) (bfirst nil))
+                       (cond
+                        ((and aargs (not bargs)) afirst)
+                        ((and bargs (not bargs)) bfirst)
+                        ((< aflen bflen)         afirst)
+                        ((< bflen aflen)         bfirst)
+                        ((< arity brity)         afirst)
+                        ((< brity arity)         bfirst)
+                        ((string< a b)           afirst)
+                        (t                       bfirst))))))))
+      (list beg end
+            (lambda (s p a)
+              (if (eq a 'metadata)
+                  (list 'metadata
+                        (cons 'display-sort-function sort-fn)
+                        (cons 'cycle-sort-function   sort-fn))
+                (complete-with-action a table s p)))
+            :exclusive 'no
+            :annotation-function (lambda (_) " Predicate")
+            :exit-function
+            (lambda (string status)
+              (pcase status
+                ('finished
+                 (pcase (cadr (assoc-string string col))
+                   (`(compound
+                      "term_position"
+                      0 ,length
+                      ,_fbeg ,_fend
+                      ,holes)
+                    (with-silent-modifications
+                      (dolist (hole holes)
+                        (pcase hole
+                          (`(compound "-" ,hbeg ,hend)
+                           (add-text-properties
+                            (- (point) length (- hbeg))
+                            (- (point) length (- hend))
+                            (list
+                             'sweeprolog-hole t
+                             'font-lock-face (list 'sweeprolog-hole)
+                             'rear-nonsticky '(sweeprolog-hole
+                                               cursor-sensor-functions
+                                               font-lock-face)))))))
+                    (backward-char length)
+                    (sweeprolog-forward-hole))))))))))
 
 (defun sweeprolog-compound-completion-candidates (beg end)
   (let ((col (sweeprolog--query-once

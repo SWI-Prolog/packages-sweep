@@ -457,10 +457,7 @@ sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
     format(string(Doc), '~w is ~w.~n    ~w~n', [S, Det, OneLiner]),
     term_string(M:PI, PIString).
 sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
-    (   pldoc_man:load_man_object(M:PI, _, _, Dom)
-    ->  true
-    ;   pldoc_man:load_man_object(PI, _, _, Dom)
-    ),
+    man_dom(M, PI, Dom),
     memberchk(element(dt, _, SubDom0), Dom),
     memberchk(element(a, Att, SubDom), SubDom0),
     with_output_to(string(S), html_text(element(dt, Att, SubDom))),
@@ -489,6 +486,19 @@ sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
     ),
     format(string(Doc), '~w.    ~w.~n', [FLine, OneLiner2]),
     term_string(M:PI, PIString).
+
+
+:- dynamic man_dom_cache/3.
+
+man_dom(M, PI, Dom) :-
+    man_dom_cache(M, PI, Dom),
+    !.
+man_dom(M, PI, Dom) :-
+    (   pldoc_man:load_man_object(M:PI, _, _, Dom)
+    ->  true
+    ;   pldoc_man:load_man_object(PI, _, _, Dom)
+    ),
+    asserta(man_dom_cache(M, PI, Dom)).
 
 
 sweep_module_class(M0, C) :-
@@ -529,8 +539,7 @@ sweep_predicate_html_documentation(P0, D) :-
     ;   '$autoload':library_index(_, M, Path),
         xref_source(Path, [comments(store)])
     ),
-    (   pldoc_man:load_man_object(M:PI, _, _, DOM)
-    ;   pldoc_man:load_man_object(PI, _, _, DOM)
+    (   man_dom(M, PI, DOM)
     ;   doc_comment(M:PI, Pos, _, Comment),
         pldoc_html:pred_dom(M:PI, [], Pos-Comment, DOM)
     ),
@@ -1075,7 +1084,7 @@ sweep_local_predicate_export_comment([Path0,F0,A,I0],Comm) :-
     atom_string(I, I0),
     compound_name_arguments(PI, I, [F,A]),
     doc_comment(_:PI, Path:_, _Summary, Comment),
-    comment_modes(Comment, Modes),
+    sweep_comment_modes(Comment, Modes),
     compound_name_arity(Head, F, A),
     member(ModeAndDet, Modes),
     strip_det(ModeAndDet, Head),
@@ -1284,7 +1293,7 @@ sweep_head_functors_collection([Arity,D,M0,Bef,Aft], Fs) :-
     maplist(term_string, Fs0, Fs).
 
 sweep_heads_collection([D,M0,Bef,Aft], Ps) :-
-    (   M0 = []
+    (   M0 == []
     ->  true
     ;   term_string(M, M0)
     ),
@@ -1293,24 +1302,40 @@ sweep_heads_collection([D,M0,Bef,Aft], Ps) :-
     ->  exclude([M:P/A]>>sweep_grammar_rule(M, P, A), PIs0, PIs)
     ;   PIs = PIs0
     ),
-    maplist(sweep_format_head_(D), PIs, Ps).
+    sweep_format_heads(PIs, D, Ps).
 
-sweep_format_head_(D, M:F/A, [S|SP]) :-
+sweep_format_heads([], _, []) :- !.
+sweep_format_heads([PI|T], D, [S|R]) :-
+    sweep_format_head_(D, PI, S),
+    sweep_format_heads(T, D, R).
+
+sweep_format_head_(D, M:F/A, [S,SP,ArgsNames,FL,A]) :-
     N is A - D,
     length(NamedArgs, N),
+    atom_length(F, FL),
     append(NamedArgs, _, OpenNamedArgs),
     (   predicate_argument_names(M:F/A, As, Extra)
     ->  maplist(name_variable, As, Vs),
         append(Vs, Extra, OpenNamedArgs)
-    ;   maplist(=('$VAR'('_')), NamedArgs)
+    ;   maplist(=('$VAR'('_')), NamedArgs),
+        ArgsNames = []
     ),
     !,
     H =.. [F|NamedArgs],
+    term_string_subterm_positions(S, SP, H).
+
+:- dynamic term_string_subterm_positions_cache/3.
+
+term_string_subterm_positions(S, SP, H) :-
+    term_string_subterm_positions_cache(S, SP, H),
+    !.
+term_string_subterm_positions(S, SP, H) :-
     term_string(H, S, [quoted(true),
                        character_escapes(true),
                        spacing(next_argument),
                        numbervars(true)]),
-    term_string(_, S, [subterm_positions(SP)]).
+    term_string(_, S, [subterm_positions(SP)]),
+    asserta(term_string_subterm_positions_cache(S, SP, H)).
 
 name_variable(N, V) :- V = '$VAR'(N).
 
@@ -1462,33 +1487,46 @@ predicate_argument_names(M:F/A, Args, Extra) :-
     predicate_argument_names_(N, Args0, Args).
 
 predicate_argument_names_from_man(M, PI, Args) :-
-    (   pldoc_man:load_man_object(M:PI, _, _, DOM0)
-    ->  true
-    ;   pldoc_man:load_man_object(PI, _, _, DOM0)
-    ),
+    man_dom(M, PI, DOM0),
     memberchk(element(dt, _, DOM1), DOM0),
     memberchk(element(a, _, DOM2), DOM1),
-    catch(findall(Arg,
-                  (   member(element(var, _, Vars), DOM2),
-                      member(ArgsSpec, Vars),
-                      term_string(CommaSeparatedArgs,
-                                  ArgsSpec,
-                                  [module(pldoc_modes),
-                                   variable_names(VN)]),
-                      maplist(call, VN),
-                      comma_list(CommaSeparatedArgs, ArgsList),
-                      member(Arg, ArgsList)
-                  ),
-                  Args),
-          error(syntax_error(_),_),
-          fail).
+    memberchk(element(var, _, Vars), DOM2),
+    arg(2, PI, N),
+    member(ArgsSpec, Vars),
+    arg_modes_string_to_list(ArgsSpec, Args),
+    length(Args, N).
+
+:- dynamic arg_modes_string_to_list_cache/2.
+
+arg_modes_string_to_list(ArgsSpec, ArgsList) :-
+    arg_modes_string_to_list_cache(ArgsSpec, ArgsList),
+    !.
+arg_modes_string_to_list(ArgsSpec, ArgsList) :-
+    term_string(CommaSeparatedArgs, ArgsSpec,
+                [module(pldoc_modes), variable_names(VN),syntax_errors(quiet)]),
+    bind_vars_to_names(VN),
+    comma_list(CommaSeparatedArgs, ArgsList),
+    asserta(arg_modes_string_to_list_cache(ArgsSpec, ArgsList)).
+
+bind_vars_to_names([]) :- !.
+bind_vars_to_names([N=N|T]) :- bind_vars_to_names(T).
+
 
 predicate_argument_names_from_pldoc(M, PI, Args) :-
     doc_comment(M:PI, _, _, C),
-    comment_modes(C, ModeAndDets),
+    sweep_comment_modes(C, ModeAndDets),
     member(ModeAndDet, ModeAndDets),
     strip_det(ModeAndDet, Head),
     Head =.. [_|Args].
+
+:- dynamic comment_modes_cache/2.
+
+sweep_comment_modes(C, ModeAndDets) :-
+    comment_modes_cache(C, ModeAndDets),
+    !.
+sweep_comment_modes(C, ModeAndDets) :-
+    comment_modes(C, ModeAndDets),
+    asserta(comment_modes_cache(C, ModeAndDets)).
 
 predicate_argument_names_(Arity, Args0, Args) :-
     length(Args0, Arity),
@@ -1537,10 +1575,10 @@ dep_import(Path, Kind, PI0) -->
     [[Path, PI, Kind]].
 
 
-sweep_format_head([M0,F0,A,D], R) :-
+sweep_format_head([M0,F0,A,D], [S|SP]) :-
     atom_string(M, M0),
     atom_string(F, F0),
-    sweep_format_head_(D, M:F/A, R).
+    sweep_format_head_(D, M:F/A, [S,SP,_,_,_]).
 
 sweep_format_term([F0,N,P], [S|SP]) :-
     atom_string(F, F0),
