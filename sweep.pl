@@ -492,14 +492,19 @@ sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
 
 man_dom(M, PI, Dom) :-
     man_dom_cache(M, PI, Dom),
-    !.
+    !,
+    Dom \== fail.
 man_dom(M, PI, Dom) :-
     (   pldoc_man:load_man_object(M:PI, _, _, Dom)
     ->  true
     ;   pldoc_man:load_man_object(PI, _, _, Dom)
     ),
+    !,
     asserta(man_dom_cache(M, PI, Dom)).
-
+man_dom(M, PI, _) :-
+    asserta(man_dom_cache(M, PI, fail)),
+    !,
+    fail.
 
 sweep_module_class(M0, C) :-
     atom_string(M, M0),
@@ -1113,13 +1118,27 @@ sweep_module_functor_arity_pi_(M, F, A, M:F//B) :-
     B is A - 2.
 sweep_module_functor_arity_pi_(M, F, A, M:F/A).
 
+:- dynamic sweep_grammar_rule_cache/4.
+
+sweep_grammar_rule(M, F, A) :-
+    sweep_grammar_rule_cache(M, F, A, T),
+    !,
+    T == true.
 sweep_grammar_rule(M, F, A) :-
     xref_module(Source, M),
     pi_head(F/A, H),
-    xref_defined(Source, H, dcg).
+    (   xref_defined(Source, H, dcg)
+    ->  !, asserta(sweep_grammar_rule_cache(M, F, A, true))
+    ;   xref_defined(Source, H, How), xref_definition_line(How, _)
+    ->  !, asserta(sweep_grammar_rule_cache(M, F, A, false)), fail
+    ).
 sweep_grammar_rule(M, F, A) :-
     pi_head(M:F/A, H),
-    predicate_property(H, non_terminal).
+    (   predicate_property(H, non_terminal)
+    ->  asserta(sweep_grammar_rule_cache(M, F, A, true))
+    ;   predicate_property(H, visible)
+    ->  asserta(sweep_grammar_rule_cache(M, F, A, false)), fail
+    ).
 
 sweep_current_module(Module) :-
     sweep_main_thread,
@@ -1309,7 +1328,7 @@ sweep_format_heads([PI|T], D, [S|R]) :-
     sweep_format_head_(D, PI, S),
     sweep_format_heads(T, D, R).
 
-sweep_format_head_(D, M:F/A, [S,SP,ArgsNames,FL,A]) :-
+sweep_format_head_(D, M:F/A, [S,ArgsNames,FL,A]) :-
     N is A - D,
     length(NamedArgs, N),
     atom_length(F, FL),
@@ -1322,20 +1341,19 @@ sweep_format_head_(D, M:F/A, [S,SP,ArgsNames,FL,A]) :-
     ),
     !,
     H =.. [F|NamedArgs],
-    term_string_subterm_positions(S, SP, H).
+    term_string_subterm_positions(H, S).
 
-:- dynamic term_string_subterm_positions_cache/3.
+:- dynamic term_string_subterm_positions_cache/2.
 
-term_string_subterm_positions(S, SP, H) :-
-    term_string_subterm_positions_cache(S, SP, H),
+term_string_subterm_positions(H, S) :-
+    term_string_subterm_positions_cache(H, S),
     !.
-term_string_subterm_positions(S, SP, H) :-
+term_string_subterm_positions(H, S) :-
     term_string(H, S, [quoted(true),
                        character_escapes(true),
                        spacing(next_argument),
                        numbervars(true)]),
-    term_string(_, S, [subterm_positions(SP)]),
-    asserta(term_string_subterm_positions_cache(S, SP, H)).
+    asserta(term_string_subterm_positions_cache(H, S)).
 
 name_variable(N, V) :- V = '$VAR'(N).
 
@@ -1480,9 +1498,10 @@ predicate_argument_names(M:F/A, Args, Extra) :-
     ;   Extra = []
     ),
     sweep_module_functor_arity_pi_(M, F, A, M:PI),
-    (   predicate_argument_names_from_man(M, PI, Args0)
+    (   predicate_argument_names_from_pldoc(M, PI, Args0)
     ->  true
-    ;   predicate_argument_names_from_pldoc(M, PI, Args0)),
+    ;   predicate_argument_names_from_man(M, PI, Args0)
+    ),
     arg(2, PI, N),
     predicate_argument_names_(N, Args0, Args).
 
@@ -1578,7 +1597,11 @@ dep_import(Path, Kind, PI0) -->
 sweep_format_head([M0,F0,A,D], [S|SP]) :-
     atom_string(M, M0),
     atom_string(F, F0),
-    sweep_format_head_(D, M:F/A, [S,SP,_,_,_]).
+    sweep_format_head_(D, M:F/A, [S,_,_,_]),
+    sweep_subterm_positions(S, SP).
+
+sweep_subterm_positions(S, SP) :-
+    term_string(_, S, [subterm_positions(SP)]).
 
 sweep_format_term([F0,N,P], [S|SP]) :-
     atom_string(F, F0),

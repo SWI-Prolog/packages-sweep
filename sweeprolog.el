@@ -1458,24 +1458,16 @@ list even when found in the current clause."
            (lambda (cands)
              (sort cands
                    (lambda (a b)
-                     (let* ((aprops (gethash a table))
-                            (bprops (gethash b table))
-                            (aargs (nth 1 aprops))
-                            (bargs (nth 1 bprops))
-                            (aflen (nth 2 aprops))
-                            (bflen (nth 2 bprops))
-                            (arity (nth 3 aprops))
-                            (brity (nth 3 bprops))
-                            (afirst t) (bfirst nil))
-                       (cond
-                        ((and aargs (not bargs)) afirst)
-                        ((and bargs (not aargs)) bfirst)
-                        ((< aflen bflen)         afirst)
-                        ((< bflen aflen)         bfirst)
-                        ((< arity brity)         afirst)
-                        ((< brity arity)         bfirst)
-                        ((string< a b)           afirst)
-                        (t                       bfirst))))))))
+                     (seq-let (aargs aflen arity) (gethash a table)
+                       (seq-let (bargs bflen brity) (gethash b table)
+                         (cond
+                          ((and aargs (not bargs)))
+                          ((and bargs (not aargs)) nil)
+                          ((< aflen bflen))
+                          ((< bflen aflen) nil)
+                          ((< arity brity))
+                          ((< brity arity) nil)
+                          ((string< a b))))))))))
       (list beg end
             (lambda (s p a)
               (if (eq a 'metadata)
@@ -1489,7 +1481,8 @@ list even when found in the current clause."
             (lambda (string status)
               (pcase status
                 ('finished
-                 (pcase (cadr (assoc-string string col))
+                 (pcase (sweeprolog--query-once
+                         "sweep" "sweep_subterm_positions" string)
                    (`(compound
                       "term_position"
                       0 ,length
