@@ -3596,6 +3596,12 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
                        sweeprolog-top-level-signal-default-goal)))
   (sweeprolog-signal-thread sweeprolog-top-level-thread-id goal))
 
+(defun sweeprolog-top-level-completion-at-point ()
+  "Call `sweeprolog-completion-at-point' while narrowing to current query."
+  (when-let ((prompt-beg (car comint-last-prompt)))
+    (with-restriction prompt-beg (point-max)
+      (sweeprolog-completion-at-point))))
+
 ;;;###autoload
 (define-derived-mode sweeprolog-top-level-mode comint-mode "Sweep Top-level"
   "Major mode for interacting with an inferior Prolog interpreter."
@@ -3610,7 +3616,7 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
               comint-highlight-input nil
               comment-start "%")
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
-  (add-hook 'completion-at-point-functions #'sweeprolog-completion-at-point nil t)
+  (add-hook 'completion-at-point-functions #'sweeprolog-top-level-completion-at-point nil t)
   (add-hook 'after-change-functions #'sweeprolog-colourise-query nil t)
   (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
   (when (and (member sweeprolog-faces-style '(light dark))
