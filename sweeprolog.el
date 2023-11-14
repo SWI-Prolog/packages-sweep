@@ -1469,7 +1469,7 @@ list even when found in the current clause."
                             (afirst t) (bfirst nil))
                        (cond
                         ((and aargs (not bargs)) afirst)
-                        ((and bargs (not bargs)) bfirst)
+                        ((and bargs (not aargs)) bfirst)
                         ((< aflen bflen)         afirst)
                         ((< bflen aflen)         bfirst)
                         ((< arity brity)         afirst)
