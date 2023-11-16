@@ -464,6 +464,17 @@ baz(Baz) :- bar(Baz).
 "
                    )))
 
+(sweeprolog-deftest cap-flag-name ()
+  "Completion at point for Prolog flag names."
+  "
+foo :-
+    current_prolog_flag(double_q-!-
+"
+  (let ((res (sweeprolog-completion-at-point)))
+    (should (= (nth 0 res) 33))
+    (should (= (nth 1 res) 41))
+    (should (equal (nth 2 res) '("double_quotes")))))
+
 (sweeprolog-deftest cap-option-functor ()
   "Completion at point for predicate option functors."
   "

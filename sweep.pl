@@ -107,7 +107,8 @@
             sweep_functions_collection/2,
             sweep_function_functors_collection/2,
             sweep_nohup/2,
-            sweep_short_documentation/2
+            sweep_short_documentation/2,
+            sweep_flags_collection/2
           ]).
 
 :- use_module(library(pldoc)).
@@ -1223,6 +1224,18 @@ sweep_functions_collection([Bef,Aft], Fs) :-
                ),
             Fs).
 
+sweep_flags_collection([Bef|Aft], Fs) :-
+    findall(F, sweep_current_flag(Bef, Aft, F), Fs).
+
+%!  sweep_current_flag(+Bef:string, +Aft:string, -Flag:string) is nondet.
+%
+%   True when Flag is a current Prolog flag that contains Bef and then Aft.
+
+sweep_current_flag(Bef, Aft, Flag) :-
+    current_prolog_flag(Flag0, _),
+    term_string(Flag0, Flag),
+    sweep_matching_atom(Bef, Aft, Flag).
+
 sweep_option_functors_collection([Bef,Aft,Pred0,Ari,Arg], Fs) :-
     atom_string(Pred, Pred0),
     current_predicate_options(Pred/Ari, Arg, Options),
@@ -1409,6 +1422,9 @@ sweep_context_callable_arg(F0, N, 0, ["options", F, N]) :-
 sweep_context_callable_arg(F0, 1, ["option", P, N], ["option", P, N, F]) :-
     !,
     atom_string(F0, F).
+sweep_context_callable_arg(F, N, 0, "flag") :-
+    flag_arg(F,N),
+    !.
 sweep_context_callable_arg(F, N, 0, "source") :-
     source_arg(F,N),
     !.
@@ -1444,6 +1460,9 @@ arith_arg((=\=), 1).
 arith_arg((=\=), 2).
 arith_arg((=:=), 1).
 arith_arg((=:=), 2).
+
+flag_arg(set_prolog_flag    , 1).
+flag_arg(current_prolog_flag, 1).
 
 source_arg(load_files, 1).
 source_arg(use_module, 1).

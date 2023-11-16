@@ -1559,6 +1559,21 @@ list even when found in the current clause."
         :exclusive 'no
         :annotation-function (lambda (_) " Functor")))
 
+(defun sweeprolog--flag-completion-at-point (beg end)
+  "Return completion candidates for the Prolog flag between BEG and END.
+
+Used for `completion-at-point' candidates in cases such as:
+
+    foo(Bar, Baz) :- set_prolog_flag(ba-!-"
+  (list beg end
+        (sweeprolog--query-once
+         "sweep" "sweep_flags_collection"
+         (cons (buffer-substring-no-properties beg (point))
+               (buffer-substring-no-properties (point) end)))
+        :exclusive 'no
+        :annotation-function
+        (lambda (_) " Flag")))
+
 (defun sweeprolog--atom-or-functor-completion-at-point (beg end)
   "Return completion candidates for the atom or functor between BEG and END.
 
@@ -1590,6 +1605,8 @@ Used for `completion-at-point' candidates in cases such as:
        (if fnc
            (sweeprolog-arith-functor-completion-candidates beg end)
          (sweeprolog-arith-completion-candidates beg end)))
+      ("flag"
+       (sweeprolog--flag-completion-at-point beg end))
       (_
        (if fnc
            (sweeprolog-compound-functor-completion-candidates beg end fnc)

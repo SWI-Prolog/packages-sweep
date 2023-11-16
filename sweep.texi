@@ -2112,11 +2112,11 @@ names that appear elsewhere in the current clause,
 completion candidates.
 @item Predicate completion
 If point is at a callable position, @code{completion-at-point}
-suggests matching predicate calls as completion candidates.  If the
-predicate you choose takes arguments, Sweep inserts holes in their
-places, and moves point to the first argument (@pxref{Holes}).
+suggests matching predicate calls.  If the predicate you choose takes
+arguments, Sweep inserts holes in their places, and moves point to the
+first argument (@pxref{Holes}).
 @item Predicate option completion
-If point is inside a predicates options list,
+If point is inside a predicate options list,
 @code{completion-at-point} suggests matching options or option values
 for the appropriate predicate.
 @item Source file completion
@@ -2127,9 +2127,13 @@ specifications.
 @item Arithmetic function completion
 If point is inside an arithmetic expression,
 @code{completion-at-point} suggests matching arithmetic functions.
+@item Flag completion
+If point is at a position where a Prolog flag should appear (such as
+the first argument of @code{set_prolog_flag/2}),
+@code{completion-at-point} suggests matching flags.
 @item Atom completion
 If point is at a non-callable position, @code{completion-at-point}
-suggests matching atoms and functors as completion candidates.
+suggests matching atoms and functors.
 @end table
 
 @node Insert Term DWIM
