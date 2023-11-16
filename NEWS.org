@@ -11,6 +11,25 @@ SWI-Prolog in Emacs.
 For further details, please consult the manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.27.1 on 2023-11-16
+
+** In-buffer completion for Prolog flags
+
+Sweep now provides Prolog flag completion for predicates that take a
+Prolog flag as an argument, such as ~set_prolog_flag/2~ and
+~current_prolog_flag/2~.
+
+** Predicate completion is now much faster
+
+This version includes several optimizations that speed up in-buffer
+predicate completion.
+
+** Minor bug fixes and improvements
+
+Notably, this version fixes an issue where completion would stop
+working the Sweep top-level prompt whenever certain strings appeared
+in the output of past queries.
+
 * Version 0.27.0 on 2023-11-12
 
 ** Highlight the argument at point in ElDoc documentation messages
