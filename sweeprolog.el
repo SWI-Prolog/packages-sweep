@@ -1033,7 +1033,7 @@ default."
        (lambda (cand)
          (funcall sweeprolog-predicate-visible-p-function
                   (car cand))))
-     nil nil 'sweeprolog-read-predicate-history default)))
+     'require-match nil 'sweeprolog-read-predicate-history default)))
 
 (defun sweeprolog-predicate-prefix-boundaries (&optional point)
   (let ((case-fold-search nil))
