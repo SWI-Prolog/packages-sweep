@@ -2258,6 +2258,11 @@ inside a comment, string or quoted atom."
   "Face for highlighting Prolog constraint calls."
   :group 'sweeprolog-faces)
 
+(defface sweeprolog-deprecated
+  '((t :inherit font-lock-warning-face))
+  "Face for highlighting deprecated predicates."
+  :group 'sweeprolog-faces)
+
 (defface sweeprolog-global
   '((t :inherit font-lock-keyword-face))
   "Face for highlighting Prolog global predicate calls."
@@ -2548,6 +2553,21 @@ inside a comment, string or quoted atom."
   "Face for highlighting Prolog DCG terminal strings."
   :group 'sweeprolog-faces)
 
+(defface sweeprolog-delimiter
+  '((t :inherit bold))
+  "Face for highlighting CHR delimiters."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-pragma
+  '((t :inherit default))
+  "Face for highlighting CHR pragma terms."
+  :group 'sweeprolog-faces)
+
+(defface sweeprolog-chr-type
+  '((t :inherit font-lock-type-face))
+  "Face for highlighting CHR types."
+  :group 'sweeprolog-faces)
+
 (defface sweeprolog-breakpoint
   '((((background light)) :background "lightgreen")
     (((background dark))  :background "darkgreen"))
@@ -2703,6 +2723,8 @@ inside a comment, string or quoted atom."
      (list (list beg end 'sweeprolog-local)))
     (`("goal" "constraint" . ,_)
      (list (list beg end 'sweeprolog-constraint)))
+    (`("goal" "deprecated" . ,_)
+     (list (list beg end 'sweeprolog-deprecated)))
     (`("macro" . ,_)
      (list (list beg end 'sweeprolog-macro)))
     ("expanded"
@@ -2880,7 +2902,15 @@ inside a comment, string or quoted atom."
     (`("decl_option" . ,_)
      (list (list beg end 'sweeprolog-declaration-option)))
     (`("dcg" . "string")
-     (list (list beg end 'sweeprolog-dcg-string)))))
+     (list (list beg end 'sweeprolog-dcg-string)))
+    ("delimiter"
+     (list (list beg end 'sweeprolog-delimiter)))
+    ("pragma"
+     (list (list beg end 'sweeprolog-pragma)))
+    ("chr_type"
+     (list (list beg end 'sweeprolog-chr-type)))
+    ("built_in"
+     (list (list beg end 'sweeprolog-built-in)))))
 
 (defun sweeprolog-analyze-fragment-font-lock (beg end arg)
   (when-let ((face-fragments (sweeprolog-analyze-fragment-to-faces
@@ -2983,39 +3013,41 @@ inside a comment, string or quoted atom."
 
 (defun sweeprolog--help-echo-for-goal-functor (kind functor arity)
   (pcase kind
-    ("built_in" (format "Call to built-in predicate %s/%s"
+    ("built_in" (format "Built-in predicate %s/%s"
                         functor arity))
-    (`("imported" . ,file) (format "Call to predicate %s/%s imported from %s"
+    (`("imported" . ,file) (format "Predicate %s/%s imported from %s"
                                    functor arity file))
-    (`("autoload" . ,file) (format "Call to predicate %s/%s autoloaded from %s"
+    (`("autoload" . ,file) (format "Predicate %s/%s autoloaded from %s"
                                    functor arity file))
-    ("global" (format "Call to global predicate %s/%s"
+    ("global" (format "Global predicate %s/%s"
                       functor arity))
-    (`("global" . ,type) (format "Call to %s global predicate %s/%s"
+    (`("global" . ,type) (format "%s global predicate %s/%s"
                                  type functor arity))
-    ("undefined" (format "Call to undefined predicate %s/%s"
+    ("undefined" (format "Undefined predicate %s/%s"
                          functor arity))
-    ("thread_local" (format "Call to thread-local predicate %s/%s"
+    ("thread_local" (format "Thread-local predicate %s/%s"
                             functor arity))
-    ("dynamic" (format "Call to dynamic predicate %s/%s"
+    ("dynamic" (format "Dynamic predicate %s/%s"
                        functor arity))
-    ("multifile" (format "Call to multifile predicate %s/%s"
+    ("multifile" (format "Multifile predicate %s/%s"
                          functor arity))
-    ("expanded" (format "Call to expanded predicate %s/%s"
+    ("expanded" (format "Expanded predicate %s/%s"
                         functor arity))
-    (`("extern" ,module . ,_) (format "Call to external predicate %s/%s from module %s"
+    (`("extern" ,module . ,_) (format "External predicate %s/%s from module %s"
                                       functor arity module))
     ("recursion" (format "Recursive call to predicate %s/%s"
                          functor arity))
-    ("meta" (format "Call to meta predicate %s/%s"
+    ("meta" (format "Meta predicate %s/%s"
                     functor arity))
-    ("foreign" (format "Call to foreign predicate %s/%s"
+    ("foreign" (format "Foreign predicate %s/%s"
                        functor arity))
-    ("local" (format "Call to local predicate %s/%s"
+    ("local" (format "Local predicate %s/%s"
                      functor arity))
-    ("constraint" (format "Call to constraint %s/%s"
+    ("constraint" (format "Constraint %s/%s"
                           functor arity))
-    ("not_callable" "Call to a non-callable term")))
+    ("deprecated" (format "Deprecated predicate %s/%s"
+                          functor arity))
+    ("not_callable" "Non-callable term")))
 
 (defun sweeprolog--help-echo-for-macro (expansion)
   (format "Macro indicator, expands to (%s)" expansion))
@@ -3100,7 +3132,11 @@ inside a comment, string or quoted atom."
          ("func_dot" "Dict function dot")
          (`("decl_option" . ,option)
           (sweeprolog--help-echo-for-declaration-option option))
-         (`("dcg" . "string") "DCG terminal")))
+         (`("dcg" . "string") "DCG terminal")
+         ("delimiter" "Delimiter")
+         ("pragma" "Pragma")
+         ("chr_type" "CHR type")
+         ("built_in" "Built-in")))
     (with-silent-modifications
       (put-text-property beg end 'help-echo help-echo))))
 
