@@ -2254,8 +2254,8 @@ bbb(A, B) :-
 ")))
 
 (sweeprolog-deftest extract-region-to-predicate-ext-1 ()
-                    "Test `sweeprolog-extract-region-to-predicate'."
-                    "
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
 :- module(bbb, []).
 
 bar(A, Y) :-
@@ -2316,17 +2316,17 @@ bbb(VarName) :-
 ")))
 
 (sweeprolog-deftest extract-region-to-predicate-lambda-2 ()
-                    "Test `sweeprolog-extract-region-to-predicate'."
-                    "
+  "Test `sweeprolog-extract-region-to-predicate'."
+  "
 :- module(bbb, []).
 
 bar(A, Y) :-
     maplist({GoalVarNames}/[VarName]>>ignore(memberchk(VarName, GoalVarNames)),
             TemplateVarNames).
 "
-                    (sweeprolog-extract-region-to-predicate 48 114 "bbb")
-                    (should (string= (buffer-string)
-                                     "
+  (sweeprolog-extract-region-to-predicate 48 114 "bbb")
+  (should (string= (buffer-string)
+                   "
 :- module(bbb, []).
 
 bar(A, Y) :-
@@ -2336,4 +2336,23 @@ bar(A, Y) :-
 bbb(GoalVarNames, VarName) :-
     ignore(memberchk(VarName, GoalVarNames)).
 ")))
+
+(sweeprolog-deftest eldoc-dcg ()
+  "Test `sweep_short_documentation/2' with DCG body terms."
+  "
+:- module(eldocdcg, []).
+
+%!  foo(-Baz:string)// is det.
+%
+%   Doit.
+
+foo(Bar) --> baz(Bar).
+"
+  (should (equal (sweeprolog--query-once
+                  "sweep" "sweep_short_documentation"
+                  (list "bar --> foo(bar), foo(baz)." 12 (buffer-file-name)))
+                 (list "eldocdcg:foo//1" "foo(-Baz:string)// is det.
+    Doit.
+" (cons 4 15)))))
+
 ;;; sweeprolog-tests.el ends here

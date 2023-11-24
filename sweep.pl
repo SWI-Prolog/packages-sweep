@@ -375,6 +375,14 @@ sweep_short_documentation_body(Pos, Body, Neck, Point, FileName, Mod, PIString, 
     Neck > 0,
     !,
     sweep_short_documentation_body(Pos, Body, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_body(term_position(_, _, _, _, ArgsPos), Body, '//', Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    is_control_goal(Body),
+    !,
+    nth1(Index, ArgsPos, ArgPos),
+    pos_bounds(ArgPos, ArgBeg, ArgEnd),
+    ArgBeg =< Point, Point =< ArgEnd,
+    arg(Index, Body, ArgBody),
+    sweep_short_documentation_body(ArgPos, ArgBody, '//', Point, FileName, Mod, PIString, Doc, ArgSpan).
 sweep_short_documentation_body(term_position(_, _, _, _, ArgsPos), Body, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
     !,
     (   nth1(Index, ArgsPos, ArgPos),
