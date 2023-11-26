@@ -3658,7 +3658,11 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
                                                   (length s)))
               comint-delimiter-argument-list '(?,)
               comint-highlight-input nil
-              comment-start "%")
+              comment-start "%"
+              forward-sexp-function #'sweeprolog-forward-sexp-function
+              beginning-of-defun-function #'sweeprolog-beginning-of-top-term
+              end-of-defun-function #'sweeprolog-end-of-top-term
+              syntax-propertize-function sweeprolog-syntax-propertize-function)
   (add-hook 'post-self-insert-hook #'sweeprolog-top-level--post-self-insert-function nil t)
   (add-hook 'completion-at-point-functions #'sweeprolog-top-level-completion-at-point nil t)
   (add-hook 'after-change-functions #'sweeprolog-colourise-query nil t)
