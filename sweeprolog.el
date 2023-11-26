@@ -1139,7 +1139,8 @@ the prefix argument."
   (sweeprolog-path-module (buffer-file-name buffer)))
 
 (defun sweeprolog-identifier-at-point (&optional point)
-  (when (derived-mode-p 'sweeprolog-mode 'sweeprolog-top-level-mode)
+  (when (or (derived-mode-p 'sweeprolog-mode)
+            (derived-mode-p 'sweeprolog-top-level-mode))
     (setq point (or point (point)))
     (save-excursion
       (goto-char point)
@@ -5961,7 +5962,8 @@ moving point."
                                         (- point start))))))))
 
 (defun sweeprolog-goals-at-point (&optional point)
-  (when (derived-mode-p 'sweeprolog-mode 'sweeprolog-top-level-mode)
+  (when (or (derived-mode-p 'sweeprolog-mode)
+            (derived-mode-p 'sweeprolog-top-level-mode))
     (setq point (or point (point)))
     (save-excursion
       (goto-char point)
