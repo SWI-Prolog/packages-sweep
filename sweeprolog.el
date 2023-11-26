@@ -1273,6 +1273,9 @@ command prompts for MOD."
         (find-file file))
     (user-error "Module %s is not defined in a source file!" mod)))
 
+(defsubst sweeprolog-syntax-class-at (pos)
+  "Return the syntax class of the character at POS."
+  (syntax-class (syntax-after pos)))
 
 ;;;; Completion at point
 
@@ -1380,9 +1383,8 @@ Prolog buffers."
                     (ppre (sweeprolog-op-prefix-precedence op)))
                (cond
                 ((and (string= "." op)
-                      (or (not (char-after (1+ obeg)))
-                          (member (char-syntax (char-after (1+ obeg)))
-                                  '(?> ? ))))
+                      (let ((sa (sweeprolog-syntax-class-at (1+ obeg))))
+                        (or (null sa) (member sa '(0 12)))))
                  nil)
                 ((string= "," op)
                  (setq pos
@@ -1915,8 +1917,8 @@ Used for `completion-at-point' candidates when point is not
 inside a comment, string or quoted atom."
   (if (bobp)
       (sweeprolog--first-term-completion-at-point)
-    (pcase (char-syntax (char-before))
-      ((or ?w ?_)
+    (pcase (sweeprolog-syntax-class-at (1- (point)))
+      ((or 2 3)
        (let ((symbol-beg (save-excursion
                            (skip-syntax-backward "w_")
                            (point)))
@@ -1928,31 +1930,31 @@ inside a comment, string or quoted atom."
                                                        symbol-end)
            (sweeprolog--atom-or-functor-completion-at-point symbol-beg
                                                             symbol-end))))
-      (?. (sweeprolog--operator-completion-at-point))
-      (?\( (pcase (char-before)
-             (?\( (when-let ((prev (char-before (1- (point)))))
-                    (pcase (char-syntax prev)
-                      ((or ?w ?_)
-                       (sweeprolog--after-functor-completion-at-point))
-                      (?\"
-                       (when (= prev ?\')
-                         (sweeprolog--after-quoted-functor-completion-at-point)))
-                      (_ (sweeprolog--term-completion-at-point)))))
-             (?\[ (sweeprolog--first-list-argument-completion-at-point))
-             (?\{ (when-let ((prev (char-before (1- (point)))))
-                    (pcase (char-syntax prev)
-                      ((or ?w ?_)
-                       (sweeprolog--first-dict-argument-completion-at-point))
-                      (_ (sweeprolog--after-curly-brace-completion-at-point)))))))
-      ((or ?\) ?\") (sweeprolog--after-term-completion-at-point))
-      (?\s (pcase (sweeprolog-last-token-boundaries)
-             ('nil (sweeprolog--first-term-completion-at-point))
-             (`(open ,_ ,_) (sweeprolog--term-completion-at-point))
-             (`(functor ,_ ,_) (sweeprolog--after-functor-completion-at-point))
-             (`(operator ,obeg ,oend) (sweeprolog--after-operator-completion-at-point obeg oend))
-             (`(symbol ,obeg ,oend) (sweeprolog--after-atom-or-variable-completion-at-point obeg oend))
-             (`(close ,_ ,_) (sweeprolog--after-term-completion-at-point))
-             (`(string ,_ ,_) (sweeprolog--after-term-completion-at-point)))))))
+      (1 (sweeprolog--operator-completion-at-point))
+      (4 (pcase (char-before)
+           (?\( (when-let ((prev (char-before (1- (point)))))
+                  (pcase (sweeprolog-syntax-class-at (- (point) 2))
+                    ((or 2 3)
+                     (sweeprolog--after-functor-completion-at-point))
+                    (7
+                     (when (= prev ?\')
+                       (sweeprolog--after-quoted-functor-completion-at-point)))
+                    (_ (sweeprolog--term-completion-at-point)))))
+           (?\[ (sweeprolog--first-list-argument-completion-at-point))
+           (?\{ (when-let ((prev (char-before (1- (point)))))
+                  (pcase (sweeprolog-syntax-class-at (- (point) 2))
+                    ((or 2 3)
+                     (sweeprolog--first-dict-argument-completion-at-point))
+                    (_ (sweeprolog--after-curly-brace-completion-at-point)))))))
+      ((or 5 7) (sweeprolog--after-term-completion-at-point))
+      (0 (pcase (sweeprolog-last-token-boundaries)
+           ('nil (sweeprolog--first-term-completion-at-point))
+           (`(open ,_ ,_) (sweeprolog--term-completion-at-point))
+           (`(functor ,_ ,_) (sweeprolog--after-functor-completion-at-point))
+           (`(operator ,obeg ,oend) (sweeprolog--after-operator-completion-at-point obeg oend))
+           (`(symbol ,obeg ,oend) (sweeprolog--after-atom-or-variable-completion-at-point obeg oend))
+           (`(close ,_ ,_) (sweeprolog--after-term-completion-at-point))
+           (`(string ,_ ,_) (sweeprolog--after-term-completion-at-point)))))))
 
 ;;;; Packages
 
@@ -3341,18 +3343,14 @@ modified."
            (font-lock-fontify-keywords-region start (point) verbose))
          `(jit-lock-bounds ,start . ,(point)))))))
 
-(defun sweeprolog-syntax-propertize (start end)
-  (goto-char start)
-  (let ((case-fold-search nil))
-    (funcall
-     (syntax-propertize-rules
-      ((rx (group-n 1 "\\") anychar)
-       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-            (string-to-syntax "."))))
-      ((rx bow (group-n 1 "0'" anychar))
-       (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-            (string-to-syntax "w")))))
-     start end)))
+(defconst sweeprolog-syntax-propertize-function
+  (syntax-propertize-rules
+   ((rx (group-n 1 (one-or-more "\\")))
+    (1 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+         (string-to-syntax "."))))
+   ((rx (not alnum) (group-n 2 "0'" anychar))
+    (2 (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+         (string-to-syntax "w"))))))
 
 (defun sweeprolog-highlight-variable (point &optional var)
   "Highlight occurrences of the variable VAR in the clause at POINT.
@@ -4026,8 +4024,8 @@ See also `sweeprolog-backward-hole'."
      (let ((op (buffer-substring-no-properties obeg oend)))
        (or (and (string= "." op)
                 (or (not (char-after (1+ obeg)))
-                    (member (char-syntax (char-after (1+ obeg)))
-                            '(?> ? )))
+                    (member (sweeprolog-syntax-class-at (1+ obeg))
+                            '(0 12)))
                 1200)
            (sweeprolog-op-infix-precedence op)
            (sweeprolog-op-prefix-precedence op)
@@ -4510,46 +4508,61 @@ work."
             (sweeprolog-read-predicate-documentation mod fun ari neck)))
     (_ (user-error "No predicate found at point"))))
 
+(defsubst sweeprolog--op-p (beg end)
+  "Check if there is an operator between BEG and END in the current buffer."
+  (sweeprolog--query-once
+   "sweep" "sweep_op_info"
+   (cons (buffer-substring-no-properties beg end) (buffer-file-name))))
+
 (defun sweeprolog-next-token-boundaries (&optional pos)
+  "Return a list (KIND BEG END) describing the Prolog token after POS, if any.
+
+KIND is one of `symbol', `functor' `string', `operator', `open',
+`close' and `else'.  BEG and END are the token boundaries.
+
+If there is no token after POS, return nil."
   (let ((point (or pos (point))))
     (save-excursion
       (goto-char point)
       (while (forward-comment 1))
       (unless (eobp)
         (let ((beg (point))
-              (syn (char-syntax (char-after))))
+              (syn (sweeprolog-syntax-class-at (point))))
           (cond
-           ((or (= syn ?w) (= syn ?_))
+           ((member syn '(0 12))
             (skip-syntax-forward "w_")
-            (if (= (char-syntax (char-after)) ?\()
+            (if (= (sweeprolog-syntax-class-at (point)) 4)
                 (progn
                   (forward-char)
                   (list 'functor beg (point)))
               (list 'symbol beg (point))))
-           ((= syn ?\")
-            (forward-char)
-            (while (and (not (eobp)) (nth 3 (syntax-ppss)))
-              (forward-char))
-            (list 'string beg (point)))
-           ((or (= syn ?.)
-                (= syn ?\\))
+           ((= syn 7)
+            (unless (nth 8 (syntax-ppss))
+              (forward-char)
+              (while (and (not (eobp)) (nth 3 (syntax-ppss)))
+                (forward-char))
+              (list 'string beg (point))))
+           ((member syn  '(1 9))
             (skip-syntax-forward ".")
             (let ((end (point)))
               (while (and (< beg (point))
-                          (not (sweeprolog--query-once
-                                "sweep" "sweep_op_info"
-                                (cons (buffer-substring-no-properties beg (point))
-                                      (buffer-file-name)))))
+                          (not (sweeprolog--op-p beg (point))))
                 (forward-char -1))
               (list 'operator beg (if (= beg (point)) end (point)))))
-           ((= syn ?\()
+           ((= syn 4)
             (list 'open beg (1+ beg)))
-           ((= syn ?\))
+           ((= syn 5)
             (list 'close beg (1+ beg)))
-           ((= syn ?>) nil)
+           ((= syn 12) nil)
            (t (list 'else beg (1+ beg)))))))))
 
 (defun sweeprolog-last-token-boundaries (&optional pos)
+  "Return a list (KIND BEG END) describing the Prolog token before POS, if any.
+
+KIND is one of `symbol', `functor' `string', `operator', `open',
+`close' and `else'.  BEG and END are the token boundaries.
+
+If there is no token before POS, return nil."
   (let ((point (or pos (point)))
         (go t))
     (save-excursion
@@ -4564,32 +4577,28 @@ work."
             (setq go nil))))
       (unless (bobp)
         (let ((end (1+ (point)))
-              (syn (char-syntax (char-after))))
+              (syn (sweeprolog-syntax-class-at (point))))
           (cond
-           ((or (= syn ?w) (= syn ?_))
+           ((member syn '(2 3))
             (skip-syntax-backward "w_")
             (list 'symbol (point) end))
-           ((= syn ?\")
-            (list 'string (nth 8 (syntax-ppss)) end))
-           ((and (= syn ?\()
-                 (or (= (char-syntax (char-before)) ?w)
-                     (= (char-syntax (char-before)) ?_)))
+           ((= syn 7)
+            (when-let ((beg (nth 8 (syntax-ppss))))
+              (list 'string beg end)))
+           ((and (= syn 4)
+                 (member (sweeprolog-syntax-class-at (1- (point))) '(2 3)))
             (skip-syntax-backward "w_")
             (list 'functor (point) end))
-           ((or (= syn ?.)
-                (= syn ?\\))   ; specifically, the backslash character
+           ((member syn '(1 9))
             (skip-syntax-backward ".")
             (let ((beg (point)))
               (while (and (< (point) end)
-                          (not (sweeprolog--query-once
-                                "sweep" "sweep_op_info"
-                                (cons (buffer-substring-no-properties (point) end)
-                                      (buffer-file-name)))))
+                          (not (sweeprolog--op-p (point) end)))
                 (forward-char 1))
               (list 'operator (if (= end (point)) beg (point)) end)))
-           ((= syn ?\()
+           ((= syn 4)
             (list 'open (1- end) end))
-           ((= syn ?\))
+           ((= syn 5)
             (list 'close (1- end) end))
            (t (list 'else (1- end) end))))))))
 
@@ -4615,7 +4624,8 @@ work."
      (sweeprolog--forward-term pre))
     (`(operator ,obeg ,oend)
      (if (and (string= "." (buffer-substring-no-properties obeg oend))
-              (member (char-syntax (char-after (1+ obeg))) '(?> ? )))
+              (let ((sa (sweeprolog-syntax-class-at (1+ obeg))))
+                (or (null sa) (member sa '(0 12)))))
          (signal 'scan-error
                  (list "Cannot scan beyond fullstop."
                        obeg
@@ -4692,8 +4702,8 @@ work."
         (`(operator ,obeg ,oend)
          (if (and (string= "." (buffer-substring-no-properties obeg oend))
                   (or (not (char-after (1+ obeg)))
-                      (member (char-syntax (char-after (1+ obeg)))
-                              '(?> ? ))))
+                      (member (sweeprolog-syntax-class-at (1+ obeg))
+                              '(0 12))))
              (signal 'scan-error
                      (list "Cannot scan backwards beyond fullstop."
                            obeg
@@ -4740,8 +4750,7 @@ work."
              (setq infix-flag nil))))
         (`(close ,lbeg ,_lend)
          (goto-char (nth 1 (syntax-ppss lbeg)))
-         (when (or (= (char-syntax (char-before)) ?w)
-                   (= (char-syntax (char-before)) ?_))
+         (when (member (sweeprolog-syntax-class-at (1- (point))) '(2 3))
            (skip-syntax-backward "w_"))
          (setq infix-flag nil))
         (`(,_ ,lbeg ,_)
@@ -4964,14 +4973,16 @@ if-then-else constructs and other common layouts in SWI-Prolog."
           (let* ((lend (point))
                  (lbeg (save-excursion
                         (while (and (< bol (point))
-                                    (not (= (char-syntax (char-before))
-                                            ? )))
+                                    (not
+                                     (= (sweeprolog-syntax-class-at (1- (point)))
+                                        0)))
                           (forward-char -1))
                         (point)))
                  (num (- 4 (% (- lend lbeg) 4))))
             (insert (make-string (if (< 0 num)
                                      num
-                                   4) ? )))))
+                                   4)
+                                 ?\s)))))
     (pcase (sweeprolog-last-token-boundaries)
       (`(,_ ,lbeg ,lend)
        (when (<= bol lend)
@@ -5035,7 +5046,7 @@ certain contexts to maintain conventional Prolog layout."
   (setq-local beginning-of-defun-function #'sweeprolog-beginning-of-top-term)
   (setq-local end-of-defun-function #'sweeprolog-end-of-top-term)
   (setq-local forward-sexp-function #'sweeprolog-forward-sexp-function)
-  (setq-local syntax-propertize-function #'sweeprolog-syntax-propertize)
+  (setq-local syntax-propertize-function sweeprolog-syntax-propertize-function)
   (setq-local indent-line-function #'sweeprolog-indent-line)
   (setq-local adaptive-fill-regexp "[ \t]*")
   (setq-local fill-indent-according-to-mode t)
@@ -5262,13 +5273,12 @@ accordingly."
     (let ((column (if (nth 8 (syntax-ppss))
                       'noindent
                     (if-let ((open (and (not (eobp))
-                                        (= (char-syntax (char-after)) ?\))
+                                        (= (sweeprolog-syntax-class-at (point)) 5)
                                         (nth 1 (syntax-ppss)))))
                         (save-excursion
                           (goto-char open)
-                          (when (and (char-before)
-                                     (or (= (char-syntax (char-before)) ?w)
-                                         (= (char-syntax (char-before)) ?_)))
+                          (when (member (sweeprolog-syntax-class-at (1- (point)))
+                                        '(2 3))
                             (when (save-excursion
                                     (forward-char)
                                     (skip-syntax-forward " " (pos-eol))

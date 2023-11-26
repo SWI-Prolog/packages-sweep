@@ -1832,7 +1832,7 @@ head,
 "))
 
 (sweeprolog-deftest forward-sexp-with-adjacent-operators ()
-  "Tests detecting the fullstop in presence of `.=.'."
+  "Test `forward-sexp' with adjacent operators."
   "a,+b."
   (goto-char (point-min))
   (sweeprolog--forward-sexp)
@@ -1840,6 +1840,26 @@ head,
   (goto-char (point-max))
   (sweeprolog--backward-sexp)
   (should (= (point) 4)))
+
+(sweeprolog-deftest backward-sexp-over-char-literal ()
+  "Test `backward-sexp' over a charater literal."
+  "foo :- A is 0'b + 0'a + 0'r-!-."
+  (backward-sexp)
+  (should (= (point) 25))
+  (backward-sexp)
+  (should (= (point) 19))
+  (backward-sexp)
+  (should (= (point) 13))
+  (forward-sexp)
+  (should (= (point) 16))
+  (forward-sexp)
+  (should (= (point) 22))
+  (backward-sexp 2)
+  (should (= (point) 13))
+  (backward-sexp)
+  (should (= (point) 8))
+  (backward-sexp)
+  (should (= (point) 1)))
 
 (sweeprolog-deftest usage-example-comment ()
   "Tests adding usage example comments."
