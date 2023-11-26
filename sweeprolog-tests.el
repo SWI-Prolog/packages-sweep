@@ -1861,6 +1861,18 @@ head,
   (backward-sexp)
   (should (= (point) 1)))
 
+(sweeprolog-deftest backward-sexp-to-string-boundary ()
+  "Test `backward-sexp' inside a string."
+  "foo :- A = \"bar, baz-!-\"."
+  (backward-sexp)
+  (should (= (point) 18))
+  (backward-sexp)
+  (should (= (point) 13))
+  (forward-sexp)
+  (should (= (point) 16))
+  (forward-sexp)
+  (should (= (point) 21)))
+
 (sweeprolog-deftest usage-example-comment ()
   "Tests adding usage example comments."
   "\nfoo."
