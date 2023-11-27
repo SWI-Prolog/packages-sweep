@@ -1534,10 +1534,13 @@ example, with @kbd{C-w}) and insert another Prolog term in its place.
 For more information about the region, @ref{Mark,,,emacs,} in the
 Emacs manual.
 
+@findex sweeprolog-fill-holes
 Yanking a hole with @kbd{C-y} (@code{yank}) after you kill it removes
 the special hole property and inserts it as a plain variable.  This
 can be useful if you want to keep the variable name that Sweep chose
-for the hole---simply press @kbd{C-w C-y} with the hole marked.
+for the hole---simply press @kbd{C-w C-y} with the hole marked.  You
+can also use the command @code{sweeprolog-fill-holes}, which turns all
+holes in the current region to plain variables.
 
 As an alternative to manually killing the region with @kbd{C-w}, if
 you enable Delete Selection mode (@code{delete-selection-mode}), the

@@ -2932,22 +2932,7 @@ inside a comment, string or quoted atom."
 
 (defun sweeprolog-analyze-end-font-lock (beg end)
   (when sweeprolog-highlight-holes
-    (with-silent-modifications
-      (save-excursion
-        (goto-char beg)
-        (save-restriction
-          (narrow-to-region beg end)
-          (let ((hole (sweeprolog--next-hole)))
-            (while hole
-              (let ((hbeg (car hole))
-                    (hend (cdr hole)))
-                (font-lock--add-text-property hbeg hend
-                                              'font-lock-face
-                                              'sweeprolog-hole
-                                              (current-buffer)
-                                              nil)
-                (goto-char hend)
-                (setq hole (sweeprolog--next-hole)))))))))
+    (sweeprolog--highlight-holes beg end))
   (when (and sweeprolog-highlight-breakpoints
              (sweeprolog-buffer-loaded-since-last-modification-p))
     (with-silent-modifications
@@ -3439,7 +3424,9 @@ Interactively, PROJ is the prefix argument."
           (font-lock-unfontify-region beg end))
         (sweeprolog--query-once "sweep" "sweep_colourise_query"
                                 (cons (buffer-substring-no-properties beg end)
-                                      (marker-position beg)))))))
+                                      (marker-position beg)))
+        (when sweeprolog-highlight-holes
+          (sweeprolog--highlight-holes beg end))))))
 
 (defun sweeprolog-top-level-sentinel (proc msg)
   "Sentinel for Prolog top-level processes.
@@ -3647,6 +3634,11 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
     (with-restriction prompt-beg (point-max)
       (sweeprolog-completion-at-point))))
 
+(defun sweeprolog--fill-query-holes (_)
+  "Turn all holes in the last top-level query to plain variables."
+  (when-let ((beg (cdr comint-last-prompt)))
+    (sweeprolog-fill-holes beg (point-max))))
+
 ;;;###autoload
 (define-derived-mode sweeprolog-top-level-mode comint-mode "Sweep Top-level"
   "Major mode for interacting with an inferior Prolog interpreter."
@@ -3668,6 +3660,10 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
   (add-hook 'completion-at-point-functions #'sweeprolog-top-level-completion-at-point nil t)
   (add-hook 'after-change-functions #'sweeprolog-colourise-query nil t)
   (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
+  (add-hook 'comint-input-filter-functions #'sweeprolog--fill-query-holes nil t)
+  (unless (member 'sweeprolog-hole yank-excluded-properties)
+    (setq-local yank-excluded-properties
+                (cons 'sweeprolog-hole yank-excluded-properties)))
   (when (and (member sweeprolog-faces-style '(light dark))
              (not (custom-theme-enabled-p 'sweeprolog-pce)))
     (load-theme 'sweeprolog-pce t)
@@ -3945,6 +3941,35 @@ point and the end of the buffer."
               (sweeprolog--next-hole)))
         (cons (point)
               (sweeprolog-end-of-hole))))))
+
+(defun sweeprolog--highlight-holes (beg end)
+  "Add the `sweeprolog-hole' face to all holes between BEG and END."
+  (with-silent-modifications
+    (save-excursion
+      (goto-char beg)
+      (with-restriction beg end
+        (while-let ((hole (sweeprolog--next-hole))
+                    (hbeg (car hole)) (hend (cdr hole)))
+          (font-lock--add-text-property hbeg hend
+                                        'font-lock-face
+                                        'sweeprolog-hole
+                                        (current-buffer)
+                                        nil)
+          (goto-char hend))))))
+
+(defun sweeprolog-fill-holes (beg end)
+  "Turn all holes from BEG to END into plain variables."
+  (interactive "r" sweeprolog-mode sweeprolog-top-level-mode)
+  (with-silent-modifications
+    (save-excursion
+      (goto-char beg)
+      (with-restriction beg end
+        (while-let ((hole (sweeprolog--next-hole))
+                    (hbeg (car hole)) (hend (cdr hole)))
+          (font-lock--remove-face-from-text-property
+           hbeg hend 'font-lock-face 'sweeprolog-hole)
+          (remove-list-of-text-properties hbeg hend '(sweeprolog-hole))
+          (goto-char hend))))))
 
 (defun sweeprolog--backward-wrap (&optional wrap)
   (if (bobp)
