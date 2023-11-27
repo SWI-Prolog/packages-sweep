@@ -6,7 +6,7 @@
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
 ;; Keywords: prolog languages extensions
 ;; URL: https://git.sr.ht/~eshel/sweep
-;; Package-Version: 0.27.1
+;; Package-Version: 0.27.2
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.2"))
 
 ;; This file is NOT part of GNU Emacs.

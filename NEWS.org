@@ -8,8 +8,23 @@
 This file contains the release notes for Sweep, an embedding of
 SWI-Prolog in Emacs.
 
-For further details, please consult the manual:
+For further details, see the Sweep manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
+
+* Version 0.27.2 on 2023-11-27
+
+** Term-based navigation and editing in the top-level
+
+Sweep now arranges for ~C-M-f~, ~C-M-u~, and related standard commands
+to operate on Prolog terms in top-level buffers, similarly to how
+these commands behave in Sweep Prolog mode buffers.
+
+** Improve CHR highlighting and help messages
+
+This version includes better support for Constraint Handling Rules
+from ~library(chr)~.
+
+** Bug fixes and documentation improvements
 
 * Version 0.27.1 on 2023-11-16
 
