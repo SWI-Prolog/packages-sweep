@@ -426,11 +426,14 @@ explicit_args(N, G0, G) :-
     !,
     explicit_args_(N, G0, G).
 
+explicit_args_(0, G, G) :-
+    atom(G),
+    !.
 explicit_args_(N, G0, G) :-
-    G0 =.. [F|A0],
+    compound_name_arguments(G0, F, A0),
     length(A1, N),
     append(A0, A1, A),
-    G =.. [F|A].
+    compound_name_arguments(G, F, A).
 
 sweep_short_documentation_finalize(M, PI, Index, PIString, Doc, ArgSpan) :-
     doc_comment(M:PI, Pos, OneLiner, Comment),
