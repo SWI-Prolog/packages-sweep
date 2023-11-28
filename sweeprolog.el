@@ -3661,6 +3661,9 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
   (add-hook 'after-change-functions #'sweeprolog-colourise-query nil t)
   (add-hook 'xref-backend-functions #'sweeprolog--xref-backend nil t)
   (add-hook 'comint-input-filter-functions #'sweeprolog--fill-query-holes nil t)
+  (when (fboundp 'eldoc-documentation-default)
+    (setq-local eldoc-documentation-strategy #'eldoc-documentation-default))
+  (add-hook 'eldoc-documentation-functions #'sweeprolog-predicate-modes-doc nil t)
   (unless (member 'sweeprolog-hole yank-excluded-properties)
     (setq-local yank-excluded-properties
                 (cons 'sweeprolog-hole yank-excluded-properties)))

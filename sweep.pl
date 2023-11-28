@@ -236,9 +236,12 @@ sweep_handle_fragment_(Offset, Col, Beg, Len) :-
     user:sweep_funcall("sweeprolog-analyze-fragment", [Start,Len|Nom], _).
 
 sweep_short_documentation([ClauseString,Point,FileName0], [PIString,Doc,ArgSpan]) :-
-    atom_string(FileName, FileName0),
-    xref_source(FileName),
-    sweep_module_path_(Mod, FileName),
+    (   FileName0 == []
+    ->  Mod = user
+    ;   atom_string(FileName, FileName0),
+        xref_source(FileName),
+        sweep_module_path_(Mod, FileName)
+    ),
     term_string(Clause, ClauseString, [subterm_positions(Pos), module(Mod), syntax_errors(quiet)]),
     callable(Clause),
     sweep_short_documentation_clause(Pos, Clause, Point, FileName, Mod, PIString, Doc, ArgSpan).
@@ -274,6 +277,9 @@ sweep_short_documentation_clause_((Head --> Body), _Pos, [HeadPos, BodyPos], Poi
     !,
     sweep_short_documentation_clause_neck(Head, HeadPos, Body, BodyPos, '//', Point, FileName, Mod, PIString, Doc, ArgSpan).
 sweep_short_documentation_clause_((:- Directive), _Pos, [Pos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_body(Pos, Directive, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause_((?- Directive), _Pos, [Pos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
     !,
     sweep_short_documentation_body(Pos, Directive, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
 sweep_short_documentation_clause_(Head, Pos, _, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
