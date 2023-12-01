@@ -1384,6 +1384,7 @@ Prolog buffers."
                     (ppre (sweeprolog-op-prefix-precedence op)))
                (cond
                 ((and (string= "." op)
+                      (equal 1 (sweeprolog-syntax-class-at obeg))
                       (let ((sa (sweeprolog-syntax-class-at (1+ obeg))))
                         (or (null sa) (member sa '(0 12)))))
                  nil)
@@ -3873,6 +3874,7 @@ The command `beginning-of-defun' calls this function in
       (or (re-search-forward (rx "." (or white "\n")) nil t)
           (goto-char (point-max)))
       (while (and (or (nth 8 (syntax-ppss))
+                      (equal 0 (sweeprolog-syntax-class-at (point)))
                       (save-excursion
                         (nth 8 (syntax-ppss (max (point-min)
                                                  (1- (point))))))

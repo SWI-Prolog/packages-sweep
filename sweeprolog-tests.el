@@ -1379,6 +1379,23 @@ html_program_section(Section, Dict) -->
   (sweeprolog-end-of-top-term)
   (should (= (point) 466)))
 
+(sweeprolog-deftest end-of-top-term-with-dot-char-literal ()
+  "Tests detecting the fullstop in presence of `0\'.'."
+  "
+full_stop_after(Index, String, [H|T]) :-
+    string_code(Index, String, H),
+    Index2 is Index+1,
+    (   code_type(H, space)
+    ->  !, full_stop_after(Index2, String, T)
+    ;   H == 0'.
+    ->  !, layout_after(Index2, String, T)
+    ).
+full_stop_after(_, _, []).
+"
+  (goto-char (point-min))
+  (sweeprolog-end-of-top-term)
+  (should (= (point) 242)))
+
 (sweeprolog-deftest fullstop-detection ()
   "Tests detecting the fullstop in presence of confusing comments."
   "
