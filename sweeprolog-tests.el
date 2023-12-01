@@ -1873,6 +1873,14 @@ head,
   (forward-sexp)
   (should (= (point) 21)))
 
+(ert-deftest top-level-thread-id ()
+  "Test obtaining the thread id of a top-level on startup."
+  (let ((buf-name (generate-new-buffer-name "*test top-level*")))
+    (sweeprolog-top-level buf-name)
+    (should sweeprolog-top-level-thread-id)
+    (sweeprolog-top-level-delete-process buf-name)
+    (kill-buffer buf-name)))
+
 (sweeprolog-deftest usage-example-comment ()
   "Tests adding usage example comments."
   "\nfoo."
