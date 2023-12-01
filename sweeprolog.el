@@ -301,9 +301,9 @@ predicate (e.g. \":-\" for regular clauses and \"-->\" for DCG
 non-terminals)."
   :package-version '((sweeprolog "0.8.11"))
   :type '(choice (const    :tag "Below Current Predicate"
-                        sweeprolog-default-new-predicate-location)
+                           sweeprolog-default-new-predicate-location)
                  (const    :tag "Above Current Predicate"
-                        sweeprolog-new-predicate-location-above-current)
+                           sweeprolog-new-predicate-location-above-current)
                  (function :tag "Custom Function")))
 
 (defcustom sweeprolog-top-level-signal-default-goal "sweep_interrupt"
@@ -2059,8 +2059,8 @@ inside a comment, string or quoted atom."
 
 (defface sweeprolog-functor
   '((t :inherit font-lock-function-name-face))
- "Face for highlighting Prolog functors."
- :group 'sweeprolog-faces)
+  "Face for highlighting Prolog functors."
+  :group 'sweeprolog-faces)
 
 (defface sweeprolog-arity
   '((t :inherit font-lock-function-name-face))
@@ -3309,26 +3309,26 @@ modified."
 
 (defun sweeprolog-analyze-some-terms (beg end &optional verbose)
   (let ((sweeprolog--analyze-point (point)))
-   (save-match-data
-     (save-mark-and-excursion
-       (goto-char beg)
-       (sweeprolog-beginning-of-top-term)
-       (unless (bobp)
-         (sweeprolog-beginning-of-top-term))
-       (let ((start (point))
-             (cur (point)))
-         (while (and (not (eobp))
-                     (< (point) end))
-           (setq cur (point))
-           (sweeprolog-end-of-top-term)
-           (sweeprolog-analyze-term cur (point)))
-         (setq cur (point))
-         (sweeprolog-end-of-top-term)
-         (skip-chars-forward " \t\n")
-         (sweeprolog-analyze-term cur (point))
-         (when font-lock-keywords
-           (font-lock-fontify-keywords-region start (point) verbose))
-         `(jit-lock-bounds ,start . ,(point)))))))
+    (save-match-data
+      (save-mark-and-excursion
+        (goto-char beg)
+        (sweeprolog-beginning-of-top-term)
+        (unless (bobp)
+          (sweeprolog-beginning-of-top-term))
+        (let ((start (point))
+              (cur (point)))
+          (while (and (not (eobp))
+                      (< (point) end))
+            (setq cur (point))
+            (sweeprolog-end-of-top-term)
+            (sweeprolog-analyze-term cur (point)))
+          (setq cur (point))
+          (sweeprolog-end-of-top-term)
+          (skip-chars-forward " \t\n")
+          (sweeprolog-analyze-term cur (point))
+          (when font-lock-keywords
+            (font-lock-fontify-keywords-region start (point) verbose))
+          `(jit-lock-bounds ,start . ,(point)))))))
 
 (defconst sweeprolog-syntax-propertize-function
   (syntax-propertize-rules
@@ -3372,11 +3372,11 @@ variable at point, if any."
           (let ((cur (buffer-substring-no-properties beg end)))
             (when (and var (string= cur var))
               (with-silent-modifications
-               (font-lock--add-text-property beg
-                                             end
-                                             'font-lock-face
-                                             'sweeprolog-variable-at-point
-                                             (current-buffer) nil))))))))))
+                (font-lock--add-text-property beg
+                                              end
+                                              'font-lock-face
+                                              'sweeprolog-variable-at-point
+                                              (current-buffer) nil))))))))))
 
 (defun sweeprolog-cursor-sensor-functions (var)
   (list
@@ -3679,8 +3679,8 @@ GOAL.  Otherwise, GOAL is set to a default value specified by
   (setq buffer (or buffer (current-buffer)))
   (sweeprolog--query-once "sweep" "sweep_source_file_load_time"
                           (with-current-buffer buffer
-                           (or (buffer-file-name)
-                               (expand-file-name (buffer-name))))))
+                            (or (buffer-file-name)
+                                (expand-file-name (buffer-name))))))
 
 (defun sweeprolog-buffer-loaded-since-last-modification-p ()
   (when-let ((mtime (or sweeprolog--buffer-last-modified-time
@@ -5009,12 +5009,12 @@ if-then-else constructs and other common layouts in SWI-Prolog."
           (delete-horizontal-space)
           (let* ((lend (point))
                  (lbeg (save-excursion
-                        (while (and (< bol (point))
-                                    (not
-                                     (= (sweeprolog-syntax-class-at (1- (point)))
-                                        0)))
-                          (forward-char -1))
-                        (point)))
+                         (while (and (< bol (point))
+                                     (not
+                                      (= (sweeprolog-syntax-class-at (1- (point)))
+                                         0)))
+                           (forward-char -1))
+                         (point)))
                  (num (- 4 (% (- lend lbeg) 4))))
             (insert (make-string (if (< 0 num)
                                      num
@@ -5299,7 +5299,7 @@ accordingly."
           (_ (setq go nil))))
       (let ((col (current-column)))
         (if (= col 0)
-             (/ sweeprolog-indent-offset 2)
+            (/ sweeprolog-indent-offset 2)
           col)))))
 
 (defun sweeprolog-indent-line ()
@@ -5570,9 +5570,9 @@ accordingly."
                               (one-or-more digit) eos)
                           target)
         (buttonize-region start
-                                      (point)
-                                      #'sweeprolog-describe-predicate
-                                      target)))
+                          (point)
+                          #'sweeprolog-describe-predicate
+                          target)))
      (t (let* ((path-and-query (url-path-and-query parsed))
                (path (car path-and-query))
                (query (cdr path-and-query)))
@@ -5582,16 +5582,16 @@ accordingly."
                   (base (file-name-base path)))
               (when (string= dir "/pldoc/doc/_SWI_/library/")
                 (buttonize-region start
-                                              (point)
-                                              #'find-file
-                                              (concat "library(" base ")")))))
+                                  (point)
+                                  #'find-file
+                                  (concat "library(" base ")")))))
            ((string= path "/pldoc/man")
             (pcase (url-parse-query-string query)
               (`(("predicate" ,pred))
                (buttonize-region start
-                                             (point)
-                                             #'sweeprolog-describe-predicate
-                                             pred))))))))))
+                                 (point)
+                                 #'sweeprolog-describe-predicate
+                                 pred))))))))))
 
 (defun sweeprolog-render-html (html)
   (with-temp-buffer
@@ -5605,9 +5605,9 @@ accordingly."
       (goto-char (point-max))
       (when sweeprolog--html-footnotes
         (insert "\n\nFootnotes:")
-       (dolist (footnote sweeprolog--html-footnotes)
-         (insert "\n\n")
-         (shr-tag-span footnote))))
+        (dolist (footnote sweeprolog--html-footnotes)
+          (insert "\n\n")
+          (shr-tag-span footnote))))
     (buffer-string)))
 
 (defun sweeprolog--describe-module (mod)
@@ -6477,8 +6477,8 @@ prompt for CLASS as well."
   (dolist (id sweeprolog-context-menu-breakpoints-at-click)
     (sweeprolog-delete-breakpoint id))
   (let ((n (length sweeprolog-context-menu-breakpoints-at-click)))
-   (message "Deleted %d %s" n
-            (ngettext "breakpoint" "breakpoints" n))))
+    (message "Deleted %d %s" n
+             (ngettext "breakpoint" "breakpoints" n))))
 
 (defun sweeprolog-breakpoint-context-menu-set-condition ()
   "Set condition goal for the breakpoint at click."
@@ -7518,10 +7518,10 @@ where in the buffer to insert the newly created predicate."
                                   "scope may change as a result of this "
                                   "operation.  Continue?"))))
              (and in-use
-              (not (y-or-n-p (concat
-                              (format "Predicate %s/%d is already defined.  "
-                                      functor arity)
-                              "Continue?")))))
+                  (not (y-or-n-p (concat
+                                  (format "Predicate %s/%d is already defined.  "
+                                          functor arity)
+                                  "Continue?")))))
          (message "Canceled."))
         (t
          (goto-char beg)
