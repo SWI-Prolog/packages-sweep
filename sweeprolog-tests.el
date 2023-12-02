@@ -2412,4 +2412,19 @@ foo(Bar) --> baz(Bar).
     Doit.
 " (cons 4 15)))))
 
+(sweeprolog-deftest eldoc-dcg-atom ()
+  "Test `sweep_short_documentation/2' with atom non-terminals."
+  "
+:- module(eldocdcgatom, []).
+
+:- use_module(library(dcg/basics)).
+"
+  (should (equal (sweeprolog--query-once
+                  "sweep" "sweep_short_documentation"
+                  (list "bar --> blanks." 9 (buffer-file-name)))
+                 (list "dcg_basics:blanks//0" "blanks// is det.
+    Skip zero or more white-space characters.
+" nil))))
+
+
 ;;; sweeprolog-tests.el ends here

@@ -436,7 +436,10 @@ explicit_args_(0, G, G) :-
     atom(G),
     !.
 explicit_args_(N, G0, G) :-
-    compound_name_arguments(G0, F, A0),
+    (   atom(G0)
+    ->  F = G0, A0 = []
+    ;   compound_name_arguments(G0, F, A0)
+    ),
     length(A1, N),
     append(A0, A1, A),
     compound_name_arguments(G, F, A).
