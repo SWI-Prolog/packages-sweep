@@ -624,10 +624,6 @@ By default, this is t on systems where Emacs can use a pty."
 
 (defvar-local sweeprolog--diagnostics-report-fn nil)
 
-(defvar-local sweeprolog--diagnostics-changes-beg nil)
-
-(defvar-local sweeprolog--diagnostics-changes-end nil)
-
 (defvar-local sweeprolog--timer nil)
 
 (defvar-local sweeprolog--analyze-buffer-duration 0.2)
@@ -3388,11 +3384,9 @@ variable at point, if any."
 
 ;;;; Flymake
 
-(defun sweeprolog-diagnostic-function (report-fn &rest rest)
+(defun sweeprolog-diagnostic-function (report-fn &rest _)
   (setq sweeprolog--diagnostics nil
-        sweeprolog--diagnostics-report-fn report-fn
-        sweeprolog--diagnostics-changes-beg (plist-get rest :changes-start)
-        sweeprolog--diagnostics-changes-end (plist-get rest :changes-end)))
+        sweeprolog--diagnostics-report-fn report-fn))
 
 (defun sweeprolog-show-diagnostics (&optional proj)
   "Show diagnostics for the current project, or buffer if PROJ is nil.
