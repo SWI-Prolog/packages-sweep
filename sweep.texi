@@ -3538,8 +3538,9 @@ takes into account Prolog-specific conventions.
 @item Facilitate interactive debugging
 Sweep should facilitate interactive debugging of SWI-Prolog code.
 This is a big topic that we don't clearly address.  Perhaps this
-should handled through a Debug Adapter Protocol integration similar to
-@code{dap-swi-prolog} (@uref{https://github.com/eshelyaron/debug_adapter/blob/main/README.md,
+should be handled through a Debug Adapter Protocol integration similar
+to @code{dap-swi-prolog}
+(@uref{https://github.com/eshelyaron/debug_adapter/blob/main/README.md,
 Debug Adapter Protocol for SWI-Prolog}).
 
 @item Integrate with @file{project.el} adding support for SWI-Prolog packs
