@@ -15,7 +15,7 @@ This manual is for Sweep (version 0.27.2), an Emacs package providing
 an embedded SWI-Prolog runtime inside of Emacs along with an advanced
 SWI-Prolog development environment.
 
-Copyright @copyright{} 2022-2023 Eshel Yaron.
+Copyright @copyright{} 2022-2024 Eshel Yaron.
 
 @quotation
 Permission is granted to copy, distribute and/or modify this document

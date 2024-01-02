@@ -1,6 +1,6 @@
 ;;; sweeprolog-pce-theme.el --- Theme emulating PceEmacs, the SWI-Prolog built-in editor -*- lexical-binding:t -*-
 
-;; Copyright (C) 2023 Eshel Yaron
+;; Copyright (C) 2023-2024 Eshel Yaron
 
 ;; Author: Eshel Yaron <me@eshelyaron.com>
 ;; Maintainer: Eshel Yaron <~eshel/dev@lists.sr.ht>
