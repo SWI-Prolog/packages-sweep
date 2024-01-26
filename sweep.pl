@@ -1488,6 +1488,7 @@ source_arg(load_files, 1).
 source_arg(use_module, 1).
 source_arg(consult, 1).
 source_arg(ensure_loaded, 1).
+source_arg(process_create, 1).
 
 callable_arg(N,    N) :- integer(N), !.
 callable_arg((^),  0) :- !.
