@@ -1846,6 +1846,21 @@ body.
 head,
   right_hand_context -->
     body.
+")
+  (sweeprolog-test-indentation
+   "/** <module> Foo
+
+This module provides foo bar
+ baz spam
+  foo bar baz
+*/
+"
+   "/** <module> Foo
+
+This module provides foo bar
+baz spam
+foo bar baz
+*/
 "))
 
 (sweeprolog-deftest forward-sexp-with-adjacent-operators ()

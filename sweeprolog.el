@@ -5297,12 +5297,26 @@ accordingly."
           col)))))
 
 (defun sweeprolog-indent-line ()
-  "Indent the current line in a `sweeprolog-mode' buffer."
+  "Indent the current line in a Sweep Prolog mode buffer."
   (interactive)
   (let ((pos (- (point-max) (point))))
     (back-to-indentation)
-    (let ((column (if (nth 8 (syntax-ppss))
-                      'noindent
+    (let ((column (if-let ((ppss (syntax-ppss))
+                           (open (nth 8 ppss)))
+                      ;; Inside a comment or a string.
+                      (if (nth 4 ppss)
+                          ;; It's a comment.  Indent like
+                          ;; `indent--default-inside-comment'.
+                          (save-excursion
+                            (forward-line -1)
+                            (skip-chars-forward " \t")
+                            (when (< (1- (point)) open (line-end-position))
+                              (goto-char open)
+                              (when (looking-at comment-start-skip)
+                                (goto-char (match-end 0))))
+                            (current-column))
+                        ;; It's a string.  Don't indent.
+                        'noindent)
                     (if-let ((open (and (not (eobp))
                                         (= (sweeprolog-syntax-class-at (point)) 5)
                                         (nth 1 (syntax-ppss)))))
