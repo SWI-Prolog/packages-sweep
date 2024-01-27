@@ -2441,5 +2441,42 @@ foo(Bar) --> baz(Bar).
     Skip zero or more white-space characters.
 " nil))))
 
+(sweeprolog-deftest eldoc-ssu-guard ()
+  "Test `sweep_short_documentation/2' with SSU guard."
+  "
+:- module(eldocssuguard, []).
+
+:- use_module(library(lists)).
+"
+  (should (equal (sweeprolog--query-once
+                  "sweep" "sweep_short_documentation"
+                  (list "foo(X), member(X,_) => true." 15 (buffer-file-name)))
+                 '("lists:member/2" "member(?Elem,?List) is unspec.
+    True if Elem is a member of List.
+"
+                   (7 . 12)))))
+
+
+(sweeprolog-deftest eldoc-dcg-pushback ()
+  "Test `sweep_short_documentation/2' with DCG pushback list."
+  "
+:- module(eldocdcgpushback, []).
+
+%!  foo(-Baz:string)// is det.
+%
+%   Doit.
+
+foo(_) --> [].
+
+"
+  (should (equal (sweeprolog--query-once
+                  "sweep" "sweep_short_documentation"
+                  (list "foo(X), [1,2,3] --> []." 5 (buffer-file-name)))
+                 '("eldocdcgpushback:foo//1" "foo(-Baz:string)// is det.
+    Doit.
+"
+                   (4 . 15)))))
+
+
 
 ;;; sweeprolog-tests.el ends here

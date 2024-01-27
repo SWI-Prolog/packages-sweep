@@ -307,6 +307,16 @@ sweep_short_documentation_head(brace_term_position(Beg, End, _), Head, Neck, Poi
     ;   Arg = 0
     ),
     sweep_short_documentation_(FileName, Mod, Head, Arg, Neck, PIString, Doc, ArgSpan).
+sweep_short_documentation_head(term_position(_, _, _, _, [HeadPos, GuardPos]), (Head,Guard), Neck, Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    % SSU guard or DCG pushback
+    !,
+    (   pos_bounds(HeadPos, HeadBeg, HeadEnd),
+        HeadBeg =< Point, Point =< HeadEnd
+    ->  sweep_short_documentation_head(HeadPos, Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan)
+    ;   pos_bounds(GuardPos, GuardBeg, GuardEnd),
+        GuardBeg =< Point, Point =< GuardEnd
+    ->  sweep_short_documentation_body(GuardPos, Guard, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan)
+    ).
 sweep_short_documentation_head(term_position(_, _, _, _, [_, Pos]), Mod:Head, Neck, Point, FileName, _, PIString, Doc, ArgSpan) :-
     !,
     sweep_short_documentation_head(Pos, Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan).
