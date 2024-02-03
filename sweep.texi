@@ -318,6 +318,12 @@ configuration:
 To upgrade Sweep to a newer version, do @kbd{M-x package-upgrade
 @key{RET} sweeprolog @key{RET}}.
 
+For @file{straight.el} users, use the following form to install Sweep:
+
+@lisp
+(straight-use-package '(sweeprolog :files (:defaults "*.pl")))
+@end lisp
+
 @node Getting Started
 @chapter Getting Started
 
