@@ -253,6 +253,11 @@ inserted to the input history in `sweeprolog-top-level-mode' buffers."
          "--no-signals"
          "-g"
          "create_prolog_flag(sweep,true,[access(read_only),type(boolean)])"
+         ;; SWI-Prolog does its own locale initialization, but Emacs's
+         ;; Elisp reader only works with certain values of LC_NUMERIC,
+         ;; so we need to reset it after loading Prolog.  This is
+         ;; basically emulating fixup_locale from src/emacs.c:
+         "-g" "setlocale(numeric, _, 'C')"
          "-O"
          "-l"
          (expand-file-name
