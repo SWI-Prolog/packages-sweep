@@ -11,6 +11,19 @@ SWI-Prolog in Emacs.
 For further details, see the Sweep manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.27.5 on 2024-04-11
+
+** Work around Emacs reliance on certain locale settings
+
+This is a bug-fix release, resolving an issue that would manifest on X
+window systems with certain locales.  The issue was rooted in the
+different assumptions Emacs and SWI-Prolog make regarding the locale,
+and could lead to seemingly unrelated and inexplicable errors such as:
+
+#+begin_src emacs-lisp
+  (error "Invalid hash table rehash size" 1.0)
+#+end_src
+
 * Version 0.27.4 on 2024-02-03
 
 This is a maintenance release, including a couple of bug fixes:
