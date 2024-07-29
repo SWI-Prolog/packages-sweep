@@ -50,8 +50,8 @@ SWI-Prolog development environment.
 
 @menu
 * Overview::                     High level look at Sweep
-* Installation::                 Intructions for installing sweep
-* Getting Started::              First steps with sweep
+* Installation::                 Instructions for installing Sweep
+* Getting Started::              First steps with Sweep
 * Discovering Sweep::            Tips for finding out about Sweep features
 * Initialization::               Functions for starting and stopping the embedded Prolog runtime
 * Querying Prolog::              Functions for invoking Prolog predicates and consuming their results
