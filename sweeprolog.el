@@ -1433,7 +1433,7 @@ list even when found in the current clause."
       (goto-char beg)
       (save-match-data
         (while (re-search-forward (rx bow (or "_" upper)
-                                      (* alnum))
+                                      (* (or "_" alnum)))
                                   end t)
           (unless (nth 8 (syntax-ppss))
             (let ((match (match-string-no-properties 0)))
@@ -6179,7 +6179,8 @@ prompt for CLASS as well.  A negative prefix argument
                                       length)
                               '((?  "next" "Next match")
                                 (?  "back" "Last match")
-                                (?  "exit" "Exit term search"))))
+                                (?
+  "exit" "Exit term search"))))
                       (?
                        (setq overlays (if backward
                                           (cons overlay
@@ -6807,13 +6808,13 @@ is the name of the variable at point, if any."
     (let ((case-fold-search nil))
       (not
        (not
-        (string-match (rx bos (or "_" upper) (* alnum) eos) string))))))
+        (string-match (rx bos (or "_" upper) (* (or "_" alnum)) eos) string))))))
 
 (defun sweeprolog--decode-numbered-variable-name (string)
   "Return t if STRING is valid number variable name."
   (save-match-data
     (let ((case-fold-search nil))
-      (when (string-match (rx bos (group-n 1 (or "_" upper) (or (seq (* alnum) letter)
+      (when (string-match (rx bos (group-n 1 (or "_" upper) (or (seq (* (or "_" alnum)) letter)
                                                                 ""))
                               (group-n 2 (or "0" (seq (any (?1 . ?9)) (* digit)))) eos)
                           string)
