@@ -6177,11 +6177,10 @@ prompt for CLASS as well.  A negative prefix argument
                               (format "Match %d/%d"
                                       (1+ index)
                                       length)
-                              '((?  "next" "Next match")
-                                (?  "back" "Last match")
-                                (?
-  "exit" "Exit term search"))))
-                      (?
+                              '((?   "next" "Next match")
+                                (?   "back" "Last match")
+                                (?   "exit" "Exit term search"))))
+                      (?
                        (setq overlays (if backward
                                           (cons overlay
                                                 (reverse (cdr overlays)))
@@ -6191,7 +6190,7 @@ prompt for CLASS as well.  A negative prefix argument
                                        index
                                      (mod (1+ index) length))
                              backward nil))
-                      (?
+                      (?
                        (setq overlays (if backward
                                           (append (cdr overlays)
                                                   (list overlay))
