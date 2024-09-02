@@ -6810,11 +6810,15 @@ is the name of the variable at point, if any."
         (string-match (rx bos (or "_" upper) (* (or "_" alnum)) eos) string))))))
 
 (defun sweeprolog--decode-numbered-variable-name (string)
-  "Return t if STRING is valid number variable name."
+  "Decode numbered variable name STRING.
+
+Return cons cell (VAR . NUM), where VAR is the variable name sans
+numbered variable index, and NUM is the index."
   (save-match-data
     (let ((case-fold-search nil))
-      (when (string-match (rx bos (group-n 1 (or "_" upper) (or (seq (* (or "_" alnum)) letter)
-                                                                ""))
+      (when (string-match (rx bos (group-n 1
+                                    (or "_" upper)
+                                    (or (seq (* (or "_" alnum)) (or letter "_")) ""))
                               (group-n 2 (or "0" (seq (any (?1 . ?9)) (* digit)))) eos)
                           string)
         (cons (match-string 1 string)
