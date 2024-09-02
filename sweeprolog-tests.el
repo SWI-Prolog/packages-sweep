@@ -281,30 +281,37 @@ foo(Foo) :- bar.
                    "foo(bar, (_->_;_), _):-_.")))
 
 (sweeprolog-deftest rename-variable ()
-  "Tests renaming varialbes."
+  "Tests renaming variables."
   "foo(Bar,Baz) :- spam(Baz,Bar)."
   (goto-char (point-min))
-  (sweeprolog-rename-variable "Bar" "Spam")
+  (sweeprolog-rename-variable "Bar" "_S_p_a_m_")
   (sweeprolog-rename-variable "Baz" "Bar")
-  (sweeprolog-rename-variable "Spam" "Baz")
+  (sweeprolog-rename-variable "_S_p_a_m_" "Baz")
   (should (string= (buffer-string)
                    "foo(Baz,Bar) :- spam(Bar,Baz).")))
 
 (sweeprolog-deftest increment-variable ()
-  "Tests renaming varialbes."
+  "Tests renaming variables."
   "
 foo(Bar0,Bar) :-
+    spam(Bar_0,Bar_1),
     spam(Bar0,Bar1),
+    bar(Bar_1,Bar_2),
     bar(Bar1,Bar2),
+    baz(Bar_2,Bar),
     baz(Bar2, Bar).
 "
   (goto-char (1+ (point-min)))
   (sweeprolog-increment-numbered-variables 1 (point) "Bar1")
+  (sweeprolog-increment-numbered-variables 1 (point) "Bar_2")
   (should (string= (buffer-string)
                    "
 foo(Bar0,Bar) :-
+    spam(Bar_0,Bar_1),
     spam(Bar0,Bar2),
+    bar(Bar_1,Bar_3),
     bar(Bar2,Bar3),
+    baz(Bar_3,Bar),
     baz(Bar3, Bar).
 ")))
 
