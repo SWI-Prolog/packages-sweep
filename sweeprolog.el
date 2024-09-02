@@ -6802,12 +6802,10 @@ is the name of the variable at point, if any."
 (defvar-local sweeprolog-read-new-variable--warned nil)
 
 (defun sweeprolog--variable-name-p (string)
-  "Return t if STRING is valid Prolog variable name."
+  "Return non-nil if STRING is valid Prolog variable name."
   (save-match-data
     (let ((case-fold-search nil))
-      (not
-       (not
-        (string-match (rx bos (or "_" upper) (* (or "_" alnum)) eos) string))))))
+      (string-match (rx bos (or "_" upper) (* (or "_" alnum)) eos) string))))
 
 (defun sweeprolog--decode-numbered-variable-name (string)
   "Decode numbered variable name STRING.
@@ -6963,7 +6961,7 @@ Interactively, OLD, NEW and POINT are nil, and VERBOSE is t."
   "Transient keymap activated after `sweeprolog-increment-numbered-variables'.")
 
 (defun sweeprolog-increment-numbered-variables (increment point &optional from)
-  "Increment numbered variables from at POINT starting with FROM.
+  "Increment numbered variables at POINT starting with FROM.
 
 FROM is either nil or a numbered varialbe (a string) that occurs
 in clause at POINT.  If it is nil, prompt for a numbered variable

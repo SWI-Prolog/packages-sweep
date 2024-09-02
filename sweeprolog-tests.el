@@ -291,7 +291,7 @@ foo(Foo) :- bar.
                    "foo(Baz,Bar) :- spam(Bar,Baz).")))
 
 (sweeprolog-deftest increment-variable ()
-  "Tests renaming variables."
+  "Test incrementing index of numbered variables."
   "
 foo(Bar0,Bar) :-
     spam(Bar_0,Bar_1),
