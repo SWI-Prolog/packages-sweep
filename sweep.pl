@@ -2043,11 +2043,11 @@ cleanup_thread_(T) :-
     !,
     thread_detach(T),
     (   thread_property(T, status(running))
-    ->  thread_signal(T, thread_exit(0))
+    ->  thread_signal(T, throw(exit))
     ;   true
     ).
 cleanup_thread_(T) :-
-    thread_signal(T, thread_exit(0)).
+    thread_signal(T, throw(exit)).
 
 sweep_async_goal([GoalString|FD], TId) :-
     term_string(Goal, GoalString),
