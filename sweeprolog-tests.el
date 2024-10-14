@@ -2484,6 +2484,11 @@ foo(_) --> [].
 "
                    (4 . 15)))))
 
+(sweeprolog-deftest replace-with-anonymous-variable ()
+  "Test `sweeprolog-replace-with-anonymous-variable'."
+  "foo(Bar)."
+  (sweeprolog-replace-with-anonymous-variable 4)
+  (should (equal (buffer-string) "_.")))
 
 
 ;;; sweeprolog-tests.el ends here

@@ -480,6 +480,7 @@ By default, this is t on systems where Emacs can use a pty."
   "C-c C-%" #'sweeprolog-make-example-usage-comment
   "C-c C--" #'sweeprolog-decrement-numbered-variables
   "C-c C-+" #'sweeprolog-increment-numbered-variables
+  "C-c C-_" #'sweeprolog-replace-with-anonymous-variable
   "C-M-^"   #'kill-backward-up-list
   "C-M-m"   #'sweeprolog-insert-term-dwim
   "M-p"     #'sweeprolog-backward-predicate
@@ -3204,7 +3205,7 @@ inside a comment, string or quoted atom."
                 ("no_flag_name"
                  (cons :warning "No such flag"))
                 ("singleton"
-                 (cons :note "Singleton variable"))
+                 (cons :note "Singleton variable, use \\[sweeprolog-replace-with-anonymous-variable] to replace with anonymous variable"))
                 ("no_option_name"
                  (cons :warning "No such option"))
                 (`("file_no_depend" . ,file)
@@ -4249,6 +4250,21 @@ of the prefix argument."
                                 arity
                                 neck)
       t)))
+
+(defun sweeprolog-replace-with-anonymous-variable (&optional point)
+  "Replace smallest Prolog term at POINT with an anonymous variable `_'."
+  (interactive "d" sweeprolog-mode)
+  (let (b e)
+    (sweeprolog-analyze-term-at-point
+     (lambda (beg end _arg)
+       (when (<= (or b (point-min)) beg point (1+ point) end (or e (point-max)))
+         (setq b beg e end))))
+    (unless b (user-error "No term at this position"))
+    (combine-after-change-calls
+      (delete-region b e)
+      (save-excursion
+        (goto-char b)
+        (insert "_")))))
 
 (defun sweeprolog-insert-term-dwim (&optional point arg)
   "Insert an appropriate Prolog term at POINT.
@@ -6463,6 +6479,12 @@ prompt for CLASS as well."
                               sweeprolog-context-menu-point-at-click
                               t))
 
+(defun sweeprolog-context-menu-replace-with-anonymous-variable ()
+  "Replace variable at click with anonymous variable `_'."
+  (interactive)
+  (sweeprolog-replace-with-anonymous-variable
+   sweeprolog-context-menu-point-at-click))
+
 (defun sweeprolog-context-menu-increment-numbered-variables ()
   "Increment numbered variables starting with the variable at click."
   (interactive)
@@ -6577,6 +6599,14 @@ POINT is the buffer position of the mouse click."
                                               (sweeprolog--format-variable
                                                sweeprolog-context-menu-variable-at-click))
                                :keys "\\[sweeprolog-increment-numbered-variables]")))
+     (when (equal tok "singleton")
+       (define-key menu [sweeprolog-replace-with-anonymous-variable]
+                   `(menu-item "Replace with Anonymous Variable"
+                               sweeprolog-context-menu-replace-with-anonymous-variable
+                               :help ,(format "Replace variable %s with anonymous variable `_'"
+                                              (sweeprolog--format-variable
+                                               sweeprolog-context-menu-variable-at-click))
+                               :keys "\\[sweeprolog-replace-with-anonymous-variable]")))
      (define-key menu [sweeprolog-rename-variable]
                  `(menu-item "Rename Variable"
                              sweeprolog-context-menu-rename-variable

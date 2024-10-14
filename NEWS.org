@@ -11,6 +11,13 @@ SWI-Prolog in Emacs.
 For further details, see the Sweep manual:
 [[https://eshelyaron.com/sweep.html][https://eshelyaron.com/sweep.html]].
 
+* Version 0.27.7 in development
+
+** New command ~sweeprolog-replace-with-anonymous-variable~
+
+This command replaces the smallest term at point with the anonymous
+variable, ~_~.
+
 * Version 0.27.6 on 2024-09-05
 
 This is a maintenance release, including a couple of bug fixes:

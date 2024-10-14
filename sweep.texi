@@ -2558,6 +2558,11 @@ following command:
 @item C-c C-r
 Rename a variable across the topmost Prolog term at point
 (@code{sweeprolog-rename-variable}).
+@kindex C-c C-_
+@findex sweeprolog-replace-with-anonymous-variable
+@item C-c C-_
+Replace the variable at point with an anonymous variable @code{_}
+(@code{sweeprolog-replace-with-anonymous-variable}).
 @end table
 
 @defopt sweeprolog-rename-variable-allow-existing
@@ -2586,10 +2591,24 @@ the two variables.  Other alternatives for this user option are
 @code{t} for allowing such merges without confirmation, and @code{nil}
 for refusing them altogether.
 
+@cindex anonymous variable
+An operation that is closely related to renaming variables, is
+replacing them with the @dfn{anonymous variable}, @code{_}.  Using the
+anonymous variable in place of another variable, or more generally in
+place of another term, is a way to explicitly indicate that you do not
+care about the value of that variable.  The command
+@code{sweeprolog-replace-with-anonymous-variable}, or @kbd{C-c C-_},
+replaces the (smallest) term at point, usually a variable, with the
+anonymous variable @code{_}.
+
+@cindex singleton variable
 If Context Menu mode is enabled, you can also rename variables by
 right-clicking on them with the mouse and selecting @samp{Rename
 Variable} from the top of the context menu.  @xref{Context Menu}, for
-more information about context menus in Sweep.
+more information about context menus in Sweep.  If you right-click on
+a @dfn{singleton} variable, which is a variable that only occurs once
+and has no effect, then the menu also includes an entry for replacing
+that singleton with the anonymous variable.
 
 @node Numbered Variables
 @section Numbered Variables
