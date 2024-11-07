@@ -276,6 +276,9 @@ sweep_short_documentation_clause_((Head => Body), _Pos, [HeadPos, BodyPos], Poin
 sweep_short_documentation_clause_((Head --> Body), _Pos, [HeadPos, BodyPos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
     !,
     sweep_short_documentation_clause_neck(Head, HeadPos, Body, BodyPos, '//', Point, FileName, Mod, PIString, Doc, ArgSpan).
+sweep_short_documentation_clause_((Head ==> Body), _Pos, [HeadPos, BodyPos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
+    !,
+    sweep_short_documentation_clause_neck(Head, HeadPos, Body, BodyPos, '//', Point, FileName, Mod, PIString, Doc, ArgSpan).
 sweep_short_documentation_clause_((:- Directive), _Pos, [Pos], Point, FileName, Mod, PIString, Doc, ArgSpan) :-
     !,
     sweep_short_documentation_body(Pos, Directive, 0, Point, FileName, Mod, PIString, Doc, ArgSpan).
@@ -315,7 +318,7 @@ sweep_short_documentation_head(term_position(_, _, _, _, [HeadPos, GuardPos]), (
     ->  sweep_short_documentation_head(HeadPos, Head, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan)
     ;   pos_bounds(GuardPos, GuardBeg, GuardEnd),
         GuardBeg =< Point, Point =< GuardEnd
-    ->  sweep_short_documentation_body(GuardPos, Guard, Neck, Point, FileName, Mod, PIString, Doc, ArgSpan)
+    ->  sweep_short_documentation_body(GuardPos, Guard, 0, Point, FileName, Mod, PIString, Doc, ArgSpan)
     ).
 sweep_short_documentation_head(term_position(_, _, _, _, [_, Pos]), Mod:Head, Neck, Point, FileName, _, PIString, Doc, ArgSpan) :-
     !,
@@ -1405,7 +1408,9 @@ sweep_context_callable([H|T], R) :-
     atom_string(F, F0),
     op_is_neck(F),
     !,
-    (   F == (-->)
+    (   (   F == (-->)
+        ;   F == (==>)
+        )
     ->  R0 = 2
     ;   R0 = 0
     ),
@@ -1437,6 +1442,7 @@ sweep_context_callable_([H|T], R0, R) :-
     sweep_context_callable_(T, R1, R).
 
 sweep_context_callable_arg((-->), _, _, 2) :- !.
+sweep_context_callable_arg((==>), _, _, 2) :- !.
 sweep_context_callable_arg(^, _, _, 0) :- !.
 sweep_context_callable_arg(Neck, _, _, 0) :-
     op_is_neck(Neck),
@@ -1725,7 +1731,7 @@ sweep_replace_stream_(end_of_file, _, _, _, _, _, _, _, _, _, []) :- !.
 sweep_replace_stream_(Term, Pos, Stream, FileName, Module, BodyIndent, Final, TemplateGoal, VarNames0, Rep-VarNames, Res) :-
     (   var(Term)
     ->  State = clause
-    ;   memberchk(Term, [(_:-_),(_=>_),(_-->_)])
+    ;   memberchk(Term, [(_:-_),(_=>_),(_-->_),(_==>_)])
     ->  State = clause
     ;   Term = (:-_)
     ->  State = directive
@@ -1861,6 +1867,8 @@ sweep_replace_update_state(_FileName, _Module, '=>', 2, 1, clause, head) :- !.
 sweep_replace_update_state(_FileName, _Module, '=>', 2, 2, clause, goal(0)) :- !.
 sweep_replace_update_state(_FileName, _Module, '-->', 2, 1, clause, head) :- !.
 sweep_replace_update_state(_FileName, _Module, '-->', 2, 2, clause, goal(2)) :- !.
+sweep_replace_update_state(_FileName, _Module, '==>', 2, 1, clause, head) :- !.
+sweep_replace_update_state(_FileName, _Module, '==>', 2, 2, clause, goal(2)) :- !.
 sweep_replace_update_state(_FileName, _Module, _Functor, _Arity, _I, clause, data) :- !.
 sweep_replace_update_state(_FileName, _Module, ',', 2, 1, head, head) :- !.     %  SSU head
 sweep_replace_update_state(_FileName, _Module, ',', 2, 2, head, goal(0)) :- !.  %  SSU guard
@@ -2172,6 +2180,7 @@ clause_body_pos_neck_((:-B), term_position(_,_,_,_,[BP]), B, BP,0) :- !.
 clause_body_pos_neck_((_:-B), term_position(_,_,_,_,[_,BP]), B, BP,0) :- !.
 clause_body_pos_neck_((_=>B), term_position(_,_,_,_,[_,BP]), B, BP,0) :- !.
 clause_body_pos_neck_((_-->B), term_position(_,_,_,_,[_,BP]), B, BP,//).
+clause_body_pos_neck_((_==>B), term_position(_,_,_,_,[_,BP]), B, BP,//).
 
 sweep_extract_goal([ClauseString,GoalBeg,GoalEnd,Functor0,FileName0],
                    [Call,Head,Neck,Body,Safe,Functor,Arity,Exists]) :-

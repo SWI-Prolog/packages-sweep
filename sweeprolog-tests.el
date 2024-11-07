@@ -823,6 +823,16 @@ foo(Bar) --> optiona"
                    ":- use_module(library(dcg/high_order)).
 foo(Bar) --> optional(Match, Default)")))
 
+(sweeprolog-deftest dcg-ssu-completion-at-point ()
+  "Test completing DCG grammar rule invocation with SSU."
+  ":- use_module(library(dcg/high_order)).
+foo(Bar) ==> optiona"
+  (goto-char (point-max))
+  (complete-symbol nil)
+  (should (string= (buffer-string)
+                   ":- use_module(library(dcg/high_order)).
+foo(Bar) ==> optional(Match, Default)")))
+
 (sweeprolog-deftest definition-at-point ()
   "Test recognizing predicate definitions."
   "foo(Bar) :- bar(Bar)."
@@ -2463,10 +2473,24 @@ foo(Bar) --> baz(Bar).
 "
                    (7 . 12)))))
 
+(sweeprolog-deftest eldoc-dcg-ssu-guard ()
+  "Test `sweep_short_documentation/2' with a DCG SSU guard."
+  "
+:- module(eldocdcgssuguard, []).
+
+:- use_module(library(lists)).
+"
+  (should (equal (sweeprolog--query-once
+                  "sweep" "sweep_short_documentation"
+                  (list "foo(a), member(a,[a]) ==> [b]." 15 (buffer-file-name)))
+                 '("lists:member/2" "member(?Elem,?List) is unspec.
+    True if Elem is a member of List.
+"
+                   (7 . 12)))))
 
 (sweeprolog-deftest eldoc-dcg-pushback ()
-  "Test `sweep_short_documentation/2' with DCG pushback list."
-  "
+                    "Test `sweep_short_documentation/2' with DCG pushback list."
+                    "
 :- module(eldocdcgpushback, []).
 
 %!  foo(-Baz:string)// is det.
@@ -2476,13 +2500,13 @@ foo(Bar) --> baz(Bar).
 foo(_) --> [].
 
 "
-  (should (equal (sweeprolog--query-once
-                  "sweep" "sweep_short_documentation"
-                  (list "foo(X), [1,2,3] --> []." 5 (buffer-file-name)))
-                 '("eldocdcgpushback:foo//1" "foo(-Baz:string)// is det.
+                    (should (equal (sweeprolog--query-once
+                                    "sweep" "sweep_short_documentation"
+                                    (list "foo(X), [1,2,3] --> []." 5 (buffer-file-name)))
+                                   '("eldocdcgpushback:foo//1" "foo(-Baz:string)// is det.
     Doit.
 "
-                   (4 . 15)))))
+                                     (4 . 15)))))
 
 (sweeprolog-deftest replace-with-anonymous-variable ()
   "Test `sweeprolog-replace-with-anonymous-variable'."
