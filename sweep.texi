@@ -2912,10 +2912,11 @@ You post your query by typing it at the prompt, and pressing
 @kbd{@key{RET}} (@code{comint-send-input}) to send it.  If the query
 succeeds with a choicepoint, the top-level lets you to perform one of
 several actions by typing a single character, such as @kbd{;} to get
-the next answer.  Sweep Top-level mode detects that the top-level
-expects a single character input, and sends the character you type to
-the top-level immediately.  After the top-level is done with answering
-your query, it prompts you again to post a new one.
+the next answer.  (Type @kbd{h} to see a list of available actions.)
+Sweep Top-level mode detects that the top-level expects a single
+character input, and sends the character you type to the top-level
+immediately.  After the top-level is done with answering your query,
+it prompts you again to post a new one.
 
 @cindex top-level completion
 @cindex completion, in the top-level
