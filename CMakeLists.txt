@@ -24,5 +24,5 @@ swipl_plugin(
 pkg_doc(
   sweep
   SECTION
-  SOURCES sweep.doc)
+  SOURCES sweep.plx)
 
