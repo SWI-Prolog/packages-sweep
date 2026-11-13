@@ -372,7 +372,7 @@ sweep_close_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data
   }
 
   switch (PL_close_query(d)) {
-  case FALSE:
+  case false:
     return term_to_value(env, PL_exception(d));
   default:
     return et(env);
@@ -394,7 +394,7 @@ sweep_cut_query(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   }
 
   switch (PL_cut_query(d)) {
-  case FALSE:
+  case false:
     return term_to_value(env, PL_exception(d));
   default:
     return et(env);
@@ -507,9 +507,9 @@ sweep_fd_open(term_t f, term_t o) {
   if (PL_get_integer(f, &fd) &&
       (w = Sfdopen(fd, "w")) &&
       PL_unify_stream(o, w))
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
 static foreign_t
@@ -522,7 +522,7 @@ sweep_funcall0(term_t f, term_t v) {
 
   if (PL_thread_self() != sweep_thread_id || env_stack == NULL) {
     PL_permission_error("sweep_funcall", "elisp_environment", f);
-    return FALSE;
+    return false;
   }
 
   env = env_stack->current_env;
@@ -531,11 +531,11 @@ sweep_funcall0(term_t f, term_t v) {
     r = env->funcall(env, env->intern(env, string), 0, NULL);
     if (value_to_term(env, r, n) >= 0) {
       if (PL_unify(n, v)) {
-        return TRUE;
+        return true;
       }
     }
   }
-  return FALSE;
+  return false;
 }
 
 static foreign_t
@@ -549,7 +549,7 @@ sweep_funcall1(term_t f, term_t a, term_t v) {
 
   if (PL_thread_self() != sweep_thread_id || env_stack == NULL) {
     PL_permission_error("sweep_funcall", "elisp_environment", f);
-    return FALSE;
+    return false;
   }
 
   env = env_stack->current_env;
@@ -560,12 +560,12 @@ sweep_funcall1(term_t f, term_t a, term_t v) {
       r = env->funcall(env, env->intern(env, string), 1, &e);
       if (value_to_term(env, r, n) >= 0) {
         if (PL_unify(n, v)) {
-          return TRUE;
+          return true;
         }
       }
     }
   }
-  return FALSE;
+  return false;
 }
 
 static emacs_value
@@ -586,7 +586,7 @@ sweep_initialize(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *data)
   }
 
   if (PL_version_info(PL_VERSION_SYSTEM < 80516))
-    PL_action(PL_GMP_SET_ALLOC_FUNCTIONS, FALSE);
+    PL_action(PL_GMP_SET_ALLOC_FUNCTIONS, false);
 
   PL_register_foreign("sweep_funcall", 3, sweep_funcall1, 0);
   PL_register_foreign("sweep_funcall", 2, sweep_funcall0, 0);
@@ -610,7 +610,7 @@ sweep_is_initialized(emacs_env *env, ptrdiff_t nargs, emacs_value *args, void *d
   (void)nargs;
   (void)args;
   (void)data;
-  if (PL_is_initialised(NULL, NULL) == FALSE) {
+  if (PL_is_initialised(NULL, NULL) == false) {
     return enil(env);
   } else return et(env);
 }
